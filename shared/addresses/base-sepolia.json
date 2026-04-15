@@ -1,0 +1,11 @@
+{
+  "chainId": 84532,
+  "network": "base-sepolia",
+  "contracts": {
+    "VoteChainMVP": {
+      "address": "",
+      "deployTxHash": "",
+      "verified": false
+    }
+  }
+}
