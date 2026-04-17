@@ -1,9 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/login/page": "app/login/page.js",
-  "/beranda/page": "app/beranda/page.js",
-  "/space/[id]/reveal/page": "app/space/[id]/reveal/page.js",
-  "/space/[id]/admin/page": "app/space/[id]/admin/page.js",
-  "/space/[id]/vote/page": "app/space/[id]/vote/page.js",
-  "/space/[id]/results/page": "app/space/[id]/results/page.js"
-}
