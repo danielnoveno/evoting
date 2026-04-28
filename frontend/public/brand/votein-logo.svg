@@ -1,0 +1,12 @@
+<svg width="248" height="56" viewBox="0 0 248 56" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Votein Logo</title>
+  <desc id="desc">Wordmark Votein warna hitam.</desc>
+
+  <rect x="2" y="2" width="38" height="52" rx="11" stroke="#0F172A" stroke-width="3"/>
+  <path d="M10 12H32V44H10V12Z" fill="white"/>
+  <path d="M18 19L13 24L20.5 34L28.5 22L23.5 19L20 24.5L18 19Z" fill="#0F172A"/>
+
+  <text x="52" y="39" fill="#0F172A" font-family="'Space Grotesk', Inter, Arial, sans-serif" font-size="36" font-weight="700" letter-spacing="-0.8">
+    Votein
+  </text>
+</svg>
