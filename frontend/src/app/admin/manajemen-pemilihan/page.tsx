@@ -1,0 +1,199 @@
+'use client'
+
+import { BriefcaseBusiness, ChartNoAxesColumn, Grid2x2, Plus, Settings2, ShieldCheck, UsersRound } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useMemo, useState } from 'react'
+import { AdminElectionCard, AdminFilterPill, AdminShell } from '@/components/admin/admin-shell'
+import { adminElectionDummyData, adminElectionFilters, AdminElectionRecord, AdminElectionStatus } from '@/lib/admin-election-dummy-data'
+
+function getToneClasses(tone: AdminElectionRecord['iconTone']) {
+  if (tone === 'emerald') return 'bg-emerald-50 text-emerald-700'
+  if (tone === 'orange') return 'bg-orange-50 text-orange-600'
+  return 'bg-blue-50 text-blue-600'
+}
+
+function getActionToneClasses(tone: AdminElectionRecord['actionTone']) {
+  if (tone === 'indigo') return 'bg-indigo-50 text-indigo-600'
+  if (tone === 'blue') return 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+  return 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+}
+
+function ElectionIcon({ status }: { status: AdminElectionStatus }) {
+  if (status === 'aktif') return <BriefcaseBusiness className="h-5 w-5" />
+  return <ShieldCheck className="h-5 w-5" />
+}
+
+function ElectionCard({ election }: { election: AdminElectionRecord }) {
+  const router = useRouter()
+
+  if (election.status === 'aktif' && election.commits) {
+    return (
+      <AdminElectionCard onClick={() => router.push(`/admin/manajemen-pemilihan/${election.id}`)}>
+        <div className="grid h-full grid-rows-[128px_1fr_64px] gap-0">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${getToneClasses(election.iconTone)}`}>
+                <ElectionIcon status={election.status} />
+              </div>
+              <div className="min-w-0 pt-1">
+                <h2 className="max-w-[16ch] text-[20px] font-semibold text-slate-900 2xl:max-w-[12ch]">{election.title}</h2>
+                <p className="mt-3 max-w-[420px] text-[15px] leading-7 text-slate-500 2xl:max-w-[340px]">{election.meta}</p>
+              </div>
+            </div>
+            <div className="flex min-h-[84px] flex-col justify-between gap-4 sm:items-end">
+              <span className="inline-flex self-start rounded-full bg-emerald-100 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700 sm:self-auto">
+                {election.badge}
+              </span>
+              <div className="flex -space-x-2 self-start sm:self-auto">
+                {['DN', 'AP', 'RS'].map((avatar) => (
+                  <div key={avatar} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-slate-200 text-[11px] font-semibold text-slate-700">
+                    {avatar}
+                  </div>
+                ))}
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-slate-100 text-[11px] font-semibold text-slate-500">+21</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-5 border-t border-slate-100 pt-6 sm:grid-cols-2 2xl:grid-cols-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total Commit</p>
+              <p className="mt-2 text-[15px] font-semibold text-slate-900">{election.commits.total} <span className="font-normal text-slate-400">/ {election.commits.target}</span></p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Contract Hash</p>
+              <p className="mt-2 font-mono text-[13px] text-blue-600">{election.commits.hash}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Reveal Dibuka</p>
+              <p className="mt-2 text-[15px] font-semibold text-slate-900">{election.commits.revealStart}</p>
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Integritas</p>
+              <p className="mt-2 inline-flex items-center gap-1 text-[14px] font-semibold text-emerald-700">
+                <ShieldCheck className="h-4 w-4" />
+                {election.commits.integrity}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-end justify-between gap-3 pt-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href={`/admin/manajemen-pemilihan/${election.id}/monitoring`} onClick={(event) => event.stopPropagation()} className="inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-2xl bg-indigo-50 px-4 text-[14px] font-medium text-indigo-600 sm:px-5">
+                <ChartNoAxesColumn className="h-4 w-4" />
+                {election.actionLabel}
+              </Link>
+              <span className="inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-700 sm:px-5">
+                <UsersRound className="h-4 w-4" />
+                {election.secondaryActionLabel}
+              </span>
+            </div>
+          </div>
+        </div>
+      </AdminElectionCard>
+    )
+  }
+
+  return (
+    <AdminElectionCard onClick={() => router.push(`/admin/manajemen-pemilihan/${election.id}`)}>
+      <div className="grid h-full grid-rows-[128px_1fr_64px] gap-0">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${getToneClasses(election.iconTone)}`}>
+              <ElectionIcon status={election.status} />
+            </div>
+            <div className="min-w-0 pt-1">
+              <h2 className="max-w-[13ch] text-[20px] font-semibold text-slate-900 2xl:max-w-[12ch]">{election.title}</h2>
+              <p className="mt-3 max-w-[360px] text-[15px] leading-7 text-slate-500 2xl:max-w-[250px]">{election.meta}</p>
+            </div>
+          </div>
+          <div className="flex min-h-[84px] flex-col justify-between gap-4 sm:items-end">
+            <span className={`inline-flex h-14 items-center justify-center self-start rounded-2xl px-5 text-[14px] font-medium sm:self-auto ${getActionToneClasses(election.actionTone)}`}>
+              {election.actionLabel}
+            </span>
+            <span className="inline-flex self-start rounded-full bg-blue-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-600 sm:self-auto">
+              {election.badge}
+            </span>
+          </div>
+        </div>
+
+        <div />
+        <div />
+      </div>
+    </AdminElectionCard>
+  )
+}
+
+export default function AdminElectionManagementPage() {
+  const [activeFilter, setActiveFilter] = useState<'semua' | AdminElectionStatus>('semua')
+
+  const filteredElections = useMemo(() => {
+    if (activeFilter === 'semua') return adminElectionDummyData
+    return adminElectionDummyData.filter((election) => election.status === activeFilter)
+  }, [activeFilter])
+
+  const electionsWithEmptyCard = useMemo(() => {
+    return [...filteredElections, 'create-new'] as const
+  }, [filteredElections])
+
+  return (
+    <AdminShell>
+      <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+        <div>
+          <h1 className="text-[44px] font-semibold leading-[1.04] tracking-[-0.04em] text-slate-900 md:text-[56px]">Manajemen Pemilihan</h1>
+          <p className="mt-4 text-[18px] leading-9 text-slate-600">
+            Kelola dan pantau seluruh ruang pemilihan yang Anda pimpin
+          </p>
+        </div>
+
+        <button type="button" className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[15px] font-medium text-white hover:bg-slate-900">
+          <Plus className="h-4 w-4" />
+          Buat Pemilihan Baru
+        </button>
+      </section>
+
+      <section className="mt-8 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
+          {adminElectionFilters.map((filter) => (
+            <AdminFilterPill key={filter.key} active={activeFilter === filter.key} onClick={() => setActiveFilter(filter.key)}>
+              {filter.label}
+            </AdminFilterPill>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-3 self-end xl:self-auto">
+          <button type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-600 hover:bg-slate-200">
+            <Settings2 className="h-4 w-4" />
+            Urutkan: Terbaru
+          </button>
+          <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-200">
+            <Grid2x2 className="h-4 w-4" />
+          </button>
+        </div>
+      </section>
+
+      <section className="mt-8 grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
+        {electionsWithEmptyCard.map((entry) => {
+          if (entry === 'create-new') {
+            return (
+              <AdminElectionCard dashed key="create-new">
+                <div className="flex h-full flex-col items-center justify-center text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-700">
+                    <Plus className="h-8 w-8" />
+                  </div>
+                  <h2 className="mt-8 text-[24px] font-semibold text-slate-900">Buat Ruang Pemilihan Baru</h2>
+                  <p className="mt-4 max-w-[260px] text-[15px] leading-8 text-slate-500">
+                    Konfigurasi smart contract voting dalam hitungan menit
+                  </p>
+                </div>
+              </AdminElectionCard>
+            )
+          }
+
+          return <ElectionCard key={entry.id} election={entry} />
+        })}
+      </section>
+    </AdminShell>
+  )
+}

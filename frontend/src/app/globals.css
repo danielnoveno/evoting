@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+a,
+button {
+  @apply transition-colors duration-150;
+}
+
+@layer components {
+  .public-container {
+    @apply mx-auto w-full max-w-[1440px] px-4 md:px-5 lg:px-5;
+  }
+
+  .public-section {
+    @apply py-12 md:py-16 lg:py-20;
+  }
+
+  .public-card {
+    @apply rounded-3xl border border-slate-200 bg-white;
+  }
+
+  .public-flat-card {
+    @apply rounded-3xl border border-slate-100 bg-slate-50;
+  }
+}
