@@ -64,12 +64,17 @@ export default function ConnectWalletPage() {
 
     window.setTimeout(() => {
       setIsSubmitting(false)
-      if (role === 'admin' || role === 'superadmin') {
+      if (role === 'superadmin') {
+        router.push('/superadmin')
+        return
+      }
+
+      if (role === 'admin') {
         router.push('/admin')
         return
       }
 
-      router.push('/pemilihan')
+      router.push('/pemilih')
     }, 900)
   }
 

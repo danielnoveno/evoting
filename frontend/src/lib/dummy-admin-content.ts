@@ -149,8 +149,8 @@ export const adminShellContent: AdminShellContent = {
   sidebarItems: [
     { href: '/admin', label: 'Beranda', iconKey: 'layout-grid' },
     { href: '/admin/manajemen-pemilihan', label: 'Manajemen Pemilihan', iconKey: 'gauge' },
-    { href: '#', label: 'Daftar Proposal', iconKey: 'file-text' },
-    { href: '#', label: 'Bantuan', iconKey: 'circle-help' },
+    { href: '/admin/daftar-proposal', label: 'Daftar Proposal', iconKey: 'file-text' },
+    { href: '/admin/bantuan', label: 'Bantuan', iconKey: 'circle-help' },
   ],
   // brandTagline: 'E-Voting with blockchain system',
   brandTagline: '',

@@ -1,11 +1,13 @@
 'use client'
 
-import { CalendarDays, Download, Eye, FileText, Search, Share2, ShieldCheck, Users, CircleGauge } from 'lucide-react'
+import { CalendarDays, Download, Eye, FileText, Search, Share2, ShieldCheck, Users, CircleGauge, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { getAdminElectionById } from '@/lib/admin-election-dummy-data'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast-provider'
 
 function actionToneClass(tone: 'blue' | 'amber' | 'slate' | 'purple') {
   if (tone === 'blue') return 'bg-blue-50 text-blue-600'
@@ -33,9 +35,16 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
   if (!election) notFound()
 
   const monitoring = election.detail.monitoring
+  const { showToast } = useToast()
+
   const [selectedRange, setSelectedRange] = useState<(typeof dateRangeOptions)[number]['key']>('semua')
   const [selectedCategory, setSelectedCategory] = useState(monitoring.selectedCategory)
   const [actorKeyword, setActorKeyword] = useState('')
+
+  const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [exportType, setExportType] = useState<'csv' | 'pdf'>('csv')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5
 
   const filteredRows = useMemo(() => {
     const keyword = actorKeyword.trim().toLowerCase()
@@ -51,8 +60,43 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
     })
   }, [actorKeyword, monitoring.categories, monitoring.logRows, selectedCategory, selectedRange])
 
+  useMemo(() => {
+    setCurrentPage(1)
+  }, [selectedRange, selectedCategory, actorKeyword])
+
+  const paginatedRows = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage
+    const end = start + itemsPerPage
+    return filteredRows.slice(start, end)
+  }, [filteredRows, currentPage])
+  
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / itemsPerPage))
+
+  const handleOpenExport = (type: 'csv' | 'pdf') => {
+    setExportType(type)
+    setExportModalOpen(true)
+  }
+
+  const handleConfirmExport = () => {
+    setExportModalOpen(false)
+    showToast({
+      title: 'Proses Ekspor Dimulai',
+      description: `Dokumen ${exportType.toUpperCase()} sedang dipersiapkan dan akan segera diunduh.`,
+      tone: 'success',
+    })
+  }
+
   return (
     <AdminShell>
+      <ConfirmDialog
+        open={exportModalOpen}
+        title={`Ekspor ke ${exportType.toUpperCase()}`}
+        description={`Apakah Anda yakin ingin mengekspor ${filteredRows.length} log audit ke format ${exportType.toUpperCase()}?`}
+        confirmLabel="Ya, Ekspor"
+        onConfirm={handleConfirmExport}
+        onCancel={() => setExportModalOpen(false)}
+      />
+
       <section className="flex flex-col gap-4 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-400 md:flex-row md:items-center">
         <Link href="/admin/manajemen-pemilihan" className="hover:text-slate-600">Manajemen Pemilihan</Link>
         <span>›</span>
@@ -67,11 +111,11 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
           <p className="mt-5 text-[18px] leading-9 text-slate-600">{monitoring.description}</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <button type="button" className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-700 hover:bg-slate-200">
+          <button type="button" onClick={() => handleOpenExport('csv')} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-700 hover:bg-slate-200">
             <FileText className="h-4 w-4" />
             Ekspor CSV
           </button>
-          <button type="button" className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
+          <button type="button" onClick={() => handleOpenExport('pdf')} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
             <Download className="h-4 w-4" />
             Ekspor PDF
           </button>
@@ -185,7 +229,7 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
               </tr>
             </thead>
             <tbody>
-              {filteredRows.map((row) => (
+              {paginatedRows.map((row) => (
                 <tr key={`${row.time}-${row.hash}`} className="border-b border-slate-100 text-[15px] text-slate-700">
                   <td className="px-6 py-5">
                     <p className="font-semibold text-slate-900">{row.time}</p>
@@ -205,19 +249,48 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
                   <td className="px-6 py-5">
                     <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${statusToneClass(row.status)}`}>{row.status}</span>
                   </td>
-                  <td className="px-6 py-5 font-mono text-[13px] text-slate-700">{row.hash} ↗</td>
+                  <td className="px-6 py-5 font-mono text-[13px] text-blue-600">
+                    <a href={`https://sepolia.basescan.org/tx/${row.hash}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                      {row.hash} ↗
+                    </a>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {filteredRows.length > 0 && (
+          <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4 bg-slate-50/50">
+            <p className="text-[13px] text-slate-500">
+              Menampilkan {Math.min((currentPage - 1) * itemsPerPage + 1, filteredRows.length)} - {Math.min(currentPage * itemsPerPage, filteredRows.length)} dari {filteredRows.length} log
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="px-2 text-[13px] font-medium text-slate-700">Hal {currentPage} dari {totalPages}</span>
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
         <div className="grid gap-6 border-t border-slate-100 px-6 py-6 xl:grid-cols-[minmax(0,1.6fr)_360px]">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Parameter Fungsi</p>
             <div className="mt-4 overflow-hidden rounded-[28px] bg-[#161b33] p-6">
               <pre className="overflow-x-auto text-[13px] leading-7 text-slate-300">{monitoring.functionPayload}</pre>
             </div>
-            <p className="mt-4 text-[14px] text-slate-500">Menampilkan 1 - {filteredRows.length} dari {monitoring.totalLogs} log</p>
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Metadata Audit</p>

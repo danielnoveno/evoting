@@ -1,22 +1,25 @@
 'use client'
 
-import { Bell, CircleHelp, FileText, Gauge, LayoutGrid, ListChecks, LogOut, Menu, Search, UserCircle2, UserRoundCheck, Users, X } from 'lucide-react'
+import { Bell, LayoutDashboard, Users, Vote, FileText, AlertTriangle, Settings, LifeBuoy, LogOut, Menu, Search, UserCircle2, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { ReactNode, useMemo, useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { CommandPalette } from '@/components/ui/command-palette'
-import { adminShellContent } from '@/lib/dummy-admin-content'
+import { superadminShellContent } from '@/lib/dummy-superadmin-content'
 
 const sidebarIconMap = {
-  'layout-grid': LayoutGrid,
-  gauge: Gauge,
+  'layout-dashboard': LayoutDashboard,
+  'users': Users,
+  'vote': Vote,
   'file-text': FileText,
-  'circle-help': CircleHelp,
+  'alert-triangle': AlertTriangle,
+  'settings': Settings,
+  'life-buoy': LifeBuoy,
 } as const
 
-export function AdminShell({ children }: { children: ReactNode }) {
+export function SuperadminShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
@@ -33,7 +36,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     showToast({
       tone: 'success',
       title: 'Keluar berhasil',
-      description: 'Sesi admin telah diakhiri dan Anda diarahkan ke halaman login.',
+      description: 'Sesi superadmin telah diakhiri.',
     })
     window.setTimeout(() => {
       router.push('/hubungkan-dompet')
@@ -65,9 +68,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   <img src="/assets/votein-app-logo" alt="Votein" className="h-14 w-14 object-contain" />
                 ) : (
                   <div>
-                <img src="/assets/votein-logo" alt="Votein" className="h-10 w-auto" />
+                    <img src="/assets/votein-logo" alt="Votein" className="h-10 w-auto" />
                     <p className="mt-3 max-w-[120px] text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                      {adminShellContent.brandTagline}
+                      {superadminShellContent.brandTagline}
                     </p>
                   </div>
                 )}
@@ -76,7 +79,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <div className={`lg:hidden ${collapsed ? 'mx-auto' : ''}`}>
                 <img src="/assets/votein-logo" alt="Votein" className="h-10 w-auto" />
                 <p className="mt-3 max-w-[120px] text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                  {adminShellContent.brandTagline}
+                  {superadminShellContent.brandTagline}
                 </p>
               </div>
 
@@ -93,21 +96,21 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
             <nav className="px-4 pt-4">
               <div className="space-y-2">
-                {adminShellContent.sidebarItems.map((item) => {
+                {superadminShellContent.sidebarItems.map((item) => {
                   const Icon = sidebarIconMap[item.iconKey]
                   const isActive = item.href !== '#' && (
-                    item.href === '/admin'
+                    item.href === '/superadmin'
                       ? pathname === item.href
                       : pathname === item.href || pathname.startsWith(`${item.href}/`)
                   )
                   return (
-                      <Link
-                        key={item.label}
-                        href={item.href}
-                        className={isActive
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={isActive
                         ? `flex h-[52px] items-center rounded-2xl border border-slate-200 bg-white px-4 text-[15px] font-semibold text-slate-900 ${collapsed ? 'justify-center lg:px-0' : 'justify-between'}`
                         : `flex h-[52px] items-center rounded-2xl border border-transparent px-4 text-[15px] text-slate-500 hover:bg-white ${collapsed ? 'justify-center lg:px-0' : 'gap-3'}`}
-                      >
+                    >
                       <span className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
                         <Icon className="h-4 w-4" />
                         {!collapsed ? item.label : null}
@@ -127,28 +130,28 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   </div>
                   {!collapsed ? (
                     <div>
-                      <p className="text-[14px] font-semibold text-slate-900">{adminShellContent.profile.name}</p>
-                      <p className="mt-1 text-[12px] text-slate-500">{adminShellContent.profile.wallet}</p>
+                      <p className="text-[14px] font-semibold text-slate-900">{superadminShellContent.profile.name}</p>
+                      <p className="mt-1 text-[12px] text-slate-500">{superadminShellContent.profile.wallet}</p>
                     </div>
                   ) : null}
                 </div>
                 {!collapsed ? (
                   <Link 
-                    href="/admin/profil" 
+                    href="/superadmin/profil" 
                     className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] transition-all ${
-                      pathname === '/admin/profil' 
+                      pathname === '/superadmin/profil' 
                         ? 'bg-slate-50 border border-slate-200 font-semibold text-slate-900 shadow-sm' 
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     }`}
                   >
                     <Users className="h-4 w-4" />
-                    {adminShellContent.profile.editLabel}
+                    {superadminShellContent.profile.editLabel}
                   </Link>
                 ) : null}
               </div>
               <button type="button" onClick={() => setLogoutConfirmOpen(true)} className={`mt-3 inline-flex h-11 items-center justify-center rounded-xl bg-black text-[14px] font-medium text-white hover:bg-slate-900 ${collapsed ? 'w-full px-0' : 'w-full'}`}>
                 <LogOut className={`${collapsed ? 'mr-0' : 'mr-2'} h-4 w-4`} />
-                {!collapsed ? adminShellContent.profile.logoutLabel : null}
+                {!collapsed ? superadminShellContent.profile.logoutLabel : null}
               </button>
             </div>
           </div>
@@ -158,7 +161,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <header className="sticky top-0 z-30 border-b border-slate-100 bg-white/90 px-4 py-4 backdrop-blur-sm md:px-6 lg:px-10">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">{adminShellContent.headerLabel}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">{superadminShellContent.headerLabel}</p>
               </div>
               <div className="flex items-center gap-2 md:gap-3">
                 <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 lg:hidden" onClick={() => setMobileOpen(true)}>
@@ -166,16 +169,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 </button>
                 <button type="button" onClick={() => setSearchOpen(true)} className="hidden h-11 items-center gap-3 rounded-full bg-slate-100 px-4 md:flex md:w-[280px] hover:bg-slate-200 transition-colors text-left">
                   <Search className="h-4 w-4 text-slate-400 shrink-0" />
-                  <span className="text-[13px] text-slate-400 truncate flex-1">Cari kandidat, pemilih, ruang...</span>
+                  <span className="text-[13px] text-slate-400 truncate flex-1">Cari institusi, log, pemilihan...</span>
                   <kbd className="hidden md:inline-flex h-5 items-center gap-1 rounded border border-slate-300 bg-white px-1.5 font-mono text-[10px] font-medium text-slate-500">
                     <span className="text-[12px]">⌘</span>K
                   </kbd>
                 </button>
                 <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100">
                   <Bell className="h-4 w-4" />
-                </button>
-                <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100">
-                  <UserRoundCheck className="h-4 w-4" />
                 </button>
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white">
                   <UserCircle2 className="h-5 w-5" />
@@ -190,9 +190,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
           <footer className="sticky bottom-0 z-30 border-t border-slate-100 bg-slate-50/95 px-4 pb-4 pt-3 backdrop-blur-sm md:px-6 lg:px-10">
             <div className="flex flex-col gap-3 text-[11px] uppercase tracking-[0.06em] text-slate-400 md:flex-row md:items-center md:justify-between">
-              <p>{adminShellContent.footer.copyright}</p>
+              <p>{superadminShellContent.footer.copyright}</p>
               <div className="flex items-center gap-4">
-                {adminShellContent.footer.links.map((link) => (
+                {superadminShellContent.footer.links.map((link) => (
                   <a key={link.label} href={link.href} className="hover:text-slate-600">{link.label}</a>
                 ))}
               </div>
@@ -203,19 +203,19 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
       <ConfirmDialog
         open={logoutConfirmOpen}
-        title="Keluar dari sesi admin?"
-        description="Anda akan keluar dari panel admin dan kembali ke halaman login. Pastikan semua perubahan penting sudah disimpan."
+        title="Keluar dari sesi superadmin?"
+        description="Anda akan keluar dari panel kendali dan kembali ke halaman login."
         confirmLabel="Keluar Sesi"
         onCancel={() => setLogoutConfirmOpen(false)}
         onConfirm={handleConfirmLogout}
       />
 
-      <CommandPalette role="admin" open={searchOpen} onOpenChange={setSearchOpen} />
+      <CommandPalette role="superadmin" open={searchOpen} onOpenChange={setSearchOpen} />
     </main>
   )
 }
 
-export function AdminModuleCard({ icon, title, description, dark = false, cta = 'Lihat Detail' }: { icon: ReactNode; title: string; description: string; dark?: boolean; cta?: string }) {
+export function SuperadminModuleCard({ icon, title, description, dark = false, cta = 'Lihat Detail' }: { icon: ReactNode; title: string; description: string; dark?: boolean; cta?: string }) {
   return (
     <article className={dark ? 'rounded-[28px] bg-black p-6 text-white' : 'rounded-[28px] border border-slate-200 bg-white p-6'}>
       <div className={dark ? 'flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white' : 'flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-900'}>
@@ -228,63 +228,6 @@ export function AdminModuleCard({ icon, title, description, dark = false, cta = 
           {cta}
         </button>
       </div>
-    </article>
-  )
-}
-
-export function AdminMetricCard({
-  label = 'Total suara masuk',
-  value = '12,842',
-  change = '+12% dari target minimum',
-  progressLabel = 'Kuorum Tercapai',
-  progressValue = '82%',
-  progressWidthClassName = 'w-[82%]',
-}: {
-  label?: string
-  value?: string
-  change?: string
-  progressLabel?: string
-  progressValue?: string
-  progressWidthClassName?: string
-}) {
-  return (
-    <article className="rounded-[28px] bg-[#161b33] p-7 text-white">
-      <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">{label}</p>
-      <p className="mt-5 text-[64px] font-semibold leading-none tracking-[-0.05em] text-white">{value}</p>
-      <p className="mt-4 text-[15px] text-emerald-400">{change}</p>
-      <div className="mt-10 border-t border-white/10 pt-6">
-        <div className="flex items-center justify-between text-[14px] text-slate-300">
-          <span>{progressLabel}</span>
-          <span>{progressValue}</span>
-        </div>
-        <div className="mt-4 h-2 rounded-full bg-white/10">
-          <div className={`h-2 rounded-full bg-white ${progressWidthClassName}`} />
-        </div>
-      </div>
-    </article>
-  )
-}
-
-export function AdminFilterPill({ active, children, onClick }: { active?: boolean; children: ReactNode; onClick?: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={active
-        ? 'inline-flex h-10 items-center justify-center rounded-full bg-black px-6 text-[14px] font-medium text-white'
-        : 'inline-flex h-10 items-center justify-center rounded-full bg-slate-100 px-6 text-[14px] font-medium text-slate-600 hover:bg-slate-200'}
-    >
-      {children}
-    </button>
-  )
-}
-
-export function AdminElectionCard({ children, dashed = false, onClick }: { children: ReactNode; dashed?: boolean; onClick?: () => void }) {
-  return (
-    <article className={dashed
-      ? 'overflow-hidden h-auto min-h-[388px] rounded-[28px] border border-dashed border-slate-300 bg-white px-6 pb-8 pt-6 2xl:h-[388px]'
-      : `overflow-hidden h-auto min-h-[388px] rounded-[28px] border bg-white px-6 pb-8 pt-6 2xl:h-[388px] ${onClick ? 'cursor-pointer border-slate-200 transition-all duration-150 hover:-translate-y-px hover:border-slate-300' : 'border-slate-200'}`} onClick={onClick}>
-      {children}
     </article>
   )
 }

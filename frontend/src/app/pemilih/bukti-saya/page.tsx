@@ -1,0 +1,165 @@
+'use client'
+
+import { ArrowRight, Download, ExternalLink, HelpCircle, QrCode, ShieldCheck } from 'lucide-react'
+import { useToast } from '@/components/ui/toast-provider'
+import { VoterShell } from '@/components/voter/voter-shell'
+import {
+  basescanTxUrl,
+  formatDateShort,
+  formatNumber,
+  getPhaseLabel,
+  getPhaseTone,
+  useVoterStore,
+} from '@/lib/voter-mock-store'
+
+const phaseToneClassName = {
+  success: 'bg-emerald-50 text-emerald-700',
+  info: 'bg-blue-50 text-blue-700',
+  warning: 'bg-amber-50 text-amber-700',
+} as const
+
+export default function VoterProofPage() {
+  const { showToast } = useToast()
+  const { store, loading, actions } = useVoterStore()
+
+  if (loading || !store) {
+    return <VoterShell><div className="h-[420px] animate-pulse rounded-[32px] bg-slate-200" /></VoterShell>
+  }
+
+  const selectedElection = store.elections.find((election) => election.id === store.selectedProofElectionId) ?? store.elections[0]
+
+  return (
+    <VoterShell>
+      <section className="max-w-4xl">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Arsip digital</p>
+        <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Bukti Saya</h1>
+        <p className="mt-4 text-[16px] leading-8 text-slate-600 md:text-[18px] md:leading-9">
+          Riwayat pemilihan yang akan, sedang, dan sudah Anda ikuti beserta bukti kriptografis yang dapat diverifikasi secara publik.
+        </p>
+      </section>
+
+      <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(320px,0.7fr)_minmax(0,1.3fr)]">
+          <article className="rounded-[32px] bg-[#161f35] p-6 text-white md:p-8">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total partisipasi</p>
+          <p className="mt-6 text-[64px] font-semibold leading-none tracking-[-0.05em] text-white sm:text-[86px]">{String(store.elections.filter((election) => election.commitProof || election.revealProof).length).padStart(2, '0')}</p>
+          <p className="mt-6 max-w-[18ch] text-[16px] leading-7 text-slate-300 md:text-[18px] md:leading-8">Pemilihan yang telah Anda ikuti sejak bergabung.</p>
+        </article>
+
+        <div className="space-y-4">
+          {store.elections.map((election) => {
+            const tone = getPhaseTone(election.phase)
+
+            return (
+              <article key={election.id} className="rounded-[28px] border border-slate-100 bg-white px-5 py-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                      <ShieldCheck className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[18px] font-semibold text-slate-900 sm:text-[22px]">{election.title}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-3">
+                        <span className="text-[13px] text-slate-500">{formatDateShort(election.deadlineIso)}</span>
+                        <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${phaseToneClassName[tone]}`}>
+                          {getPhaseLabel(election.phase)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => actions.selectProofElection(election.id)} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[13px] font-semibold uppercase tracking-[0.06em] text-slate-900 hover:bg-slate-200 md:w-auto">
+                    Lihat Bukti
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </article>
+            )
+          })}
+
+          <article className="rounded-[32px] border border-slate-100 bg-white p-7 md:p-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">Terkonfirmasi on-chain</span>
+                </div>
+                <h2 className="mt-5 text-[24px] font-semibold text-slate-900 sm:text-[28px] md:text-[40px]">{selectedElection.title}</h2>
+                <p className="mt-3 text-[15px] leading-8 text-slate-600">Dilaksanakan pada {formatDateShort(selectedElection.deadlineIso)} · {selectedElection.lastTransactionLabel}</p>
+              </div>
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduhan dimulai', description: 'Sertifikat bukti masih berupa simulasi frontend.' })} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[13px] font-semibold uppercase tracking-[0.06em] text-white hover:bg-slate-900 sm:w-auto">
+                <Download className="h-4 w-4" />
+                Unduh Sertifikat
+              </button>
+            </div>
+
+            <div className="mt-8 rounded-[24px] bg-slate-100 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Blockchain transaction hash</p>
+              <p className="mt-4 overflow-hidden break-all rounded-2xl bg-white px-4 py-4 font-mono text-[12px] text-slate-700 sm:text-[13px]">
+                {selectedElection.revealProof?.txHash ?? selectedElection.commitProof?.txHash ?? 'Belum ada transaksi'}
+              </p>
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Block</p>
+                  <p className="mt-2 text-[24px] font-semibold text-slate-900">#{formatNumber(selectedElection.revealProof?.blockNumber ?? selectedElection.commitProof?.blockNumber ?? 0)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Status</p>
+                  <p className="mt-2 font-mono text-[20px] font-semibold text-emerald-600">{selectedElection.revealProof?.statusLabel ?? selectedElection.commitProof?.statusLabel ?? 'Pending'}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Gas Used</p>
+                  <p className="mt-2 text-[24px] font-semibold text-slate-900">{formatNumber(selectedElection.revealProof?.gasUsed ?? selectedElection.commitProof?.gasUsed ?? 0)}</p>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.58fr)]">
+        <article className="rounded-[32px] bg-slate-100 p-8">
+          <h2 className="text-[26px] font-semibold text-slate-900 sm:text-[32px]">Bagaimana cara verifikasi?</h2>
+          <p className="mt-4 max-w-3xl text-[16px] leading-8 text-slate-600">
+            Setiap bukti suara berisi tanda tangan digital unik yang dapat diverifikasi mandiri melalui penjelajah blockchain publik.
+          </p>
+          <ol className="mt-8 space-y-4">
+            {[
+              'Salin transaction hash dari kartu bukti di atas.',
+              'Buka tautan Basescan untuk mencari transaksi tersebut.',
+              'Pastikan status transaksi menunjukkan sukses dan detail block sesuai.',
+            ].map((item, index) => (
+              <li key={item} className="flex gap-4 text-[16px] leading-8 text-slate-700">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[12px] font-semibold text-white">{index + 1}</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ol>
+        </article>
+
+        <article className="rounded-[32px] border border-slate-100 bg-white p-8 text-center">
+          <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[28px] bg-slate-100 text-slate-900">
+            <QrCode className="h-12 w-12" />
+          </div>
+          <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Pindai verifikasi cepat</p>
+          <p className="mt-3 rounded-full bg-slate-100 px-4 py-2 font-mono text-[13px] text-slate-700">VERIFY-ID: {selectedElection.voterIdentifier}</p>
+          {(selectedElection.revealProof ?? selectedElection.commitProof) ? (
+            <a
+              href={basescanTxUrl(selectedElection.revealProof?.txHash ?? selectedElection.commitProof?.txHash ?? '')}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-slate-900 hover:text-blue-700"
+            >
+              Verifikasi di Basescan
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          ) : null}
+        </article>
+      </section>
+
+      <div className="mt-8 flex justify-stretch sm:justify-end">
+        <button type="button" onClick={() => showToast({ tone: 'info', title: 'Tim bantuan siap membantu', description: 'Silakan lanjut ke menu bantuan untuk panduan verifikasi lebih rinci.' })} className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-[13px] font-semibold text-slate-900 hover:bg-slate-50 sm:w-auto">
+          <HelpCircle className="h-4 w-4" />
+          Butuh Bantuan?
+        </button>
+      </div>
+    </VoterShell>
+  )
+}
