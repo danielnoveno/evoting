@@ -157,7 +157,7 @@ export const adminShellContent: AdminShellContent = {
   headerLabel: 'Dashboard utama admin',
   searchPlaceholder: 'Cari data pemilihan...',
   profile: {
-    name: 'HIMAFORKA FTI UAJY',
+    name: sharedDummyContext.organizationShort,
     wallet: '0x71C...4f21',
     editLabel: 'Sunting Profil',
     logoutLabel: 'Keluar Sesi',
@@ -176,7 +176,7 @@ export const adminDashboardContent: AdminDashboardContent = {
     badge: 'Sistem e-voting aman',
     title: 'Kelola Pemilihan dengan Transparansi Blockchain',
     description:
-      'Panel admin VoteChain untuk HIMAFORKA FTI UAJY. Pantau fase Registration → Commit → Reveal → Ended, kelola whitelist pemilih, dan siapkan bukti audit Basescan untuk kebutuhan skripsi.',
+      `Panel admin VoteChain untuk ${sharedDummyContext.organization}. Pantau fase Registration → Commit → Reveal → Ended, kelola whitelist pemilih, dan siapkan bukti audit Basescan untuk kebutuhan skripsi.`,
     primaryCta: 'Buka Ruang Aktif',
     secondaryCta: 'Unduh Ringkasan',
   },
@@ -193,7 +193,7 @@ export const adminDashboardContent: AdminDashboardContent = {
     {
       key: 'proposal',
       title: 'Proposal Saya',
-      description: 'Lihat daftar proposal ruang voting yang diajukan untuk pemilihan internal HIMAFORKA dan kepanitiaan.',
+      description: `Lihat daftar proposal ruang voting yang diajukan untuk pemilihan internal ${sharedDummyContext.organizationShort} dan kepengurusan unitnya.`,
     },
     {
       key: 'fase',
@@ -233,11 +233,11 @@ export const adminDashboardContent: AdminDashboardContent = {
     statusLabel: '• Live node',
   },
   recentActivities: [
-    {
-      block: '#48,291,012',
-      text: '0x8f2a...d3e1 mengirim commit untuk Pemilihan Ketua HIMAFORKA 2026.',
-      time: '2 detik lalu',
-      status: 'Sukses',
+      {
+        block: '#48,291,012',
+        text: `0x8f2a...d3e1 mengirim commit untuk ${sharedDummyContext.proposalTitle}.`,
+        time: '2 detik lalu',
+        status: 'Sukses',
     },
     {
       block: '#48,290,998',
@@ -266,18 +266,18 @@ export const adminElectionManagementContent: AdminElectionManagementContent = {
   sortLabel: 'Urutkan: Terbaru',
   elections: [
     {
-      id: 'himaforka-2026',
+      id: sharedDummyContext.electionId,
       iconKey: 'briefcase',
       iconClassName: 'bg-emerald-50 text-emerald-700',
-      title: 'Pemilihan Ketua HIMAFORKA 2026',
-      meta: 'Commit dibuka 12–18 Juni 2026 • 124 pemilih terdaftar',
+      title: sharedDummyContext.proposalTitle,
+      meta: `Commit dibuka 12–18 Juni 2026 • ${sharedDummyContext.voterEstimate} pemilih terdaftar`,
       badge: 'Fase Aktif: Commit',
       badgeClassName: 'bg-emerald-100 text-emerald-700',
       variant: 'active',
       voters: ['DN', 'AP', 'RS'],
-      extraVotersLabel: '+21',
-      stats: [
-        { label: 'Total Commit', value: '87', subValue: '/ 124' },
+        extraVotersLabel: '+18',
+        stats: [
+        { label: 'Total Commit', value: '218', subValue: ` / ${sharedDummyContext.voterEstimate}` },
         { label: 'Contract', value: '0x71c...a3e4', tone: 'info' },
         { label: 'Reveal Dibuka', value: '19 Juni 2026, 09.00' },
         { label: 'Integritas', value: 'Whitelist Aktif', tone: 'success' },
@@ -288,10 +288,10 @@ export const adminElectionManagementContent: AdminElectionManagementContent = {
       ],
     },
     {
-      id: 'bem-fti-2026',
+      id: 'ukm-riset-divisi-2026',
       iconKey: 'document',
       iconClassName: 'bg-orange-50 text-orange-600',
-      title: 'Pemilihan Koordinator Divisi Acara 2026',
+      title: 'Pemilihan Kepala Divisi Program UKM Riset 2026',
       meta: 'Draft • Kandidat belum final • Menunggu unggah whitelist',
       badge: 'Status: Draft',
       badgeClassName: 'bg-orange-50 text-orange-600',
@@ -301,10 +301,10 @@ export const adminElectionManagementContent: AdminElectionManagementContent = {
       progressLabel: '40% complete',
     },
     {
-      id: 'bendahara-2025',
+      id: 'ukm-riset-sekretaris-2025',
       iconKey: 'shield',
       iconClassName: 'bg-blue-50 text-blue-600',
-      title: 'Pemilihan Bendahara HIMAFORKA 2025',
+      title: 'Pemilihan Sekretaris UKM Riset 2025',
       meta: 'Selesai 20 Des 2025 • Partisipasi 96% • Bukti siap audit',
       badge: 'Final',
       badgeClassName: 'bg-blue-50 text-blue-600',
@@ -312,10 +312,10 @@ export const adminElectionManagementContent: AdminElectionManagementContent = {
       reportButton: 'Lihat Laporan',
     },
     {
-      id: 'laboratorium-2025',
+      id: 'ukm-riset-inovasi-2025',
       iconKey: 'shield',
       iconClassName: 'bg-blue-50 text-blue-600',
-      title: 'Pemilihan Asisten Laboratorium 2025',
+      title: 'Pemilihan Kepala Divisi Inovasi UKM Riset 2025',
       meta: 'Selesai 05 Nov 2025 • 54 suara valid • Reveal 100% berhasil',
       badge: 'Final',
       badgeClassName: 'bg-blue-50 text-blue-600',
@@ -328,3 +328,4 @@ export const adminElectionManagementContent: AdminElectionManagementContent = {
     description: 'Konfigurasi ruang voting baru untuk kebutuhan organisasi mahasiswa dalam hitungan menit.',
   },
 }
+import { sharedDummyContext } from '@/lib/dummy-shared-context'

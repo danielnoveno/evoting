@@ -64,13 +64,13 @@ export default function ConnectWalletPage() {
 
     window.setTimeout(() => {
       setIsSubmitting(false)
-      if (role === 'superadmin') {
-        router.push('/superadmin')
+      if (role === 'admin') {
+        router.push('/admin')
         return
       }
 
-      if (role === 'admin') {
-        router.push('/admin')
+      if (role === 'superadmin') {
+        router.push('/superadmin')
         return
       }
 
@@ -136,6 +136,9 @@ export default function ConnectWalletPage() {
         <div className="mt-3 flex flex-col gap-2.5">
           <p className="text-center text-[11px] leading-6 text-slate-500">
             Role akun akan disesuaikan otomatis berdasarkan data pengguna yang terdaftar di sistem kampus.
+          </p>
+          <p className="text-center text-[11px] leading-6 text-slate-400">
+            Demo: voter / admin / superadmin tersedia untuk kebutuhan presentasi frontend.
           </p>
         </div>
 

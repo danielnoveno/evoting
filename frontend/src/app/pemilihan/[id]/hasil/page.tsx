@@ -1,5 +1,6 @@
 import { Download, ExternalLink, LockKeyhole, ShieldCheck } from 'lucide-react'
-import { PublicPage } from '@/components/public/site-shell'
+import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { PublicElectionBackLink, PublicPage } from '@/components/public/site-shell'
 
 const logs = [
   { action: 'Vote Reveal', tx: '0x8f4c ... 3b9a', time: '2 mnt lalu' },
@@ -7,20 +8,26 @@ const logs = [
   { action: 'Vote Commit', tx: '0x7c9e ... 1f2a', time: '12 mnt lalu' },
 ]
 
-export default function DetailHasilPage() {
+export default function DetailHasilPage({ params }: { params: { id: string } }) {
+  const isMainElection = params.id === sharedDummyContext.electionId
+  const pageTitle = isMainElection ? sharedDummyContext.proposalTitle : 'Voting Kebijakan Publikasi Karya UKM Riset'
+  const winnerName = isMainElection ? sharedDummyContext.candidates[0].name : sharedDummyContext.candidates[1].name
+  const winnerFaculty = isMainElection ? sharedDummyContext.candidates[0].faculty : sharedDummyContext.candidates[1].faculty
+
   return (
     <PublicPage activePath="/pemilihan">
       <section className="public-section">
         <div className="public-container">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-[860px]">
-              <div className="flex flex-wrap items-center gap-3">
+              <PublicElectionBackLink />
+              <div className="mt-5 flex flex-wrap items-center gap-3">
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-emerald-700">Data Terverifikasi On-Chain</span>
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">Berlangsung</span>
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">{isMainElection ? 'Berlangsung' : 'Reveal Aktif'}</span>
               </div>
-              <h1 className="mt-6 text-[44px] font-semibold leading-[1.08] tracking-[-0.03em] text-slate-900 md:text-[64px]">Pemilihan Presiden BEM Universitas 2024</h1>
+              <h1 className="mt-6 text-[44px] font-semibold leading-[1.08] tracking-[-0.03em] text-slate-900 md:text-[64px]">{pageTitle}</h1>
               <p className="mt-5 max-w-[760px] text-[18px] leading-9 text-slate-600">
-                Transparansi penuh dengan rekam jejak yang tidak dapat diubah. Hasil di bawah ini diperbarui secara real-time dari smart contract.
+                Transparansi penuh dengan rekam jejak yang tidak dapat diubah. Hasil di bawah ini diperbarui secara real-time dari smart contract pemilihan kampus.
               </p>
             </div>
             <button type="button" className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
@@ -35,8 +42,8 @@ export default function DetailHasilPage() {
                 <div className="mx-auto h-44 w-44 rounded-full bg-[radial-gradient(circle_at_top,_#374151,_#111827)]" />
                 <div>
                   <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] uppercase tracking-[0.06em] text-slate-500">Kandidat 01 · Pemenang Sementara</span>
-                  <h2 className="mt-5 text-[28px] font-semibold leading-tight text-slate-900 md:text-[36px]">Bima Satria & Clara Wijaya</h2>
-                  <p className="mt-3 text-[18px] text-slate-600">Fakultas Teknik & Fakultas Ilmu Sosial</p>
+                  <h2 className="mt-5 text-[28px] font-semibold leading-tight text-slate-900 md:text-[36px]">{winnerName}</h2>
+                  <p className="mt-3 text-[18px] text-slate-600">{winnerFaculty}</p>
                   <div className="mt-8 flex flex-wrap items-end gap-4">
                     <p className="text-[56px] font-semibold leading-none tracking-[-0.04em] text-slate-900 md:text-[72px]">58.4%</p>
                     <p className="pb-2 text-[18px] text-slate-600">dari total suara masuk</p>
@@ -72,9 +79,9 @@ export default function DetailHasilPage() {
                 <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Distribusi Suara</p>
                 <div className="mt-6 space-y-5 text-[16px] text-slate-900">
                   {[
-                    ['Kandidat 01', '58.4%', 'w-[58.4%]'],
-                    ['Kandidat 02', '31.2%', 'w-[31.2%]'],
-                    ['Kandidat 03', '10.4%', 'w-[10.4%]'],
+                      ['Kandidat 01', '44.0%', 'w-[44%]'],
+                      ['Kandidat 02', '33.0%', 'w-[33%]'],
+                      ['Kandidat 03', '23.0%', 'w-[23%]'],
                   ].map(([label, value, widthClass], index) => (
                     <div key={label}>
                       <div className="flex items-center justify-between">

@@ -1,0 +1,63 @@
+export const sharedDummyContext = {
+  organization: 'UKM Riset dan Inovasi UAJY',
+  organizationShort: 'UKM Riset dan Inovasi',
+  proposalId: 'p-ukm-riset',
+  proposalCode: 'PR-UKM-2026-001',
+  proposalTitle: 'Pemilihan Koordinator UKM Riset dan Inovasi 2026',
+  electionId: 'ukm-riset-koordinator-2026',
+  electionCode: 'UKM-2026-RI-01',
+  contractAddress: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
+  voterEstimate: 324,
+  commitDeadlineIso: '2026-05-10T18:00:00+07:00',
+  revealDeadlineIso: '2026-05-11T12:00:00+07:00',
+  summary:
+    'Pemilihan koordinator UKM Riset dan Inovasi menggunakan alur commit-reveal untuk menjaga kerahasiaan suara, transparansi hasil, dan auditabilitas publik.',
+  proposalSummary: [
+    'Proposal ini diajukan untuk melaksanakan pemilihan Koordinator UKM Riset dan Inovasi periode 2026-2027 dengan mekanisme e-voting berbasis blockchain yang dapat diaudit publik.',
+    'Target partisipan adalah seluruh anggota aktif UKM Riset dan Inovasi beserta pengurus inti yang terdaftar pada semester berjalan, dengan estimasi DPT sebanyak 324 anggota.',
+  ],
+  candidates: [
+    {
+      id: 'cand-ri-01',
+      number: '01',
+      name: 'Nadia Prasetyo',
+      faculty: 'Informatika ’22',
+      summary: 'Kolaborasi riset mahasiswa berbasis data dan penguatan program inkubasi inovasi.',
+      bio: 'Aktif memimpin program riset mahasiswa dan pengembangan ekosistem inovasi kampus.',
+      vision: 'Membangun UKM Riset dan Inovasi yang kolaboratif, terukur, dan produktif untuk semua anggota.',
+      mission: [
+        'Membuka program mentoring riset lintas angkatan.',
+        'Menyusun inkubasi proyek inovasi berbasis kebutuhan kampus.',
+      ],
+      votes: 0,
+    },
+    {
+      id: 'cand-ri-02',
+      number: '02',
+      name: 'Raka Mahendra',
+      faculty: 'Sistem Informasi ’21',
+      summary: 'Fokus pada hilirisasi riset, kemitraan eksternal, dan publikasi yang konsisten.',
+      bio: 'Berpengalaman mengelola kolaborasi riset dan publikasi pada komunitas teknologi mahasiswa.',
+      vision: 'Menguatkan posisi UKM sebagai pusat riset mahasiswa yang berdampak dan relevan secara eksternal.',
+      mission: [
+        'Memperluas mitra riset dengan komunitas dan industri.',
+        'Menjadwalkan publikasi karya anggota secara berkala.',
+      ],
+      votes: 0,
+    },
+    {
+      id: 'cand-ri-03',
+      number: '03',
+      name: 'Salsa Widyaningrum',
+      faculty: 'Teknik Industri ’22',
+      summary: 'Penguatan tata kelola internal dan roadmap program kerja riset jangka panjang.',
+      bio: 'Fokus pada manajemen organisasi dan kesinambungan program inovasi mahasiswa.',
+      vision: 'Menjadikan UKM Riset dan Inovasi sebagai organisasi yang tertib, berkelanjutan, dan kuat secara tata kelola.',
+      mission: [
+        'Membuat roadmap program kerja berbasis semester.',
+        'Menata dokumentasi dan evaluasi program secara terbuka.',
+      ],
+      votes: 0,
+    },
+  ],
+} as const

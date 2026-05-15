@@ -31,9 +31,9 @@ export function VoterShell({ children }: { children: ReactNode }) {
     showToast({
       tone: 'success',
       title: 'Keluar berhasil',
-      description: 'Sesi pemilih ditutup. Anda diarahkan kembali ke halaman login.',
+      description: 'Sesi pemilih ditutup. Anda diarahkan kembali ke halaman utama.',
     })
-    window.setTimeout(() => router.push('/hubungkan-dompet'), 400)
+    window.setTimeout(() => router.push('/'), 400)
   }
 
   const topLabel = useMemo(() => {
@@ -155,13 +155,18 @@ export function VoterShell({ children }: { children: ReactNode }) {
                 <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100">
                   <Bell className="h-4 w-4" />
                 </button>
-                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-slate-900 text-white">
+                <Link
+                  href="/pemilih/profil"
+                  className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-full transition ${
+                    pathname === '/pemilih/profil' ? 'bg-slate-800 text-white' : 'bg-slate-900 text-white hover:bg-slate-700'
+                  }`}
+                >
                   {profile?.avatarUrl ? (
                     <img src={profile.avatarUrl} alt={profile.name} className="h-full w-full object-cover" />
                   ) : (
                     <UserCircle2 className="h-5 w-5" />
                   )}
-                </div>
+                </Link>
               </div>
             </div>
           </header>
@@ -174,8 +179,8 @@ export function VoterShell({ children }: { children: ReactNode }) {
             <div className="flex flex-col gap-3 text-[10px] uppercase tracking-[0.06em] text-slate-400 sm:text-[11px] md:flex-row md:items-center md:justify-between">
               <p>© 2026 E-Voting Indonesia · Keamanan Tingkat Tinggi</p>
               <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                <a href="#" className="hover:text-slate-600">Kebijakan Privasi</a>
-                <a href="#" className="hover:text-slate-600">Ketentuan Layanan</a>
+                <Link href="/kebijakan-privasi" className="hover:text-slate-600">Kebijakan Privasi</Link>
+                <Link href="/ketentuan-layanan" className="hover:text-slate-600">Ketentuan Layanan</Link>
               </div>
             </div>
           </footer>

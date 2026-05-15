@@ -1,4 +1,4 @@
-import { Bell, CopyCheck, ExternalLink, Menu } from 'lucide-react'
+import { ArrowLeft, Bell, CopyCheck, ExternalLink, Menu } from 'lucide-react'
 import Link from 'next/link'
 import { ReactNode } from 'react'
 
@@ -80,8 +80,8 @@ export function PublicFooter() {
       <div className="public-container flex flex-col gap-3 text-[11px] uppercase tracking-[0.06em] text-slate-400 md:flex-row md:items-center md:justify-between">
         <p>© 2026 E-Voting Indonesia · Keamanan Tingkat Tinggi</p>
         <div className="flex items-center gap-4">
-          <a href="#" className="hover:text-slate-600">Kebijakan Privasi</a>
-          <a href="#" className="hover:text-slate-600">Ketentuan Layanan</a>
+          <Link href="/kebijakan-privasi" className="hover:text-slate-600">Kebijakan Privasi</Link>
+          <Link href="/ketentuan-layanan" className="hover:text-slate-600">Ketentuan Layanan</Link>
         </div>
       </div>
     </footer>
@@ -115,5 +115,14 @@ export function BasescanLink({ href, label = 'Lihat di Basescan' }: { href: stri
       {label}
       <ExternalLink className="h-4 w-4" />
     </a>
+  )
+}
+
+export function PublicElectionBackLink({ href = '/pemilihan', label = 'Kembali ke daftar pemilihan' }: { href?: string; label?: string }) {
+  return (
+    <Link href={href} className="inline-flex items-center gap-2 text-[14px] font-medium text-slate-600 transition-colors hover:text-slate-900">
+      <ArrowLeft className="h-4 w-4" />
+      {label}
+    </Link>
   )
 }

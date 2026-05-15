@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect } from 'react'
 import { VoterShell } from '@/components/voter/voter-shell'
 
@@ -20,9 +21,9 @@ export default function PemilihError({ error, reset }: { error: Error; reset: ()
           <button type="button" onClick={reset} className="inline-flex h-11 items-center justify-center rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
             Coba Lagi
           </button>
-          <a href="/pemilih/bantuan" className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-50">
+          <Link href="/pemilih/bantuan" className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-50">
             Buka Bantuan
-          </a>
+          </Link>
         </div>
       </section>
     </VoterShell>

@@ -1,35 +1,41 @@
 import { ArrowRight, BarChart3, Download, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
 import { PublicPage } from '@/components/public/site-shell'
+import { sharedDummyContext } from '@/lib/dummy-shared-context'
 
 const activeElections = [
   {
     phase: 'Fase Commit',
     deadline: 'Berakhir dalam 12 jam',
-    title: 'Pemilihan Ketua BEM Universitas Teknologi 2024',
-    body: 'Pemilihan umum mahasiswa untuk menentukan kepemimpinan Badan Eksekutif Mahasiswa periode 2024/2025.',
-    participation: '4,250 Suara',
+    title: sharedDummyContext.proposalTitle,
+    body: sharedDummyContext.summary,
+    participation: `${sharedDummyContext.voterEstimate} Pemilih`,
     hash: '0x8f2a ... 9c3b',
     primary: 'Mulai Memilih',
+    href: `/pemilih/pemilihan/${sharedDummyContext.electionId}/commit`,
+    detailHref: `/pemilihan/${sharedDummyContext.electionId}/hasil`,
   },
   {
     phase: 'Fase Reveal',
     deadline: 'Berakhir dalam 2 hari',
-    title: 'Voting Proposal Desentralisasi Jaringan',
-    body: 'Pengambilan keputusan teknis terkait pembaruan protokol konsensus jaringan utama.',
-    participation: '12,400 Node',
+    title: 'Voting Kebijakan Publikasi Karya UKM Riset',
+    body: 'Pemungutan suara internal untuk menentukan kebijakan publikasi hasil riset anggota sebelum diterbitkan ke kanal resmi UKM.',
+    participation: '180 Pemilih',
     hash: '0x1d9f ... 4a2e',
     primary: 'Lihat Statistik',
+    href: '/pemilih/pemilihan/ukm-riset-publikasi-2026/reveal',
+    detailHref: '/pemilihan/ukm-riset-publikasi-2026/hasil',
   },
 ]
 
 const upcoming = [
-  'Pemilihan Pengurus Koperasi Karyawan',
-  'Audit Keuangan Tahunan Yayasan',
+  { title: 'Pemilihan Sekretaris UKM Riset 2026', href: '/pemilih/pemilihan/ukm-riset-sekretaris-2026/commit' },
+  { title: 'Sayembara Logo Inovasi UKM Riset', href: '/admin/daftar-proposal/p-ukm-riset-logo' },
 ]
 
 const finished = [
-  { month: 'Agustus 2024', title: 'Pemilihan Direksi Baru PT. Inovasi Digital', total: '89,201' },
-  { month: 'Juli 2024', title: 'Voting Prioritas Proyek Komunitas Kota', total: '15,430' },
+  { month: 'Agustus 2025', title: 'Pemilihan Kepala Divisi Inovasi UKM Riset 2025', total: '284' },
+  { month: 'Juli 2025', title: 'Pemilihan Sekretaris UKM Riset 2025', total: '301' },
 ]
 
 export default function PemilihanPage() {
@@ -53,7 +59,7 @@ export default function PemilihanPage() {
 
             <div className="mt-8 grid gap-6 xl:grid-cols-2">
               {activeElections.map((item, index) => (
-                <article key={item.title} className="public-card overflow-hidden p-7">
+                <article key={item.title} className="public-card flex flex-col overflow-hidden p-7 transition-all duration-200 hover:-translate-y-1 hover:border-slate-300">
                   <div className="flex items-start justify-between gap-4">
                     <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">{item.phase}</span>
                     <span className="text-[11px] uppercase tracking-[0.06em] text-slate-500">{item.deadline}</span>
@@ -72,14 +78,14 @@ export default function PemilihanPage() {
                     </div>
                   </div>
 
-                  <div className="mt-8 flex gap-3">
-                    <a href={index === 0 ? '/pemilihan/ketua-bem-2024/hasil' : '#'} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-5 text-[14px] font-medium text-white hover:bg-[#1E293B]">
+                  <div className="mt-auto pt-8 flex gap-3">
+                    <Link href={item.href} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-5 text-[14px] font-medium text-white hover:bg-[#1E293B]">
                       {item.primary}
                       <ArrowRight className="h-4 w-4" />
-                    </a>
-                    <a href={index === 0 ? '/pemilihan/ketua-bem-2024/hasil' : '#'} className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
+                    </Link>
+                    <Link href={item.detailHref} className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
                       Detail
-                    </a>
+                    </Link>
                   </div>
                 </article>
               ))}
@@ -93,14 +99,16 @@ export default function PemilihanPage() {
             </div>
             <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-[repeat(2,minmax(0,490px))]">
               {upcoming.map((item) => (
-                <article key={item} className="public-card p-7">
+                <article key={item.title} className="public-card flex flex-col p-7">
                   <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-amber-700">Menunggu</span>
-                  <h3 className="mt-8 max-w-[20ch] text-[24px] font-semibold leading-tight text-slate-900">{item}</h3>
+                  <h3 className="mt-8 max-w-[20ch] text-[24px] font-semibold leading-tight text-slate-900">{item.title}</h3>
                   <p className="mt-4 text-[16px] text-slate-500">Jadwal: 15 Okt 2024 - 17 Okt 2024</p>
-                  <a href="#" className="mt-8 inline-flex items-center gap-2 text-[14px] font-semibold text-slate-900">
-                    Lihat Detail
-                    <ArrowRight className="h-4 w-4" />
-                  </a>
+                  <div className="mt-auto pt-8">
+                    <Link href={item.href} className="inline-flex items-center gap-2 text-[14px] font-semibold text-slate-900">
+                      Lihat Detail
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
                 </article>
               ))}
             </div>
@@ -127,7 +135,7 @@ export default function PemilihanPage() {
                       <p className="mt-2 text-[18px] font-semibold text-slate-900">{item.total}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <a href="/pemilihan/ketua-bem-2024/hasil" className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-50">Detail Hasil</a>
+                      <Link href="/pemilihan/ukm-riset-divisi-inovasi-2025/hasil" className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-50">Detail Hasil</Link>
                       <a href="https://sepolia.basescan.org" target="_blank" rel="noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-900 hover:bg-slate-50">
                         <Download className="h-4 w-4" />
                       </a>

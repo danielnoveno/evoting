@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Building, User, FileText, Vote, AlertTriangle, HelpCircle } from 'lucide-react'
+import { Search, User, FileText, Vote, HelpCircle, ShieldCheck, Users, AlertTriangle } from 'lucide-react'
+import { sharedDummyContext } from '@/lib/dummy-shared-context'
 
-export type CommandPaletteRole = 'superadmin' | 'admin' | 'voter'
+export type CommandPaletteRole = 'admin' | 'voter' | 'superadmin'
 
 interface CommandPaletteProps {
   open: boolean
@@ -17,29 +18,30 @@ interface SearchItem {
   title: string
   description?: string
   category: string
-  icon: any
+  icon: typeof Search
   href: string
 }
 
-const mockSuperadminData: SearchItem[] = [
-  { id: 'sa1', title: 'HIMAFORKA FTI UAJY', description: '0x71C...4f21', category: 'Institusi', icon: Building, href: '/superadmin/manajemen-admin/adm-001' },
-  { id: 'sa2', title: 'BEM UGM', description: '0x32B...9c82', category: 'Institusi', icon: Building, href: '/superadmin/manajemen-admin/adm-002' },
-  { id: 'sa3', title: 'Pemilihan Ketua HIMAFORKA 2026', description: 'Status: Aktif', category: 'Pemilihan', icon: Vote, href: '/superadmin/manajemen-pemilihan' },
-  { id: 'sa4', title: 'Force Close Contract', description: 'Log: 0x88F...1e11', category: 'Risk Activity', icon: AlertTriangle, href: '/superadmin/risk-activity' },
-]
-
 const mockAdminData: SearchItem[] = [
-  { id: 'a1', title: 'Budi Santoso', description: 'Kandidat #1 - Pemilihan Ketua', category: 'Kandidat', icon: User, href: '/admin/manajemen-pemilihan' },
-  { id: 'a2', title: 'Pemilihan Ketua HIMAFORKA 2026', description: 'Fase: Commit', category: 'Pemilihan', icon: Vote, href: '/admin/manajemen-pemilihan' },
+  { id: 'a1', title: sharedDummyContext.candidates[0].name, description: 'Kandidat #1 - Pemilihan Koordinator', category: 'Kandidat', icon: User, href: `/admin/manajemen-pemilihan/${sharedDummyContext.electionId}` },
+  { id: 'a2', title: sharedDummyContext.proposalTitle, description: 'Fase: Commit', category: 'Pemilihan', icon: Vote, href: `/admin/manajemen-pemilihan/${sharedDummyContext.electionId}` },
   { id: 'a3', title: '0x8f2a...d3e1', description: 'Pemilih Terdaftar', category: 'Voters', icon: User, href: '/admin' },
-  { id: 'a4', title: 'Proposal Dana BEM', description: 'Menunggu Persetujuan', category: 'Proposal', icon: FileText, href: '/admin/daftar-proposal' },
+  { id: 'a4', title: sharedDummyContext.proposalTitle, description: 'Proposal utama UKM Riset', category: 'Proposal', icon: FileText, href: `/admin/daftar-proposal/${sharedDummyContext.proposalId}` },
 ]
 
 const mockVoterData: SearchItem[] = [
-  { id: 'v1', title: 'Pemilihan Ketua HIMAFORKA 2026', description: 'Sedang Berlangsung', category: 'Pemilihan', icon: Vote, href: '/pemilih/pemilihan-aktif' },
-  { id: 'v2', title: 'Budi Santoso', description: 'Kandidat Calon Ketua', category: 'Kandidat', icon: User, href: '/pemilih/pemilihan-aktif' },
+  { id: 'v1', title: sharedDummyContext.proposalTitle, description: 'Sedang Berlangsung', category: 'Pemilihan', icon: Vote, href: `/pemilih/pemilihan/${sharedDummyContext.electionId}/commit` },
+  { id: 'v2', title: sharedDummyContext.candidates[0].name, description: 'Kandidat Koordinator', category: 'Kandidat', icon: User, href: `/pemilih/pemilihan/${sharedDummyContext.electionId}/commit` },
   { id: 'v3', title: 'Cara Menghubungkan Dompet', description: 'Panduan Pengguna', category: 'Bantuan', icon: HelpCircle, href: '/pemilih/bantuan' },
   { id: 'v4', title: 'Kenapa Gas Fee Gagal?', description: 'Panduan Pengguna', category: 'Bantuan', icon: HelpCircle, href: '/pemilih/bantuan' },
+]
+
+const mockSuperadminData: SearchItem[] = [
+  { id: 's1', title: 'Dian Sastrowardoyo', description: 'Admin aktif dengan akses global', category: 'Admin', icon: Users, href: '/superadmin/manajemen-admin' },
+  { id: 's2', title: sharedDummyContext.proposalTitle, description: 'Ruang aktif UKM Riset dan Inovasi', category: 'Pemilihan', icon: Vote, href: `/superadmin/manajemen-pemilihan/${sharedDummyContext.electionId}/moderasi` },
+  { id: 's3', title: sharedDummyContext.proposalTitle, description: 'Proposal utama untuk review superadmin', category: 'Proposal', icon: FileText, href: `/superadmin/manajemen-proposal/${sharedDummyContext.proposalId}` },
+  { id: 's4', title: 'Aktivitas mencurigakan', description: 'Deteksi anomali pada ruang voting', category: 'Keamanan', icon: AlertTriangle, href: '/superadmin/risk-activity' },
+  { id: 's5', title: 'Audit log jaringan', description: 'Riwayat event tervalidasi secara global', category: 'Audit', icon: ShieldCheck, href: '/superadmin/audit-log' },
 ]
 
 export function CommandPalette({ open, onOpenChange, role }: CommandPaletteProps) {
@@ -73,8 +75,8 @@ export function CommandPalette({ open, onOpenChange, role }: CommandPaletteProps
   if (!open) return null
 
   let dataSource: SearchItem[] = []
-  if (role === 'superadmin') dataSource = mockSuperadminData
-  else if (role === 'admin') dataSource = mockAdminData
+  if (role === 'admin') dataSource = mockAdminData
+  else if (role === 'superadmin') dataSource = mockSuperadminData
   else if (role === 'voter') dataSource = mockVoterData
 
   const filteredData = query === '' 

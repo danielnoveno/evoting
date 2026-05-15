@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { sharedDummyContext } from '@/lib/dummy-shared-context'
 
 export type VoterElectionPhase = 'registration' | 'commit' | 'reveal' | 'ended'
 
@@ -66,7 +67,7 @@ export interface VoterStore {
   selectedProofElectionId: string
 }
 
-const STORAGE_KEY = 'votein-voter-mock-store'
+const STORAGE_KEY = 'votein-voter-mock-store-v2'
 const BASESCAN_ROOT = 'https://sepolia.basescan.org'
 
 const voterStoreSeed: VoterStore = {
@@ -77,19 +78,19 @@ const voterStoreSeed: VoterStore = {
     bio: 'Mahasiswa aktif yang rutin berpartisipasi dalam pemilihan digital organisasi kampus.',
     avatarUrl: 'https://i.pravatar.cc/320?img=12',
   },
-  selectedProofElectionId: 'anggota-senat-universitas',
+  selectedProofElectionId: 'ukm-riset-divisi-inovasi-2025',
   elections: [
     {
-      id: 'ketua-umum-bem-2024',
-      title: 'Ketua Umum BEM 2024',
-      organization: 'HIMAFORKA · FTI UAJY',
-      summary: 'Pilih kandidat ketua umum dengan alur commit-reveal yang menjaga kerahasiaan suara hingga fase reveal dibuka.',
+      id: sharedDummyContext.electionId,
+      title: sharedDummyContext.proposalTitle,
+      organization: sharedDummyContext.organization,
+      summary: sharedDummyContext.summary,
       phase: 'commit',
-      deadlineIso: '2026-05-10T18:00:00+07:00',
-      totalParticipants: 15284,
-      committedCount: 9821,
+      deadlineIso: sharedDummyContext.commitDeadlineIso,
+      totalParticipants: sharedDummyContext.voterEstimate,
+      committedCount: 218,
       revealedCount: 0,
-      quorumPercent: 64,
+      quorumPercent: 67,
       candidateCount: 3,
       selectedCandidateId: null,
       committedCandidateId: null,
@@ -99,38 +100,20 @@ const voterStoreSeed: VoterStore = {
       voterIdentifier: 'VOTER-SHA-9921-X',
       lastTransactionLabel: 'Belum ada commit dari akun ini.',
       supportCopy: 'Jika pilihan berubah sebelum dikirim, Anda masih bisa kembali dan memilih kandidat lain.',
-      candidates: [
-        {
-          id: 'c1',
-          name: 'Andhika Pratama',
-          faculty: 'Sistem Informasi',
-          vision: 'Mewujudkan ekosistem digital yang inklusif dan transparan bagi seluruh lapisan mahasiswa melalui inovasi teknologi yang berkelanjutan.',
-          mission: ['Digitalisasi birokrasi total.', 'Pengembangan talenta IT lokal.'],
-          votes: 0,
-        },
-        {
-          id: 'c2',
-          name: 'Siti Rahayu',
-          faculty: 'Informatika',
-          vision: 'Membangun harmoni sosial melalui pemerataan akses ekonomi dan pendidikan di seluruh wilayah nusantara.',
-          mission: ['Beasiswa 1 juta siswa berprestasi.', 'Revitalisasi pasar tradisional modern.'],
-          votes: 0,
-        },
-        {
-          id: 'c3',
-          name: 'Budi Sudarsono',
-          faculty: 'Teknik Industri',
-          vision: 'Transformasi ketahanan pangan nasional berbasis kearifan lokal dan teknologi tepat guna untuk kesejahteraan petani.',
-          mission: ['Jaminan harga jual komoditas tani.', 'Modernisasi alat pertanian desa.'],
-          votes: 0,
-        },
-      ],
+      candidates: sharedDummyContext.candidates.map((candidate) => ({
+        id: candidate.id,
+        name: candidate.name,
+        faculty: candidate.faculty,
+        vision: candidate.vision,
+        mission: [...candidate.mission],
+        votes: 0,
+      })),
     },
     {
-      id: 'votasi-anggaran-it',
-      title: 'Votasi Anggaran Proyek IT',
-      organization: 'Laboratorium Informatika',
-      summary: 'Berikan suara untuk alokasi dana infrastruktur server semester ganjil dengan bukti audit yang bisa ditinjau publik.',
+      id: 'ukm-riset-publikasi-2026',
+      title: 'Voting Kebijakan Publikasi Karya UKM Riset',
+      organization: sharedDummyContext.organization,
+      summary: 'Berikan suara untuk kebijakan publikasi karya anggota dengan bukti audit yang bisa ditinjau publik.',
       phase: 'reveal',
       deadlineIso: '2026-05-11T10:00:00+07:00',
       totalParticipants: 842,
@@ -180,9 +163,9 @@ const voterStoreSeed: VoterStore = {
       ],
     },
     {
-      id: 'pemilihan-duta-kampus',
-      title: 'Pemilihan Duta Kampus',
-      organization: 'BEM Fakultas Teknik',
+      id: 'ukm-riset-sekretaris-2026',
+      title: 'Pemilihan Sekretaris UKM Riset 2026',
+      organization: sharedDummyContext.organization,
       summary: 'Pendaftaran kandidat masih dibuka. Voting akan dimulai saat fase commit dibuka oleh admin.',
       phase: 'registration',
       deadlineIso: '2026-05-14T14:00:00+07:00',
@@ -219,9 +202,9 @@ const voterStoreSeed: VoterStore = {
       ],
     },
     {
-      id: 'anggota-senat-universitas',
-      title: 'Pemilihan Anggota Senat Universitas',
-      organization: 'Universitas Atma Jaya Yogyakarta',
+      id: 'ukm-riset-divisi-inovasi-2025',
+      title: 'Pemilihan Kepala Divisi Inovasi UKM Riset 2025',
+      organization: sharedDummyContext.organization,
       summary: 'Hasil final telah diumumkan dan bukti sertifikat digital tersedia untuk diunduh.',
       phase: 'ended',
       deadlineIso: '2026-04-15T09:42:00+07:00',

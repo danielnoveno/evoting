@@ -23,7 +23,15 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
   const election = findElection(store, params.id)
 
   if (!election) {
-    return <VoterShell><div className="rounded-[32px] border border-slate-200 bg-white p-8 text-[15px] text-slate-600">Data pemilihan tidak tersedia.</div></VoterShell>
+    return (
+      <VoterShell>
+        <section className="rounded-[32px] border border-slate-200 bg-white p-8 text-[15px] text-slate-600">
+          <h1 className="text-[28px] font-semibold text-slate-900 sm:text-[32px]">Data pemilihan tidak tersedia</h1>
+          <p className="mt-3 leading-8">Halaman reveal ini tidak menemukan data pemilihan yang diminta pada mode dummy saat ini.</p>
+          <Link href="/pemilih" className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-black px-5 text-[14px] font-medium text-white">Kembali ke Beranda</Link>
+        </section>
+      </VoterShell>
+    )
   }
 
   const committedCandidate = election.candidates.find((candidate) => candidate.id === election.committedCandidateId)

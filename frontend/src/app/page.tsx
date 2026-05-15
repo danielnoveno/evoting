@@ -1,5 +1,7 @@
 import { ArrowRight, Globe, LockKeyhole, SquarePen, Zap } from 'lucide-react'
+import Link from 'next/link'
 import { PublicPage } from '@/components/public/site-shell'
+import { sharedDummyContext } from '@/lib/dummy-shared-context'
 
 const auditItems = [
   { hash: '0x7a2...4f9e', label: 'Suara Terverifikasi', time: 'Baru saja' },
@@ -25,17 +27,17 @@ export default function HomePage() {
             <p className="mt-8 max-w-[720px] text-[18px] leading-9 text-slate-600">
               Keamanan kelas institusi bertemu dengan transparansi yang dapat diaudit. Platform e-voting ini
               mengubah kepercayaan abstrak menjadi jejak kriptografis yang tercatat permanen untuk konteks
-              organisasi mahasiswa.
+              organisasi mahasiswa seperti {sharedDummyContext.organizationShort}.
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-              <a href="/pemilihan" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-6 text-[14px] font-medium text-white hover:bg-[#1E293B]">
+              <Link href={`/pemilih/pemilihan/${sharedDummyContext.electionId}/commit`} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-6 text-[14px] font-medium text-white hover:bg-[#1E293B]">
                 Mulai Memilih
                 <ArrowRight className="h-4 w-4" />
-              </a>
-              <a href="/cara-kerja" className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-6 text-[14px] font-medium text-slate-900 hover:bg-white">
+              </Link>
+              <Link href="/cara-kerja" className="inline-flex h-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 px-6 text-[14px] font-medium text-slate-900 hover:bg-white">
                 Pelajari Lebih Lanjut
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -122,10 +124,10 @@ export default function HomePage() {
               <p className="mt-4 max-w-[720px] text-[16px] leading-8 text-slate-300">
                 Kami menyembunyikan kompleksitas blockchain di balik antarmuka yang intuitif. Memilih semudah mengirim pesan, dapat diakses oleh siapa saja tanpa pengetahuan teknis.
               </p>
-              <a href="/cara-kerja" className="mt-8 inline-flex items-center gap-2 text-[14px] font-medium text-white hover:text-slate-200">
+              <Link href="/cara-kerja" className="mt-8 inline-flex items-center gap-2 text-[14px] font-medium text-white hover:text-slate-200">
                 Coba Demo UX
                 <ArrowRight className="h-4 w-4" />
-              </a>
+              </Link>
             </article>
           </div>
         </div>

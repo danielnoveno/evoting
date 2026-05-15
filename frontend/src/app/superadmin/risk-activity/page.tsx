@@ -1,131 +1,142 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Search, Filter, AlertTriangle, ShieldAlert } from 'lucide-react'
-import { SuperadminShell } from '@/components/superadmin/superadmin-shell'
-import { superadminRiskActivityContent } from '@/lib/dummy-superadmin-content'
+import { AlertTriangle, BarChart3, ShieldCheck } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useToast } from '@/components/ui/toast-provider'
+import { SuperadminEmptyState, SuperadminInteractiveCard, SuperadminSectionCard, SuperadminShell } from '@/components/superadmin/superadmin-shell'
+import { superadminRiskData } from '@/lib/superadmin-dummy-data'
+import { useSuperadminRiskAlertsStore } from '@/lib/superadmin-mock-store'
 
-export default function RiskActivityPage() {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [severityFilter, setSeverityFilter] = useState<'Semua' | 'Critical' | 'High' | 'Medium'>('Semua')
-
-  const filteredLogs = useMemo(() => {
-    return superadminRiskActivityContent.logs.filter((log) => {
-      const matchSearch = log.event.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          log.actor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          log.description.toLowerCase().includes(searchQuery.toLowerCase())
-      
-      const matchSeverity = severityFilter === 'Semua' || log.severity === severityFilter
-
-      return matchSearch && matchSeverity
-    })
-  }, [searchQuery, severityFilter])
-
-  const toggleSeverityFilter = () => {
-    if (severityFilter === 'Semua') setSeverityFilter('Critical')
-    else if (severityFilter === 'Critical') setSeverityFilter('High')
-    else if (severityFilter === 'High') setSeverityFilter('Medium')
-    else setSeverityFilter('Semua')
-  }
+export default function SuperadminRiskActivityPage() {
+  const router = useRouter()
+  const { showToast } = useToast()
+  const { alerts, setAlerts } = useSuperadminRiskAlertsStore()
+  const [blockedAlertId, setBlockedAlertId] = useState<string | null>(null)
 
   return (
     <SuperadminShell>
-      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-red-600">
-            <ShieldAlert className="h-7 w-7" />
+      <section>
+        <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">{superadminRiskData.title}</h1>
+        <p className="mt-3 text-[16px] text-slate-600">{superadminRiskData.description}</p>
+      </section>
+
+      <section className="mt-8 grid gap-5 xl:grid-cols-3">
+        {superadminRiskData.metrics.map((metric) => (
+          <article key={metric.id} className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+            <p className="text-[12px] uppercase tracking-[0.08em] text-slate-500">{metric.label}</p>
+            <div className="mt-5 flex items-end gap-3">
+              <p className={`text-[54px] font-semibold leading-none tracking-[-0.04em] ${metric.tone === 'danger' ? 'text-red-700' : 'text-slate-900'}`}>{metric.value}</p>
+              {metric.suffix ? <span className="pb-1 text-[18px] font-medium text-slate-600">{metric.suffix}</span> : null}
+              {metric.accent ? <span className="rounded-xl bg-red-50 px-2 py-1 text-[14px] font-semibold text-red-600">{metric.accent}</span> : null}
+            </div>
+            <p className={`mt-5 text-[15px] ${metric.tone === 'success' ? 'text-emerald-500' : 'text-slate-600'}`}>{metric.note}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_520px]">
+        <div>
+          <h2 className="text-[20px] font-semibold text-slate-900">Suspicious Activity Feed</h2>
+          <div className="mt-6 space-y-5">
+            {alerts.length > 0 ? alerts.map((alert) => (
+              <SuperadminInteractiveCard key={alert.id} onClick={() => router.push('/superadmin/audit-log')} className={`bg-slate-100 p-6 ${alert.tone === 'danger' ? 'border-l-4 border-red-600' : 'border-l-4 border-amber-500'}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex gap-4">
+                    <div className={`mt-1 flex h-10 w-10 items-center justify-center rounded-full ${alert.tone === 'danger' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
+                      {alert.tone === 'danger' ? <AlertTriangle className="h-5 w-5" /> : <BarChart3 className="h-5 w-5" />}
+                    </div>
+                    <div>
+                      <h3 className="text-[18px] font-semibold text-slate-900">{alert.title}</h3>
+                      <p className="mt-2 max-w-[48ch] text-[15px] leading-7 text-slate-600">{alert.description}</p>
+                    </div>
+                  </div>
+                  <span className="font-mono text-[13px] text-slate-500">{alert.time}</span>
+                </div>
+
+                <div className="mt-5 rounded-[18px] bg-white px-4 py-3 font-mono text-[15px] text-slate-600">
+                  {alert.actorLabel}: {alert.actorValue}
+                </div>
+
+                <div className="mt-4 flex gap-3">
+                  {alert.tone === 'danger' ? (
+                    <button type="button" onClick={(event) => {
+                      event.stopPropagation()
+                      setBlockedAlertId(alert.id)
+                    }} className="inline-flex h-10 items-center justify-center rounded-2xl bg-[#0B1120] px-5 text-[15px] font-medium text-white hover:bg-slate-800">
+                      Blokir Akses
+                    </button>
+                  ) : null}
+                  <button type="button" onClick={(event) => {
+                    event.stopPropagation()
+                    showToast({ tone: 'info', title: 'Detail log dibuka', description: `Log dummy untuk ${alert.title} ditampilkan.` })
+                  }} className="inline-flex h-10 items-center justify-center rounded-2xl bg-slate-200 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-300">
+                    Lihat Detail Log
+                  </button>
+                </div>
+              </SuperadminInteractiveCard>
+            )) : <SuperadminEmptyState title="Tidak ada alert aktif" description="Semua anomali demo sudah ditangani. Coba muat ulang seed data jika ingin melihat skenario alert lagi." />}
           </div>
+        </div>
+
+        <div className="space-y-6">
           <div>
-            <h1 className="text-[32px] font-semibold tracking-[-0.03em] text-slate-900">
-              {superadminRiskActivityContent.header.title}
-            </h1>
-            <p className="mt-2 text-[16px] text-slate-500">
-              {superadminRiskActivityContent.header.description}
-            </p>
+            <h2 className="text-[20px] font-semibold text-slate-900">Neural Threat Summary</h2>
+            <section className="mt-4 rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+              <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                <p className="text-[16px] text-slate-700">Status Model</p>
+                <span className="rounded-xl bg-emerald-50 px-3 py-1 text-[14px] font-semibold text-emerald-500">{superadminRiskData.neuralSummary.status}</span>
+              </div>
+              <div className="pt-5">
+                <div className="flex items-center justify-between gap-4 text-[15px] text-slate-700">
+                  <span>Tingkat Kepercayaan</span>
+                  <span>{superadminRiskData.neuralSummary.confidence}</span>
+                </div>
+                <div className="mt-4 h-1.5 rounded-full bg-slate-200">
+                  <div className="h-1.5 w-[94%] rounded-full bg-black" />
+                </div>
+                <p className="mt-6 text-[15px] leading-8 text-slate-600">{superadminRiskData.neuralSummary.description}</p>
+              </div>
+            </section>
+          </div>
+
+          <div>
+            <h2 className="text-[20px] font-semibold text-slate-900">Regional Risk Profile</h2>
+            <section className="mt-4 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+              <div className="relative h-[240px] bg-[radial-gradient(circle_at_center,#7c7c7c_0%,#4b4b4b_45%,#2e2e2e_100%)]">
+                <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(#ffffff_1px,transparent_1px)] [background-size:14px_14px]" />
+                <span className="absolute left-[34%] top-[22%] h-4 w-7 rounded-full bg-red-600" />
+                <span className="absolute left-[72%] top-[62%] h-3 w-5 rounded-full bg-amber-400" />
+                <span className="absolute left-[58%] top-[84%] h-2.5 w-8 rounded-full bg-white/40 blur-sm" />
+              </div>
+              <div className="p-5">
+                <div className="flex items-center gap-3 text-[18px] font-semibold text-slate-900">
+                  <span className="h-3 w-3 rounded-full bg-red-600" />
+                  {superadminRiskData.regionProfile.region}
+                </div>
+                <p className="mt-4 text-[15px] leading-7 text-slate-600">{superadminRiskData.regionProfile.description}</p>
+              </div>
+            </section>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="mt-8 rounded-[32px] border border-slate-200 bg-white p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex h-12 w-full max-w-[360px] items-center gap-3 rounded-2xl bg-slate-100 px-4">
-            <Search className="h-5 w-5 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari log atau wallet..."
-              className="flex-1 bg-transparent text-[15px] text-slate-900 placeholder:text-slate-500 focus:outline-none"
-            />
-          </div>
-          <button 
-            onClick={toggleSeverityFilter}
-            className={`inline-flex h-12 items-center justify-center gap-2 rounded-2xl border px-6 text-[15px] font-medium transition-colors ${
-              severityFilter !== 'Semua' ? 'border-black bg-black text-white' : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <Filter className="h-5 w-5" />
-            {severityFilter === 'Semua' ? 'Filter Severity' : `Severity: ${severityFilter}`}
-          </button>
-        </div>
-
-        <div className="mt-6 overflow-x-auto">
-          <table className="w-full text-left text-[15px]">
-            <thead>
-              <tr className="border-b border-slate-100 text-[13px] font-semibold uppercase tracking-[0.06em] text-slate-400">
-                <th className="pb-4 pl-4 font-medium">Event / Waktu</th>
-                <th className="pb-4 font-medium">Aktor</th>
-                <th className="pb-4 font-medium">Deskripsi</th>
-                <th className="pb-4 font-medium">Severity</th>
-                <th className="pb-4 pr-4 font-medium text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-500">Tidak ada log aktivitas yang cocok dengan pencarian.</td>
-                </tr>
-              ) : (
-                filteredLogs.map((log) => (
-                  <tr key={log.id} className="group transition-colors hover:bg-slate-50">
-                    <td className="py-5 pl-4 align-top w-[220px]">
-                      <div className="font-semibold text-slate-900">{log.event}</div>
-                      <div className="text-[13px] text-slate-500 mt-1">{log.timestamp}</div>
-                    </td>
-                    <td className="py-5 align-top">
-                      <span className="font-mono text-slate-600 bg-slate-100 px-2 py-1 rounded-md text-[13px] inline-block">
-                        {log.actor}
-                      </span>
-                    </td>
-                    <td className="py-5 align-top max-w-[300px]">
-                      <p className="text-[14px] text-slate-700 leading-relaxed">{log.description}</p>
-                    </td>
-                    <td className="py-5 align-top">
-                      <span className={`inline-flex items-center gap-1.5 text-[13px] font-medium ${
-                        log.severity === 'Critical' ? 'text-red-600 bg-red-50 px-2.5 py-1 rounded-md' :
-                        log.severity === 'High' ? 'text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md' :
-                        'text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md'
-                      }`}>
-                        <AlertTriangle className="h-3 w-3" />
-                        {log.severity}
-                      </span>
-                    </td>
-                    <td className="py-5 pr-4 text-right align-top">
-                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.06em] ${
-                        log.status === 'Resolved' ? 'bg-emerald-50 text-emerald-700' :
-                        log.status === 'Mitigated' ? 'bg-blue-50 text-blue-700' :
-                        'bg-red-50 text-red-700'
-                      }`}>
-                        {log.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <ConfirmDialog
+        open={blockedAlertId !== null}
+        title="Blokir akses aktor ini?"
+        description="Aksi ini hanya simulasi untuk demo threat monitoring. Sistem nyata perlu validasi tambahan sebelum pemblokiran permanen."
+        confirmLabel="Ya, Blokir"
+        tone="danger"
+        onCancel={() => setBlockedAlertId(null)}
+        onConfirm={() => {
+          if (blockedAlertId) {
+            setAlerts((current) => current.filter((alert) => alert.id !== blockedAlertId))
+          }
+          showToast({ tone: 'success', title: 'Akses berhasil diblokir', description: 'Mitigasi dummy berhasil diterapkan pada alert terpilih.' })
+          setBlockedAlertId(null)
+        }}
+      />
     </SuperadminShell>
   )
 }
