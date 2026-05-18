@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/toast-provider'
 import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { superadminPlatformData } from '@/lib/superadmin-dummy-data'
 import { useSuperadminPlatformStore } from '@/lib/superadmin-mock-store'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 export default function SuperadminPlatformSettingsPage() {
   const { showToast } = useToast()
@@ -22,12 +23,14 @@ export default function SuperadminPlatformSettingsPage() {
 
   return (
     <SuperadminShell>
-      <section>
-        <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">{superadminPlatformData.title}</h1>
-        <p className="mt-3 text-[16px] text-slate-600">{superadminPlatformData.description}</p>
-      </section>
+      <ScrollReveal variant="fade-up" duration={800}>
+        <section>
+          <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">{superadminPlatformData.title}</h1>
+          <p className="mt-3 text-[16px] text-slate-600">{superadminPlatformData.description}</p>
+        </section>
+      </ScrollReveal>
 
-      <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <div className="space-y-6">
           <SuperadminSectionCard>
             <h2 className="text-[18px] font-semibold text-slate-900">Profil Saya</h2>
@@ -183,24 +186,26 @@ export default function SuperadminPlatformSettingsPage() {
             </div>
           </SuperadminSectionCard>
         </div>
-      </section>
+      </StaggerContainer>
 
-      <section className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <button type="button" onClick={() => {
-          setTwoFactorEnabled(platform.twoFactorEnabled)
-          setPlatformName(platform.platformName)
-          setLanguage(platform.defaultLanguage)
-          showToast({ tone: 'info', title: 'Perubahan dibatalkan', description: 'Form dikembalikan ke nilai tersimpan saat ini.' })
-        }} className="inline-flex h-12 items-center justify-center rounded-2xl px-6 text-[15px] font-medium text-slate-900">
-          Batal
-        </button>
-        <SuperadminToolbarButton variant="primary" onClick={() => {
-          setPlatform((current) => ({ ...current, platformName, defaultLanguage: language }))
-          showToast({ tone: 'success', title: 'Perubahan disimpan', description: 'Pengaturan platform dummy berhasil diperbarui.' })
-        }}>
-          Simpan Perubahan
-        </SuperadminToolbarButton>
-      </section>
+      <ScrollReveal variant="fade-up" delay={200} duration={800}>
+        <section className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <button type="button" onClick={() => {
+            setTwoFactorEnabled(platform.twoFactorEnabled)
+            setPlatformName(platform.platformName)
+            setLanguage(platform.defaultLanguage)
+            showToast({ tone: 'info', title: 'Perubahan dibatalkan', description: 'Form dikembalikan ke nilai tersimpan saat ini.' })
+          }} className="inline-flex h-12 items-center justify-center rounded-2xl px-6 text-[15px] font-medium text-slate-900">
+            Batal
+          </button>
+          <SuperadminToolbarButton variant="primary" onClick={() => {
+            setPlatform((current) => ({ ...current, platformName, defaultLanguage: language }))
+            showToast({ tone: 'success', title: 'Perubahan disimpan', description: 'Pengaturan platform dummy berhasil diperbarui.' })
+          }}>
+            Simpan Perubahan
+          </SuperadminToolbarButton>
+        </section>
+      </ScrollReveal>
     </SuperadminShell>
   )
 }

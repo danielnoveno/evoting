@@ -14,6 +14,7 @@ import {
   SuperadminToolbarButton,
 } from '@/components/superadmin/superadmin-shell'
 import { useSuperadminAdminsStore } from '@/lib/superadmin-mock-store'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 export default function SuperadminAdminDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -44,43 +45,45 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
         <SuperadminBackButton href="/superadmin/manajemen-admin" label="Kembali ke Manajemen Admin" />
       </div>
 
-      <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)] md:p-8">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex items-center gap-5">
-            <div className="relative">
-              <div className="flex h-[124px] w-[124px] items-center justify-center rounded-full border border-slate-200 bg-slate-100">
-                <SuperadminAvatar initials={seedRecord.initials} />
+      <ScrollReveal variant="fade-up" duration={800}>
+        <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)] md:p-8">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex items-center gap-5">
+              <div className="relative">
+                <div className="flex h-[124px] w-[124px] items-center justify-center rounded-full border border-slate-200 bg-slate-100">
+                  <SuperadminAvatar initials={seedRecord.initials} />
+                </div>
+                <span className={`absolute bottom-2 right-2 h-5 w-5 rounded-full border-4 border-white ${enabled ? 'bg-emerald-500' : 'bg-slate-300'}`} />
               </div>
-              <span className={`absolute bottom-2 right-2 h-5 w-5 rounded-full border-4 border-white ${enabled ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+
+              <div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900">{seedRecord.name}</h1>
+                  <SuperadminStatusBadge status={enabled ? 'Aktif' : 'Nonaktif'} />
+                </div>
+                <div className="mt-3 flex items-center gap-2 text-[16px] text-slate-600">
+                  <Mail className="h-4 w-4" />
+                  {seedRecord.email}
+                </div>
+                <p className="mt-2 font-mono text-[15px] text-slate-400">ID Admin: {seedRecord.blockchainIdentity}</p>
+              </div>
             </div>
 
-            <div>
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900">{seedRecord.name}</h1>
-                <SuperadminStatusBadge status={enabled ? 'Aktif' : 'Nonaktif'} />
-              </div>
-              <div className="mt-3 flex items-center gap-2 text-[16px] text-slate-600">
-                <Mail className="h-4 w-4" />
-                {seedRecord.email}
-              </div>
-              <p className="mt-2 font-mono text-[15px] text-slate-400">ID Admin: {seedRecord.blockchainIdentity}</p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <SuperadminToolbarButton onClick={() => router.push(`/superadmin/manajemen-admin/${seedRecord.id}/edit`)}>
+                <Pencil className="h-4 w-4" />
+                Edit Profil
+              </SuperadminToolbarButton>
+              <SuperadminToolbarButton variant="primary" onClick={() => showToast({ tone: 'success', title: 'Log aktivitas dibuka', description: 'Silakan lihat tabel aktivitas terbaru di bawah.' })}>
+                <ShieldCheck className="h-4 w-4" />
+                Log Aktivitas
+              </SuperadminToolbarButton>
             </div>
           </div>
+        </section>
+      </ScrollReveal>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <SuperadminToolbarButton onClick={() => router.push(`/superadmin/manajemen-admin/${seedRecord.id}/edit`)}>
-              <Pencil className="h-4 w-4" />
-              Edit Profil
-            </SuperadminToolbarButton>
-            <SuperadminToolbarButton variant="primary" onClick={() => showToast({ tone: 'success', title: 'Log aktivitas dibuka', description: 'Silakan lihat tabel aktivitas terbaru di bawah.' })}>
-              <ShieldCheck className="h-4 w-4" />
-              Log Aktivitas
-            </SuperadminToolbarButton>
-          </div>
-        </div>
-      </section>
-
-      <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="space-y-6">
           <SuperadminSectionCard>
             <h2 className="flex items-center gap-3 text-[18px] font-semibold text-slate-900">
@@ -203,24 +206,26 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
             </div>
           </SuperadminSectionCard>
         </div>
-      </section>
+      </StaggerContainer>
 
-      <section className="mt-8 rounded-[32px] bg-[#161d31] p-6 text-white shadow-[0_16px_60px_rgba(15,23,42,0.18)]">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="rounded-2xl bg-white/10 p-3">
-              <ShieldCheck className="h-5 w-5" />
+      <ScrollReveal variant="fade-up" delay={200} duration={800}>
+        <section className="mt-8 rounded-[32px] bg-[#161d31] p-6 text-white shadow-[0_16px_60px_rgba(15,23,42,0.18)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="rounded-2xl bg-white/10 p-3">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-[18px] font-semibold">Identitas Terverifikasi Blockchain</h2>
+                <p className="mt-2 text-[14px] text-slate-300">Seluruh aktivitas profil ini dicatat secara permanen di ledger publik.</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-[18px] font-semibold">Identitas Terverifikasi Blockchain</h2>
-              <p className="mt-2 text-[14px] text-slate-300">Seluruh aktivitas profil ini dicatat secara permanen di ledger publik.</p>
+            <div className="rounded-2xl border border-white/10 bg-[#11182a] px-5 py-4 font-mono text-[14px] text-white">
+              verification hash: {seedRecord.blockchainIdentity}
             </div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-[#11182a] px-5 py-4 font-mono text-[14px] text-white">
-            verification hash: {seedRecord.blockchainIdentity}
-          </div>
-        </div>
-      </section>
+        </section>
+      </ScrollReveal>
 
       <ConfirmDialog
         open={deleteDialogOpen}

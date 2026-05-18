@@ -23,6 +23,7 @@ import { superadminAdminStatuses, superadminAdminTabs, type SuperadminAdminRecor
 import { useSuperadminAdminsStore } from '@/lib/superadmin-mock-store'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 type AdminTabKey = (typeof superadminAdminTabs)[number]['key']
 
@@ -125,49 +126,53 @@ function SuperadminAdminManagementContent() {
 
   return (
     <SuperadminShell>
-      <AppPageHeader
-        title="Manajemen Admin"
-        bottomContent={
-          <div className="flex items-center gap-8 border-b border-slate-200">
-            {superadminAdminTabs.map((tab) => (
-              <SuperadminTabButton key={tab.key} active={activeTab === tab.key} onClick={() => updateTab(tab.key)}>
-                {tab.label}
-              </SuperadminTabButton>
-            ))}
-          </div>
-        }
-        rightContent={
-          activeTab === 'daftar' ? (
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <SuperadminToolbarButton onClick={() => showToast({ tone: 'info', title: 'Unduh laporan belum aktif', description: 'Versi dummy belum menyiapkan ekspor file nyata.' })}>
-                <Download className="h-4 w-4" />
-                Unduh Laporan
-              </SuperadminToolbarButton>
-              <SuperadminToolbarButton variant="primary" onClick={() => updateTab('tambah')}>
-                <UserPlus className="h-4 w-4" />
-                Tambah Admin
-              </SuperadminToolbarButton>
+      <ScrollReveal variant="fade-up" duration={800}>
+        <AppPageHeader
+          title="Manajemen Admin"
+          bottomContent={
+            <div className="flex items-center gap-8 border-b border-slate-200">
+              {superadminAdminTabs.map((tab) => (
+                <SuperadminTabButton key={tab.key} active={activeTab === tab.key} onClick={() => updateTab(tab.key)}>
+                  {tab.label}
+                </SuperadminTabButton>
+              ))}
             </div>
-          ) : null
-        }
-      />
+          }
+          rightContent={
+            activeTab === 'daftar' ? (
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <SuperadminToolbarButton onClick={() => showToast({ tone: 'info', title: 'Unduh laporan belum aktif', description: 'Versi dummy belum menyiapkan ekspor file nyata.' })}>
+                  <Download className="h-4 w-4" />
+                  Unduh Laporan
+                </SuperadminToolbarButton>
+                <SuperadminToolbarButton variant="primary" onClick={() => updateTab('tambah')}>
+                  <UserPlus className="h-4 w-4" />
+                  Tambah Admin
+                </SuperadminToolbarButton>
+              </div>
+            ) : null
+          }
+        />
+      </ScrollReveal>
 
       {activeTab === 'daftar' ? (
         <>
-          <AppSectionCard className="mt-8">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-wrap gap-3">
-                {superadminAdminStatuses.map((status) => (
-                  <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
-                    {status}
-                  </SuperadminFilterChip>
-                ))}
+          <ScrollReveal variant="fade-up" delay={150} duration={800}>
+            <AppSectionCard className="mt-8">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap gap-3">
+                  {superadminAdminStatuses.map((status) => (
+                    <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
+                      {status}
+                    </SuperadminFilterChip>
+                  ))}
+                </div>
+                <p className="text-[15px] text-slate-600">Total: {filteredAdmins.length} admin</p>
               </div>
-              <p className="text-[15px] text-slate-600">Total: {filteredAdmins.length} admin</p>
-            </div>
-          </AppSectionCard>
+            </AppSectionCard>
+          </ScrollReveal>
 
-          <section className="mt-8 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+          <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
             <div className="hidden grid-cols-[1.3fr_1fr_0.8fr_1fr_56px] gap-4 border-b border-slate-100 px-6 py-5 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500 lg:grid">
               <span>Profil Admin</span>
               <span>Akses Space</span>
@@ -222,10 +227,10 @@ function SuperadminAdminManagementContent() {
                 <button type="button">3</button>
               </div>
             </div>
-          </section>
+          </StaggerContainer>
         </>
       ) : (
-        <div className="mt-8 space-y-6">
+        <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 space-y-6">
           <AppSectionCard>
             <SuperadminSectionHeading
               title="Informasi Admin"
@@ -324,7 +329,7 @@ function SuperadminAdminManagementContent() {
               Simpan Admin
             </SuperadminToolbarButton>
           </section>
-        </div>
+        </StaggerContainer>
       )}
     </SuperadminShell>
   )

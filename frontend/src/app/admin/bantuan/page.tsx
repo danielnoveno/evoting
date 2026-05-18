@@ -98,7 +98,7 @@ export default function AdminHelpPage() {
       </ScrollReveal>
 
       {/* Categories Grid */}
-      <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+      <StaggerContainer stagger={100} variant="fade-up" duration={700} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
         {adminHelpData.categories.map((category) => {
           const IconComponent = IconMap[category.iconKey as keyof typeof IconMap] || FileText
           
@@ -112,10 +112,11 @@ export default function AdminHelpPage() {
             </article>
           )
         })}
-      </section>
+      </StaggerContainer>
 
       {/* Main Content Split: FAQ & Sidebar */}
-      <section className="grid gap-10 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
+      <ScrollReveal variant="fade-up" delay={300} duration={800}>
+        <section className="grid gap-10 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px]">
         
         {/* Left Column: FAQ */}
         <div>
@@ -191,7 +192,8 @@ export default function AdminHelpPage() {
           </div>
         </div>
 
-      </section>
+        </section>
+      </ScrollReveal>
     </AdminShell>
   )
 }

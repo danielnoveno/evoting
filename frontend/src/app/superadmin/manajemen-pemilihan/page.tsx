@@ -13,6 +13,7 @@ import { superadminElectionFilters, type SuperadminElectionState } from '@/lib/s
 import { useSuperadminElectionsStore } from '@/lib/superadmin-mock-store'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 type ElectionFilter = (typeof superadminElectionFilters)[number]
 
@@ -46,22 +47,24 @@ export default function SuperadminElectionManagementPage() {
 
   return (
     <SuperadminShell>
-      <AppPageHeader
-        title="Manajemen Pemilihan"
-        description="Pantau dan kelola ruang pemilihan aktif di jaringan blockchain."
-        rightContent={
-          <div className="flex flex-wrap gap-3 rounded-[20px] bg-slate-100 p-2">
-            {superadminElectionFilters.map((filter) => (
-              <SuperadminFilterChip key={filter} active={activeFilter === filter} onClick={() => setActiveFilter(filter)}>
-                {filter}
-              </SuperadminFilterChip>
-            ))}
-          </div>
-        }
-      />
+      <ScrollReveal variant="fade-up" duration={800}>
+        <AppPageHeader
+          title="Manajemen Pemilihan"
+          description="Pantau dan kelola ruang pemilihan aktif di jaringan blockchain."
+          rightContent={
+            <div className="flex flex-wrap gap-3 rounded-[20px] bg-slate-100 p-2">
+              {superadminElectionFilters.map((filter) => (
+                <SuperadminFilterChip key={filter} active={activeFilter === filter} onClick={() => setActiveFilter(filter)}>
+                  {filter}
+                </SuperadminFilterChip>
+              ))}
+            </div>
+          }
+        />
+      </ScrollReveal>
 
       <AppSectionCard className="mt-8 bg-transparent border-0 shadow-none p-0 md:p-0">
-        <div className="grid gap-6 xl:grid-cols-2 2xl:grid-cols-4">
+        <StaggerContainer stagger={100} variant="fade-up" duration={600} className="grid gap-6 xl:grid-cols-2 2xl:grid-cols-4">
           {filteredElections.map((election) => (
             <SuperadminInteractiveCard
               key={election.id}
@@ -167,7 +170,7 @@ export default function SuperadminElectionManagementPage() {
               </div>
             </SuperadminInteractiveCard>
           ))}
-        </div>
+        </StaggerContainer>
       </AppSectionCard>
     </SuperadminShell>
   )

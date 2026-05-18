@@ -154,7 +154,7 @@ export const adminShellContent: AdminShellContent = {
   ],
   // brandTagline: 'E-Voting with blockchain system',
   brandTagline: '',
-  headerLabel: 'Dashboard utama admin',
+  headerLabel: 'Dashboard admin',
   searchPlaceholder: 'Cari data pemilihan...',
   profile: {
     name: sharedDummyContext.organizationShort,

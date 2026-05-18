@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/toast-provider'
 import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { superadminAuditLogData, type SuperadminAuditLogItem } from '@/lib/superadmin-dummy-data'
 import { useSuperadminAuditLogsStore } from '@/lib/superadmin-mock-store'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 function AuditIcon({ icon }: { icon: SuperadminAuditLogItem['icon'] }) {
   if (icon === 'vote') return <Vote className="h-4 w-4" />
@@ -90,7 +91,8 @@ export default function SuperadminAuditLogPage() {
 
   return (
     <SuperadminShell>
-      <section className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+      <ScrollReveal variant="fade-up" duration={800}>
+        <section className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="w-full max-w-[720px]">
           <label className="inline-flex h-12 w-full max-w-[340px] items-center gap-3 rounded-[6px] border border-slate-400 bg-slate-100 px-4">
             <Search className="h-4 w-4 text-slate-500" />
@@ -130,8 +132,9 @@ export default function SuperadminAuditLogPage() {
           </button>
         </div>
       </section>
+      </ScrollReveal>
 
-      <section className="mt-10 grid gap-6 xl:grid-cols-[520px_minmax(0,1fr)]">
+      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-10 grid gap-6 xl:grid-cols-[520px_minmax(0,1fr)]">
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
           <div className="h-1.5 w-full bg-emerald-500" />
           <div className="p-8">
@@ -188,9 +191,10 @@ export default function SuperadminAuditLogPage() {
             </div>
           </div>
         </SuperadminSectionCard>
-      </section>
+      </StaggerContainer>
 
-      <section className="mt-10 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+      <ScrollReveal variant="fade-up" delay={200} duration={800}>
+        <section className="mt-10 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
         <div className="flex items-center justify-between border-b border-slate-100 px-8 py-6">
           <p className="flex items-center gap-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-700">
             <span className="h-2.5 w-2.5 rounded-full bg-black" />
@@ -287,7 +291,8 @@ export default function SuperadminAuditLogPage() {
             Muat Lebih Banyak Log
           </button>
         </div>
-      </section>
+        </section>
+      </ScrollReveal>
 
       <ModalShell
         open={selectedLog !== null}

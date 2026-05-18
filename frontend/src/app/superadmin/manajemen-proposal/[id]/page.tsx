@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { superadminProposalDetails } from '@/lib/superadmin-dummy-data'
 import { useSuperadminProposalsStore } from '@/lib/superadmin-mock-store'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 type DecisionType = 'approve' | 'revise' | 'reject' | null
 
@@ -79,8 +80,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
 
   return (
     <SuperadminShell>
-      <SuperadminDetailIntro
-        backHref="/superadmin/manajemen-proposal"
+      <ScrollReveal variant="fade-up" duration={800}>
+        <SuperadminDetailIntro
+          backHref="/superadmin/manajemen-proposal"
         backLabel="Kembali ke Daftar"
         chips={(
           <>
@@ -120,8 +122,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           </>
         )}
       />
+      </ScrollReveal>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-4">
+      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-6 lg:grid-cols-4">
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Organisasi</p>
           <p className="mt-5 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">{proposal.organizationName}</p>
@@ -145,9 +148,10 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           <p className="mt-5 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">{proposal.documents.length}</p>
           <p className="mt-3 text-[15px] leading-7 text-slate-600">Berkas pendukung yang tersedia untuk diverifikasi.</p>
         </article>
-      </section>
+      </StaggerContainer>
 
-      <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_420px]">
+      <ScrollReveal variant="fade-up" delay={200} duration={800}>
+        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_420px]">
         <div className="space-y-6">
           <section className="rounded-[32px] border border-slate-200 bg-white p-7 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
             <div className="flex items-center gap-3">
@@ -318,6 +322,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           </SuperadminSectionCard>
         </div>
       </section>
+      </ScrollReveal>
 
       <ConfirmDialog
         open={decisionType !== null}

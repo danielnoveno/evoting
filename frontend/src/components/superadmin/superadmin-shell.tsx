@@ -20,7 +20,6 @@ export function SuperadminShell({ children }: { children: ReactNode }) {
     <ConsoleShell
       role="superadmin"
       headerLabel={superadminShellContent.headerLabel}
-      brandTagline={superadminShellContent.brandTagline}
       searchPlaceholder={superadminShellContent.searchPlaceholder}
       sidebarItems={sidebarItems}
       profile={{

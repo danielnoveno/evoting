@@ -10,6 +10,7 @@ import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { superadminRiskData } from '@/lib/superadmin-dummy-data'
 import { useSuperadminRiskAlertsStore } from '@/lib/superadmin-mock-store'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 export default function SuperadminRiskActivityPage() {
   const router = useRouter()
@@ -19,12 +20,14 @@ export default function SuperadminRiskActivityPage() {
 
   return (
     <SuperadminShell>
-      <AppPageHeader
-        title={superadminRiskData.title}
-        description={superadminRiskData.description}
-      />
+      <ScrollReveal variant="fade-up" duration={800}>
+        <AppPageHeader
+          title={superadminRiskData.title}
+          description={superadminRiskData.description}
+        />
+      </ScrollReveal>
 
-      <section className="mt-8 grid gap-5 xl:grid-cols-3">
+      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-5 xl:grid-cols-3">
         {superadminRiskData.metrics.map((metric) => (
           <article key={metric.id} className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
             <p className="text-[12px] uppercase tracking-[0.08em] text-slate-500">{metric.label}</p>
@@ -36,9 +39,10 @@ export default function SuperadminRiskActivityPage() {
             <p className={`mt-5 text-[15px] ${metric.tone === 'success' ? 'text-emerald-500' : 'text-slate-600'}`}>{metric.note}</p>
           </article>
         ))}
-      </section>
+      </StaggerContainer>
 
-      <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_520px]">
+      <ScrollReveal variant="fade-up" delay={200} duration={800}>
+        <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_520px]">
         <div>
           <h2 className="text-[20px] font-semibold text-slate-900">Suspicious Activity Feed</h2>
           <div className="mt-6 space-y-5">
@@ -122,7 +126,8 @@ export default function SuperadminRiskActivityPage() {
             </AppSectionCard>
           </div>
         </div>
-      </section>
+        </section>
+      </ScrollReveal>
 
       <ConfirmDialog
         open={blockedAlertId !== null}

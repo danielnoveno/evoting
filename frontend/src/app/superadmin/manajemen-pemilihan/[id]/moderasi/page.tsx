@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/toast-provider'
 import { sharedDummyContext } from '@/lib/dummy-shared-context'
 import { type SuperadminElectionState } from '@/lib/superadmin-dummy-data'
 import { useSuperadminElectionsStore } from '@/lib/superadmin-mock-store'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 type ModerationDetail = {
   network: string
@@ -155,8 +156,9 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
 
   return (
     <SuperadminShell>
-      <SuperadminDetailIntro
-        backHref="/superadmin/manajemen-pemilihan"
+      <ScrollReveal variant="fade-up" duration={800}>
+        <SuperadminDetailIntro
+          backHref="/superadmin/manajemen-pemilihan"
         backLabel="Kembali ke Daftar"
         chips={(
           <>
@@ -202,8 +204,9 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
           </div>
         )}
       />
+      </ScrollReveal>
 
-      <section className="mt-8 grid gap-6 xl:grid-cols-4">
+      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-6 xl:grid-cols-4">
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Total Suara Masuk</p>
           <div className="mt-6 flex items-end gap-3">
@@ -241,9 +244,10 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
           <p className="mt-6 text-[28px] font-semibold tracking-[-0.04em] text-slate-900">{detail.blockNumber}</p>
           <p className="mt-4 text-[15px] font-medium text-emerald-600">{detail.blockSyncLabel}</p>
         </article>
-      </section>
+      </StaggerContainer>
 
-      <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(360px,0.85fr)]">
+      <ScrollReveal variant="fade-up" delay={200} duration={800}>
+        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(360px,0.85fr)]">
         <div className="space-y-6">
           <SuperadminSectionCard className="bg-white border border-slate-200 p-0">
             <div className="flex flex-col gap-5 border-b border-slate-100 px-6 py-6 lg:flex-row lg:items-start lg:justify-between">
@@ -341,7 +345,8 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
             </button>
           </div>
         </SuperadminSectionCard>
-      </section>
+        </section>
+      </ScrollReveal>
 
       <ConfirmDialog
         open={suspendDialogOpen}

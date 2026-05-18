@@ -6,6 +6,7 @@ import { useMemo } from 'react'
 import { SuperadminDetailIntro, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge } from '@/components/superadmin/superadmin-shell'
 import { useToast } from '@/components/ui/toast-provider'
 import { useSuperadminElectionsStore } from '@/lib/superadmin-mock-store'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 type FinalReportDetail = {
   codeLabel: string
@@ -61,8 +62,9 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
 
   return (
     <SuperadminShell>
-      <SuperadminDetailIntro
-        backHref="/superadmin/manajemen-pemilihan"
+      <ScrollReveal variant="fade-up" duration={800}>
+        <SuperadminDetailIntro
+          backHref="/superadmin/manajemen-pemilihan"
         backLabel="Kembali ke Daftar"
         chips={(
           <>
@@ -98,8 +100,9 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
           </>
         )}
       />
+      </ScrollReveal>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-4">
+      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-6 lg:grid-cols-4">
         {detail.metrics.map((metric) => (
           <article key={metric.id} className="rounded-[24px] border border-slate-200 bg-white p-6">
             <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">{metric.label}</p>
@@ -107,9 +110,10 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
             <p className="mt-3 text-[15px] leading-7 text-slate-600">{metric.note}</p>
           </article>
         ))}
-      </section>
+      </StaggerContainer>
 
-      <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)]">
+      <ScrollReveal variant="fade-up" delay={200} duration={800}>
+        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)]">
         <SuperadminSectionCard className="border border-slate-200 bg-white">
           <div className="flex items-center gap-3">
             <Award className="h-5 w-5 text-slate-700" />
@@ -165,9 +169,11 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
             </div>
           </SuperadminSectionCard>
         </div>
-      </section>
+        </section>
+      </ScrollReveal>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-2">
+      <ScrollReveal variant="fade-up" delay={300} duration={800}>
+        <section className="mt-8 grid gap-6 lg:grid-cols-2">
         <SuperadminSectionCard className="border border-slate-200 bg-white">
           <div className="flex items-center gap-3">
             <BarChart3 className="h-5 w-5 text-slate-700" />
@@ -186,7 +192,8 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
             <button type="button" onClick={() => showToast({ tone: 'info', title: 'PDF disiapkan', description: 'Export PDF masih berupa simulasi frontend.' })} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-200">Unduh PDF</button>
           </div>
         </SuperadminSectionCard>
-      </section>
+        </section>
+      </ScrollReveal>
     </SuperadminShell>
   )
 }

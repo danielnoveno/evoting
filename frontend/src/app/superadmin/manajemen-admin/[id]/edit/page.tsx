@@ -18,6 +18,7 @@ import {
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { useSuperadminAdminsStore } from '@/lib/superadmin-mock-store'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 type AdminScope = 'all' | 'specific'
 type AdminStatus = 'Aktif' | 'Menunggu' | 'Nonaktif'
@@ -103,24 +104,26 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
 
   return (
     <SuperadminShell>
-      <SuperadminPageHeader
-        backHref={`/superadmin/manajemen-admin/${admin.id}`}
-        backLabel="Kembali ke Detail Admin"
-        title="Edit Admin"
-        description="Halaman ini dibuat untuk simulasi end-to-end. Anda bisa mencoba mengubah data, tetapi hasilnya tidak akan memperbarui record admin secara permanen."
-        actions={(
-          <>
-            <button type="button" onClick={handleCancel} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-700 hover:bg-slate-200">
-              Batal
-            </button>
-            <SuperadminToolbarButton variant="primary" onClick={handleSaveClick}>
-              Simpan Perubahan
-            </SuperadminToolbarButton>
-          </>
-        )}
-      />
+      <ScrollReveal variant="fade-up" duration={800}>
+        <SuperadminPageHeader
+          backHref={`/superadmin/manajemen-admin/${admin.id}`}
+          backLabel="Kembali ke Detail Admin"
+          title="Edit Admin"
+          description="Halaman ini dibuat untuk simulasi end-to-end. Anda bisa mencoba mengubah data, tetapi hasilnya tidak akan memperbarui record admin secara permanen."
+          actions={(
+            <>
+              <button type="button" onClick={handleCancel} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-700 hover:bg-slate-200">
+                Batal
+              </button>
+              <SuperadminToolbarButton variant="primary" onClick={handleSaveClick}>
+                Simpan Perubahan
+              </SuperadminToolbarButton>
+            </>
+          )}
+        />
+      </ScrollReveal>
 
-      <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_420px]">
+      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_420px]">
         <div className="space-y-6">
           <SuperadminSectionCard>
             <SuperadminSectionHeading title="Informasi Admin" description="Gunakan data ini untuk mencoba alur edit seperti pada sistem nyata." />
@@ -236,7 +239,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
             </div>
           </SuperadminSectionCard>
         </div>
-      </section>
+      </StaggerContainer>
 
       <ConfirmDialog
         open={confirmOpen}

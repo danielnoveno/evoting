@@ -7,6 +7,7 @@ import { SuperadminDetailIntro, SuperadminSectionCard, SuperadminShell, Superadm
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { useSuperadminElectionsStore } from '@/lib/superadmin-mock-store'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 type InvestigationDetail = {
   codeLabel: string
@@ -56,8 +57,9 @@ export default function SuperadminElectionInvestigationPage({ params }: { params
 
   return (
     <SuperadminShell>
-      <SuperadminDetailIntro
-        backHref="/superadmin/manajemen-pemilihan"
+      <ScrollReveal variant="fade-up" duration={800}>
+        <SuperadminDetailIntro
+          backHref="/superadmin/manajemen-pemilihan"
         backLabel="Kembali ke Daftar"
         chips={(
           <>
@@ -88,8 +90,9 @@ export default function SuperadminElectionInvestigationPage({ params }: { params
           </>
         )}
       />
+      </ScrollReveal>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-2">
+      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-6 lg:grid-cols-2">
         {detail.alerts.map((item) => (
           <article key={item.id} className={`rounded-[24px] border p-6 ${item.severity === 'high' ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'}`}>
             <div className="flex items-start gap-4">
@@ -103,9 +106,10 @@ export default function SuperadminElectionInvestigationPage({ params }: { params
             </div>
           </article>
         ))}
-      </section>
+      </StaggerContainer>
 
-      <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.95fr)]">
+      <ScrollReveal variant="fade-up" delay={200} duration={800}>
+        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.95fr)]">
         <SuperadminSectionCard className="border border-slate-200 bg-white">
           <div className="flex items-center gap-3">
             <ListChecks className="h-5 w-5 text-slate-700" />
@@ -176,7 +180,8 @@ export default function SuperadminElectionInvestigationPage({ params }: { params
             </div>
           </SuperadminSectionCard>
         </div>
-      </section>
+        </section>
+      </ScrollReveal>
 
       <ConfirmDialog
         open={resumeDialogOpen}

@@ -1,6 +1,3 @@
-# VoteChain MVP Workspace
-
-Workspace awal untuk pengerjaan MVP skripsi VoteChain (14 hari).
 
 ## Folder Utama
 - `contracts/` — smart contract + test Foundry

@@ -33,8 +33,8 @@ function ElectionCard({ election }: { election: AdminElectionRecord }) {
 
   if (election.status === 'aktif' && election.commits) {
     return (
-      <AppSectionCard onClick={() => router.push(`/admin/manajemen-pemilihan/${election.id}`)}>
-        <div className="grid h-full grid-rows-[128px_1fr_64px] gap-0">
+      <AppSectionCard onClick={() => router.push(`/admin/manajemen-pemilihan/${election.id}`)} className="flex h-full min-h-[388px] flex-col">
+        <div className="flex h-full flex-1 flex-col">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-start gap-4">
               <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${getToneClasses(election.iconTone)}`}>
@@ -60,7 +60,7 @@ function ElectionCard({ election }: { election: AdminElectionRecord }) {
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-5 border-t border-slate-100 pt-6 sm:grid-cols-2 2xl:grid-cols-4">
+          <div className="mt-8 grid grid-cols-1 gap-5 border-t border-slate-100 pt-6 sm:grid-cols-2 2xl:grid-cols-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total Commit</p>
               <p className="mt-2 text-[15px] font-semibold text-slate-900">{election.commits.total} <span className="font-normal text-slate-400">/ {election.commits.target}</span></p>
@@ -82,7 +82,7 @@ function ElectionCard({ election }: { election: AdminElectionRecord }) {
             </div>
           </div>
 
-          <div className="flex items-end justify-between gap-3 pt-6">
+          <div className="mt-auto flex items-end justify-between gap-3 pt-6">
             <div className="flex flex-wrap items-center gap-3">
               <Link href={`/admin/manajemen-pemilihan/${election.id}/monitoring`} onClick={(event) => event.stopPropagation()} className="inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-2xl bg-indigo-50 px-4 text-[14px] font-medium text-indigo-600 sm:px-5">
                 <ChartNoAxesColumn className="h-4 w-4" />
@@ -100,8 +100,8 @@ function ElectionCard({ election }: { election: AdminElectionRecord }) {
   }
 
   return (
-    <AppSectionCard onClick={() => router.push(`/admin/manajemen-pemilihan/${election.id}`)}>
-      <div className="grid h-full grid-rows-[128px_1fr_64px] gap-0">
+    <AppSectionCard onClick={() => router.push(`/admin/manajemen-pemilihan/${election.id}`)} className="flex h-full min-h-[388px] flex-col">
+      <div className="flex h-full flex-1 flex-col">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-4">
             <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${getToneClasses(election.iconTone)}`}>
@@ -121,15 +121,13 @@ function ElectionCard({ election }: { election: AdminElectionRecord }) {
             </span>
           </div>
         </div>
-
-        <div />
-        <div />
       </div>
     </AppSectionCard>
   )
 }
 
 export default function AdminElectionManagementPage() {
+  const router = useRouter()
   const [activeFilter, setActiveFilter] = useState<'semua' | AdminElectionStatus>('semua')
 
   const { showToast } = useToast()
@@ -150,7 +148,7 @@ export default function AdminElectionManagementPage() {
           title="Manajemen Pemilihan"
           description="Kelola dan pantau seluruh ruang pemilihan yang Anda pimpin"
           rightContent={
-            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Buat Pemilihan Baru', description: 'Fitur pembuatan ruang pemilihan baru akan tersedia pada versi produksi.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[15px] font-medium text-white hover:bg-slate-900">
+            <button type="button" onClick={() => router.push('/admin/daftar-proposal/tambah')} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[15px] font-medium text-white hover:bg-slate-900">
               <Plus className="h-4 w-4" />
               Buat Pemilihan Baru
             </button>
@@ -179,12 +177,12 @@ export default function AdminElectionManagementPage() {
       </section>
 
 
-      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
+      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid auto-rows-fr gap-5 xl:grid-cols-2 2xl:grid-cols-3">
         {electionsWithEmptyCard.map((entry) => {
           if (entry === 'create-new') {
             return (
-              <AppSectionCard dashed key="create-new">
-                <div className="flex h-full flex-col items-center justify-center text-center">
+              <AppSectionCard dashed key="create-new" onClick={() => router.push('/admin/daftar-proposal/tambah')} className="flex h-full min-h-[388px] flex-col">
+                <div className="flex h-full flex-1 flex-col items-center justify-center py-10 text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-700">
                     <Plus className="h-8 w-8" />
                   </div>

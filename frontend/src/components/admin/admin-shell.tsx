@@ -54,13 +54,13 @@ export function AdminModuleCard({ icon, title, description, dark = false, cta = 
   )
 
   return (
-    <article className={dark ? 'rounded-[28px] bg-black p-6 text-white' : 'rounded-[28px] border border-slate-200 bg-white p-6'}>
+    <article className={dark ? 'flex h-full flex-col rounded-[28px] bg-black p-6 text-white' : 'flex h-full flex-col rounded-[28px] border border-slate-200 bg-white p-6'}>
       <div className={dark ? 'flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white' : 'flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-900'}>
         {icon}
       </div>
       <h3 className={dark ? 'mt-8 text-[20px] font-semibold text-white' : 'mt-8 text-[20px] font-semibold text-slate-900'}>{title}</h3>
       <p className={dark ? 'mt-3 text-[15px] leading-8 text-slate-300' : 'mt-3 text-[15px] leading-8 text-slate-500'}>{description}</p>
-      <div className="mt-8">
+      <div className="mt-auto pt-8">
         {href ? (
           <Link href={href} className="transition-opacity hover:opacity-80">
             {ctaContent}
