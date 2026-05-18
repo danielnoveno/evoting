@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { adminHelpData } from '@/lib/admin-help-dummy-data'
 import { useToast } from '@/components/ui/toast-provider'
+import { AppPageHeader } from '@/components/ui/app-page-header'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { Search, FileText, Box, Fingerprint, ShieldCheck, ChevronDown, ChevronUp, MessageSquare, Mail, ArrowRight, ExternalLink, ChevronRight, LifeBuoy, MessageCircle, Phone } from 'lucide-react'
 
@@ -68,13 +69,11 @@ export default function AdminHelpPage() {
     <AdminShell>
       {/* Header Section */}
       <ScrollReveal variant="fade-up" duration={700}>
-        <section className="mb-12">
-          <h1 className="text-[32px] font-semibold tracking-[-0.04em] text-slate-900 md:text-[40px] leading-tight">
-            {adminHelpData.header.title}
-          </h1>
-          <p className="mt-4 text-[16px] leading-8 text-slate-600 max-w-3xl">
-            {adminHelpData.header.description}
-          </p>
+        <div className="mb-12">
+          <AppPageHeader 
+            title={adminHelpData.header.title} 
+            description={adminHelpData.header.description} 
+          />
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="mt-8 max-w-2xl relative flex items-center">
@@ -95,7 +94,7 @@ export default function AdminHelpPage() {
               Cari
             </button>
           </form>
-        </section>
+        </div>
       </ScrollReveal>
 
       {/* Categories Grid */}

@@ -3,6 +3,7 @@
 import { ArrowRight, Clock3 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { findElection, formatDateTime, getPhaseLabel, useVoterStore } from '@/lib/voter-mock-store'
@@ -44,6 +45,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         />
       </section>
 
+      <ScrollReveal variant="fade-up" duration={800}>
       <section className="mt-8 rounded-[32px] bg-[#161f35] px-5 py-6 text-white sm:px-7 sm:py-8 md:px-10 md:py-10">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
           <div>
@@ -63,6 +65,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           </div>
         </div>
       </section>
+      </ScrollReveal>
 
       <section className="mt-8">
         <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-end sm:justify-between">
@@ -73,7 +76,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           <span className="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">{election.candidateCount} kandidat terdaftar</span>
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <StaggerContainer stagger={120} variant="fade-up" className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {election.candidates.map((candidate, index) => {
             const active = candidate.id === election.selectedCandidateId
 
@@ -104,7 +107,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
               </article>
             )
           })}
-        </div>
+        </StaggerContainer>
       </section>
 
       {selectedCandidate ? (

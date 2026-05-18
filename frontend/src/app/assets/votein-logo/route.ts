@@ -2,7 +2,7 @@ import { promises as fs } from 'fs'
 import path from 'path'
 
 export async function GET() {
-  const logoPath = path.resolve(process.cwd(), '../.docs/evoting_horizontal_logo.png')
+  const logoPath = path.resolve(process.cwd(), 'public/votein-logo.png')
   const file = await fs.readFile(logoPath)
 
   return new Response(file, {

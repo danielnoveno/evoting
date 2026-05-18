@@ -3,6 +3,7 @@
 import { ArrowLeft, Bell, CopyCheck, ExternalLink, Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
+import { AppNavbar, AppFooter } from '@/components/ui/app-bar'
 import { useToast } from '@/components/ui/toast-provider'
 
 const navItems = [
@@ -16,7 +17,7 @@ export function PublicNavbar({ activePath }: { activePath: string }) {
   const { showToast } = useToast()
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/95 backdrop-blur-sm">
+    <AppNavbar className="sticky top-0 z-40">
       <div className="public-container flex h-[60px] items-center justify-between gap-4 md:h-[62px]">
         <div className="flex min-w-0 items-center gap-6 lg:gap-10">
           <Link href="/" className="flex items-center" aria-label="Votein beranda">
@@ -102,13 +103,13 @@ export function PublicNavbar({ activePath }: { activePath: string }) {
           </div>
         </nav>
       ) : null}
-    </header>
+    </AppNavbar>
   )
 }
 
 export function PublicFooter() {
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-100 bg-slate-50/95 py-4 backdrop-blur-sm">
+    <AppFooter className="fixed bottom-0 left-0 right-0 z-40 py-4">
       <div className="public-container flex flex-col gap-3 text-[11px] uppercase tracking-[0.06em] text-slate-400 md:flex-row md:items-center md:justify-between">
         <p>© 2026 E-Voting Indonesia · Keamanan Tingkat Tinggi</p>
         <div className="flex items-center gap-4">
@@ -116,7 +117,7 @@ export function PublicFooter() {
           <Link href="/ketentuan-layanan" className="hover:text-slate-600">Ketentuan Layanan</Link>
         </div>
       </div>
-    </footer>
+    </AppFooter>
   )
 }
 

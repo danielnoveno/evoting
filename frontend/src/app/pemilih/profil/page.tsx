@@ -2,6 +2,7 @@
 
 import { Camera, Copy, Pencil, ShieldCheck } from 'lucide-react'
 import { ChangeEvent, useEffect, useRef, useState } from 'react'
+import { ScrollReveal } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { useVoterStore } from '@/lib/voter-mock-store'
@@ -48,6 +49,7 @@ export default function VoterProfilePage() {
 
   return (
     <VoterShell>
+      <ScrollReveal variant="fade-up" duration={800}>
       <section className="max-w-4xl">
         <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
           <span>Portal Pemilih</span>
@@ -59,7 +61,9 @@ export default function VoterProfilePage() {
         <h1 className="mt-5 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Sunting Profil</h1>
         <p className="mt-4 text-[16px] leading-8 text-slate-600 md:text-[18px] md:leading-9">Kelola identitas digital Anda dalam ekosistem voting. Pastikan informasi tetap jelas, rapi, dan mudah diverifikasi.</p>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={100} duration={800}>
       <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(320px,0.64fr)_minmax(0,1.36fr)]">
         <div className="space-y-6">
           <article className="rounded-[32px] border border-slate-100 bg-white p-8 text-center">
@@ -131,7 +135,9 @@ export default function VoterProfilePage() {
           </div>
         </article>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={150} duration={800}>
       <section className="mt-6 rounded-[32px] bg-slate-100 p-8">
         <div className="flex items-start gap-4">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-500">
@@ -143,6 +149,7 @@ export default function VoterProfilePage() {
           </div>
         </div>
       </section>
+      </ScrollReveal>
     </VoterShell>
   )
 }

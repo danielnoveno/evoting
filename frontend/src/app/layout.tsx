@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: 'Votein — E-Voting Organisasi Mahasiswa',
   description:
     'Landing page Votein untuk implementasi e-voting organisasi mahasiswa berbasis Base Sepolia dengan fokus transparansi, auditabilitas, dan kemudahan penggunaan.',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/favicon.png',
+  },
 }
 
 export default function RootLayout({

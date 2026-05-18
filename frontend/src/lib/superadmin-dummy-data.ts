@@ -137,7 +137,7 @@ export interface SuperadminAuditLogItem {
 }
 
 export const superadminShellContent = {
-  brandTagline: 'E-Voting with blockchain system',
+  brandTagline: 'E-Voting with /blockchain system',
   headerLabel: 'Dashboard utama super admin',
   searchPlaceholder: 'Cari data pemilihan...',
   profile: {

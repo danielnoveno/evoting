@@ -7,11 +7,12 @@ import { useToast } from '@/components/ui/toast-provider'
 import {
   SuperadminFilterChip,
   SuperadminInteractiveCard,
-  SuperadminSectionCard,
   SuperadminShell,
 } from '@/components/superadmin/superadmin-shell'
 import { superadminElectionFilters, type SuperadminElectionState } from '@/lib/superadmin-dummy-data'
 import { useSuperadminElectionsStore } from '@/lib/superadmin-mock-store'
+import { AppPageHeader } from '@/components/ui/app-page-header'
+import { AppSectionCard } from '@/components/ui/app-section-card'
 
 type ElectionFilter = (typeof superadminElectionFilters)[number]
 
@@ -45,22 +46,21 @@ export default function SuperadminElectionManagementPage() {
 
   return (
     <SuperadminShell>
-      <section className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">Manajemen Pemilihan</h1>
-          <p className="mt-3 text-[16px] text-slate-600">Pantau dan kelola ruang pemilihan aktif di jaringan blockchain.</p>
-        </div>
+      <AppPageHeader
+        title="Manajemen Pemilihan"
+        description="Pantau dan kelola ruang pemilihan aktif di jaringan blockchain."
+        rightContent={
+          <div className="flex flex-wrap gap-3 rounded-[20px] bg-slate-100 p-2">
+            {superadminElectionFilters.map((filter) => (
+              <SuperadminFilterChip key={filter} active={activeFilter === filter} onClick={() => setActiveFilter(filter)}>
+                {filter}
+              </SuperadminFilterChip>
+            ))}
+          </div>
+        }
+      />
 
-        <div className="flex flex-wrap gap-3 rounded-[20px] bg-slate-100 p-2">
-          {superadminElectionFilters.map((filter) => (
-            <SuperadminFilterChip key={filter} active={activeFilter === filter} onClick={() => setActiveFilter(filter)}>
-              {filter}
-            </SuperadminFilterChip>
-          ))}
-        </div>
-      </section>
-
-      <SuperadminSectionCard className="mt-8">
+      <AppSectionCard className="mt-8 bg-transparent border-0 shadow-none p-0 md:p-0">
         <div className="grid gap-6 xl:grid-cols-2 2xl:grid-cols-4">
           {filteredElections.map((election) => (
             <SuperadminInteractiveCard
@@ -168,7 +168,7 @@ export default function SuperadminElectionManagementPage() {
             </SuperadminInteractiveCard>
           ))}
         </div>
-      </SuperadminSectionCard>
+      </AppSectionCard>
     </SuperadminShell>
   )
 }

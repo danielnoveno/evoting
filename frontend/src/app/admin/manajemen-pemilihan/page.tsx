@@ -4,7 +4,9 @@ import { BriefcaseBusiness, ChartNoAxesColumn, Grid2x2, Plus, Settings2, ShieldC
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { AdminElectionCard, AdminFilterPill, AdminShell } from '@/components/admin/admin-shell'
+import { AdminFilterPill, AdminShell } from '@/components/admin/admin-shell'
+import { AppSectionCard } from '@/components/ui/app-section-card'
+import { AppPageHeader } from '@/components/ui/app-page-header'
 import { adminElectionDummyData, adminElectionFilters, AdminElectionRecord, AdminElectionStatus } from '@/lib/admin-election-dummy-data'
 import { useToast } from '@/components/ui/toast-provider'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -31,7 +33,7 @@ function ElectionCard({ election }: { election: AdminElectionRecord }) {
 
   if (election.status === 'aktif' && election.commits) {
     return (
-      <AdminElectionCard onClick={() => router.push(`/admin/manajemen-pemilihan/${election.id}`)}>
+      <AppSectionCard onClick={() => router.push(`/admin/manajemen-pemilihan/${election.id}`)}>
         <div className="grid h-full grid-rows-[128px_1fr_64px] gap-0">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-start gap-4">
@@ -93,12 +95,12 @@ function ElectionCard({ election }: { election: AdminElectionRecord }) {
             </div>
           </div>
         </div>
-      </AdminElectionCard>
+      </AppSectionCard>
     )
   }
 
   return (
-    <AdminElectionCard onClick={() => router.push(`/admin/manajemen-pemilihan/${election.id}`)}>
+    <AppSectionCard onClick={() => router.push(`/admin/manajemen-pemilihan/${election.id}`)}>
       <div className="grid h-full grid-rows-[128px_1fr_64px] gap-0">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-4">
@@ -123,7 +125,7 @@ function ElectionCard({ election }: { election: AdminElectionRecord }) {
         <div />
         <div />
       </div>
-    </AdminElectionCard>
+    </AppSectionCard>
   )
 }
 
@@ -144,19 +146,17 @@ export default function AdminElectionManagementPage() {
   return (
     <AdminShell>
       <ScrollReveal variant="fade-up" duration={700}>
-      <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-        <div>
-          <h1 className="text-[44px] font-semibold leading-[1.04] tracking-[-0.04em] text-slate-900 md:text-[56px]">Manajemen Pemilihan</h1>
-          <p className="mt-4 text-[18px] leading-9 text-slate-600">
-            Kelola dan pantau seluruh ruang pemilihan yang Anda pimpin
-          </p>
-        </div>
-
-        <button type="button" onClick={() => showToast({ tone: 'info', title: 'Buat Pemilihan Baru', description: 'Fitur pembuatan ruang pemilihan baru akan tersedia pada versi produksi.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[15px] font-medium text-white hover:bg-slate-900">
-          <Plus className="h-4 w-4" />
-          Buat Pemilihan Baru
-        </button>
-      </section>
+        <AppPageHeader
+          title="Manajemen Pemilihan"
+          description="Kelola dan pantau seluruh ruang pemilihan yang Anda pimpin"
+          rightContent={
+            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Buat Pemilihan Baru', description: 'Fitur pembuatan ruang pemilihan baru akan tersedia pada versi produksi.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[15px] font-medium text-white hover:bg-slate-900">
+              <Plus className="h-4 w-4" />
+              Buat Pemilihan Baru
+            </button>
+          }
+        />
+      </ScrollReveal>
 
       <section className="mt-8 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex flex-wrap items-center gap-3">
@@ -177,13 +177,13 @@ export default function AdminElectionManagementPage() {
           </button>
         </div>
       </section>
-      </ScrollReveal>
+
 
       <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
         {electionsWithEmptyCard.map((entry) => {
           if (entry === 'create-new') {
             return (
-              <AdminElectionCard dashed key="create-new">
+              <AppSectionCard dashed key="create-new">
                 <div className="flex h-full flex-col items-center justify-center text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-700">
                     <Plus className="h-8 w-8" />
@@ -193,7 +193,7 @@ export default function AdminElectionManagementPage() {
                     Konfigurasi smart contract voting dalam hitungan menit
                   </p>
                 </div>
-              </AdminElectionCard>
+              </AppSectionCard>
             )
           }
 

@@ -2,6 +2,7 @@
 
 import { Download, ExternalLink, Info, ShieldCheck, Star } from 'lucide-react'
 import Link from 'next/link'
+import { ScrollReveal } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
@@ -52,6 +53,7 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
         />
       </section>
 
+      <ScrollReveal variant="fade-up" duration={800}>
       <section className="mt-8 flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
         <div className="max-w-4xl">
           <span className="inline-flex rounded-full bg-amber-50 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700">Laporan publik</span>
@@ -71,7 +73,9 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
           ) : null}
         </div>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={100} duration={800}>
       <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.98fr)]">
         <article className="rounded-[32px] border border-slate-100 bg-white p-6 sm:p-8">
           <div className="grid gap-8 md:grid-cols-[220px_minmax(0,1fr)] md:items-center">
@@ -137,7 +141,9 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
           </div>
         </article>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={150} duration={800}>
       <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(360px,0.98fr)]">
         <article className="rounded-[32px] bg-slate-100 p-6 sm:p-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -182,6 +188,7 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
           </div>
         </article>
       </section>
+      </ScrollReveal>
     </VoterShell>
   )
 }

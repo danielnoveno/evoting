@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
-import { SuperadminEmptyState, SuperadminInteractiveCard, SuperadminSectionCard, SuperadminShell } from '@/components/superadmin/superadmin-shell'
+import { SuperadminEmptyState, SuperadminInteractiveCard, SuperadminShell } from '@/components/superadmin/superadmin-shell'
+import { AppPageHeader } from '@/components/ui/app-page-header'
+import { AppSectionCard } from '@/components/ui/app-section-card'
 import { superadminRiskData } from '@/lib/superadmin-dummy-data'
 import { useSuperadminRiskAlertsStore } from '@/lib/superadmin-mock-store'
 
@@ -17,10 +19,10 @@ export default function SuperadminRiskActivityPage() {
 
   return (
     <SuperadminShell>
-      <section>
-        <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">{superadminRiskData.title}</h1>
-        <p className="mt-3 text-[16px] text-slate-600">{superadminRiskData.description}</p>
-      </section>
+      <AppPageHeader
+        title={superadminRiskData.title}
+        description={superadminRiskData.description}
+      />
 
       <section className="mt-8 grid gap-5 xl:grid-cols-3">
         {superadminRiskData.metrics.map((metric) => (
@@ -83,7 +85,7 @@ export default function SuperadminRiskActivityPage() {
         <div className="space-y-6">
           <div>
             <h2 className="text-[20px] font-semibold text-slate-900">Neural Threat Summary</h2>
-            <section className="mt-4 rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+            <AppSectionCard className="mt-4 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
               <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-5">
                 <p className="text-[16px] text-slate-700">Status Model</p>
                 <span className="rounded-xl bg-emerald-50 px-3 py-1 text-[14px] font-semibold text-emerald-500">{superadminRiskData.neuralSummary.status}</span>
@@ -98,12 +100,12 @@ export default function SuperadminRiskActivityPage() {
                 </div>
                 <p className="mt-6 text-[15px] leading-8 text-slate-600">{superadminRiskData.neuralSummary.description}</p>
               </div>
-            </section>
+            </AppSectionCard>
           </div>
 
           <div>
             <h2 className="text-[20px] font-semibold text-slate-900">Regional Risk Profile</h2>
-            <section className="mt-4 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+            <AppSectionCard className="mt-4 shadow-[0_16px_60px_rgba(15,23,42,0.08)] p-0 md:p-0">
               <div className="relative h-[240px] bg-[radial-gradient(circle_at_center,#7c7c7c_0%,#4b4b4b_45%,#2e2e2e_100%)]">
                 <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(#ffffff_1px,transparent_1px)] [background-size:14px_14px]" />
                 <span className="absolute left-[34%] top-[22%] h-4 w-7 rounded-full bg-red-600" />
@@ -117,7 +119,7 @@ export default function SuperadminRiskActivityPage() {
                 </div>
                 <p className="mt-4 text-[15px] leading-7 text-slate-600">{superadminRiskData.regionProfile.description}</p>
               </div>
-            </section>
+            </AppSectionCard>
           </div>
         </div>
       </section>

@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronUp, ExternalLink, Mail, MessageSquare, Search, ShieldCheck, Vote, Wrench } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
 import { VoterShell } from '@/components/voter/voter-shell'
 
@@ -70,6 +71,7 @@ export default function VoterHelpPage() {
 
   return (
     <VoterShell>
+      <ScrollReveal variant="fade-up" duration={800}>
       <section className="max-w-4xl">
         <h1 className="text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[42px] md:text-[56px]">Pusat Bantuan Voter</h1>
         <p className="mt-4 text-[16px] leading-8 text-slate-600 md:text-[18px] md:leading-9">
@@ -86,8 +88,9 @@ export default function VoterHelpPage() {
           />
         </div>
       </section>
+      </ScrollReveal>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.6fr)_minmax(260px,0.6fr)]">
+      <StaggerContainer stagger={120} variant="fade-up" className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.6fr)_minmax(260px,0.6fr)]">
         {categories.map((category, index) => {
           const Icon = category.icon
 
@@ -102,8 +105,9 @@ export default function VoterHelpPage() {
             </article>
           )
         })}
-      </section>
+      </StaggerContainer>
 
+      <ScrollReveal variant="fade-up" delay={100} duration={800}>
       <section className="mt-6 rounded-[32px] bg-slate-100 p-6 md:p-8">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4">
@@ -118,7 +122,9 @@ export default function VoterHelpPage() {
           <ExternalLink className="hidden h-5 w-5 text-slate-400 md:block" />
         </div>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={150} duration={800}>
       <section className="mt-6 rounded-[32px] bg-[#161f35] p-8 text-white">
           <h3 className="text-[26px] font-semibold text-white sm:text-[32px]">Alur Memilih Commit-Reveal</h3>
         <p className="mt-4 text-[16px] leading-8 text-slate-300">Sistem menggunakan dua tahap agar integritas suara terjaga dan pilihan tidak terlihat sebelum waktunya.</p>
@@ -137,8 +143,9 @@ export default function VoterHelpPage() {
           ))}
         </div>
       </section>
+      </ScrollReveal>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-2">
+      <StaggerContainer stagger={150} variant="fade-up" className="mt-6 grid gap-6 xl:grid-cols-2">
         <article className="rounded-[32px] border border-slate-100 bg-white p-8">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-900">
             <Mail className="h-5 w-5" />
@@ -160,8 +167,9 @@ export default function VoterHelpPage() {
             Mulai Chat Sekarang
           </button>
         </article>
-      </section>
+      </StaggerContainer>
 
+      <ScrollReveal variant="fade-up" delay={200} duration={800}>
       <section className="mt-6 space-y-4 rounded-[32px] bg-slate-100 p-6 md:p-8">
         {filteredFaqs.map((faq, index) => (
           <HelpAccordion key={faq.id} question={faq.question} answer={faq.answer} openByDefault={index === 0} />
@@ -172,6 +180,7 @@ export default function VoterHelpPage() {
           </article>
         ) : null}
       </section>
+      </ScrollReveal>
     </VoterShell>
   )
 }

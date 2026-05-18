@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ScrollReveal } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
@@ -72,6 +73,7 @@ export default function VoterConfirmationPage({ params }: { params: { id: string
         />
       </section>
 
+      <ScrollReveal variant="fade-up" duration={800}>
       <section className="mt-8 max-w-4xl">
         <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">
           <LockKeyhole className="h-4 w-4" />
@@ -82,7 +84,9 @@ export default function VoterConfirmationPage({ params }: { params: { id: string
           Pastikan pilihan sudah benar. Setelah dikonfirmasi, suara Anda akan diubah menjadi commit terenkripsi dan hanya bisa dibuka pada fase reveal.
         </p>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={100} duration={800}>
       <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(360px,0.72fr)]">
         <article className="rounded-[32px] border border-slate-100 bg-white p-6 sm:p-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
@@ -131,7 +135,9 @@ export default function VoterConfirmationPage({ params }: { params: { id: string
           </div>
         </article>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={150} duration={800}>
       <section className="mt-8 rounded-[32px] bg-slate-100 p-6 md:p-8">
         <div className="flex items-start gap-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-slate-700">
@@ -145,6 +151,7 @@ export default function VoterConfirmationPage({ params }: { params: { id: string
           </div>
         </div>
       </section>
+      </ScrollReveal>
 
       <section className="mt-8 flex flex-col gap-3 md:flex-row md:justify-end">
         <Link href={`/pemilih/pemilihan/${election.id}/commit`} className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-100 px-6 text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:bg-slate-200 md:w-auto">

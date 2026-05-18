@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ScrollReveal } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
@@ -72,6 +73,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         />
       </section>
 
+      <ScrollReveal variant="fade-up" duration={800}>
       <section className="mt-8 max-w-4xl">
         <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">
           <ShieldCheck className="h-4 w-4" />
@@ -82,7 +84,9 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
           Kirim kandidat dan salt yang sama untuk membuka commit sebelumnya. Setelah langkah ini berhasil, hasil akhir bisa langsung dilihat oleh publik.
         </p>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={100} duration={800}>
       <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.86fr)]">
         <article className="rounded-[32px] border border-slate-100 bg-white p-6 sm:p-8">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Data komitmenmu</p>
@@ -157,6 +161,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
           )}
         </article>
       </section>
+      </ScrollReveal>
 
       <ConfirmDialog
         open={confirmOpen}

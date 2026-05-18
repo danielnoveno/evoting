@@ -3,7 +3,9 @@
 import { Activity, CheckCircle2, Link2, TriangleAlert, Users, Vote } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { SuperadminInteractiveCard, SuperadminSectionCard, SuperadminShell } from '@/components/superadmin/superadmin-shell'
+import { SuperadminInteractiveCard, SuperadminShell } from '@/components/superadmin/superadmin-shell'
+import { AppPageHeader } from '@/components/ui/app-page-header'
+import { AppSectionCard } from '@/components/ui/app-section-card'
 import { superadminDashboardData } from '@/lib/superadmin-dummy-data'
 import { useSuperadminAdminsStore, useSuperadminElectionsStore, useSuperadminProposalsStore, useSuperadminRiskAlertsStore } from '@/lib/superadmin-mock-store'
 
@@ -39,10 +41,10 @@ export default function SuperadminDashboardPage() {
 
   return (
     <SuperadminShell>
-      <section>
-        <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">{superadminDashboardData.title}</h1>
-        <p className="mt-3 text-[16px] text-slate-600">{superadminDashboardData.description}</p>
-      </section>
+      <AppPageHeader
+        title={superadminDashboardData.title}
+        description={superadminDashboardData.description}
+      />
 
       <section className="mt-8 grid gap-5 xl:grid-cols-4">
         {metrics.map((metric) => {
@@ -73,8 +75,8 @@ export default function SuperadminDashboardPage() {
         })}
       </section>
 
-      <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_500px]">
-        <SuperadminSectionCard>
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px] xl:grid-cols-[1.5fr_1fr]">
+        <AppSectionCard>
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h2 className="text-[18px] font-semibold text-slate-900">{superadminDashboardData.chart.title}</h2>
@@ -109,9 +111,9 @@ export default function SuperadminDashboardPage() {
               </div>
             ))}
           </div>
-        </SuperadminSectionCard>
+        </AppSectionCard>
 
-        <section className="rounded-[32px] border border-slate-200 bg-white p-7 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+        <AppSectionCard>
           <div className="flex items-start justify-between gap-4">
             <h2 className="max-w-[12ch] text-[18px] font-semibold text-slate-900">Log Aktivitas Terbaru</h2>
             <button type="button" onClick={() => router.push('/superadmin/manajemen-admin')} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-700">
@@ -139,10 +141,10 @@ export default function SuperadminDashboardPage() {
               </div>
             ))}
           </div>
-        </section>
-      </section>
+        </AppSectionCard>
+      </div>
 
-      <section className="mt-8 rounded-[32px] border border-slate-200 bg-white px-6 py-5 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+      <AppSectionCard className="mt-8 p-5 md:p-5 px-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
             <div className="mt-1 h-14 w-1 rounded-full bg-black" />
@@ -163,7 +165,7 @@ export default function SuperadminDashboardPage() {
             </div>
           </div>
         </div>
-      </section>
+      </AppSectionCard>
     </SuperadminShell>
   )
 }

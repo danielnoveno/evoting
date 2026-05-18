@@ -1,6 +1,7 @@
 'use client'
 
 import { ArrowRight, Download, ExternalLink, HelpCircle, QrCode, ShieldCheck } from 'lucide-react'
+import { ScrollReveal } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
 import { VoterShell } from '@/components/voter/voter-shell'
 import {
@@ -30,6 +31,7 @@ export default function VoterProofPage() {
 
   return (
     <VoterShell>
+      <ScrollReveal variant="fade-up" duration={800}>
       <section className="max-w-4xl">
         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Arsip digital</p>
         <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Bukti Saya</h1>
@@ -37,7 +39,9 @@ export default function VoterProofPage() {
           Riwayat pemilihan yang akan, sedang, dan sudah Anda ikuti beserta bukti kriptografis yang dapat diverifikasi secara publik.
         </p>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={100} duration={800}>
       <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(320px,0.7fr)_minmax(0,1.3fr)]">
           <article className="rounded-[32px] bg-[#161f35] p-6 text-white md:p-8">
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total partisipasi</p>
@@ -113,7 +117,9 @@ export default function VoterProofPage() {
           </article>
         </div>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={150} duration={800}>
       <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.58fr)]">
         <article className="rounded-[32px] bg-slate-100 p-8">
           <h2 className="text-[26px] font-semibold text-slate-900 sm:text-[32px]">Bagaimana cara verifikasi?</h2>
@@ -153,6 +159,7 @@ export default function VoterProofPage() {
           ) : null}
         </article>
       </section>
+      </ScrollReveal>
 
       <div className="mt-8 flex justify-stretch sm:justify-end">
         <button type="button" onClick={() => showToast({ tone: 'info', title: 'Tim bantuan siap membantu', description: 'Silakan lanjut ke menu bantuan untuk panduan verifikasi lebih rinci.' })} className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-[13px] font-semibold text-slate-900 hover:bg-slate-50 sm:w-auto">

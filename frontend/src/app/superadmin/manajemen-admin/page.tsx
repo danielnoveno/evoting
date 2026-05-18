@@ -3,7 +3,7 @@
 import { Download, EllipsisVertical, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
 import {
   SuperadminFieldLabel,
@@ -11,7 +11,6 @@ import {
   SuperadminEmptyState,
   SuperadminFilterChip,
   SuperadminRadioCard,
-  SuperadminSectionCard,
   SuperadminSectionHeading,
   SuperadminShell,
   SuperadminStatusBadge,
@@ -22,6 +21,8 @@ import {
 } from '@/components/superadmin/superadmin-shell'
 import { superadminAdminStatuses, superadminAdminTabs, type SuperadminAdminRecord } from '@/lib/superadmin-dummy-data'
 import { useSuperadminAdminsStore } from '@/lib/superadmin-mock-store'
+import { AppPageHeader } from '@/components/ui/app-page-header'
+import { AppSectionCard } from '@/components/ui/app-section-card'
 
 type AdminTabKey = (typeof superadminAdminTabs)[number]['key']
 
@@ -44,7 +45,7 @@ function getInitials(name: string) {
     .toUpperCase()
 }
 
-export default function SuperadminAdminManagementPage() {
+function SuperadminAdminManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { showToast } = useToast()
@@ -124,35 +125,36 @@ export default function SuperadminAdminManagementPage() {
 
   return (
     <SuperadminShell>
-      <section className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">Manajemen Admin</h1>
-          <div className="mt-8 flex items-center gap-8 border-b border-slate-200">
+      <AppPageHeader
+        title="Manajemen Admin"
+        bottomContent={
+          <div className="flex items-center gap-8 border-b border-slate-200">
             {superadminAdminTabs.map((tab) => (
               <SuperadminTabButton key={tab.key} active={activeTab === tab.key} onClick={() => updateTab(tab.key)}>
                 {tab.label}
               </SuperadminTabButton>
             ))}
           </div>
-        </div>
-
-        {activeTab === 'daftar' ? (
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <SuperadminToolbarButton onClick={() => showToast({ tone: 'info', title: 'Unduh laporan belum aktif', description: 'Versi dummy belum menyiapkan ekspor file nyata.' })}>
-              <Download className="h-4 w-4" />
-              Unduh Laporan
-            </SuperadminToolbarButton>
-            <SuperadminToolbarButton variant="primary" onClick={() => updateTab('tambah')}>
-              <UserPlus className="h-4 w-4" />
-              Tambah Admin
-            </SuperadminToolbarButton>
-          </div>
-        ) : null}
-      </section>
+        }
+        rightContent={
+          activeTab === 'daftar' ? (
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <SuperadminToolbarButton onClick={() => showToast({ tone: 'info', title: 'Unduh laporan belum aktif', description: 'Versi dummy belum menyiapkan ekspor file nyata.' })}>
+                <Download className="h-4 w-4" />
+                Unduh Laporan
+              </SuperadminToolbarButton>
+              <SuperadminToolbarButton variant="primary" onClick={() => updateTab('tambah')}>
+                <UserPlus className="h-4 w-4" />
+                Tambah Admin
+              </SuperadminToolbarButton>
+            </div>
+          ) : null
+        }
+      />
 
       {activeTab === 'daftar' ? (
         <>
-          <SuperadminSectionCard className="mt-8">
+          <AppSectionCard className="mt-8">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-wrap gap-3">
                 {superadminAdminStatuses.map((status) => (
@@ -163,7 +165,7 @@ export default function SuperadminAdminManagementPage() {
               </div>
               <p className="text-[15px] text-slate-600">Total: {filteredAdmins.length} admin</p>
             </div>
-          </SuperadminSectionCard>
+          </AppSectionCard>
 
           <section className="mt-8 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
             <div className="hidden grid-cols-[1.3fr_1fr_0.8fr_1fr_56px] gap-4 border-b border-slate-100 px-6 py-5 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500 lg:grid">
@@ -224,7 +226,7 @@ export default function SuperadminAdminManagementPage() {
         </>
       ) : (
         <div className="mt-8 space-y-6">
-          <SuperadminSectionCard>
+          <AppSectionCard>
             <SuperadminSectionHeading
               title="Informasi Admin"
               description="Gunakan pola input yang sama seperti halaman pengaturan role lain agar pengalaman form tetap konsisten."
@@ -248,9 +250,9 @@ export default function SuperadminAdminManagementPage() {
                 />
               </label>
             </div>
-          </SuperadminSectionCard>
+          </AppSectionCard>
 
-          <SuperadminSectionCard>
+          <AppSectionCard>
             <SuperadminSectionHeading
               title="Akses Space"
               description="Tentukan ruang lingkup pemilihan yang dapat dikelola oleh admin ini."
@@ -277,9 +279,9 @@ export default function SuperadminAdminManagementPage() {
                 />
               ))}
             </div>
-          </SuperadminSectionCard>
+          </AppSectionCard>
 
-          <SuperadminSectionCard>
+          <AppSectionCard>
             <SuperadminSectionHeading
               title="Keamanan"
               description="Siapkan kata sandi awal admin. Nanti admin bisa menggantinya setelah login pertama."
@@ -305,7 +307,7 @@ export default function SuperadminAdminManagementPage() {
                 />
               </label>
             </div>
-          </SuperadminSectionCard>
+          </AppSectionCard>
 
           <section className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <button
@@ -325,5 +327,19 @@ export default function SuperadminAdminManagementPage() {
         </div>
       )}
     </SuperadminShell>
+  )
+}
+
+export default function SuperadminAdminManagementPage() {
+  return (
+    <Suspense fallback={
+      <SuperadminShell>
+        <div className="flex h-[50vh] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-black" />
+        </div>
+      </SuperadminShell>
+    }>
+      <SuperadminAdminManagementContent />
+    </Suspense>
   )
 }

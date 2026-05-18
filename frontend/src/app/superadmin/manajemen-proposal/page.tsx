@@ -4,7 +4,9 @@ import { ArrowUpDown, Search } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { SuperadminEmptyState, SuperadminInteractiveCard, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge } from '@/components/superadmin/superadmin-shell'
+import { SuperadminEmptyState, SuperadminInteractiveCard, SuperadminShell, SuperadminStatusBadge } from '@/components/superadmin/superadmin-shell'
+import { AppPageHeader } from '@/components/ui/app-page-header'
+import { AppSectionCard } from '@/components/ui/app-section-card'
 import { useSuperadminProposalsStore } from '@/lib/superadmin-mock-store'
 
 type SortField = 'tanggal' | 'organisasi' | 'jenis' | 'status'
@@ -44,12 +46,12 @@ export default function SuperadminProposalManagementPage() {
 
   return (
     <SuperadminShell>
-      <section>
-        <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">Manajemen Proposal</h1>
-        <p className="mt-3 text-[16px] text-slate-600">Daftar proposal pemilihan yang menunggu persetujuan dari admin tingkat institusi.</p>
-      </section>
+      <AppPageHeader 
+        title="Manajemen Proposal" 
+        description="Daftar proposal pemilihan yang menunggu persetujuan dari admin tingkat institusi." 
+      />
 
-      <SuperadminSectionCard className="mt-8">
+      <AppSectionCard className="mt-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <label className="flex h-12 w-full items-center gap-3 rounded-2xl bg-white px-4 lg:max-w-[420px]">
             <Search className="h-5 w-5 text-slate-400" />
@@ -62,7 +64,7 @@ export default function SuperadminProposalManagementPage() {
           </label>
 
         </div>
-      </SuperadminSectionCard>
+      </AppSectionCard>
 
       <section className="mt-8 rounded-[24px] bg-white px-6 py-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
         <div className="mb-4 flex items-center justify-between gap-4 border-b border-slate-100 pb-4 lg:hidden">

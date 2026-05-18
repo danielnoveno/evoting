@@ -3,6 +3,7 @@
 import { ArrowRight, CircleCheck, ExternalLink, Hourglass } from 'lucide-react'
 import Link from 'next/link'
 import { VoterPageSkeleton, VoterShell } from '@/components/voter/voter-shell'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import {
   formatNumber,
   getElectionProgress,
@@ -50,14 +51,16 @@ export default function VoterDashboardPage() {
 
   return (
     <VoterShell>
-      <section>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Dashboard pemilih</p>
-        <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[42px] md:text-[56px]">Selamat Datang, {store.profile.name.split(' ')[0]}.</h1>
-        <p className="mt-4 max-w-3xl text-[16px] leading-8 text-slate-600 md:text-[18px] md:leading-9">
-          Sistem pemilihan berbasis blockchain yang menjaga integritas commit-reveal, transparansi hasil, dan bukti audit untuk setiap partisipasi Anda.
-        </p>
-      </section>
+      <ScrollReveal variant="fade-up" duration={800}>
+        <section>
+          <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[42px] md:text-[56px]">Selamat Datang, {store.profile.name.split(' ')[0]}.</h1>
+          <p className="mt-4 max-w-3xl text-[16px] leading-8 text-slate-600 md:text-[18px] md:leading-9">
+            Sistem pemilihan berbasis blockchain yang menjaga integritas commit-reveal, transparansi hasil, dan bukti audit untuk setiap partisipasi Anda.
+          </p>
+        </section>
+      </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={100} duration={800}>
       <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.72fr)]">
         <article className="rounded-[32px] border border-slate-100 bg-white p-7 md:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -118,7 +121,9 @@ export default function VoterDashboardPage() {
           </Link>
         </article>
       </section>
+      </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={150} duration={800}>
       <section className="mt-6 rounded-[32px] bg-slate-100 p-7 md:p-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -158,8 +163,9 @@ export default function VoterDashboardPage() {
           })}
         </div>
       </section>
+      </ScrollReveal>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,0.8fr)_minmax(0,0.82fr)]">
+      <StaggerContainer stagger={120} variant="fade-up" className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,0.8fr)_minmax(0,0.82fr)]">
         <article className="rounded-[32px] border border-slate-100 bg-white p-7 md:p-8">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
             <Hourglass className="h-5 w-5" />
@@ -204,9 +210,9 @@ export default function VoterDashboardPage() {
             <ExternalLink className="h-4 w-4" />
           </Link>
         </article>
-      </section>
+      </StaggerContainer>
 
-      <section className="mt-6 grid gap-6 md:grid-cols-3">
+      <StaggerContainer stagger={100} variant="fade-up" className="mt-6 grid gap-6 md:grid-cols-3">
         {[
           ['Space diikuti', store.elections.length],
           ['Menunggu reveal', pendingReveal],
@@ -217,7 +223,7 @@ export default function VoterDashboardPage() {
             <p className="mt-4 text-[48px] font-semibold leading-none tracking-[-0.04em] text-slate-900">{value}</p>
           </article>
         ))}
-      </section>
+      </StaggerContainer>
     </VoterShell>
   )
 }
