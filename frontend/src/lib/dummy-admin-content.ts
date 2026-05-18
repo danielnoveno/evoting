@@ -165,8 +165,8 @@ export const adminShellContent: AdminShellContent = {
   footer: {
     copyright: '© 2026 VoteIn · Base Sepolia Testnet',
     links: [
-      { label: 'Kebijakan Privasi', href: '#' },
-      { label: 'Ketentuan Layanan', href: '#' },
+      { label: 'Kebijakan Privasi', href: '/kebijakan-privasi' },
+      { label: 'Ketentuan Layanan', href: '/ketentuan-layanan' },
     ],
   },
 }

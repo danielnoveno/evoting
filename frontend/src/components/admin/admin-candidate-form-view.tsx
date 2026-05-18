@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { upsertStoredCandidate } from '@/lib/admin-candidate-mock-store'
 import { AdminElectionRecord } from '@/lib/admin-election-dummy-data'
+import { ScrollReveal } from '@/components/public/parallax'
 
 type CandidatePrefill = {
   fullName: string
@@ -114,6 +115,7 @@ export function AdminCandidateFormView({
 
   return (
     <AdminShell>
+      <ScrollReveal variant="fade-up" duration={700}>
       <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
         <div className="max-w-[760px]">
           <div className="flex items-center gap-3">
@@ -171,7 +173,7 @@ export function AdminCandidateFormView({
                 <label className="mb-3 block text-[13px] font-semibold text-slate-700">{form.hashPreviewLabel}</label>
                 <div className="flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-4">
                   <p className="font-mono text-[12px] break-all text-slate-600">{election.detail.blockchainAnchor.slice(0, 42)}...</p>
-                  <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
+                  <button type="button" onClick={() => { navigator.clipboard.writeText(election.detail.blockchainAnchor).then(() => showToast({ tone: 'success', title: 'Hash disalin', description: 'Hash preview berhasil disalin ke clipboard.' })).catch(() => showToast({ tone: 'error', title: 'Gagal menyalin', description: 'Terjadi kesalahan saat menyalin hash.' })) }} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
                     <Copy className="h-4 w-4" />
                   </button>
                 </div>
@@ -248,6 +250,7 @@ export function AdminCandidateFormView({
           </article>
         </div>
       </section>
+      </ScrollReveal>
 
       <ConfirmDialog
         open={confirmOpen}

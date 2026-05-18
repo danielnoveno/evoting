@@ -8,6 +8,7 @@ import { AdminShell } from '@/components/admin/admin-shell'
 import { getAdminElectionById } from '@/lib/admin-election-dummy-data'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
+import { ScrollReveal } from '@/components/public/parallax'
 
 function actionToneClass(tone: 'blue' | 'amber' | 'slate' | 'purple') {
   if (tone === 'blue') return 'bg-blue-50 text-blue-600'
@@ -97,6 +98,7 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
         onCancel={() => setExportModalOpen(false)}
       />
 
+      <ScrollReveal variant="fade-up" duration={700}>
       <section className="flex flex-col gap-4 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-400 md:flex-row md:items-center">
         <Link href="/admin/manajemen-pemilihan" className="hover:text-slate-600">Manajemen Pemilihan</Link>
         <span>›</span>
@@ -316,6 +318,7 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
         <h2 className="text-[20px] font-semibold text-slate-900">{monitoring.guarantee.title}</h2>
         <p className="mt-4 max-w-[1100px] text-[15px] leading-8 text-slate-600">{monitoring.guarantee.description}</p>
       </section>
+      </ScrollReveal>
     </AdminShell>
   )
 }

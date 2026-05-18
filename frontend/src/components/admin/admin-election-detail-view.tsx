@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ModalShell } from '@/components/ui/modal-shell'
 import { useToast } from '@/components/ui/toast-provider'
 import { adminElectionDetailTabs, AdminElectionDetailTabId, AdminElectionRecord } from '@/lib/admin-election-dummy-data'
+import { ScrollReveal } from '@/components/public/parallax'
 
 function QuickActionIcon({ icon }: { icon: 'download' | 'share' | 'audit' | 'report' }) {
   if (icon === 'download') return <Download className="h-5 w-5" />
@@ -314,8 +315,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           <div className="flex items-center justify-between px-6 py-5 text-[14px] text-slate-500">
             <p>Menampilkan {filteredWhitelistRecords.length} dari {election.detail.whitelist.total} pemilih</p>
             <div className="flex items-center gap-2">
-              <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500">‹</button>
-              <button type="button" className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500">›</button>
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Pagination', description: 'Navigasi halaman belum aktif pada versi demo.' })} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">‹</button>
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Pagination', description: 'Navigasi halaman belum aktif pada versi demo.' })} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">›</button>
             </div>
           </div>
         </article>
@@ -347,11 +348,11 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const renderParameterTab = () => (
     <section className="mt-8 space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <button type="button" className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-700 hover:bg-slate-200">
+        <button type="button" onClick={() => showToast({ tone: 'info', title: 'Log Audit', description: 'Fitur log audit akan tersedia pada versi produksi.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-700 hover:bg-slate-200">
           <ListChecks className="h-4 w-4" />
           Lihat Log Audit
         </button>
-        <button type="button" className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-500 px-5 text-[15px] font-medium text-white hover:bg-slate-600">
+        <button type="button" onClick={() => showToast({ tone: 'info', title: 'Edit Parameter', description: 'Parameter pemilihan hanya dapat diubah sebelum fase commit dimulai.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-500 px-5 text-[15px] font-medium text-white hover:bg-slate-600">
           <Pencil className="h-4 w-4" />
           Edit Parameter
         </button>
@@ -467,7 +468,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             ))}
           </div>
           <div className="mt-10 border-t border-white/10 pt-6">
-            <button type="button" className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-white text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-900">
+            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Verifikasi Privasi', description: 'Audit privasi end-to-end akan tersedia pada versi produksi.' })} className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-white text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-900 hover:bg-slate-50">
               {election.detail.parameterVoting.privacy.ctaLabel}
             </button>
           </div>
@@ -517,7 +518,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
               <p className="mt-2 text-[12px] uppercase tracking-[0.08em] text-slate-400">Detik</p>
             </div>
           </div>
-          <button type="button" className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-100 text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-700">
+          <button type="button" onClick={() => showToast({ tone: 'info', title: 'Hitung Mundur', description: 'Waktu mundur otomatis berjalan pada saat pemilihan berlangsung.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-100 text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:bg-slate-200">
             {election.detail.realtime.remaining.label}
           </button>
         </article>
@@ -541,10 +542,10 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <h2 className="text-[20px] font-semibold text-slate-900">Perolehan Suara Kandidat</h2>
             <div className="flex items-center gap-3">
-              <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200">
+              <button type="button" onClick={() => showToast({ tone: 'success', title: 'Data di-refresh', description: 'Data perolehan suara telah diperbarui (simulasi).' })} className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200">
                 <RefreshCw className="h-4 w-4" />
               </button>
-              <button type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduh Laporan', description: 'Fitur unduh laporan belum tersedia pada versi demo.' })} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
                 <Download className="h-4 w-4" />
                 Unduh Laporan
               </button>
@@ -592,7 +593,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 </article>
               ))}
             </div>
-            <button type="button" className="mt-8 inline-flex h-12 w-full items-center justify-center text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:text-slate-900">
+            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Explorer Blockchain', description: 'Tautan ke Basescan explorer akan tersedia pada versi produksi.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:text-slate-900">
               Lihat Semua Transaksi
             </button>
           </article>
@@ -615,6 +616,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
   return (
     <AdminShell>
+      <ScrollReveal variant="fade-up" duration={700}>
       <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-3">
@@ -675,6 +677,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       {activeTab === 'whitelist' ? renderWhitelistTab() : null}
       {activeTab === 'parameter' ? renderParameterTab() : null}
       {activeTab === 'realtime' ? renderRealtimeTab() : null}
+      </ScrollReveal>
 
       <ConfirmDialog
         open={candidateToDelete !== null}

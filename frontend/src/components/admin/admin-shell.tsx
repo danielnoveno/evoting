@@ -1,6 +1,7 @@
 'use client'
 
 import { CircleHelp, FileText, Gauge, LayoutGrid, type LucideIcon } from 'lucide-react'
+import Link from 'next/link'
 import { ReactNode } from 'react'
 import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/console-shell'
 import { adminShellContent } from '@/lib/dummy-admin-content'
@@ -45,7 +46,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
   )
 }
 
-export function AdminModuleCard({ icon, title, description, dark = false, cta = 'Lihat Detail' }: { icon: ReactNode; title: string; description: string; dark?: boolean; cta?: string }) {
+export function AdminModuleCard({ icon, title, description, dark = false, cta = 'Lihat Detail', href }: { icon: ReactNode; title: string; description: string; dark?: boolean; cta?: string; href?: string }) {
+  const ctaContent = (
+    <span className={dark ? 'inline-flex h-10 items-center justify-center rounded-full bg-white px-5 text-[12px] font-semibold uppercase tracking-[0.06em] text-slate-900' : 'inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 px-5 text-[12px] font-semibold uppercase tracking-[0.06em] text-slate-900'}>
+      {cta}
+    </span>
+  )
+
   return (
     <article className={dark ? 'rounded-[28px] bg-black p-6 text-white' : 'rounded-[28px] border border-slate-200 bg-white p-6'}>
       <div className={dark ? 'flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white' : 'flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-900'}>
@@ -54,9 +61,11 @@ export function AdminModuleCard({ icon, title, description, dark = false, cta = 
       <h3 className={dark ? 'mt-8 text-[20px] font-semibold text-white' : 'mt-8 text-[20px] font-semibold text-slate-900'}>{title}</h3>
       <p className={dark ? 'mt-3 text-[15px] leading-8 text-slate-300' : 'mt-3 text-[15px] leading-8 text-slate-500'}>{description}</p>
       <div className="mt-8">
-        <button type="button" className={dark ? 'inline-flex h-10 items-center justify-center rounded-full bg-white px-5 text-[12px] font-semibold uppercase tracking-[0.06em] text-slate-900' : 'inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 px-5 text-[12px] font-semibold uppercase tracking-[0.06em] text-slate-900'}>
-          {cta}
-        </button>
+        {href ? (
+          <Link href={href} className="transition-opacity hover:opacity-80">
+            {ctaContent}
+          </Link>
+        ) : ctaContent}
       </div>
     </article>
   )

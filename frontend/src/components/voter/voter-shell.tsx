@@ -152,7 +152,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
                   <ShieldCheck className="h-4 w-4" />
                   {profile ? formatWallet(profile.wallet) : '0x71C...4f21'}
                 </div>
-                <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100">
+                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia pada versi demo.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100">
                   <Bell className="h-4 w-4" />
                 </button>
                 <Link

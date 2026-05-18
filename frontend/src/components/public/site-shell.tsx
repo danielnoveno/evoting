@@ -1,6 +1,9 @@
-import { ArrowLeft, Bell, CopyCheck, ExternalLink, Menu } from 'lucide-react'
+'use client'
+
+import { ArrowLeft, Bell, CopyCheck, ExternalLink, Menu, X } from 'lucide-react'
 import Link from 'next/link'
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
+import { useToast } from '@/components/ui/toast-provider'
 
 const navItems = [
   { href: '/', label: 'Beranda' },
@@ -9,6 +12,9 @@ const navItems = [
 ]
 
 export function PublicNavbar({ activePath }: { activePath: string }) {
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const { showToast } = useToast()
+
   return (
     <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/95 backdrop-blur-sm">
       <div className="public-container flex h-[60px] items-center justify-between gap-4 md:h-[62px]">
@@ -43,6 +49,7 @@ export function PublicNavbar({ activePath }: { activePath: string }) {
         <div className="flex items-center gap-2 border-l border-slate-100 pl-3 md:gap-3 md:pl-6">
           <button
             type="button"
+            onClick={() => showToast({ tone: 'info', title: 'Shortcut audit', description: 'Fitur audit shortcut belum tersedia pada versi demo.' })}
             className="hidden h-10 w-10 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-50 md:inline-flex"
             aria-label="Buka shortcut audit"
           >
@@ -50,6 +57,7 @@ export function PublicNavbar({ activePath }: { activePath: string }) {
           </button>
           <button
             type="button"
+            onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia pada versi demo.' })}
             className="hidden h-10 w-10 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-50 md:inline-flex"
             aria-label="Notifikasi"
           >
@@ -63,13 +71,37 @@ export function PublicNavbar({ activePath }: { activePath: string }) {
           </Link>
           <button
             type="button"
+            onClick={() => setMobileOpen((v) => !v)}
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 md:hidden"
             aria-label="Menu navigasi"
           >
-            <Menu className="h-4 w-4" />
+            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
         </div>
       </div>
+
+      {/* Mobile navigation menu */}
+      {mobileOpen ? (
+        <nav className="border-t border-slate-100 bg-white px-4 pb-4 pt-3 md:hidden">
+          <div className="flex flex-col gap-1">
+            {navItems.map((item) => {
+              const isActive = activePath === item.href
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={isActive
+                    ? 'rounded-xl bg-slate-100 px-4 py-3 text-[15px] font-semibold text-slate-900'
+                    : 'rounded-xl px-4 py-3 text-[15px] text-slate-600 hover:bg-slate-50'}
+                >
+                  {item.label}
+                </Link>
+              )
+            })}
+          </div>
+        </nav>
+      ) : null}
     </header>
   )
 }

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/toast-provider'
 import { Save, Users, UserCheck, Shield, CheckCircle2, Network, Clock, ShieldCheck, ArrowLeft } from 'lucide-react'
+import { ScrollReveal } from '@/components/public/parallax'
 
 export interface ProposalFormData {
   title: string
@@ -82,6 +83,7 @@ export function ProposalForm({
   }
 
   return (
+    <ScrollReveal variant="fade-up" duration={700}>
     <div>
       {/* Header */}
       <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between mb-10">
@@ -363,5 +365,6 @@ export function ProposalForm({
 
       </div>
     </div>
+    </ScrollReveal>
   )
 }

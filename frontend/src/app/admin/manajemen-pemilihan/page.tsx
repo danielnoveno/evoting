@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { AdminElectionCard, AdminFilterPill, AdminShell } from '@/components/admin/admin-shell'
 import { adminElectionDummyData, adminElectionFilters, AdminElectionRecord, AdminElectionStatus } from '@/lib/admin-election-dummy-data'
+import { useToast } from '@/components/ui/toast-provider'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 function getToneClasses(tone: AdminElectionRecord['iconTone']) {
   if (tone === 'emerald') return 'bg-emerald-50 text-emerald-700'
@@ -128,6 +130,8 @@ function ElectionCard({ election }: { election: AdminElectionRecord }) {
 export default function AdminElectionManagementPage() {
   const [activeFilter, setActiveFilter] = useState<'semua' | AdminElectionStatus>('semua')
 
+  const { showToast } = useToast()
+
   const filteredElections = useMemo(() => {
     if (activeFilter === 'semua') return adminElectionDummyData
     return adminElectionDummyData.filter((election) => election.status === activeFilter)
@@ -139,6 +143,7 @@ export default function AdminElectionManagementPage() {
 
   return (
     <AdminShell>
+      <ScrollReveal variant="fade-up" duration={700}>
       <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <h1 className="text-[44px] font-semibold leading-[1.04] tracking-[-0.04em] text-slate-900 md:text-[56px]">Manajemen Pemilihan</h1>
@@ -147,7 +152,7 @@ export default function AdminElectionManagementPage() {
           </p>
         </div>
 
-        <button type="button" className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[15px] font-medium text-white hover:bg-slate-900">
+        <button type="button" onClick={() => showToast({ tone: 'info', title: 'Buat Pemilihan Baru', description: 'Fitur pembuatan ruang pemilihan baru akan tersedia pada versi produksi.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[15px] font-medium text-white hover:bg-slate-900">
           <Plus className="h-4 w-4" />
           Buat Pemilihan Baru
         </button>
@@ -163,17 +168,18 @@ export default function AdminElectionManagementPage() {
         </div>
 
         <div className="flex items-center gap-3 self-end xl:self-auto">
-          <button type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-600 hover:bg-slate-200">
+          <button type="button" onClick={() => showToast({ tone: 'info', title: 'Urutkan', description: 'Fitur pengurutan akan tersedia pada versi produksi.' })} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-600 hover:bg-slate-200">
             <Settings2 className="h-4 w-4" />
             Urutkan: Terbaru
           </button>
-          <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-200">
+          <button type="button" onClick={() => showToast({ tone: 'info', title: 'Tampilan', description: 'Opsi tampilan grid/list akan tersedia pada versi produksi.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-200">
             <Grid2x2 className="h-4 w-4" />
           </button>
         </div>
       </section>
+      </ScrollReveal>
 
-      <section className="mt-8 grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
+      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-5 xl:grid-cols-2 2xl:grid-cols-3">
         {electionsWithEmptyCard.map((entry) => {
           if (entry === 'create-new') {
             return (
@@ -193,7 +199,7 @@ export default function AdminElectionManagementPage() {
 
           return <ElectionCard key={entry.id} election={entry} />
         })}
-      </section>
+      </StaggerContainer>
     </AdminShell>
   )
 }

@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { adminHelpData } from '@/lib/admin-help-dummy-data'
 import { useToast } from '@/components/ui/toast-provider'
-import { Search, FileText, Box, Fingerprint, ShieldCheck, ChevronDown, ChevronUp, MessageSquare, Mail, ArrowRight } from 'lucide-react'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import { Search, FileText, Box, Fingerprint, ShieldCheck, ChevronDown, ChevronUp, MessageSquare, Mail, ArrowRight, ExternalLink, ChevronRight, LifeBuoy, MessageCircle, Phone } from 'lucide-react'
 
 // Helper to map icon string to Lucide component
 const IconMap = {
@@ -65,35 +66,37 @@ export default function AdminHelpPage() {
 
   return (
     <AdminShell>
-      {/* Header */}
-      <section className="mb-12">
-        <h1 className="text-[32px] font-semibold tracking-[-0.04em] text-slate-900 md:text-[40px] leading-tight">
-          {adminHelpData.header.title}
-        </h1>
-        <p className="mt-4 text-[16px] leading-8 text-slate-600 max-w-3xl">
-          {adminHelpData.header.description}
-        </p>
+      {/* Header Section */}
+      <ScrollReveal variant="fade-up" duration={700}>
+        <section className="mb-12">
+          <h1 className="text-[32px] font-semibold tracking-[-0.04em] text-slate-900 md:text-[40px] leading-tight">
+            {adminHelpData.header.title}
+          </h1>
+          <p className="mt-4 text-[16px] leading-8 text-slate-600 max-w-3xl">
+            {adminHelpData.header.description}
+          </p>
 
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="mt-8 max-w-2xl relative flex items-center">
-          <div className="absolute left-6 text-slate-400">
-            <Search className="h-6 w-6" />
-          </div>
-          <input 
-            type="text" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari solusi atau panduan..."
-            className="w-full h-16 pl-16 pr-[120px] rounded-[24px] bg-slate-50 border border-slate-100 focus:bg-white focus:border-slate-300 focus:ring-0 text-[16px] text-slate-900 transition-all outline-none"
-          />
-          <button 
-            type="submit"
-            className="absolute right-3 h-10 px-6 bg-black text-white rounded-xl text-[14px] font-medium hover:bg-slate-800 transition-colors"
-          >
-            Cari
-          </button>
-        </form>
-      </section>
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="mt-8 max-w-2xl relative flex items-center">
+            <div className="absolute left-6 text-slate-400">
+              <Search className="h-6 w-6" />
+            </div>
+            <input 
+              type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari solusi atau panduan..."
+              className="w-full h-16 pl-16 pr-[120px] rounded-[24px] bg-slate-50 border border-slate-100 focus:bg-white focus:border-slate-300 focus:ring-0 text-[16px] text-slate-900 transition-all outline-none"
+            />
+            <button 
+              type="submit"
+              className="absolute right-3 h-10 px-6 bg-black text-white rounded-xl text-[14px] font-medium hover:bg-slate-800 transition-colors"
+            >
+              Cari
+            </button>
+          </form>
+        </section>
+      </ScrollReveal>
 
       {/* Categories Grid */}
       <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">

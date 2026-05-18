@@ -3,6 +3,7 @@
 import { ArrowRight, FileCheck2, Globe, LockKeyhole, ShieldCheck, SquarePen, Users, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { ScrollReveal, ParallaxLayer, FloatingShape, StaggerContainer } from '@/components/public/parallax'
+import { AsciiBackground } from '@/components/public/ascii-background'
 import { sharedDummyContext } from '@/lib/dummy-shared-context'
 
 /* ─────────────────────────────────────────────
@@ -11,6 +12,9 @@ import { sharedDummyContext } from '@/lib/dummy-shared-context'
 export function HeroSection() {
   return (
     <section className="public-section relative overflow-hidden">
+      {/* ASCII Art Background Animation */}
+      <AsciiBackground />
+
       {/* Decorative floating shapes for depth */}
       <FloatingShape
         speed={-0.06}
