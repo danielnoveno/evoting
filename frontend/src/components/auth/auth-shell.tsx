@@ -1,4 +1,4 @@
-import { ReactNode, InputHTMLAttributes } from 'react'
+import { InputHTMLAttributes, ReactNode, useId } from 'react'
 import { PublicFooter } from '@/components/public/site-shell'
 
 export function AuthShell({ children }: { children: ReactNode }) {
@@ -14,7 +14,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
 export function AuthCard({ children }: { children: ReactNode }) {
   return (
-    <section className="w-full max-w-[432px] rounded-[28px] border border-slate-100 bg-white px-5 py-6 md:px-8 md:py-7">
+    <section className="w-full max-w-[432px] rounded-xl border border-slate-200 bg-white px-6 py-6 md:px-8 md:py-8">
       {children}
     </section>
   )
@@ -23,7 +23,9 @@ export function AuthCard({ children }: { children: ReactNode }) {
 export function AuthHeader() {
   return (
     <div className="text-center">
-      <img src="/assets/votein-logo" alt="Votein" className="mx-auto h-8 w-auto" />
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-[14px] bg-[#0F172A]">
+        <img src="/assets/votein-app-logo" alt="Votein" className="h-8 w-8 object-contain" />
+      </div>
     </div>
   )
 }
@@ -31,9 +33,9 @@ export function AuthHeader() {
 export function AuthTitle({ title, body }: { title: string; body?: string }) {
   return (
     <div className="mt-5 text-center">
-      <h1 className="text-[22px] font-semibold tracking-[-0.02em] text-slate-900 md:text-[24px]">{title}</h1>
+      <h1 className="text-[24px] font-semibold text-slate-900">{title}</h1>
       {body ? (
-        <p className="mx-auto mt-3 max-w-[316px] text-[13px] leading-7 text-slate-600 md:text-[14px]">
+        <p className="mx-auto mt-1 max-w-[320px] text-[14px] leading-6 text-slate-400">
           {body}
         </p>
       ) : null}
@@ -43,10 +45,10 @@ export function AuthTitle({ title, body }: { title: string; body?: string }) {
 
 export function AuthNotice() {
   return (
-    <div className="mt-5 rounded-3xl bg-slate-100 px-4 py-3 text-[12px] leading-6 text-slate-600">
-      <div className="flex flex-col items-center text-center">
+    <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-[12px] leading-6 text-slate-800">
+      <div className="text-center">
         <p>
-          Dompet Anda digunakan sebagai identitas terdesentralisasi.
+          Pratinjau ini membantu meninjau alur antarmuka voting sebelum integrasi blockchain penuh diaktifkan.
         </p>
       </div>
     </div>
@@ -59,15 +61,22 @@ type AuthFieldProps = {
 } & InputHTMLAttributes<HTMLInputElement>
 
 export function AuthField({ label, error, type = 'text', className, ...props }: AuthFieldProps) {
+  const generatedId = useId()
+  const fieldId = props.id ?? generatedId
+  const errorId = error ? `${fieldId}-error` : undefined
+
   return (
     <div>
-      <label className="mb-2 block text-[12px] font-semibold text-slate-600">{label}</label>
+      <label htmlFor={fieldId} className="mb-1.5 block text-[12px] font-semibold text-slate-800">{label}</label>
       <input
+        id={fieldId}
         type={type}
-        className={`h-11 w-full rounded-2xl border bg-white px-4 text-[14px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-900 ${error ? 'border-red-400 bg-red-50' : 'border-slate-200'} ${className ?? ''}`}
+        aria-invalid={error ? 'true' : 'false'}
+        aria-describedby={errorId}
+        className={`h-11 w-full rounded-md border bg-white px-3 text-[14px] text-slate-900 placeholder:text-slate-400 ${error ? 'border-red-400 bg-red-50' : 'border-slate-200 focus:border-slate-900'} ${className ?? ''}`}
         {...props}
       />
-      {error ? <p className="mt-2 text-[12px] leading-5 text-red-600">{error}</p> : null}
+      {error ? <p id={errorId} className="mt-1.5 text-[12px] leading-5 text-red-600">{error}</p> : null}
     </div>
   )
 }

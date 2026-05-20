@@ -241,8 +241,8 @@ function createParameterVotingDetail(address: string, hash: string): AdminElecti
       headline: 'Integritas Data & Privasi',
       items: [
         {
-          title: 'Zero-Knowledge Proofs (ZK-Proof)',
-          description: 'Verifikasi suara sah dilakukan tanpa membuka identitas pemilih di dalam ledger publik.',
+          title: 'Commit-Reveal Cryptographic Proof',
+          description: 'Verifikasi suara sah dilakukan melalui pencocokan hash commit-reveal pada blockchain.',
         },
         {
           title: 'Immutable Audit Trail',
@@ -267,7 +267,7 @@ function createRealtimeDetail(totalVotes: string, totalTarget: string, participa
       label: 'Perpanjang Durasi',
     },
     networkStatus: {
-      title: 'Mainnet Active',
+      title: 'Base Sepolia Testnet Active',
       subtitle: 'Block Height: #8,492,012',
     },
     results,
@@ -395,7 +395,7 @@ export const adminElectionDummyData: AdminElectionRecord[] = [
     "adminSignature": "0x...f2a91"
   },
   "gasUsed": "82,410",
-  "blockchain": "Base Mainnet"
+  "blockchain": "Base Sepolia Testnet"
 }`,
         logRows: [
           { time: '12 Jan 2024', timeMeta: '14:20:05 UTC', rangeKey: 'hari-ini', category: 'Update Phase', actorName: 'Nadia Prasetyo', actorWallet: '0x71c ... 4f3', action: 'Update Smart Contract Phase', actionTone: 'blue', objectTitle: 'Proposal UKM RI', objectMeta: 'ID: UKM-RI-01', status: 'selesai', hash: '0x9f2 ... e32' },
@@ -546,7 +546,7 @@ export const adminElectionDummyData: AdminElectionRecord[] = [
     "timestamp": 1730056210
   },
   "gasUsed": "64,901",
-  "blockchain": "Base Mainnet"
+  "blockchain": "Base Sepolia Testnet"
 }`,
         logRows: [
           { time: '24 Okt 2026', timeMeta: '16:14:11 UTC', rangeKey: 'hari-ini', category: 'Update Phase', actorName: 'Rama Aditya', actorWallet: '0x9bc ... 11f', action: 'Reveal Vote', actionTone: 'blue', objectTitle: 'Vote #204', objectMeta: 'Candidate #02', status: 'selesai', hash: '0x1ab ... 991' },
@@ -662,7 +662,7 @@ export const adminElectionDummyData: AdminElectionRecord[] = [
     "timestamp": 1726840812
   },
   "gasUsed": "59,208",
-  "blockchain": "Base Mainnet"
+  "blockchain": "Base Sepolia Testnet"
 }`,
         logRows: [
           { time: '20 Sep 2024', timeMeta: '18:10:14 UTC', rangeKey: 'hari-ini', category: 'Update Phase', actorName: 'Panel Admin', actorWallet: '0x7fd ... 883', action: 'Finalize Election', actionTone: 'blue', objectTitle: 'Pemilihan Kepala Divisi Riset Internal', objectMeta: 'Result Locked', status: 'selesai', hash: '0x811 ... f90' },
@@ -790,7 +790,7 @@ export const adminElectionDummyData: AdminElectionRecord[] = [
     "timestamp": 1746951611
   },
   "gasUsed": "48,550",
-  "blockchain": "Base Mainnet"
+  "blockchain": "Base Sepolia Testnet"
 }`,
         logRows: [
           { time: '11 Mei 2026', timeMeta: '17:14:50 UTC', rangeKey: 'hari-ini', category: 'Update Phase', actorName: 'Panitia UKM', actorWallet: '0x18f ... 772', action: 'Close Election', actionTone: 'blue', objectTitle: 'Pemilihan Sekretaris UKM', objectMeta: 'Voting closed', status: 'selesai', hash: '0xaaa ... 120' },

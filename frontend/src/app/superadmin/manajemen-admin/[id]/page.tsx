@@ -61,7 +61,7 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
                   <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900">{seedRecord.name}</h1>
                   <SuperadminStatusBadge status={enabled ? 'Aktif' : 'Nonaktif'} />
                 </div>
-                <div className="mt-3 flex items-center gap-2 text-[16px] text-slate-600">
+                <div className="mt-3 flex items-center gap-2 text-[16px] text-slate-800">
                   <Mail className="h-4 w-4" />
                   {seedRecord.email}
                 </div>
@@ -161,7 +161,7 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
           <SuperadminSectionCard>
             <div className="flex items-start justify-between gap-4">
               <h2 className="text-[18px] font-semibold text-slate-900">Akses Space</h2>
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Kelola akses belum final', description: 'Gunakan halaman dummy ini untuk presentasi alur.' })} className="text-[15px] font-semibold text-slate-600">
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Kelola akses belum final', description: 'Gunakan halaman dummy ini untuk presentasi alur.' })} className="text-[15px] font-semibold text-slate-800">
                 Kelola Akses
               </button>
             </div>
@@ -181,7 +181,7 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
           <SuperadminSectionCard>
             <div className="flex items-start justify-between gap-4">
               <h2 className="text-[18px] font-semibold text-slate-900">Aktivitas Terbaru</h2>
-              <button type="button" className="text-[15px] font-semibold text-slate-600">Lihat Semua</button>
+              <button type="button" className="text-[15px] font-semibold text-slate-800">Lihat Semua</button>
             </div>
             <div className="mt-6 overflow-hidden rounded-[24px] bg-white">
               <div className="hidden grid-cols-[1.3fr_1fr_0.8fr_1fr] gap-4 border-b border-slate-100 px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 lg:grid">
@@ -196,7 +196,7 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
                     <p className="text-[16px] font-semibold text-slate-900">{row.action}</p>
                     <p className="mt-1 text-[14px] text-slate-400">{row.meta}</p>
                   </div>
-                  <p className="text-[15px] text-slate-600">{row.time}</p>
+                  <p className="text-[15px] text-slate-800">{row.time}</p>
                   <div>
                     <SuperadminStatusBadge status={row.status} />
                   </div>

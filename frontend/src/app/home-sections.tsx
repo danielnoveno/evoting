@@ -46,7 +46,7 @@ export function HeroSection() {
             </ScrollReveal>
 
             <ScrollReveal variant="fade-up" delay={300} duration={900}>
-              <p className="mt-8 max-w-[720px] text-[18px] leading-9 text-slate-600">
+              <p className="mt-8 max-w-[720px] text-[18px] leading-9 text-slate-800">
                 Keamanan kelas institusi bertemu dengan transparansi yang dapat diaudit. Platform e-voting ini
                 mengubah kepercayaan abstrak menjadi jejak kriptografis yang tercatat permanen untuk konteks
                 organisasi mahasiswa seperti {sharedDummyContext.organizationShort}.
@@ -94,7 +94,7 @@ export function HeroSection() {
                   </div>
                   <div className="min-w-0">
                     <h2 className="text-[16px] font-semibold leading-6 text-slate-900">{item.title}</h2>
-                    <p className="mt-2 text-[14px] leading-7 text-slate-600">{item.body}</p>
+                    <p className="mt-2 text-[14px] leading-7 text-slate-800">{item.body}</p>
                   </div>
                 </article>
               )
@@ -128,7 +128,7 @@ export function InfrastructureSection({ auditItems }: { auditItems: AuditItem[] 
         <ScrollReveal variant="fade-left" duration={800}>
           <div className="max-w-[680px]">
             <h2 className="text-[32px] font-semibold leading-tight tracking-[-0.02em] text-slate-900 md:text-[40px]">Infrastruktur Kepercayaan</h2>
-            <p className="mt-4 text-[18px] leading-9 text-slate-600">
+            <p className="mt-4 text-[18px] leading-9 text-slate-800">
               Dibangun di atas protokol terdesentralisasi, menjamin setiap suara dihitung dan dapat diaudit oleh publik tanpa mengorbankan privasi pemilih.
             </p>
           </div>
@@ -142,7 +142,7 @@ export function InfrastructureSection({ auditItems }: { auditItems: AuditItem[] 
                 <LockKeyhole className="h-5 w-5" />
               </div>
               <h3 className="mt-8 text-[24px] font-semibold text-slate-900">Enkripsi End-to-End</h3>
-              <p className="mt-4 max-w-[820px] text-[16px] leading-8 text-slate-600">
+              <p className="mt-4 max-w-[820px] text-[16px] leading-8 text-slate-800">
                 Identitas pemilih dipisahkan dari pilihan suara menggunakan mekanisme commit-reveal. Suara Anda sepenuhnya rahasia, namun secara matematis dapat dibuktikan keabsahannya.
               </p>
             </article>
@@ -155,7 +155,7 @@ export function InfrastructureSection({ auditItems }: { auditItems: AuditItem[] 
                 <Globe className="h-5 w-5" />
               </div>
               <h3 className="mt-8 text-[24px] font-semibold text-slate-900">Audit Buku Besar Publik</h3>
-              <p className="mt-4 text-[16px] leading-8 text-slate-600">
+              <p className="mt-4 text-[16px] leading-8 text-slate-800">
                 Setiap transaksi dicatat secara permanen di blockchain, memungkinkan siapa saja untuk memverifikasi integritas pemilihan secara independen.
               </p>
             </article>
@@ -178,7 +178,7 @@ export function InfrastructureSection({ auditItems }: { auditItems: AuditItem[] 
                     <div className="rounded-xl bg-white px-4 py-3">
                       <div className="flex items-start justify-between gap-3 text-[12px]">
                         <div className="min-w-0">
-                          <p className="font-mono text-slate-600">{item.hash}</p>
+                          <p className="font-mono text-slate-800">{item.hash}</p>
                           <p className="mt-1 text-slate-500">{item.label}</p>
                         </div>
                         <span className="text-slate-400">{item.time}</span>
@@ -204,7 +204,7 @@ export function InfrastructureSection({ auditItems }: { auditItems: AuditItem[] 
                 <Zap className="h-5 w-5" />
               </div>
               <h3 className="mt-8 text-[24px] font-semibold text-slate-900">Verifikasi Real-time</h3>
-              <p className="mt-4 text-[16px] leading-8 text-slate-600">
+              <p className="mt-4 text-[16px] leading-8 text-slate-800">
                 Pantau aliran suara dan hasil sementara secara instan. Tidak ada lagi kotak hitam dalam proses penghitungan.
               </p>
             </article>
@@ -221,7 +221,7 @@ export function InfrastructureSection({ auditItems }: { auditItems: AuditItem[] 
                 Kami menyembunyikan kompleksitas blockchain di balik antarmuka yang intuitif. Memilih semudah mengirim pesan, dapat diakses oleh siapa saja tanpa pengetahuan teknis.
               </p>
               <Link href="/cara-kerja" className="mt-8 inline-flex items-center gap-2 text-[14px] font-medium text-white hover:text-slate-200">
-                Coba Demo UX
+                Lihat Alur Voting
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </article>

@@ -23,6 +23,7 @@ const STORAGE_KEYS = {
   platform: 'votein_superadmin_platform_v2',
   alerts: 'votein_superadmin_risk_alerts_v2',
   auditLogs: 'votein_superadmin_audit_logs_v2',
+  masterVoters: 'votein_superadmin_master_voters_v2',
 } as const
 
 type PlatformSettingsState = {
@@ -163,4 +164,36 @@ export function useSuperadminAuditLogsStore() {
   }
 
   return { logs, setLogs }
+}
+
+export type SuperadminMasterVoter = {
+  nim: string
+  name: string
+  email: string
+  faculty: string
+  syncStatus: 'Tersinkronisasi' | 'Belum Sinkron'
+}
+
+const initialMasterVoters: SuperadminMasterVoter[] = [
+  { nim: '220711663', name: 'Daniel Noveno', email: 'daniel.noveno@students.uajy.ac.id', faculty: 'Informatika', syncStatus: 'Tersinkronisasi' },
+  { nim: '220711849', name: 'Arya Damar', email: 'arya.damar@students.uajy.ac.id', faculty: 'Informatika', syncStatus: 'Tersinkronisasi' },
+  { nim: '220712001', name: 'Citra Wijaya', email: 'citra.wijaya@students.uajy.ac.id', faculty: 'Teknik Industri', syncStatus: 'Tersinkronisasi' },
+]
+
+export function useSuperadminMasterVotersStore() {
+  const [voters, setVotersState] = useState<SuperadminMasterVoter[]>(initialMasterVoters)
+
+  useEffect(() => {
+    setVotersState(readStore(STORAGE_KEYS.masterVoters, initialMasterVoters))
+  }, [])
+
+  const setVoters = (value: SuperadminMasterVoter[] | ((current: SuperadminMasterVoter[]) => SuperadminMasterVoter[])) => {
+    setVotersState((current) => {
+      const nextValue = typeof value === 'function' ? value(current) : value
+      writeStore(STORAGE_KEYS.masterVoters, nextValue)
+      return nextValue
+    })
+  }
+
+  return { voters, setVoters }
 }

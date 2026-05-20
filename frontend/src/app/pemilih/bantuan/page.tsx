@@ -36,7 +36,7 @@ const faqs = [
   {
     id: 'faq-2',
     question: 'Mengapa saya harus membuka dari browser yang sama?',
-    answer: 'Pada simulasi frontend ini, data salt dan commit disimpan lokal di perangkat. Membuka dari browser yang sama membantu memastikan data reveal tetap tersedia.',
+    answer: 'Pada tahap pratinjau ini, data salt dan commit masih disimpan lokal di perangkat. Membuka dari browser yang sama membantu memastikan data reveal tetap tersedia.',
   },
   {
     id: 'faq-3',
@@ -54,7 +54,7 @@ function HelpAccordion({ question, answer, openByDefault = false }: { question: 
         <span className="text-[16px] font-semibold text-slate-900">{question}</span>
         {open ? <ChevronUp className="h-5 w-5 text-slate-500" /> : <ChevronDown className="h-5 w-5 text-slate-500" />}
       </button>
-      {open ? <div className="px-6 pb-6 text-[15px] leading-8 text-slate-600">{answer}</div> : null}
+      {open ? <div className="px-6 pb-6 text-[15px] leading-8 text-slate-800">{answer}</div> : null}
     </article>
   )
 }
@@ -74,7 +74,7 @@ export default function VoterHelpPage() {
       <ScrollReveal variant="fade-up" duration={800}>
       <section className="max-w-4xl">
         <h1 className="text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[42px] md:text-[56px]">Pusat Bantuan Voter</h1>
-        <p className="mt-4 text-[16px] leading-8 text-slate-600 md:text-[18px] md:leading-9">
+        <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
           Semua hal penting tentang proses voting berbasis blockchain dalam bahasa yang sederhana, aman, dan mudah diikuti.
         </p>
 
@@ -100,7 +100,7 @@ export default function VoterHelpPage() {
                 <Icon className="h-5 w-5" />
               </div>
               <h2 className="mt-6 text-[20px] font-semibold text-slate-900 sm:text-[24px]">{category.title}</h2>
-              <p className="mt-4 text-[15px] leading-8 text-slate-600">{category.description}</p>
+              <p className="mt-4 text-[15px] leading-8 text-slate-800">{category.description}</p>
               {index === 0 ? <button type="button" onClick={() => showToast({ tone: 'info', title: 'Panduan diprioritaskan', description: 'Topik cara memilih ditampilkan pada daftar FAQ di bawah.' })} className="mt-6 inline-flex items-center gap-2 text-[15px] font-semibold text-slate-900 hover:text-blue-700">Lihat Detail →</button> : null}
             </article>
           )
@@ -116,7 +116,7 @@ export default function VoterHelpPage() {
             </div>
             <div>
               <h3 className="text-[24px] font-semibold text-slate-900">Bukti Suara & Verifikasi</h3>
-              <p className="mt-3 text-[15px] leading-8 text-slate-600">Pelajari cara menggunakan hash blockchain untuk memverifikasi bahwa suara Anda telah tercatat tanpa membuka identitas pemilih.</p>
+              <p className="mt-3 text-[15px] leading-8 text-slate-800">Pelajari cara menggunakan hash blockchain untuk memverifikasi bahwa suara Anda telah tercatat tanpa membuka identitas pemilih.</p>
             </div>
           </div>
           <ExternalLink className="hidden h-5 w-5 text-slate-400 md:block" />
@@ -151,7 +151,7 @@ export default function VoterHelpPage() {
             <Mail className="h-5 w-5" />
           </div>
           <h3 className="mt-6 text-[24px] font-semibold text-slate-900 sm:text-[28px]">Hubungi via Email</h3>
-          <p className="mt-4 text-[15px] leading-8 text-slate-600">Respon dalam 24 jam untuk pertanyaan non-mendesak terkait akun, bukti transaksi, atau kendala akses.</p>
+          <p className="mt-4 text-[15px] leading-8 text-slate-800">Respon dalam 24 jam untuk pertanyaan non-mendesak terkait akun, bukti transaksi, atau kendala akses.</p>
           <button type="button" onClick={() => showToast({ tone: 'success', title: 'Email support dibuka', description: 'Simulasi frontend mengarahkan Anda ke kanal email bantuan.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-black px-6 text-[14px] font-semibold text-white hover:bg-slate-900 sm:w-auto">
             bantuan@portalsuara.id
           </button>
@@ -162,8 +162,8 @@ export default function VoterHelpPage() {
             <MessageSquare className="h-5 w-5" />
           </div>
           <h3 className="mt-6 text-[24px] font-semibold text-slate-900 sm:text-[28px]">Live Chat 24/7</h3>
-          <p className="mt-4 text-[15px] leading-8 text-slate-600">Bicara langsung dengan tim dukungan teknis saat Anda perlu bantuan cepat ketika proses voting sedang berjalan.</p>
-          <button type="button" onClick={() => showToast({ tone: 'success', title: 'Live chat dimulai', description: 'Percakapan bantuan masih disimulasikan pada mode dummy.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-blue-600 px-6 text-[14px] font-semibold text-white hover:bg-blue-700 sm:w-auto">
+          <p className="mt-4 text-[15px] leading-8 text-slate-800">Bicara langsung dengan tim dukungan teknis saat Anda perlu bantuan cepat ketika proses voting sedang berjalan.</p>
+          <button type="button" onClick={() => showToast({ tone: 'success', title: 'Live chat dimulai', description: 'Fitur percakapan langsung masih dalam tahap pengembangan.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-blue-600 px-6 text-[14px] font-semibold text-white hover:bg-blue-700 sm:w-auto">
             Mulai Chat Sekarang
           </button>
         </article>
@@ -175,7 +175,7 @@ export default function VoterHelpPage() {
           <HelpAccordion key={faq.id} question={faq.question} answer={faq.answer} openByDefault={index === 0} />
         ))}
         {filteredFaqs.length === 0 ? (
-          <article className="rounded-[24px] bg-white px-6 py-5 text-[15px] leading-8 text-slate-600">
+          <article className="rounded-[24px] bg-white px-6 py-5 text-[15px] leading-8 text-slate-800">
             Tidak ada FAQ yang cocok. Coba kata kunci lain atau hubungi tim bantuan.
           </article>
         ) : null}

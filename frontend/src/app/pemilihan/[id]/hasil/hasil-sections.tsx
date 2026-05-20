@@ -37,12 +37,12 @@ export function HasilSections({ id }: { id: string }) {
               <div className="max-w-[860px]">
                 <PublicElectionBackLink />
                 <div className="mt-5 flex flex-wrap items-center gap-3">
-                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-emerald-700">Data Terverifikasi On-Chain</span>
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-emerald-700">Ringkasan Audit</span>
                   <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">{isMainElection ? 'Berlangsung' : 'Reveal Aktif'}</span>
                 </div>
                 <h1 className="mt-6 text-[44px] font-semibold leading-[1.08] tracking-[-0.03em] text-slate-900 md:text-[64px]">{pageTitle}</h1>
-                <p className="mt-5 max-w-[760px] text-[18px] leading-9 text-slate-600">
-                  Transparansi penuh dengan rekam jejak yang tidak dapat diubah. Hasil di bawah ini diperbarui secara real-time dari smart contract pemilihan kampus.
+                <p className="mt-5 max-w-[760px] text-[18px] leading-9 text-slate-800">
+                  Halaman ini menampilkan ringkasan hasil dan jejak audit sebagai pratinjau antarmuka. Data masih disimulasikan dan belum berasal dari smart contract runtime nyata.
                 </p>
               </div>
               <button type="button" className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
@@ -63,10 +63,10 @@ export function HasilSections({ id }: { id: string }) {
                 <div>
                   <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] uppercase tracking-[0.06em] text-slate-500">Kandidat 01 · Pemenang Sementara</span>
                   <h2 className="mt-5 text-[28px] font-semibold leading-tight text-slate-900 md:text-[36px]">{winnerName}</h2>
-                  <p className="mt-3 text-[18px] text-slate-600">{winnerFaculty}</p>
+                  <p className="mt-3 text-[18px] text-slate-800">{winnerFaculty}</p>
                   <div className="mt-8 flex flex-wrap items-end gap-4">
                     <p className="text-[56px] font-semibold leading-none tracking-[-0.04em] text-slate-900 md:text-[72px]">58.4%</p>
-                    <p className="pb-2 text-[18px] text-slate-600">dari total suara masuk</p>
+                    <p className="pb-2 text-[18px] text-slate-800">dari total suara masuk</p>
                   </div>
                   <div className="mt-8 flex gap-10">
                     <div>
@@ -92,7 +92,7 @@ export function HasilSections({ id }: { id: string }) {
                 <div className="mt-6 h-2 rounded-full bg-slate-200">
                   <div className="h-2 w-[82%] rounded-full bg-black" />
                 </div>
-                <div className="mt-3 flex items-center justify-between text-[14px] text-slate-600">
+                <div className="mt-3 flex items-center justify-between text-[14px] text-slate-800">
                   <span>Partisipasi 82%</span>
                   <span>Target: 26,000</span>
                 </div>
@@ -130,7 +130,7 @@ export function HasilSections({ id }: { id: string }) {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-[32px] font-semibold text-slate-900">Jejak Audit Blockchain</h2>
-                <p className="mt-3 text-[16px] leading-8 text-slate-600">Semua transaksi dicatat secara publik pada Base Network.</p>
+                <p className="mt-3 text-[16px] leading-8 text-slate-800">Semua transaksi dicatat secara publik pada Base Network.</p>
               </div>
               <a href="https://sepolia.basescan.org" target="_blank" rel="noreferrer" className="hidden items-center gap-2 text-[14px] font-medium text-slate-900 md:inline-flex">
                 Lihat Semua
@@ -150,7 +150,7 @@ export function HasilSections({ id }: { id: string }) {
                         <p className="text-[18px] font-semibold text-slate-900">{log.action}</p>
                         <span className="rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-emerald-700">Sukses</span>
                       </div>
-                      <p className="mt-1 font-mono text-[13px] text-slate-600">Tx : {log.tx}</p>
+                      <p className="mt-1 font-mono text-[13px] text-slate-800">Tx : {log.tx}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-6 md:justify-end">

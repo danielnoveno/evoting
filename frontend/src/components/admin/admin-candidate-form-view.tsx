@@ -46,6 +46,37 @@ export function AdminCandidateFormView({
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
 
+  type CandidateFormErrors = Partial<Record<'fullName' | 'identityNumber' | 'vision' | 'mission', string>>
+  const [errors, setErrors] = useState<CandidateFormErrors>({})
+
+  const validateForm = (nameVal: string, idVal: string, visVal: string, misVal: string) => {
+    const nextErrors: CandidateFormErrors = {}
+
+    if (!nameVal.trim()) {
+      nextErrors.fullName = 'Nama kandidat wajib diisi.'
+    } else if (nameVal.trim().length < 3 || nameVal.trim().length > 50) {
+      nextErrors.fullName = 'Nama kandidat harus memiliki panjang 3 hingga 50 karakter.'
+    } else if (!/^[a-zA-Z\s]+$/.test(nameVal.trim())) {
+      nextErrors.fullName = 'Nama kandidat hanya boleh mengandung huruf alfabet dan spasi.'
+    }
+
+    if (!idVal.trim()) {
+      nextErrors.identityNumber = 'Nomor identitas wajib diisi.'
+    } else if (!/^\d{10}$/.test(idVal.trim())) {
+      nextErrors.identityNumber = 'Nomor identitas harus berupa angka numerik tepat 10 digit.'
+    }
+
+    if (!visVal.trim()) {
+      nextErrors.vision = 'Visi wajib diisi.'
+    }
+
+    if (!misVal.trim()) {
+      nextErrors.mission = 'Misi wajib diisi.'
+    }
+
+    return nextErrors
+  }
+
   const confirmTitle = useMemo(() => `${primaryActionLabel}?`, [primaryActionLabel])
   const isDirty = useMemo(() => {
     return fullName !== (prefill?.fullName ?? '')
@@ -56,11 +87,14 @@ export function AdminCandidateFormView({
   }, [bio, fullName, identityNumber, mission, prefill, vision])
 
   const handleSaveClick = () => {
-    if (!fullName.trim() || !identityNumber.trim() || !vision.trim() || !mission.trim()) {
+    const nextErrors = validateForm(fullName, identityNumber, vision, mission)
+    setErrors(nextErrors)
+
+    if (Object.keys(nextErrors).length > 0) {
       showToast({
         tone: 'error',
-        title: 'Form belum lengkap',
-        description: 'Lengkapi nama, identitas, visi, dan misi sebelum menyimpan.',
+        title: 'Form tidak valid',
+        description: nextErrors.fullName || nextErrors.identityNumber || nextErrors.vision || nextErrors.mission || 'Pastikan semua kolom diisi dengan benar.',
       })
       return
     }
@@ -128,7 +162,7 @@ export function AdminCandidateFormView({
             </Link>
             <h1 className="text-[44px] font-semibold tracking-[-0.04em] text-slate-900 md:text-[56px]">{title}</h1>
           </div>
-          <p className="mt-5 text-[18px] leading-9 text-slate-600">{description}</p>
+          <p className="mt-5 text-[18px] leading-9 text-slate-800">{description}</p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -160,20 +194,26 @@ export function AdminCandidateFormView({
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Informasi Identitas</p>
             <div className="mt-6 space-y-6">
               <div>
-                <label className="mb-3 block text-[13px] font-semibold text-slate-700">{form.identityLabel}</label>
+                <label htmlFor="cand-identity-number" className="mb-3 block text-[13px] font-semibold text-slate-700">{form.identityLabel}</label>
                 <input
+                  id="cand-identity-number"
                   type="text"
                   placeholder={form.identityPlaceholder}
                   value={identityNumber}
-                  onChange={(event) => setIdentityNumber(event.target.value)}
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
+                  onChange={(event) => {
+                    const val = event.target.value
+                    setIdentityNumber(val)
+                    setErrors((prev) => ({ ...prev, identityNumber: validateForm(fullName, val, vision, mission).identityNumber }))
+                  }}
+                  className={`h-12 w-full rounded-2xl border bg-white px-4 text-[15px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all ${errors.identityNumber ? 'border-red-500 focus:border-red-500' : 'border-slate-200'}`}
                 />
+                {errors.identityNumber && <p className="mt-2 text-[12px] text-red-600 font-medium">{errors.identityNumber}</p>}
               </div>
               <div>
-                <label className="mb-3 block text-[13px] font-semibold text-slate-700">{form.hashPreviewLabel}</label>
-                <div className="flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-4">
-                  <p className="font-mono text-[12px] break-all text-slate-600">{election.detail.blockchainAnchor.slice(0, 42)}...</p>
-                  <button type="button" onClick={() => { navigator.clipboard.writeText(election.detail.blockchainAnchor).then(() => showToast({ tone: 'success', title: 'Hash disalin', description: 'Hash preview berhasil disalin ke clipboard.' })).catch(() => showToast({ tone: 'error', title: 'Gagal menyalin', description: 'Terjadi kesalahan saat menyalin hash.' })) }} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
+                <label htmlFor="cand-hash-preview" className="mb-3 block text-[13px] font-semibold text-slate-700">{form.hashPreviewLabel}</label>
+                <div id="cand-hash-preview" className="flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-4 border border-slate-200">
+                  <p className="font-mono text-[12px] break-all text-slate-800">{election.detail.blockchainAnchor.slice(0, 42)}...</p>
+                  <button type="button" onClick={() => { navigator.clipboard.writeText(election.detail.blockchainAnchor).then(() => showToast({ tone: 'success', title: 'Hash disalin', description: 'Hash preview berhasil disalin ke clipboard.' })).catch(() => showToast({ tone: 'error', title: 'Gagal menyalin', description: 'Terjadi kesalahan saat menyalin hash.' })) }} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 focus:ring-2 focus:ring-black focus:outline-none" aria-label="Salin hash blockchain anchor">
                     <Copy className="h-4 w-4" />
                   </button>
                 </div>
@@ -186,23 +226,30 @@ export function AdminCandidateFormView({
           <article className="rounded-[30px] bg-slate-100 p-6">
             <div className="space-y-6">
               <div>
-                <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{form.fullNameLabel}</label>
+                <label htmlFor="cand-full-name" className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{form.fullNameLabel}</label>
                 <input
+                  id="cand-full-name"
                   type="text"
                   placeholder={form.fullNamePlaceholder}
                   value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                  className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[16px] text-slate-900 outline-none placeholder:text-slate-400"
+                  onChange={(event) => {
+                    const val = event.target.value
+                    setFullName(val)
+                    setErrors((prev) => ({ ...prev, fullName: validateForm(val, identityNumber, vision, mission).fullName }))
+                  }}
+                  className={`h-14 w-full rounded-2xl border bg-white px-5 text-[16px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all ${errors.fullName ? 'border-red-500 focus:border-red-500' : 'border-slate-200'}`}
                 />
+                {errors.fullName && <p className="mt-2 text-[12px] text-red-600 font-medium">{errors.fullName}</p>}
               </div>
               <div>
-                <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{form.bioLabel}</label>
+                <label htmlFor="cand-bio" className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{form.bioLabel}</label>
                 <input
+                  id="cand-bio"
                   type="text"
                   placeholder={form.bioPlaceholder}
                   value={bio}
                   onChange={(event) => setBio(event.target.value)}
-                  className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[16px] text-slate-900 outline-none placeholder:text-slate-400"
+                  className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[16px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all"
                 />
               </div>
             </div>
@@ -210,24 +257,36 @@ export function AdminCandidateFormView({
 
           <article className="rounded-[30px] bg-slate-100 p-6">
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Visi & Misi Strategis</p>
-            <div className="mt-8 space-y-6">
+            <div className="mt-8 grid sm:grid-cols-2 gap-6">
               <div>
-                <label className="mb-3 block text-[14px] font-semibold text-slate-700">{form.visionLabel}</label>
+                <label htmlFor="cand-vision" className="mb-3 block text-[14px] font-semibold text-slate-700">{form.visionLabel}</label>
                 <textarea
+                  id="cand-vision"
                   placeholder={form.visionPlaceholder}
                   value={vision}
-                  onChange={(event) => setVision(event.target.value)}
-                  className="min-h-[120px] w-full rounded-[22px] border border-slate-200 bg-slate-200/80 px-5 py-4 text-[16px] text-slate-900 outline-none placeholder:text-slate-400"
+                  onChange={(event) => {
+                    const val = event.target.value
+                    setVision(val)
+                    setErrors((prev) => ({ ...prev, vision: validateForm(fullName, identityNumber, val, mission).vision }))
+                  }}
+                  className={`min-h-[120px] w-full rounded-[22px] border bg-slate-200/80 px-5 py-4 text-[16px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all ${errors.vision ? 'border-red-500 focus:border-red-500' : 'border-transparent'}`}
                 />
+                {errors.vision && <p className="mt-2 text-[12px] text-red-600 font-medium">{errors.vision}</p>}
               </div>
               <div>
-                <label className="mb-3 block text-[14px] font-semibold text-slate-700">{form.missionLabel}</label>
+                <label htmlFor="cand-mission" className="mb-3 block text-[14px] font-semibold text-slate-700">{form.missionLabel}</label>
                 <textarea
+                  id="cand-mission"
                   placeholder={form.missionPlaceholder}
                   value={mission}
-                  onChange={(event) => setMission(event.target.value)}
-                  className="min-h-[150px] w-full rounded-[22px] border border-slate-200 bg-slate-200/80 px-5 py-4 text-[16px] text-slate-900 outline-none placeholder:text-slate-400"
+                  onChange={(event) => {
+                    const val = event.target.value
+                    setMission(val)
+                    setErrors((prev) => ({ ...prev, mission: validateForm(fullName, identityNumber, vision, val).mission }))
+                  }}
+                  className={`min-h-[150px] w-full rounded-[22px] border bg-slate-200/80 px-5 py-4 text-[16px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all ${errors.mission ? 'border-red-500 focus:border-red-500' : 'border-transparent'}`}
                 />
+                {errors.mission && <p className="mt-2 text-[12px] text-red-600 font-medium">{errors.mission}</p>}
               </div>
             </div>
           </article>

@@ -167,7 +167,7 @@ function SuperadminAdminManagementContent() {
                     </SuperadminFilterChip>
                   ))}
                 </div>
-                <p className="text-[15px] text-slate-600">Total: {filteredAdmins.length} admin</p>
+                <p className="text-[15px] text-slate-800">Total: {filteredAdmins.length} admin</p>
               </div>
             </AppSectionCard>
           </ScrollReveal>
@@ -217,7 +217,7 @@ function SuperadminAdminManagementContent() {
               )}
             </div>
 
-            <div className="flex flex-col gap-4 px-6 py-5 text-[15px] text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 px-6 py-5 text-[15px] text-slate-800 sm:flex-row sm:items-center sm:justify-between">
               <p>
                 Menampilkan 1 hingga {filteredAdmins.length} dari {admins.length} admin
               </p>

@@ -16,11 +16,11 @@ function getStatusBadgeClass(status: ProposalStatus) {
     case 'MENUNGGU REVIEW':
       return 'bg-amber-100 text-amber-700'
     case 'DRAF':
-      return 'bg-slate-200 text-slate-600'
+      return 'bg-slate-200 text-slate-800'
     case 'DITOLAK':
       return 'bg-red-100 text-red-700'
     default:
-      return 'bg-slate-100 text-slate-600'
+      return 'bg-slate-100 text-slate-800'
   }
 }
 
@@ -86,7 +86,7 @@ export default function AdminProposalPage() {
         <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-[760px]">
             <h1 className="text-[32px] font-semibold tracking-[-0.04em] text-slate-900 md:text-[40px]">{header.title}</h1>
-            <p className="mt-4 text-[16px] leading-8 text-slate-600">{header.description}</p>
+            <p className="mt-4 text-[16px] leading-8 text-slate-800">{header.description}</p>
           </div>
           <div>
             <Link
@@ -151,7 +151,7 @@ export default function AdminProposalPage() {
                       <p className="mt-1 text-[12px] text-slate-400">Peserta</p>
                     </td>
                     <td className="px-6 py-5">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-[12px] font-mono ${row.hash === 'Belum di-hash' ? 'bg-slate-100 text-slate-400' : 'bg-slate-100 text-slate-600'}`}>
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-[12px] font-mono ${row.hash === 'Belum di-hash' ? 'bg-slate-100 text-slate-400' : 'bg-slate-100 text-slate-800'}`}>
                         {row.hash}
                       </span>
                     </td>
@@ -217,7 +217,7 @@ export default function AdminProposalPage() {
         <section className="mt-10 mb-8 overflow-hidden rounded-[32px] bg-[#f4f6f8] grid lg:grid-cols-2 relative">
           <div className="p-10 lg:p-14 z-10">
             <h2 className="text-[24px] font-bold text-slate-900">{banner.title}</h2>
-            <p className="mt-4 text-[16px] leading-8 text-slate-600 max-w-[480px]">
+            <p className="mt-4 text-[16px] leading-8 text-slate-800 max-w-[480px]">
               {banner.description}
             </p>
             <div className="mt-8 flex flex-wrap gap-4 text-[11px] font-bold uppercase tracking-[0.1em] text-slate-900">
@@ -246,7 +246,7 @@ export default function AdminProposalPage() {
                 <div className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-slate-900">{banner.nodeSync.status}</span>
               </div>
-              <pre className="text-[11px] leading-[1.8] text-slate-600 font-mono">
+              <pre className="text-[11px] leading-[1.8] text-slate-800 font-mono">
                 {banner.nodeSync.info}
               </pre>
             </div>

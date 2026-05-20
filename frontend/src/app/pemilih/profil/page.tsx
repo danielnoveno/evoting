@@ -39,12 +39,12 @@ export default function VoterProfilePage() {
 
     const photoUrl = URL.createObjectURL(file)
     actions.updateProfile({ avatarUrl: photoUrl })
-    showToast({ tone: 'success', title: 'Foto profil diperbarui', description: 'Pratinjau foto baru berhasil dimuat pada simulasi frontend.' })
+    showToast({ tone: 'success', title: 'Foto profil diperbarui', description: 'Pratinjau foto baru berhasil dimuat.' })
   }
 
   const handleSave = () => {
     actions.updateProfile({ name: displayName, bio })
-    showToast({ tone: 'success', title: 'Perubahan disimpan', description: 'Profil pemilih berhasil diperbarui pada mode dummy.' })
+    showToast({ tone: 'success', title: 'Perubahan disimpan', description: 'Profil pemilih berhasil diperbarui.' })
   }
 
   return (
@@ -59,7 +59,7 @@ export default function VoterProfilePage() {
           <span className="text-slate-900">Pengaturan Profil</span>
         </div>
         <h1 className="mt-5 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Sunting Profil</h1>
-        <p className="mt-4 text-[16px] leading-8 text-slate-600 md:text-[18px] md:leading-9">Kelola identitas digital Anda dalam ekosistem voting. Pastikan informasi tetap jelas, rapi, dan mudah diverifikasi.</p>
+        <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">Kelola identitas digital Anda dalam ekosistem voting. Pastikan informasi tetap jelas, rapi, dan mudah diverifikasi.</p>
       </section>
       </ScrollReveal>
 
@@ -74,7 +74,7 @@ export default function VoterProfilePage() {
               </button>
             </div>
             <h2 className="mt-6 text-[24px] font-semibold text-slate-900">Foto Profil</h2>
-            <p className="mt-3 text-[15px] leading-8 text-slate-600">Gunakan foto yang jelas untuk mempermudah identifikasi saat sesi voting simulasi berlangsung.</p>
+            <p className="mt-3 text-[15px] leading-8 text-slate-800">Gunakan foto yang jelas untuk mempermudah identifikasi saat sesi voting simulasi berlangsung.</p>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             <button type="button" onClick={() => fileRef.current?.click()} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-200">
               Ganti Foto
@@ -112,8 +112,8 @@ export default function VoterProfilePage() {
               <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Hash identitas (wallet address)</label>
               <div className="flex h-14 items-center overflow-hidden rounded-2xl bg-slate-100">
                 <div className="h-full w-1.5 bg-black" />
-                <div className="flex-1 truncate px-3 font-mono text-[12px] text-slate-600 sm:px-4 sm:text-[14px]">{store.profile.wallet}</div>
-                <button type="button" onClick={handleCopyWallet} className="px-3 text-slate-500 hover:text-slate-900 sm:px-5">
+                <div className="flex-1 truncate px-3 font-mono text-[12px] text-slate-800 sm:px-4 sm:text-[14px]">{store.profile.wallet}</div>
+                <button type="button" onClick={handleCopyWallet} className="px-3 text-slate-500 hover:text-slate-900 sm:px-5" aria-label="Salin alamat wallet pemilih">
                   <Copy className="h-5 w-5" />
                 </button>
               </div>
@@ -145,7 +145,7 @@ export default function VoterProfilePage() {
           </div>
           <div>
             <h3 className="text-[24px] font-semibold text-slate-900">Kebijakan Privasi & Enkripsi</h3>
-            <p className="mt-3 text-[15px] leading-8 text-slate-600">Data Anda dilindungi dengan enkripsi end-to-end. Hanya nama tampilan yang muncul pada dashboard partisipasi pemilih, sedangkan identitas formal tetap disamarkan pada blockchain.</p>
+            <p className="mt-3 text-[15px] leading-8 text-slate-800">Data Anda dilindungi dengan enkripsi end-to-end. Hanya nama tampilan yang muncul pada dashboard partisipasi pemilih, sedangkan identitas formal tetap disamarkan pada blockchain.</p>
           </div>
         </div>
       </section>

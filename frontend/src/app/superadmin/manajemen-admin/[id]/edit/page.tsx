@@ -200,7 +200,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
               </div>
               <div>
                 <h2 className="text-[18px] font-semibold text-slate-900">Mode Simulasi Aktif</h2>
-                <p className="mt-2 text-[15px] leading-7 text-slate-600">Setelah menekan simpan, Anda akan kembali ke halaman detail admin dengan notifikasi sukses. Data asli daftar admin tidak akan berubah.</p>
+                <p className="mt-2 text-[15px] leading-7 text-slate-800">Setelah menekan simpan, Anda akan kembali ke halaman detail admin dengan notifikasi sukses. Data asli daftar admin tidak akan berubah.</p>
               </div>
             </div>
           </SuperadminSectionCard>
@@ -215,7 +215,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
                 </div>
                 <SuperadminStatusBadge status={formData.status} />
               </div>
-              <div className="mt-5 space-y-3 text-[14px] text-slate-600">
+              <div className="mt-5 space-y-3 text-[14px] text-slate-800">
                 <p><span className="font-semibold text-slate-900">Identitas blockchain:</span> {admin.blockchainIdentity}</p>
                 <p><span className="font-semibold text-slate-900">Akses saat ini:</span> {formData.accessLabel} · {formData.accessDetail}</p>
                 <p><span className="font-semibold text-slate-900">Mode akses:</span> {formData.scope === 'all' ? 'Semua Pemilihan' : 'Pemilihan Tertentu'}</p>
@@ -230,7 +230,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
               </div>
               <div>
                 <h2 className="text-[18px] font-semibold text-slate-900">Guardrail Demo</h2>
-                <ul className="mt-3 space-y-2 text-[14px] leading-7 text-slate-600">
+                <ul className="mt-3 space-y-2 text-[14px] leading-7 text-slate-800">
                   <li>• Form bisa diisi dan divalidasi seperti alur asli.</li>
                   <li>• Tombol simpan hanya menampilkan hasil simulasi.</li>
                   <li>• Saat kembali ke detail admin, data akan tetap seperti semula.</li>

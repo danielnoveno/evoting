@@ -166,11 +166,11 @@ export default function AdminElectionManagementPage() {
         </div>
 
         <div className="flex items-center gap-3 self-end xl:self-auto">
-          <button type="button" onClick={() => showToast({ tone: 'info', title: 'Urutkan', description: 'Fitur pengurutan akan tersedia pada versi produksi.' })} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-600 hover:bg-slate-200">
+          <button type="button" onClick={() => showToast({ tone: 'info', title: 'Urutkan', description: 'Fitur pengurutan akan tersedia pada versi produksi.' })} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-800 hover:bg-slate-200">
             <Settings2 className="h-4 w-4" />
             Urutkan: Terbaru
           </button>
-          <button type="button" onClick={() => showToast({ tone: 'info', title: 'Tampilan', description: 'Opsi tampilan grid/list akan tersedia pada versi produksi.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-200">
+          <button type="button" onClick={() => showToast({ tone: 'info', title: 'Tampilan', description: 'Opsi tampilan grid/list akan tersedia pada versi produksi.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-800 hover:bg-slate-200">
             <Grid2x2 className="h-4 w-4" />
           </button>
         </div>

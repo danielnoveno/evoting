@@ -128,25 +128,25 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Organisasi</p>
           <p className="mt-5 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">{proposal.organizationName}</p>
-          <p className="mt-3 text-[15px] leading-7 text-slate-600">Pemilik proposal yang sedang mengajukan ruang pemilihan baru.</p>
+          <p className="mt-3 text-[15px] leading-7 text-slate-800">Pemilik proposal yang sedang mengajukan ruang pemilihan baru.</p>
         </article>
 
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Readiness Score</p>
           <p className="mt-5 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">{readinessScore}/{totalChecks}</p>
-          <p className="mt-3 text-[15px] leading-7 text-slate-600">Checklist teknis yang sudah memenuhi syarat review awal.</p>
+          <p className="mt-3 text-[15px] leading-7 text-slate-800">Checklist teknis yang sudah memenuhi syarat review awal.</p>
         </article>
 
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Risk Level</p>
           <p className="mt-5 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">{proposal.riskProfile.level}</p>
-          <p className="mt-3 text-[15px] leading-7 text-slate-600">{proposal.riskProfile.note}</p>
+          <p className="mt-3 text-[15px] leading-7 text-slate-800">{proposal.riskProfile.note}</p>
         </article>
 
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Dokumen</p>
           <p className="mt-5 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">{proposal.documents.length}</p>
-          <p className="mt-3 text-[15px] leading-7 text-slate-600">Berkas pendukung yang tersedia untuk diverifikasi.</p>
+          <p className="mt-3 text-[15px] leading-7 text-slate-800">Berkas pendukung yang tersedia untuk diverifikasi.</p>
         </article>
       </StaggerContainer>
 
@@ -192,7 +192,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                     </div>
                     <div>
                       <h3 className={`text-[18px] font-semibold ${objective.tone === 'danger' ? 'text-red-700' : 'text-slate-900'}`}>{objective.title}</h3>
-                      <p className={`mt-2 text-[15px] leading-7 ${objective.tone === 'danger' ? 'text-red-700' : 'text-slate-600'}`}>{objective.description}</p>
+                      <p className={`mt-2 text-[15px] leading-7 ${objective.tone === 'danger' ? 'text-red-700' : 'text-slate-800'}`}>{objective.description}</p>
                     </div>
                   </div>
                 </article>
@@ -273,7 +273,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               </div>
               <div>
                 <h2 className="text-[22px] font-semibold text-slate-900">Tingkat Risiko: {proposal.riskProfile.level}</h2>
-                <p className="mt-2 text-[15px] text-slate-600">{proposal.riskProfile.note}</p>
+                <p className="mt-2 text-[15px] text-slate-800">{proposal.riskProfile.note}</p>
               </div>
             </div>
             <div className="mt-5 space-y-3">

@@ -15,13 +15,26 @@ body {
 }
 
 a,
-button {
+button,
+input,
+select,
+textarea,
+[role='button'] {
   @apply transition-colors duration-150;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role='button']:focus-visible {
+  @apply outline-none ring-2 ring-slate-900/10 ring-offset-2 ring-offset-slate-50;
 }
 
 @layer components {
   .public-container {
-    @apply mx-auto w-full max-w-[1440px] px-4 md:px-5 lg:px-5;
+    @apply mx-auto w-full max-w-[1320px] px-4 md:px-5 lg:px-6;
   }
 
   .public-section {
@@ -29,10 +42,16 @@ button {
   }
 
   .public-card {
-    @apply rounded-3xl border border-slate-200 bg-white;
+    @apply rounded-xl border border-slate-200 bg-white;
   }
 
   .public-flat-card {
-    @apply rounded-3xl border border-slate-100 bg-slate-50;
+    @apply rounded-lg border border-slate-100 bg-slate-50;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }

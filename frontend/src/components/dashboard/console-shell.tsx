@@ -109,7 +109,7 @@ export function ConsoleShell({
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">{headerLabel}</p>
               </div>
               <div className="flex items-center gap-2 md:gap-3">
-                <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100 lg:hidden" onClick={() => setMobileOpen(true)}>
+                <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-800 hover:bg-slate-100 lg:hidden" onClick={() => setMobileOpen(true)}>
                   <Menu className="h-5 w-5" />
                 </button>
                 <button type="button" onClick={() => setSearchOpen(true)} className="hidden h-11 items-center gap-3 rounded-full bg-slate-100 px-4 text-left transition-colors hover:bg-slate-200 md:flex md:w-[280px]">
@@ -119,7 +119,7 @@ export function ConsoleShell({
                     <span className="text-[12px]">⌘</span>K
                   </kbd>
                 </button>
-                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia pada versi demo.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 hover:bg-slate-100">
+                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia pada versi demo.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-800 hover:bg-slate-100">
                   <Bell className="h-4 w-4" />
                 </button>
                 <Link
@@ -142,7 +142,7 @@ export function ConsoleShell({
               <p>{footer.copyright}</p>
               <div className="flex items-center gap-4">
                 {footer.links.map((link) => (
-                  <a key={link.label} href={link.href} className="hover:text-slate-600">
+                  <a key={link.label} href={link.href} className="hover:text-slate-800">
                     {link.label}
                   </a>
                 ))}

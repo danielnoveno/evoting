@@ -339,7 +339,7 @@ export function formatWallet(address: string) {
 }
 
 export function getPhaseLabel(phase: VoterElectionPhase) {
-  if (phase === 'registration') return 'Pra-registrasi'
+  if (phase === 'registration') return 'Registrasi'
   if (phase === 'commit') return 'Fase Commit'
   if (phase === 'reveal') return 'Fase Reveal'
   return 'Selesai'
@@ -474,7 +474,7 @@ export function useVoterStore() {
         selectedCandidateId: candidateId,
       })))
     },
-    commitVote(electionId: string): VoterProof | null {
+    commitVote(electionId: string, commitmentHash?: string): VoterProof | null {
       let proof: VoterProof | null = null
 
       applyStore((current) => updateElection(current, electionId, (election) => {
@@ -487,7 +487,7 @@ export function useVoterStore() {
           phase: 'reveal',
           committedCandidateId: election.selectedCandidateId,
           committedCount: Math.min(election.totalParticipants, election.committedCount + 1),
-          commitmentHash: `0x${randomHex(64)}`,
+          commitmentHash: commitmentHash ?? `0x${randomHex(64)}`,
           commitProof: proof,
           lastTransactionLabel: 'Reveal siap dilakukan dari browser yang sama.',
         }

@@ -84,7 +84,7 @@ export default function SuperadminDashboardPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
                 <h2 className="text-[18px] font-semibold text-slate-900">{superadminDashboardData.chart.title}</h2>
-                <p className="mt-2 text-[15px] text-slate-600">{superadminDashboardData.chart.description}</p>
+                <p className="mt-2 text-[15px] text-slate-800">{superadminDashboardData.chart.description}</p>
               </div>
               <div className="inline-flex rounded-2xl bg-white p-1">
                 {superadminDashboardData.chart.ranges.map((item) => (
@@ -141,7 +141,7 @@ export default function SuperadminDashboardPage() {
                   </div>
                   <div>
                     <h3 className="text-[16px] font-semibold text-slate-900">{activity.title}</h3>
-                    <p className="mt-2 max-w-[32ch] text-[14px] leading-7 text-slate-600">{activity.description}</p>
+                    <p className="mt-2 max-w-[32ch] text-[14px] leading-7 text-slate-800">{activity.description}</p>
                     <p className="mt-3 text-[11px] uppercase tracking-[0.08em] text-slate-400">{activity.time}</p>
                   </div>
                 </div>
@@ -158,7 +158,7 @@ export default function SuperadminDashboardPage() {
               <div className="mt-1 h-14 w-1 rounded-full bg-black" />
               <div>
                 <h2 className="text-[18px] font-semibold text-slate-900">{superadminDashboardData.blockchainStatus.title}</h2>
-                <p className="mt-2 text-[15px] text-slate-600">{superadminDashboardData.blockchainStatus.description}</p>
+                <p className="mt-2 text-[15px] text-slate-800">{superadminDashboardData.blockchainStatus.description}</p>
               </div>
             </div>
 

@@ -111,7 +111,7 @@ export function AdminFilterPill({ active, children, onClick }: { active?: boolea
       onClick={onClick}
       className={active
         ? 'inline-flex h-10 items-center justify-center rounded-full bg-black px-6 text-[14px] font-medium text-white'
-        : 'inline-flex h-10 items-center justify-center rounded-full bg-slate-100 px-6 text-[14px] font-medium text-slate-600 hover:bg-slate-200'}
+        : 'inline-flex h-10 items-center justify-center rounded-full bg-slate-100 px-6 text-[14px] font-medium text-slate-800 hover:bg-slate-200'}
     >
       {children}
     </button>

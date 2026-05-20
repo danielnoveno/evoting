@@ -14,7 +14,7 @@ function actionToneClass(tone: 'blue' | 'amber' | 'slate' | 'purple') {
   if (tone === 'blue') return 'bg-blue-50 text-blue-600'
   if (tone === 'amber') return 'bg-amber-50 text-amber-600'
   if (tone === 'purple') return 'bg-purple-50 text-purple-600'
-  return 'bg-slate-100 text-slate-600'
+  return 'bg-slate-100 text-slate-800'
 }
 
 function statusToneClass(status: 'selesai' | 'berlangsung' | 'menunggu') {
@@ -100,9 +100,9 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
 
       <ScrollReveal variant="fade-up" duration={700}>
       <section className="flex flex-col gap-4 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-400 md:flex-row md:items-center">
-        <Link href="/admin/manajemen-pemilihan" className="hover:text-slate-600">Manajemen Pemilihan</Link>
+        <Link href="/admin/manajemen-pemilihan" className="hover:text-slate-800">Manajemen Pemilihan</Link>
         <span>›</span>
-        <Link href={`/admin/manajemen-pemilihan/${election.id}`} className="hover:text-slate-600">{election.title}</Link>
+        <Link href={`/admin/manajemen-pemilihan/${election.id}`} className="hover:text-slate-800">{election.title}</Link>
         <span>›</span>
         <span className="text-slate-900">Monitoring</span>
       </section>
@@ -110,7 +110,7 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
       <section className="mt-4 flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
         <div className="max-w-[760px]">
           <h1 className="text-[44px] font-semibold tracking-[-0.04em] text-slate-900 md:text-[56px]">{monitoring.title}</h1>
-          <p className="mt-5 text-[18px] leading-9 text-slate-600">{monitoring.description}</p>
+          <p className="mt-5 text-[18px] leading-9 text-slate-800">{monitoring.description}</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
           <button type="button" onClick={() => handleOpenExport('csv')} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-700 hover:bg-slate-200">
@@ -296,7 +296,7 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Metadata Audit</p>
-            <div className="mt-4 space-y-5 rounded-[28px] bg-slate-100 p-6 text-[14px] text-slate-600">
+            <div className="mt-4 space-y-5 rounded-[28px] bg-slate-100 p-6 text-[14px] text-slate-800">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Browser Agent</p>
                 <p className="mt-2">{monitoring.metadata.browserAgent}</p>
@@ -316,7 +316,7 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
 
       <section className="mt-8 rounded-[30px] border-l-4 border-l-black bg-slate-100 p-6">
         <h2 className="text-[20px] font-semibold text-slate-900">{monitoring.guarantee.title}</h2>
-        <p className="mt-4 max-w-[1100px] text-[15px] leading-8 text-slate-600">{monitoring.guarantee.description}</p>
+        <p className="mt-4 max-w-[1100px] text-[15px] leading-8 text-slate-800">{monitoring.guarantee.description}</p>
       </section>
       </ScrollReveal>
     </AdminShell>

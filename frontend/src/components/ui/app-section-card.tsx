@@ -9,14 +9,14 @@ export interface AppSectionCardProps {
 }
 
 export function AppSectionCard({ children, className = '', dashed = false, onClick }: AppSectionCardProps) {
-  const baseClasses = 'rounded-[28px] overflow-hidden p-6 md:p-7'
+  const baseClasses = 'overflow-hidden rounded-xl p-5 md:p-6'
   
   const styleClasses = dashed
-    ? 'border-2 border-dashed border-slate-300 bg-transparent'
-    : 'bg-white border border-slate-200 shadow-sm'
-    
+    ? 'border border-dashed border-slate-300 bg-transparent'
+    : 'border border-slate-200 bg-white'
+     
   const interactiveClasses = onClick
-    ? 'cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-300'
+    ? 'cursor-pointer transition-all duration-150 hover:-translate-y-px hover:border-slate-300'
     : ''
 
   return (

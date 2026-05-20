@@ -141,7 +141,7 @@ export function CommandPalette({ open, onOpenChange, role }: CommandPaletteProps
                         onClick={() => handleSelect(item.href)}
                         className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
                       >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-800">
                           <Icon className="h-5 w-5" />
                         </div>
                         <div>

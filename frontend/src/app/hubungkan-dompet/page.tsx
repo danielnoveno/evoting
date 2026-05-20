@@ -60,7 +60,7 @@ export default function ConnectWalletPage() {
       return
     }
 
-    setSuccessMessage('Login berhasil. Menyiapkan akses akun dan Smart Wallet Anda...')
+    setSuccessMessage('Login berhasil. Menyiapkan akses akun Anda...')
 
     window.setTimeout(() => {
       setIsSubmitting(false)
@@ -82,7 +82,10 @@ export default function ConnectWalletPage() {
     <AuthShell>
       <AuthCard>
         <AuthHeader />
-        <AuthTitle title="Login" />
+        <AuthTitle
+          title="Masuk ke Votein"
+          body="Gunakan akun kampus untuk membuka alur pemilih, admin, atau superadmin."
+        />
 
         <form className="mt-7" onSubmit={handleSubmit}>
           <div className="space-y-3">
@@ -106,18 +109,18 @@ export default function ConnectWalletPage() {
             />
           </div>
 
-          <div className="mt-4 rounded-3xl bg-slate-100 px-4 py-3 text-center text-[12px] leading-6 text-slate-600">
-            Jika ini adalah login pertama Anda, Smart Wallet akan dibuat otomatis. Akun bisa langsung dipakai untuk voting.
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center text-[12px] leading-6 text-slate-800">
+            Onboarding smart wallet pada halaman ini masih berada pada tahap pratinjau antarmuka.
           </div>
 
           {formError ? (
-            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-center text-[12px] leading-6 text-red-700">
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-[12px] leading-6 text-red-700">
               {formError}
             </div>
           ) : null}
 
           {successMessage ? (
-            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-[12px] leading-6 text-emerald-700">
+            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-[12px] leading-6 text-emerald-700">
               {successMessage}
             </div>
           ) : null}
@@ -126,7 +129,7 @@ export default function ConnectWalletPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-12 w-full items-center justify-center rounded-md bg-[#0F172A] px-5 text-[14px] font-medium text-white hover:bg-[#1E293B] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? 'Memeriksa...' : 'Masuk'}
             </button>
@@ -134,12 +137,12 @@ export default function ConnectWalletPage() {
         </form>
 
         <div className="mt-3 flex flex-col gap-2.5">
-          <p className="text-center text-[11px] leading-6 text-slate-500">
+          <p className="text-center text-[11px] leading-6 text-slate-700">
             Role akun akan disesuaikan otomatis berdasarkan data pengguna yang terdaftar di sistem kampus.
           </p>
-          <p className="text-center text-[11px] leading-6 text-slate-400">
-            Demo: voter / admin / superadmin tersedia untuk kebutuhan presentasi frontend.
-          </p>
+            <p className="text-center text-[11px] leading-6 text-slate-600">
+              Akses pemilih, admin, dan superadmin tersedia untuk peninjauan alur aplikasi.
+            </p>
         </div>
 
         <AuthNotice />

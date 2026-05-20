@@ -18,7 +18,7 @@ import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 type ElectionFilter = (typeof superadminElectionFilters)[number]
 
 function getElectionTone(status: SuperadminElectionState) {
-  if (status === 'Aktif') return 'bg-blue-50 text-slate-600'
+  if (status === 'Aktif') return 'bg-blue-50 text-slate-800'
   if (status === 'Ditangguhkan') return 'bg-red-50 text-red-600'
   return 'bg-emerald-50 text-emerald-600'
 }
@@ -80,7 +80,7 @@ export default function SuperadminElectionManagementPage() {
               </div>
 
               <h2 className="mt-5 max-w-[14ch] text-[22px] font-semibold leading-tight text-slate-900">{election.title}</h2>
-              <p className={`mt-8 flex items-center gap-2 text-[15px] ${election.status === 'Ditangguhkan' ? 'text-red-600' : 'text-slate-600'}`}>
+              <p className={`mt-8 flex items-center gap-2 text-[15px] ${election.status === 'Ditangguhkan' ? 'text-red-600' : 'text-slate-800'}`}>
                 <Clock3 className="h-4 w-4" />
                 {election.phaseLabel}
               </p>

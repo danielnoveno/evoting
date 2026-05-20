@@ -27,7 +27,7 @@ export function AppPageHeader({ title, description, backLink, rightContent, bott
           {title}
         </h1>
         {description ? (
-          <p className="mt-4 text-[16px] leading-8 text-slate-600">
+          <p className="mt-4 text-[16px] leading-8 text-slate-800">
             {description}
           </p>
         ) : null}

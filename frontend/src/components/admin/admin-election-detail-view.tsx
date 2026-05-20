@@ -151,7 +151,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
               </div>
               <div className="mt-4 rounded-2xl bg-slate-100 p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Visi Misi Singkat</p>
-                <p className="mt-2 text-[13px] leading-6 text-slate-600">{candidate.summary}</p>
+                <p className="mt-2 text-[13px] leading-6 text-slate-800">{candidate.summary}</p>
               </div>
                 <div className="mt-6 flex items-center justify-end gap-4">
                   {canAddCandidate ? (
@@ -266,7 +266,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         <article className="rounded-[28px] border-l-4 border-l-black bg-slate-100 p-6 xl:col-span-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Blockchain Evidence</p>
           <div className="mt-5 rounded-2xl bg-white p-5">
-            <p className="font-mono text-[12px] leading-6 text-slate-600 break-all">{election.detail.whitelist.evidence}</p>
+            <p className="font-mono text-[12px] leading-6 text-slate-800 break-all">{election.detail.whitelist.evidence}</p>
           </div>
           <p className="mt-5 inline-flex items-center gap-2 text-[13px] text-slate-500">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -286,7 +286,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 value={whitelistSearch}
                 onChange={(event) => setWhitelistSearch(event.target.value)}
                 placeholder="Cari alamat atau nama..."
-                className="w-full bg-transparent text-[14px] text-slate-600 outline-none placeholder:text-slate-400"
+                className="w-full bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-slate-400"
               />
             </div>
           </div>
@@ -699,7 +699,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       >
         <div className="space-y-5">
           <div>
-            <label className="mb-2 block text-[12px] font-semibold text-slate-600">Alamat Wallet</label>
+            <label className="mb-2 block text-[12px] font-semibold text-slate-800">Alamat Wallet</label>
             <input
               type="text"
               value={manualWallet}
@@ -709,7 +709,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             />
           </div>
           <div>
-            <label className="mb-2 block text-[12px] font-semibold text-slate-600">Nama (Opsional)</label>
+            <label className="mb-2 block text-[12px] font-semibold text-slate-800">Nama (Opsional)</label>
             <input
               type="text"
               value={manualName}
@@ -746,7 +746,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       >
         <div className="space-y-5">
           <div>
-            <label className="mb-2 block text-[12px] font-semibold text-slate-600">Nama File CSV</label>
+            <label className="mb-2 block text-[12px] font-semibold text-slate-800">Nama File CSV</label>
             <input
               type="text"
               value={uploadFileName}

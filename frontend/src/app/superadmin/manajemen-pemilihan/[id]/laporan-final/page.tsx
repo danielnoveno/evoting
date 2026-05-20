@@ -22,7 +22,7 @@ type FinalReportDetail = {
 const finalReportMap: Record<string, FinalReportDetail> = {
   e4: {
     codeLabel: 'ID: ORG-7744-FTI',
-    networkLabel: 'Base Mainnet Finalized',
+    networkLabel: 'Base Sepolia Finalized',
     contractUrl: 'https://sepolia.basescan.org/address/0xaa440000000000000000000000000000007744',
     summary: 'Laporan final ini merangkum hasil pemilihan yang telah selesai dan teraudit. Seluruh data pada halaman ini bersifat dummy untuk kebutuhan presentasi end-to-end.',
     metrics: [
@@ -107,7 +107,7 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
           <article key={metric.id} className="rounded-[24px] border border-slate-200 bg-white p-6">
             <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">{metric.label}</p>
             <p className="mt-5 text-[30px] font-semibold tracking-[-0.04em] text-slate-900">{metric.value}</p>
-            <p className="mt-3 text-[15px] leading-7 text-slate-600">{metric.note}</p>
+            <p className="mt-3 text-[15px] leading-7 text-slate-800">{metric.note}</p>
           </article>
         ))}
       </StaggerContainer>
@@ -125,7 +125,7 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <p className="text-[17px] font-semibold text-slate-900">{item.name}</p>
-                    <p className="mt-2 text-[15px] text-slate-600">{item.votes}</p>
+                    <p className="mt-2 text-[15px] text-slate-800">{item.votes}</p>
                   </div>
                   <div className="text-left lg:text-right">
                     <p className={`text-[28px] font-semibold tracking-[-0.04em] ${item.tone === 'winner' ? 'text-emerald-700' : 'text-slate-900'}`}>{item.percentage}</p>
@@ -147,7 +147,7 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
               {detail.auditChecks.map((item) => (
                 <article key={item.id} className="rounded-[20px] bg-slate-100 px-5 py-5">
                   <h3 className="text-[16px] font-semibold text-slate-900">{item.title}</h3>
-                  <p className="mt-2 text-[15px] leading-7 text-slate-600">{item.description}</p>
+                  <p className="mt-2 text-[15px] leading-7 text-slate-800">{item.description}</p>
                 </article>
               ))}
             </div>
@@ -163,7 +163,7 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
                 <article key={item.id} className="rounded-[20px] border border-slate-200 px-5 py-5">
                   <p className="text-[16px] font-semibold text-slate-900">{item.title}</p>
                   <p className="mt-2 text-[14px] text-slate-400">{item.time}</p>
-                  <p className="mt-3 text-[15px] leading-7 text-slate-600">{item.note}</p>
+                  <p className="mt-3 text-[15px] leading-7 text-slate-800">{item.note}</p>
                 </article>
               ))}
             </div>
@@ -179,7 +179,7 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
             <BarChart3 className="h-5 w-5 text-slate-700" />
             <h2 className="text-[20px] font-semibold text-slate-900">Ringkasan Presentasi</h2>
           </div>
-          <p className="mt-5 text-[15px] leading-7 text-slate-600">Gunakan halaman ini sebagai laporan final siap presentasi. Semua angka bersifat dummy tetapi flow-nya sudah end-to-end untuk kebutuhan demo.</p>
+          <p className="mt-5 text-[15px] leading-7 text-slate-800">Gunakan halaman ini sebagai laporan final siap presentasi. Semua angka bersifat dummy tetapi flow-nya sudah end-to-end untuk kebutuhan demo.</p>
         </SuperadminSectionCard>
 
         <SuperadminSectionCard className="border border-slate-200 bg-white">

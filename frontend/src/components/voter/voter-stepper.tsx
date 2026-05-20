@@ -1,7 +1,6 @@
 'use client'
 
 type VoterStep = {
-  number: number
   label: string
   active?: boolean
   done?: boolean
@@ -10,20 +9,20 @@ type VoterStep = {
 export function VoterStepper({ steps }: { steps: VoterStep[] }) {
   return (
     <div className="overflow-x-auto pb-2">
-      <div className="flex min-w-max items-center gap-y-3">
+      <div className="flex min-w-max items-start">
       {steps.map((step, index) => (
-        <div key={step.label} className="flex items-center">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className={step.active
-              ? 'flex h-9 w-9 items-center justify-center rounded-full bg-black text-[14px] font-semibold text-white'
-              : step.done
-                ? 'flex h-9 w-9 items-center justify-center rounded-full bg-slate-400 text-[14px] font-semibold text-white'
-                : 'flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-white text-[14px] font-semibold text-slate-500'}>
-              {step.number}
+        <div key={step.label} className="flex flex-1 items-start">
+          <div className="flex flex-col items-center">
+            <div className={step.done
+              ? 'flex h-7 w-7 items-center justify-center rounded-full bg-[#0F172A] text-[12px] font-semibold text-white'
+              : step.active
+                ? 'flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#0F172A] bg-white text-[12px] font-semibold text-[#0F172A]'
+                : 'flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-[12px] text-slate-400'}>
+              {index + 1}
             </div>
-            <p className={step.active ? 'text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-900 sm:text-[15px]' : 'text-[12px] uppercase tracking-[0.08em] text-slate-400 sm:text-[15px]'}>{step.label}</p>
+            <p className={step.done || step.active ? 'mt-1.5 text-center text-[11px] text-slate-900' : 'mt-1.5 text-center text-[11px] text-slate-400'}>{step.label}</p>
           </div>
-          {index < steps.length - 1 ? <div className="mx-3 h-px w-6 bg-slate-300 sm:mx-4 sm:w-8 md:w-12" /> : null}
+          {index < steps.length - 1 ? <div className={`mx-2 mt-3 h-px flex-1 ${step.done ? 'bg-[#0F172A]' : 'bg-slate-200'}`} /> : null}
         </div>
       ))}
       </div>

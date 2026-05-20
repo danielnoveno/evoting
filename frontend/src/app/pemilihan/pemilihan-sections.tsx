@@ -63,7 +63,7 @@ export function PemilihanSections() {
           <ScrollReveal variant="fade-up" duration={900}>
             <div className="max-w-[860px]">
               <h1 className="text-[44px] font-semibold leading-[1.08] tracking-[-0.03em] text-slate-900 md:text-[64px]">Daftar Pemilihan Publik</h1>
-              <p className="mt-5 text-[18px] leading-9 text-slate-600">
+              <p className="mt-5 text-[18px] leading-9 text-slate-800">
                 Pantau seluruh agenda pemilihan, status blockchain, dan hasil akhir secara transparan. Semua data tersimpan permanen di jaringan terdesentralisasi.
               </p>
             </div>
@@ -94,7 +94,7 @@ export function PemilihanSections() {
                     <span className="text-[11px] uppercase tracking-[0.06em] text-slate-500">{item.deadline}</span>
                   </div>
                   <h3 className="mt-8 max-w-[560px] text-[24px] font-semibold leading-tight text-slate-900">{item.title}</h3>
-                  <p className="mt-4 max-w-[560px] text-[16px] leading-8 text-slate-600">{item.body}</p>
+                  <p className="mt-4 max-w-[560px] text-[16px] leading-8 text-slate-800">{item.body}</p>
 
                   <div className="mt-8 grid gap-4 md:grid-cols-2">
                     <div className="rounded-xl bg-slate-100 px-4 py-4">

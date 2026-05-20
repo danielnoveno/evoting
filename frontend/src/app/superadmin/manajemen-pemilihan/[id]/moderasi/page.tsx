@@ -57,7 +57,7 @@ type ModerationDetail = {
 
 const moderationDetails: Record<string, ModerationDetail> = {
   [sharedDummyContext.electionId]: {
-    network: 'Base Mainnet Secured',
+    network: 'Base Sepolia Testnet Secured',
     electionCode: 'ID: BEM-UI-2024-X92',
     endLabel: 'Berakhir dalam 2 hari, 14 jam',
     totalVotes: '12,842',
@@ -82,7 +82,7 @@ const moderationDetails: Record<string, ModerationDetail> = {
       { id: sharedDummyContext.candidates[2].id, ballotNumber: 'KANDIDAT 03', name: sharedDummyContext.candidates[2].name, vision: `Visi: ${sharedDummyContext.candidates[2].vision}`, commitmentCount: '50', initials: 'SW' },
     ],
     supportCards: [
-      { id: 's1', title: 'ZK-Proof Validation', description: 'Setiap suara diverifikasi tanpa membuka identitas pemilih.', icon: 'shield' },
+      { id: 's1', title: 'Commit-Reveal Verification', description: 'Setiap suara diverifikasi menggunakan skema komitmen kriptografi.', icon: 'shield' },
       { id: 's2', title: 'Real-time IPFS Hash', description: 'Backup data pemilihan terdistribusi secara global.', icon: 'activity' },
     ],
     feed: [
@@ -96,7 +96,7 @@ const moderationDetails: Record<string, ModerationDetail> = {
 
 function getFallbackDetail(title: string, code: string): ModerationDetail {
   return {
-    network: 'Base Mainnet Secured',
+    network: 'Base Sepolia Testnet Secured',
     electionCode: `ID: ${code}`,
     endLabel: 'Jadwal akhir sedang disinkronkan',
     totalVotes: '0',
@@ -175,7 +175,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
             <SuperadminStatusBadge status={election.status} />
             <div className={`flex items-center gap-2 ${getElectionStatusColor(election.status)}`}>
               <CalendarDays className="h-4 w-4" />
-              <span className="text-slate-600">{detail.endLabel}</span>
+              <span className="text-slate-800">{detail.endLabel}</span>
             </div>
           </>
         )}
@@ -213,7 +213,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
             <p className="text-[28px] font-semibold tracking-[-0.04em] text-slate-900">{detail.totalVotes}</p>
             <span className="pb-1 text-[14px] font-semibold text-emerald-600">{detail.totalVotesDelta}</span>
           </div>
-          <p className="mt-4 text-[15px] leading-7 text-slate-600">{detail.verificationNote}</p>
+          <p className="mt-4 text-[15px] leading-7 text-slate-800">{detail.verificationNote}</p>
         </article>
 
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
@@ -222,7 +222,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
           <div className="mt-5 h-2 rounded-full bg-slate-100">
             <div className={`h-2 rounded-full bg-slate-900 ${getParticipationWidthClass(detail.participationValue)}`} />
           </div>
-          <p className="mt-4 text-[15px] leading-7 text-slate-600">Target: {detail.participationTarget} ({detail.participationNote})</p>
+          <p className="mt-4 text-[15px] leading-7 text-slate-800">Target: {detail.participationTarget} ({detail.participationNote})</p>
         </article>
 
         <article className="rounded-[24px] bg-[#11182a] p-6 text-white">
@@ -253,7 +253,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
             <div className="flex flex-col gap-5 border-b border-slate-100 px-6 py-6 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <h2 className="text-[18px] font-semibold text-slate-900">{detail.candidateSectionTitle}</h2>
-                <p className="mt-3 max-w-[540px] text-[15px] leading-7 text-slate-600">{detail.candidateSectionDescription}</p>
+                <p className="mt-3 max-w-[540px] text-[15px] leading-7 text-slate-800">{detail.candidateSectionDescription}</p>
               </div>
               <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-[15px] font-medium text-slate-700">
                 <Lock className="h-4 w-4" />
@@ -271,7 +271,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
                     <div>
                       <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">{candidate.ballotNumber}</p>
                       <p className="mt-2 text-[18px] font-semibold text-slate-900">{candidate.name}</p>
-                      <p className="mt-2 max-w-[420px] text-[15px] leading-7 text-slate-600">{candidate.vision}</p>
+                      <p className="mt-2 max-w-[420px] text-[15px] leading-7 text-slate-800">{candidate.vision}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-6 self-end lg:self-auto">
@@ -301,7 +301,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
                   </div>
                   <div>
                     <h3 className="text-[18px] font-semibold text-slate-900">{card.title}</h3>
-                    <p className="mt-3 text-[15px] leading-7 text-slate-600">{card.description}</p>
+                    <p className="mt-3 text-[15px] leading-7 text-slate-800">{card.description}</p>
                   </div>
                 </div>
               </SuperadminSectionCard>
@@ -321,7 +321,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
                 <article key={item.id} className="relative pl-10">
                   <span className={`absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border ${getFeedToneClass(item.tone)}`}>+</span>
                   <h3 className="text-[16px] font-semibold text-slate-900">{item.title}</h3>
-                  <p className="mt-2 text-[15px] leading-7 text-slate-600">{item.description}</p>
+                  <p className="mt-2 text-[15px] leading-7 text-slate-800">{item.description}</p>
                   <div className="mt-3 inline-flex rounded-full bg-slate-100 px-3 py-1 font-mono text-[12px] text-slate-500">{item.hash}</div>
                   <p className="mt-3 text-[14px] text-slate-400">{item.time}</p>
                   <div className="absolute bottom-[-22px] left-[13px] top-8 w-px bg-slate-200 last:hidden" />

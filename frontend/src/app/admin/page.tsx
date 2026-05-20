@@ -47,7 +47,7 @@ export default function AdminPage() {
               <h1 className="mt-8 max-w-[14ch] text-[44px] font-semibold leading-[1.02] tracking-[-0.04em] text-slate-900 md:text-[64px]">
                 {adminDashboardContent.hero.title}
               </h1>
-              <p className="mt-6 max-w-[840px] text-[18px] leading-9 text-slate-600">
+              <p className="mt-6 max-w-[840px] text-[18px] leading-9 text-slate-800">
                 {adminDashboardContent.hero.description}
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">

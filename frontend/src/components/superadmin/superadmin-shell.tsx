@@ -56,7 +56,7 @@ export function SuperadminStatusBadge({ status }: { status: string }) {
       ? 'bg-amber-50 text-amber-600'
       : status === 'Ditangguhkan' || status === 'Halted' || status === 'Nonaktif'
         ? 'bg-red-50 text-red-600'
-        : 'bg-slate-100 text-slate-600'
+        : 'bg-slate-100 text-slate-800'
 
   return <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${className}`}>{status}</span>
 }
@@ -82,7 +82,7 @@ export function SuperadminFilterChip({ active, children, onClick }: { active: bo
       onClick={onClick}
       className={active
         ? 'rounded-2xl bg-white px-5 py-3 text-[15px] font-semibold text-slate-900 shadow-sm'
-        : 'rounded-2xl px-5 py-3 text-[15px] text-slate-600 hover:bg-white/70'}
+        : 'rounded-2xl px-5 py-3 text-[15px] text-slate-800 hover:bg-white/70'}
     >
       {children}
     </button>
@@ -171,7 +171,7 @@ export function SuperadminSectionHeading({ title, description }: { title: string
   return (
     <div>
       <h2 className="text-[18px] font-semibold text-slate-900">{title}</h2>
-      {description ? <p className="mt-2 text-[15px] leading-7 text-slate-600">{description}</p> : null}
+      {description ? <p className="mt-2 text-[15px] leading-7 text-slate-800">{description}</p> : null}
     </div>
   )
 }
@@ -270,7 +270,7 @@ export function SuperadminPageHeader({
       <div className="max-w-[760px]">
         {backHref ? <SuperadminBackButton href={backHref} label={backLabel} /> : null}
         <h1 className={`${backHref ? 'mt-4 ' : ''}text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]`}>{title}</h1>
-        {description ? <p className="mt-3 text-[16px] leading-8 text-slate-600">{description}</p> : null}
+        {description ? <p className="mt-3 text-[16px] leading-8 text-slate-800">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-col gap-3 sm:flex-row">{actions}</div> : null}
     </section>
@@ -300,8 +300,8 @@ export function SuperadminDetailIntro({
         <SuperadminBackButton href={backHref} label={backLabel} />
         {chips ? <div className="mt-6 flex flex-wrap items-center gap-3">{chips}</div> : null}
         <h1 className="mt-6 text-[40px] font-semibold tracking-[-0.04em] text-slate-900 md:text-[54px]">{title}</h1>
-        {meta ? <div className="mt-5 flex flex-wrap items-center gap-4 text-[15px] text-slate-600">{meta}</div> : null}
-        {description ? <div className="mt-5 max-w-[760px] text-[16px] leading-8 text-slate-600">{description}</div> : null}
+        {meta ? <div className="mt-5 flex flex-wrap items-center gap-4 text-[15px] text-slate-800">{meta}</div> : null}
+        {description ? <div className="mt-5 max-w-[760px] text-[16px] leading-8 text-slate-800">{description}</div> : null}
       </div>
       {actions ? <div className="flex flex-col gap-3 sm:flex-row xl:flex-col xl:items-end">{actions}</div> : null}
     </section>

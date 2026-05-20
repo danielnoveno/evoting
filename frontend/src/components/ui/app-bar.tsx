@@ -6,8 +6,8 @@ import { ReactNode } from 'react'
  * Ubah style di sini → otomatis update di semua halaman.
  */
 
-const NAVBAR_GLASS = 'border-b border-white/20 bg-white/30 backdrop-blur-xl shadow-[0_1px_3px_rgba(15,23,42,0.04)]'
-const FOOTER_GLASS = 'border-t border-white/20 bg-slate-50/30 backdrop-blur-xl shadow-[0_-1px_3px_rgba(15,23,42,0.04)]'
+const NAVBAR_BASE = 'border-b border-slate-100 bg-white'
+const FOOTER_BASE = 'border-t border-slate-100 bg-white'
 
 interface AppNavbarProps {
   children: ReactNode
@@ -17,7 +17,7 @@ interface AppNavbarProps {
 
 export function AppNavbar({ children, className = '' }: AppNavbarProps) {
   return (
-    <header className={`${NAVBAR_GLASS} ${className}`}>
+    <header className={`${NAVBAR_BASE} ${className}`}>
       {children}
     </header>
   )
@@ -31,7 +31,7 @@ interface AppFooterProps {
 
 export function AppFooter({ children, className = '' }: AppFooterProps) {
   return (
-    <footer className={`${FOOTER_GLASS} ${className}`}>
+    <footer className={`${FOOTER_BASE} ${className}`}>
       {children}
     </footer>
   )

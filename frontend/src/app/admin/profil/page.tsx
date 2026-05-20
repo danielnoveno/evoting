@@ -85,7 +85,7 @@ export default function AdminProfilePage() {
           <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">
             Sunting Profil
           </h1>
-          <p className="mt-3 text-[16px] leading-8 text-slate-600 max-w-2xl">
+          <p className="mt-3 text-[16px] leading-8 text-slate-800 max-w-2xl">
             Kelola identitas digital Anda dalam ekosistem blockchain. Pastikan data Anda tetap terenkripsi dan aman.
           </p>
         </section>
@@ -206,14 +206,15 @@ export default function AdminProfilePage() {
                 </label>
                 <div className="relative flex items-center h-14 rounded-2xl bg-slate-50 overflow-hidden group">
                   <div className="w-1.5 h-full bg-slate-800" />
-                  <div className="flex-1 px-4 font-mono text-[14px] text-slate-600 truncate">
+                  <div className="flex-1 px-4 font-mono text-[14px] text-slate-800 truncate">
                     {walletAddress}
                   </div>
                   <button 
                     type="button"
                     onClick={handleCopyWallet}
-                    className="h-full px-5 text-slate-400 hover:text-slate-900 transition-colors"
+                    className="h-full px-5 text-slate-400 hover:text-slate-900 transition-colors focus:ring-2 focus:ring-[#0B1120] focus:outline-none"
                     title="Salin Address"
+                    aria-label="Salin alamat wallet admin Budi Santoso"
                   >
                     <Copy className="h-5 w-5" />
                   </button>

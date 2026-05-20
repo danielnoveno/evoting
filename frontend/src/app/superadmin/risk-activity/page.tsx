@@ -33,10 +33,10 @@ export default function SuperadminRiskActivityPage() {
             <p className="text-[12px] uppercase tracking-[0.08em] text-slate-500">{metric.label}</p>
             <div className="mt-5 flex items-end gap-3">
               <p className={`text-[54px] font-semibold leading-none tracking-[-0.04em] ${metric.tone === 'danger' ? 'text-red-700' : 'text-slate-900'}`}>{metric.value}</p>
-              {metric.suffix ? <span className="pb-1 text-[18px] font-medium text-slate-600">{metric.suffix}</span> : null}
+              {metric.suffix ? <span className="pb-1 text-[18px] font-medium text-slate-800">{metric.suffix}</span> : null}
               {metric.accent ? <span className="rounded-xl bg-red-50 px-2 py-1 text-[14px] font-semibold text-red-600">{metric.accent}</span> : null}
             </div>
-            <p className={`mt-5 text-[15px] ${metric.tone === 'success' ? 'text-emerald-500' : 'text-slate-600'}`}>{metric.note}</p>
+            <p className={`mt-5 text-[15px] ${metric.tone === 'success' ? 'text-emerald-500' : 'text-slate-800'}`}>{metric.note}</p>
           </article>
         ))}
       </StaggerContainer>
@@ -55,13 +55,13 @@ export default function SuperadminRiskActivityPage() {
                     </div>
                     <div>
                       <h3 className="text-[18px] font-semibold text-slate-900">{alert.title}</h3>
-                      <p className="mt-2 max-w-[48ch] text-[15px] leading-7 text-slate-600">{alert.description}</p>
+                      <p className="mt-2 max-w-[48ch] text-[15px] leading-7 text-slate-800">{alert.description}</p>
                     </div>
                   </div>
                   <span className="font-mono text-[13px] text-slate-500">{alert.time}</span>
                 </div>
 
-                <div className="mt-5 rounded-[18px] bg-white px-4 py-3 font-mono text-[15px] text-slate-600">
+                <div className="mt-5 rounded-[18px] bg-white px-4 py-3 font-mono text-[15px] text-slate-800">
                   {alert.actorLabel}: {alert.actorValue}
                 </div>
 
@@ -102,7 +102,7 @@ export default function SuperadminRiskActivityPage() {
                 <div className="mt-4 h-1.5 rounded-full bg-slate-200">
                   <div className="h-1.5 w-[94%] rounded-full bg-black" />
                 </div>
-                <p className="mt-6 text-[15px] leading-8 text-slate-600">{superadminRiskData.neuralSummary.description}</p>
+                <p className="mt-6 text-[15px] leading-8 text-slate-800">{superadminRiskData.neuralSummary.description}</p>
               </div>
             </AppSectionCard>
           </div>
@@ -121,7 +121,7 @@ export default function SuperadminRiskActivityPage() {
                   <span className="h-3 w-3 rounded-full bg-red-600" />
                   {superadminRiskData.regionProfile.region}
                 </div>
-                <p className="mt-4 text-[15px] leading-7 text-slate-600">{superadminRiskData.regionProfile.description}</p>
+                <p className="mt-4 text-[15px] leading-7 text-slate-800">{superadminRiskData.regionProfile.description}</p>
               </div>
             </AppSectionCard>
           </div>

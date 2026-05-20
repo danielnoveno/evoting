@@ -71,7 +71,7 @@ export function AppSidebar({
         />
       ) : null}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-[264px] shrink-0 border-r border-slate-100 bg-slate-100/95 transition-all duration-200 lg:z-40 lg:flex lg:translate-x-0 ${sidebarDesktopWidthClass} ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-[264px] shrink-0 border-r border-slate-200 bg-white transition-all duration-200 lg:z-40 lg:flex lg:translate-x-0 ${sidebarDesktopWidthClass} ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="flex h-full w-full flex-col overflow-y-auto">
           {/* ─── Brand / Logo ─── */}
           <div className={`flex items-start justify-between px-5 pb-4 pt-6 ${collapsed ? 'lg:px-4' : ''}`}>
@@ -98,7 +98,7 @@ export function AppSidebar({
 
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-700 hover:bg-white lg:hidden"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 lg:hidden"
               onClick={onMobileClose}
             >
               <X className="h-5 w-5" />
@@ -121,14 +121,14 @@ export function AppSidebar({
                     key={item.label}
                     href={item.href}
                     className={isActive
-                      ? `flex h-[52px] items-center rounded-2xl border border-slate-200 bg-white px-4 text-[15px] font-semibold text-slate-900 ${collapsed ? 'justify-center lg:px-0' : 'justify-between'}`
-                      : `flex h-[52px] items-center rounded-2xl border border-transparent px-4 text-[15px] text-slate-500 hover:bg-white ${collapsed ? 'justify-center lg:px-0' : 'gap-3'}`}
+                      ? `flex h-[44px] items-center rounded-lg border border-slate-200 bg-slate-50 px-4 text-[14px] font-semibold text-slate-900 ${collapsed ? 'justify-center lg:px-0' : 'justify-between'}`
+                      : `flex h-[44px] items-center rounded-lg border border-transparent px-4 text-[14px] text-slate-500 hover:bg-slate-50 hover:text-slate-900 ${collapsed ? 'justify-center lg:px-0' : 'gap-3'}`}
                   >
                     <span className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
                       <Icon className="h-4 w-4" />
                       {!collapsed ? item.label : null}
                     </span>
-                    {isActive && !collapsed ? <span className="h-8 w-1 rounded-full bg-black" /> : null}
+                    {isActive && !collapsed ? <span className="h-6 w-1 rounded-full bg-[#0F172A]" /> : null}
                   </Link>
                 )
               })}
@@ -137,14 +137,14 @@ export function AppSidebar({
 
           {/* ─── Profile Card + Logout ─── */}
           <div className="mt-auto p-4">
-            <div className={`rounded-3xl bg-white p-4 ${collapsed ? 'lg:px-3 lg:py-4' : ''}`}>
+            <div className={`rounded-xl border border-slate-200 bg-slate-50 p-4 ${collapsed ? 'lg:px-3 lg:py-4' : ''}`}>
               <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
                 {profile.avatarUrl ? (
                   <img src={profile.avatarUrl} alt={profile.name} className="h-11 w-11 rounded-full object-cover" />
                 ) : (
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-700">
-                    <UserCircle2 className="h-6 w-6" />
-                  </div>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-700">
+                      <UserCircle2 className="h-6 w-6" />
+                    </div>
                 )}
                 {!collapsed ? (
                   <div>
@@ -156,12 +156,12 @@ export function AppSidebar({
               {!collapsed ? (
                 <Link
                   href={profile.editHref}
-                  className={`mt-4 inline-flex w-full rounded-xl py-2.5 text-[13px] transition-all ${
-                    pathname === profile.editHref
-                      ? 'items-center justify-between border border-slate-200 bg-white px-3 font-semibold text-slate-900 shadow-sm'
-                      : 'items-center justify-center gap-2 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
+                    className={`mt-4 inline-flex w-full rounded-md py-2.5 text-[13px] transition-colors ${
+                      pathname === profile.editHref
+                        ? 'items-center justify-between border border-slate-200 bg-white px-3 font-semibold text-slate-900'
+                        : 'items-center justify-center gap-2 text-slate-800 hover:bg-white hover:text-slate-900'
+                    }`}
+                  >
                   {pathname === profile.editHref ? (
                     <>
                       <span className="flex items-center gap-2">
@@ -182,7 +182,7 @@ export function AppSidebar({
             <button
               type="button"
               onClick={onLogout}
-              className={`mt-3 inline-flex h-11 items-center justify-center rounded-xl bg-black text-[14px] font-medium text-white hover:bg-slate-900 ${collapsed ? 'w-full px-0' : 'w-full'}`}
+              className={`mt-3 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] text-[13px] font-medium text-white hover:bg-[#1E293B] ${collapsed ? 'w-full px-0' : 'w-full'}`}
             >
               <LogOut className={`${collapsed ? 'mr-0' : 'mr-2'} h-4 w-4`} />
               {!collapsed ? profile.logoutLabel : null}

@@ -105,7 +105,7 @@ export default function SuperadminAuditLogPage() {
           </label>
 
           <h1 className="mt-12 text-[54px] font-semibold tracking-[-0.05em] text-slate-900">{superadminAuditLogData.title}</h1>
-          <p className="mt-4 max-w-[760px] text-[18px] leading-9 text-slate-600">{superadminAuditLogData.description}</p>
+          <p className="mt-4 max-w-[760px] text-[18px] leading-9 text-slate-800">{superadminAuditLogData.description}</p>
         </div>
 
         <div className="mt-2 flex gap-4 xl:mt-20">
@@ -139,14 +139,14 @@ export default function SuperadminAuditLogPage() {
           <div className="h-1.5 w-full bg-emerald-500" />
           <div className="p-8">
             <div className="flex items-center gap-4">
-              <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-600">{superadminAuditLogData.summary.integrityLabel}</p>
+              <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-800">{superadminAuditLogData.summary.integrityLabel}</p>
               <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-emerald-600">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                 {superadminAuditLogData.summary.integrityStatus}
               </span>
             </div>
             <p className="mt-10 text-[60px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{superadminAuditLogData.summary.integrityValue}</p>
-            <p className="mt-3 text-[18px] text-slate-600">{superadminAuditLogData.summary.integrityNote}</p>
+            <p className="mt-3 text-[18px] text-slate-800">{superadminAuditLogData.summary.integrityNote}</p>
 
             <div className="mt-10">
               <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Latest Proof ID</p>
@@ -162,7 +162,7 @@ export default function SuperadminAuditLogPage() {
 
         <SuperadminSectionCard>
           <div className="flex items-center justify-between gap-4">
-            <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-600">Distribusi Node Global</p>
+            <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-800">Distribusi Node Global</p>
             <span className="rounded-[4px] bg-slate-200 px-3 py-1.5 font-mono text-[13px] text-slate-700">{superadminAuditLogData.summary.activeNodes}</span>
           </div>
 
@@ -241,7 +241,7 @@ export default function SuperadminAuditLogPage() {
             {visibleLogs.map((log) => (
             <article key={log.id} className="grid gap-5 border-b border-slate-100 px-6 py-6 transition-all duration-200 hover:bg-slate-50 hover:pl-7 lg:grid-cols-[220px_minmax(0,1fr)_300px_220px] lg:items-center lg:px-8 lg:hover:px-[2.25rem]">
               <div className="flex items-center gap-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-800">
                   <AuditIcon icon={log.icon} />
                 </div>
                 <div>
@@ -258,7 +258,7 @@ export default function SuperadminAuditLogPage() {
               </div>
 
               <div className="flex items-center gap-3 lg:justify-end">
-                <div className="rounded-[4px] border-l-4 border-black bg-slate-100 px-4 py-3 font-mono text-[14px] text-slate-600">
+                <div className="rounded-[4px] border-l-4 border-black bg-slate-100 px-4 py-3 font-mono text-[14px] text-slate-800">
                   <p className="text-[12px] uppercase tracking-[0.08em] text-slate-500">TX:</p>
                   <p className="mt-1">{log.txHash}</p>
                 </div>
@@ -286,7 +286,7 @@ export default function SuperadminAuditLogPage() {
             type="button"
             onClick={() => setVisibleCount((current) => Math.min(current + 2, filteredLogs.length))}
             disabled={visibleCount >= filteredLogs.length}
-            className="text-[15px] font-semibold uppercase tracking-[0.08em] text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+            className="text-[15px] font-semibold uppercase tracking-[0.08em] text-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Muat Lebih Banyak Log
           </button>

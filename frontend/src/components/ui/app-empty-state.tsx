@@ -10,14 +10,14 @@ export interface AppEmptyStateProps {
 
 export function AppEmptyState({ title, description, icon, action, className = '' }: AppEmptyStateProps) {
   return (
-    <div className={`flex flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center ${className}`}>
+    <div className={`flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center ${className}`}>
       {icon ? (
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm">
+        <div className="mb-4 flex h-10 w-10 items-center justify-center text-slate-300">
           {icon}
         </div>
       ) : null}
-      <h3 className="text-[16px] font-semibold text-slate-900">{title}</h3>
-      <p className="mx-auto mt-3 max-w-[520px] text-[15px] leading-7 text-slate-500">
+      <h3 className="text-[14px] font-semibold text-slate-900">{title}</h3>
+      <p className="mx-auto mt-2 max-w-[520px] text-[13px] leading-6 text-slate-400">
         {description}
       </p>
       {action ? <div className="mt-6">{action}</div> : null}

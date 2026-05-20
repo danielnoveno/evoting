@@ -56,7 +56,7 @@ export function CaraKerjaSections() {
           <ScrollReveal variant="fade-up" duration={900}>
             <div className="max-w-[920px]">
               <h1 className="text-[44px] font-semibold leading-[1.08] tracking-[-0.03em] text-slate-900 md:text-[64px]">Transparansi dalam Setiap Suara.</h1>
-              <p className="mt-5 text-[18px] leading-9 text-slate-600">
+              <p className="mt-5 text-[18px] leading-9 text-slate-800">
                 Pelajari bagaimana teknologi blockchain memastikan setiap suara Anda aman, rahasia, dan tidak dapat diubah. Proses pemilihan kami dirancang untuk memberikan kepercayaan penuh melalui empat tahap terstruktur.
               </p>
             </div>
@@ -80,7 +80,7 @@ export function CaraKerjaSections() {
                     <Icon className="h-5 w-5" />
                   </div>
                   <h2 className="mt-8 text-[24px] font-semibold text-slate-900">{title}</h2>
-                  <p className="mt-4 text-[16px] leading-8 text-slate-600">{body}</p>
+                  <p className="mt-4 text-[16px] leading-8 text-slate-800">{body}</p>
                   <div className="mt-8 rounded-xl bg-slate-100 px-4 py-4 text-[14px] text-slate-700">
                     {noteTitle ? <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">{noteTitle}</p> : null}
                     {index === 3 ? (

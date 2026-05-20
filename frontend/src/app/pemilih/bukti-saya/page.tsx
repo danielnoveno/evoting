@@ -35,7 +35,7 @@ export default function VoterProofPage() {
       <section className="max-w-4xl">
         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Arsip digital</p>
         <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Bukti Saya</h1>
-        <p className="mt-4 text-[16px] leading-8 text-slate-600 md:text-[18px] md:leading-9">
+        <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
           Riwayat pemilihan yang akan, sedang, dan sudah Anda ikuti beserta bukti kriptografis yang dapat diverifikasi secara publik.
         </p>
       </section>
@@ -83,12 +83,12 @@ export default function VoterProofPage() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">Terkonfirmasi on-chain</span>
+                  <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">Siap diverifikasi</span>
                 </div>
                 <h2 className="mt-5 text-[24px] font-semibold text-slate-900 sm:text-[28px] md:text-[40px]">{selectedElection.title}</h2>
-                <p className="mt-3 text-[15px] leading-8 text-slate-600">Dilaksanakan pada {formatDateShort(selectedElection.deadlineIso)} · {selectedElection.lastTransactionLabel}</p>
+                <p className="mt-3 text-[15px] leading-8 text-slate-800">Dilaksanakan pada {formatDateShort(selectedElection.deadlineIso)} · {selectedElection.lastTransactionLabel}</p>
               </div>
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduhan dimulai', description: 'Sertifikat bukti masih berupa simulasi frontend.' })} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[13px] font-semibold uppercase tracking-[0.06em] text-white hover:bg-slate-900 sm:w-auto">
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduhan dimulai', description: 'Sertifikat bukti sedang disiapkan.' })} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[13px] font-semibold uppercase tracking-[0.06em] text-white hover:bg-slate-900 sm:w-auto">
                 <Download className="h-4 w-4" />
                 Unduh Sertifikat
               </button>
@@ -123,7 +123,7 @@ export default function VoterProofPage() {
       <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.58fr)]">
         <article className="rounded-[32px] bg-slate-100 p-8">
           <h2 className="text-[26px] font-semibold text-slate-900 sm:text-[32px]">Bagaimana cara verifikasi?</h2>
-          <p className="mt-4 max-w-3xl text-[16px] leading-8 text-slate-600">
+          <p className="mt-4 max-w-3xl text-[16px] leading-8 text-slate-800">
             Setiap bukti suara berisi tanda tangan digital unik yang dapat diverifikasi mandiri melalui penjelajah blockchain publik.
           </p>
           <ol className="mt-8 space-y-4">

@@ -22,7 +22,7 @@ type InvestigationDetail = {
 const investigationMap: Record<string, InvestigationDetail> = {
   e3: {
     codeLabel: 'ID: ORG-9921-ASO',
-    networkLabel: 'Base Mainnet Halted',
+    networkLabel: 'Base Sepolia Halted',
     contractUrl: 'https://sepolia.basescan.org/address/0x77dd0000000000000000000000000000009921',
     summary: 'Halaman investigasi ini menampilkan ringkasan anomali, checklist verifikasi, dan jejak insiden untuk pemilihan yang sedang ditangguhkan.',
     alerts: [
@@ -121,9 +121,9 @@ export default function SuperadminElectionInvestigationPage({ params }: { params
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div>
                     <p className="text-[16px] font-semibold text-slate-900">{item.title}</p>
-                    <p className="mt-2 text-[15px] leading-7 text-slate-600">{item.note}</p>
+                    <p className="mt-2 text-[15px] leading-7 text-slate-800">{item.note}</p>
                   </div>
-                  <span className="inline-flex self-start rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-600">{item.status}</span>
+                  <span className="inline-flex self-start rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-800">{item.status}</span>
                 </div>
               </article>
             ))}
@@ -141,7 +141,7 @@ export default function SuperadminElectionInvestigationPage({ params }: { params
                 <article key={item.id} className="rounded-[20px] bg-slate-100 px-5 py-5">
                   <p className="text-[16px] font-semibold text-slate-900">{item.title}</p>
                   <p className="mt-2 text-[14px] text-slate-400">{item.time}</p>
-                  <p className="mt-3 text-[15px] leading-7 text-slate-600">{item.detail}</p>
+                  <p className="mt-3 text-[15px] leading-7 text-slate-800">{item.detail}</p>
                 </article>
               ))}
             </div>

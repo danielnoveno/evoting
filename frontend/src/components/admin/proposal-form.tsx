@@ -16,6 +16,8 @@ export interface ProposalFormData {
   revealDate: string
 }
 
+type ProposalFormErrors = Partial<Record<'title' | 'commitDate' | 'revealDate' | 'dateRange', string>>
+
 interface ProposalFormProps {
   initialData?: Partial<ProposalFormData>
   isReadOnly?: boolean
@@ -33,7 +35,7 @@ export function ProposalForm({
   pageDescription,
   submitLabel = 'Simpan Proposal',
   successMessageTitle = 'Proposal Berhasil Disimpan',
-  successMessageDesc = 'Data proposal telah tersimpan dan menunggu review untuk integrasi smart contract.'
+  successMessageDesc = 'Data proposal telah tersimpan dan siap ditinjau pada alur demo saat ini.'
 }: ProposalFormProps) {
   const router = useRouter()
   const { showToast } = useToast()
@@ -47,20 +49,55 @@ export function ProposalForm({
     commitDate: initialData?.commitDate || '',
     revealDate: initialData?.revealDate || ''
   })
+  const [errors, setErrors] = useState<ProposalFormErrors>({})
+
+  const validateForm = (data: ProposalFormData) => {
+    const nextErrors: ProposalFormErrors = {}
+
+    if (!data.title.trim()) {
+      nextErrors.title = 'Nama pemilihan wajib diisi.'
+    }
+
+    if (!data.commitDate) {
+      nextErrors.commitDate = 'Jadwal commit wajib diisi.'
+    }
+
+    if (!data.revealDate) {
+      nextErrors.revealDate = 'Jadwal reveal wajib diisi.'
+    }
+
+    if (data.commitDate && data.revealDate) {
+      const commitTime = new Date(data.commitDate).getTime()
+      const revealTime = new Date(data.revealDate).getTime()
+
+      if (Number.isFinite(commitTime) && Number.isFinite(revealTime) && revealTime <= commitTime) {
+        nextErrors.dateRange = 'Jadwal reveal harus setelah jadwal commit.'
+      }
+    }
+
+    return nextErrors
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     if (isReadOnly) return
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value }
+      setErrors(validateForm(next))
+      return next
+    })
   }
 
   const handleSubmit = () => {
     if (isReadOnly) return
 
-    if (!formData.title || !formData.commitDate || !formData.revealDate) {
+    const nextErrors = validateForm(formData)
+    setErrors(nextErrors)
+
+    if (Object.keys(nextErrors).length > 0) {
       showToast({
         title: 'Gagal menyimpan proposal',
-        description: 'Pastikan Nama Pemilihan, Jadwal Commit, dan Jadwal Reveal telah terisi.',
+        description: nextErrors.dateRange ?? 'Pastikan nama pemilihan, jadwal commit, dan jadwal reveal sudah benar.',
         tone: 'error'
       })
       return
@@ -99,7 +136,7 @@ export function ProposalForm({
             </button>
             <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[48px]">{pageTitle}</h1>
           </div>
-          <p className="mt-4 text-[16px] leading-8 text-slate-600">
+          <p className="mt-4 text-[16px] leading-8 text-slate-800">
             {pageDescription}
           </p>
         </div>
@@ -130,8 +167,9 @@ export function ProposalForm({
             </div>
             
             <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">NAMA PEMILIHAN</label>
+              <label htmlFor="proposal-title" className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">NAMA PEMILIHAN</label>
               <input 
+                id="proposal-title"
                 type="text" 
                 name="title"
                 value={formData.title}
@@ -140,6 +178,7 @@ export function ProposalForm({
                 placeholder="Contoh: Pemilihan Ketua Umum 2024" 
                 className="w-full h-12 px-4 rounded-xl bg-slate-100/80 border-transparent focus:bg-white focus:border-slate-300 focus:ring-0 text-[15px] text-slate-900 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
               />
+              {errors.title ? <p className="text-[12px] text-red-600">{errors.title}</p> : null}
             </div>
 
             <div className="space-y-2">
@@ -237,36 +276,41 @@ export function ProposalForm({
                 <div className="h-6 w-1.5 bg-black rounded-full" />
                 <h2 className="text-[14px] font-bold uppercase tracking-[0.1em] text-slate-900">KONFIGURASI TEKNIS BLOCKCHAIN</h2>
               </div>
-              <span className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-600">
-                ERC-20 COMPLIANT
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-800">
+                Base Sepolia Demo
               </span>
             </div>
             
             <div className="grid sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">JADWAL COMMIT</label>
+                <label htmlFor="proposal-commit-date" className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">JADWAL COMMIT</label>
                 <input 
+                  id="proposal-commit-date"
                   type="datetime-local" 
                   name="commitDate"
                   value={formData.commitDate}
                   onChange={handleChange}
                   disabled={isReadOnly}
-                  className="w-full h-14 px-4 rounded-xl bg-slate-100/80 border-transparent focus:bg-white focus:border-slate-300 focus:ring-0 text-[15px] font-medium text-slate-900 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
+                  className={`w-full h-14 px-4 rounded-xl bg-slate-100/80 border focus:bg-white focus:ring-0 text-[15px] font-medium text-slate-900 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed ${errors.commitDate ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-slate-300'}`}
                 />
-                <p className="text-[12px] text-slate-500 mt-2">Fase dimana pemilih mengirimkan suara terenkripsi.</p>
+                <p className="text-[12px] text-slate-500 mt-2">Fase saat pemilih mengirim commit pilihannya.</p>
+                {errors.commitDate ? <p className="text-[12px] text-red-600">{errors.commitDate}</p> : null}
               </div>
 
               <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">JADWAL REVEAL</label>
+                <label htmlFor="proposal-reveal-date" className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">JADWAL REVEAL</label>
                 <input 
+                  id="proposal-reveal-date"
                   type="datetime-local" 
                   name="revealDate"
                   value={formData.revealDate}
                   onChange={handleChange}
                   disabled={isReadOnly}
-                  className="w-full h-14 px-4 rounded-xl bg-slate-100/80 border-transparent focus:bg-white focus:border-slate-300 focus:ring-0 text-[15px] font-medium text-slate-900 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
+                  className={`w-full h-14 px-4 rounded-xl bg-slate-100/80 border focus:bg-white focus:ring-0 text-[15px] font-medium text-slate-900 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed ${errors.revealDate || errors.dateRange ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-slate-300'}`}
                 />
-                <p className="text-[12px] text-slate-500 mt-2">Fase pembukaan kunci enkripsi untuk perhitungan suara.</p>
+                <p className="text-[12px] text-slate-500 mt-2">Fase saat pemilih membuka commit dengan kandidat dan salt yang sama.</p>
+                {errors.revealDate ? <p className="text-[12px] text-red-600">{errors.revealDate}</p> : null}
+                {errors.dateRange ? <p className="text-[12px] text-red-600 font-semibold">{errors.dateRange}</p> : null}
               </div>
             </div>
           </section>
@@ -275,7 +319,7 @@ export function ProposalForm({
 
         {/* Right Column - Info Panels */}
         <div className="space-y-6">
-          {/* Panel 1: Validasi On-Chain */}
+          {/* Panel 1: Validasi Alur */}
           <div className="rounded-[24px] bg-[#1a202c] p-8 text-white relative overflow-hidden shadow-xl">
             {/* Background pattern */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
@@ -289,35 +333,35 @@ export function ProposalForm({
               </span>
             </div>
 
-            <h3 className="text-[20px] font-semibold mb-4 relative z-10">Validasi On-Chain</h3>
+            <h3 className="text-[20px] font-semibold mb-4 relative z-10">Validasi Alur</h3>
             <p className="text-[14px] leading-6 text-slate-300 mb-8 relative z-10">
-              Sistem menggunakan mekanisme <strong className="text-white">Commit-Reveal</strong> untuk mencegah manipulasi data sebelum perhitungan dimulai.
+              Antarmuka ini menyiapkan alur commit-reveal agar urutan commit dan reveal mudah dipahami saat demo dan pengujian.
             </p>
 
             <div className="space-y-5 relative z-10">
               <div className="flex gap-3">
                 <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
                 <div>
-                  <p className="text-[13px] font-bold text-white mb-1">Immutability Guaranteed</p>
-                  <p className="text-[12px] text-slate-400 leading-5">Data tidak dapat diubah setelah dikomit ke ledger.</p>
+                  <p className="text-[13px] font-bold text-white mb-1">Urutan fase terjaga</p>
+                  <p className="text-[12px] text-slate-400 leading-5">Registrasi, commit, reveal, dan selesai ditampilkan secara terpisah.</p>
                 </div>
               </div>
               <div className="flex gap-3">
                 <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
                 <div>
-                  <p className="text-[13px] font-bold text-white mb-1">Anonymity Layers</p>
-                  <p className="text-[12px] text-slate-400 leading-5">Privasi pemilih dilindungi dengan Zero-Knowledge Proofs.</p>
+                  <p className="text-[13px] font-bold text-white mb-1">Bukti mudah ditinjau</p>
+                  <p className="text-[12px] text-slate-400 leading-5">Hash, waktu, dan tautan audit bisa disiapkan untuk dokumentasi hasil.</p>
                 </div>
               </div>
             </div>
 
             <div className="mt-8 pt-6 border-t border-white/10 relative z-10">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-2">NETWORK HASH RATE</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-2">STATUS DEPLOYMENT</p>
               <div className="flex items-center gap-3">
-                <span className="text-[24px] font-mono font-medium">42.8 TH/s</span>
+                <span className="text-[24px] font-mono font-medium">Demo Ready</span>
                 <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  Stable
+                  Aktif
                 </span>
               </div>
             </div>
@@ -333,8 +377,8 @@ export function ProposalForm({
                   <ShieldCheck className="h-5 w-5 text-slate-700" />
                 </div>
                 <div>
-                  <p className="text-[13px] font-bold text-slate-900 mb-1">Smart Contract Audit</p>
-                  <p className="text-[12px] text-slate-500 leading-5">Laporan audit terbaru tersedia untuk node validator. Status: 100% Pass.</p>
+                  <p className="text-[13px] font-bold text-slate-900 mb-1">Checklist keamanan</p>
+                  <p className="text-[12px] text-slate-500 leading-5">Gunakan panel ini untuk meninjau urutan fase, whitelist, dan kebutuhan bukti transaksi.</p>
                 </div>
               </div>
               <div className="flex gap-4">
@@ -342,8 +386,8 @@ export function ProposalForm({
                   <Clock className="h-5 w-5 text-slate-700" />
                 </div>
                 <div>
-                  <p className="text-[13px] font-bold text-slate-900 mb-1">Real-time Monitoring</p>
-                  <p className="text-[12px] text-slate-500 leading-5">Setiap transaksi proposal akan dicatat di explorer publik secara real-time.</p>
+                  <p className="text-[13px] font-bold text-slate-900 mb-1">Audit demo</p>
+                  <p className="text-[12px] text-slate-500 leading-5">Simpan konfigurasi ini sebagai dasar bukti Bab IV dan Bab V.</p>
                 </div>
               </div>
             </div>
