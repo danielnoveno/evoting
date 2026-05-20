@@ -36,7 +36,7 @@ const faqs = [
   {
     id: 'faq-2',
     question: 'Mengapa saya harus membuka dari browser yang sama?',
-    answer: 'Pada tahap pratinjau ini, data salt dan commit masih disimpan lokal di perangkat. Membuka dari browser yang sama membantu memastikan data reveal tetap tersedia.',
+    answer: 'Data salt dan commit disimpan lokal di perangkat. Membuka dari browser yang sama membantu memastikan data reveal tetap tersedia saat Anda melanjutkan proses voting.',
   },
   {
     id: 'faq-3',
@@ -163,7 +163,7 @@ export default function VoterHelpPage() {
           </div>
           <h3 className="mt-6 text-[24px] font-semibold text-slate-900 sm:text-[28px]">Live Chat 24/7</h3>
           <p className="mt-4 text-[15px] leading-8 text-slate-800">Bicara langsung dengan tim dukungan teknis saat Anda perlu bantuan cepat ketika proses voting sedang berjalan.</p>
-          <button type="button" onClick={() => showToast({ tone: 'success', title: 'Live chat dimulai', description: 'Fitur percakapan langsung masih dalam tahap pengembangan.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-blue-600 px-6 text-[14px] font-semibold text-white hover:bg-blue-700 sm:w-auto">
+          <button type="button" onClick={() => showToast({ tone: 'success', title: 'Tim bantuan siap membantu', description: 'Jika diperlukan, lanjutkan melalui email bantuan untuk pendampingan lebih lanjut.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-blue-600 px-6 text-[14px] font-semibold text-white hover:bg-blue-700 sm:w-auto">
             Mulai Chat Sekarang
           </button>
         </article>

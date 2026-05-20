@@ -109,7 +109,7 @@ export default function SuperadminAuditLogPage() {
         </div>
 
         <div className="mt-2 flex gap-4 xl:mt-20">
-          <SuperadminToolbarButton onClick={() => showToast({ tone: 'success', title: 'Laporan audit disiapkan', description: 'Unduhan laporan dummy berhasil dipicu.' })}>
+          <SuperadminToolbarButton onClick={() => showToast({ tone: 'success', title: 'Laporan audit disiapkan', description: 'File laporan audit sedang disiapkan.' })}>
             <Download className="h-4 w-4" />
             Unduh Laporan
           </SuperadminToolbarButton>
@@ -125,7 +125,7 @@ export default function SuperadminAuditLogPage() {
               statusTone: 'syncing',
               icon: 'validator',
             }, ...current])
-            showToast({ tone: 'success', title: 'Sinkronisasi ulang dipicu', description: 'Event audit dummy baru ditambahkan ke daftar.' })
+            showToast({ tone: 'success', title: 'Sinkronisasi ulang dipicu', description: 'Event audit terbaru berhasil ditambahkan ke daftar.' })
           }} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-700 hover:bg-slate-200">
             <RefreshCcw className="h-4 w-4" />
             Sinkronisasi Ulang
@@ -297,7 +297,7 @@ export default function SuperadminAuditLogPage() {
       <ModalShell
         open={selectedLog !== null}
         title={selectedLog?.title ?? 'Detail Audit Event'}
-        description="Detail event audit ini ditampilkan dari data dummy lokal untuk kebutuhan presentasi dan evaluasi alur superadmin."
+        description="Detail event audit ini ditampilkan untuk membantu peninjauan aktivitas superadmin."
         onClose={() => setSelectedLog(null)}
       >
         {selectedLog ? (

@@ -30,8 +30,8 @@ const mockAdminData: SearchItem[] = [
 ]
 
 const mockVoterData: SearchItem[] = [
-  { id: 'v1', title: sharedDummyContext.proposalTitle, description: 'Sedang Berlangsung', category: 'Pemilihan', icon: Vote, href: `/pemilih/pemilihan/${sharedDummyContext.electionId}/commit` },
-  { id: 'v2', title: sharedDummyContext.candidates[0].name, description: 'Kandidat Koordinator', category: 'Kandidat', icon: User, href: `/pemilih/pemilihan/${sharedDummyContext.electionId}/commit` },
+  { id: 'v1', title: sharedDummyContext.proposalTitle, description: 'Sedang Berlangsung', category: 'Pemilihan', icon: Vote, href: `/pemilih/pemilihan/${sharedDummyContext.electionId}/pilih-kandidat` },
+  { id: 'v2', title: sharedDummyContext.candidates[0].name, description: 'Kandidat Koordinator', category: 'Kandidat', icon: User, href: `/pemilih/pemilihan/${sharedDummyContext.electionId}/pilih-kandidat` },
   { id: 'v3', title: 'Cara Menghubungkan Dompet', description: 'Panduan Pengguna', category: 'Bantuan', icon: HelpCircle, href: '/pemilih/bantuan' },
   { id: 'v4', title: 'Kenapa Gas Fee Gagal?', description: 'Panduan Pengguna', category: 'Bantuan', icon: HelpCircle, href: '/pemilih/bantuan' },
 ]

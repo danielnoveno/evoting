@@ -74,7 +74,7 @@ export default function VoterProfilePage() {
               </button>
             </div>
             <h2 className="mt-6 text-[24px] font-semibold text-slate-900">Foto Profil</h2>
-            <p className="mt-3 text-[15px] leading-8 text-slate-800">Gunakan foto yang jelas untuk mempermudah identifikasi saat sesi voting simulasi berlangsung.</p>
+            <p className="mt-3 text-[15px] leading-8 text-slate-800">Gunakan foto yang jelas untuk mempermudah identifikasi saat proses voting berlangsung.</p>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             <button type="button" onClick={() => fileRef.current?.click()} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-200">
               Ganti Foto
@@ -86,7 +86,7 @@ export default function VoterProfilePage() {
               <ShieldCheck className="h-5 w-5" />
             </div>
             <h2 className="mt-6 text-[28px] font-semibold text-white">Identitas Terverifikasi</h2>
-            <p className="mt-4 text-[15px] leading-8 text-slate-300">Profil Anda terhubung dengan identitas kampus dan dijaga oleh proses verifikasi wallet pada simulasi VoteChain.</p>
+            <p className="mt-4 text-[15px] leading-8 text-slate-300">Profil Anda terhubung dengan identitas kampus dan dijaga oleh proses verifikasi wallet VoteChain.</p>
           </article>
         </div>
 

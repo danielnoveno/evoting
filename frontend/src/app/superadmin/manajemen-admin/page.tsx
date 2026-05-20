@@ -121,7 +121,7 @@ function SuperadminAdminManagementContent() {
     updateTab('daftar')
     setActiveStatus('Semua Status')
     setFormData(initialFormData)
-    showToast({ tone: 'success', title: 'Undangan admin dibuat', description: 'Data dummy ditambahkan ke daftar admin.' })
+    showToast({ tone: 'success', title: 'Undangan admin dibuat', description: 'Admin baru berhasil ditambahkan ke daftar.' })
   }
 
   return (
@@ -141,7 +141,7 @@ function SuperadminAdminManagementContent() {
           rightContent={
             activeTab === 'daftar' ? (
               <div className="flex flex-col gap-3 sm:flex-row">
-                <SuperadminToolbarButton onClick={() => showToast({ tone: 'info', title: 'Unduh laporan belum aktif', description: 'Versi dummy belum menyiapkan ekspor file nyata.' })}>
+                <SuperadminToolbarButton onClick={() => showToast({ tone: 'info', title: 'Unduh laporan belum aktif', description: 'Fitur unduh laporan sedang disiapkan.' })}>
                   <Download className="h-4 w-4" />
                   Unduh Laporan
                 </SuperadminToolbarButton>
@@ -212,7 +212,7 @@ function SuperadminAdminManagementContent() {
                 </SuperadminTableRowLink>
               )) : (
                 <div className="p-6">
-                  <SuperadminEmptyState title="Tidak ada admin yang cocok" description="Coba ganti filter status atau tambahkan admin baru untuk melanjutkan simulasi." />
+                  <SuperadminEmptyState title="Tidak ada admin yang cocok" description="Coba ganti filter status atau tambahkan admin baru untuk melihat hasil lainnya." />
                 </div>
               )}
             </div>

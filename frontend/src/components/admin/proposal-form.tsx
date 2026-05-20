@@ -35,7 +35,7 @@ export function ProposalForm({
   pageDescription,
   submitLabel = 'Simpan Proposal',
   successMessageTitle = 'Proposal Berhasil Disimpan',
-  successMessageDesc = 'Data proposal telah tersimpan dan siap ditinjau pada alur demo saat ini.'
+  successMessageDesc = 'Data proposal telah tersimpan dan siap ditinjau.'
 }: ProposalFormProps) {
   const router = useRouter()
   const { showToast } = useToast()
@@ -277,7 +277,7 @@ export function ProposalForm({
                 <h2 className="text-[14px] font-bold uppercase tracking-[0.1em] text-slate-900">KONFIGURASI TEKNIS BLOCKCHAIN</h2>
               </div>
               <span className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-800">
-                Base Sepolia Demo
+                 Base Sepolia
               </span>
             </div>
             
@@ -335,7 +335,7 @@ export function ProposalForm({
 
             <h3 className="text-[20px] font-semibold mb-4 relative z-10">Validasi Alur</h3>
             <p className="text-[14px] leading-6 text-slate-300 mb-8 relative z-10">
-              Antarmuka ini menyiapkan alur commit-reveal agar urutan commit dan reveal mudah dipahami saat demo dan pengujian.
+              Antarmuka ini menyiapkan alur commit-reveal agar urutan commit dan reveal mudah dipahami saat peninjauan dan pengujian.
             </p>
 
             <div className="space-y-5 relative z-10">
@@ -358,7 +358,7 @@ export function ProposalForm({
             <div className="mt-8 pt-6 border-t border-white/10 relative z-10">
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-2">STATUS DEPLOYMENT</p>
               <div className="flex items-center gap-3">
-                <span className="text-[24px] font-mono font-medium">Demo Ready</span>
+                <span className="text-[24px] font-mono font-medium">Siap Ditinjau</span>
                 <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                   Aktif
@@ -386,7 +386,7 @@ export function ProposalForm({
                   <Clock className="h-5 w-5 text-slate-700" />
                 </div>
                 <div>
-                  <p className="text-[13px] font-bold text-slate-900 mb-1">Audit demo</p>
+                  <p className="text-[13px] font-bold text-slate-900 mb-1">Audit implementasi</p>
                   <p className="text-[12px] text-slate-500 leading-5">Simpan konfigurasi ini sebagai dasar bukti Bab IV dan Bab V.</p>
                 </div>
               </div>

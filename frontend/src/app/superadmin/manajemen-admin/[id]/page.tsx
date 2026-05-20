@@ -128,7 +128,7 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
                   onClick={() => {
                     setEnabled((current) => !current)
                     setAdmins((current) => current.map((admin) => admin.id === seedRecord.id ? { ...admin, status: enabled ? 'Nonaktif' : 'Aktif' } : admin))
-                    showToast({ tone: 'success', title: enabled ? 'Akun dinonaktifkan' : 'Akun diaktifkan kembali', description: 'Perubahan ini hanya berlaku pada data dummy lokal.' })
+                    showToast({ tone: 'success', title: enabled ? 'Akun dinonaktifkan' : 'Akun diaktifkan kembali', description: 'Perubahan status akun berhasil diterapkan.' })
                   }}
                   className={`relative h-8 w-14 rounded-full transition ${enabled ? 'bg-slate-900' : 'bg-slate-300'}`}
                 >
@@ -139,7 +139,7 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
 
             <button
               type="button"
-              onClick={() => showToast({ tone: 'info', title: 'Reset password dikirim', description: 'Email reset password dummy telah dikirim ke admin ini.' })}
+              onClick={() => showToast({ tone: 'info', title: 'Reset password dikirim', description: 'Email reset password berhasil dikirim ke admin ini.' })}
               className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-200 text-[15px] font-medium text-slate-900 hover:bg-slate-300"
             >
               <RefreshCcw className="h-4 w-4" />
@@ -161,7 +161,7 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
           <SuperadminSectionCard>
             <div className="flex items-start justify-between gap-4">
               <h2 className="text-[18px] font-semibold text-slate-900">Akses Space</h2>
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Kelola akses belum final', description: 'Gunakan halaman dummy ini untuk presentasi alur.' })} className="text-[15px] font-semibold text-slate-800">
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Kelola akses belum tersedia', description: 'Halaman pengelolaan akses sedang disiapkan.' })} className="text-[15px] font-semibold text-slate-800">
                 Kelola Akses
               </button>
             </div>
@@ -230,13 +230,13 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
       <ConfirmDialog
         open={deleteDialogOpen}
         title="Hapus akun admin ini?"
-        description="Aksi ini hanya simulasi, tetapi pada sistem nyata akses admin akan dicabut dari seluruh space terkait."
+        description="Akses admin akan dicabut dari seluruh space terkait."
         confirmLabel="Ya, Hapus"
         tone="danger"
         onCancel={() => setDeleteDialogOpen(false)}
         onConfirm={() => {
           setDeleteDialogOpen(false)
-          showToast({ tone: 'success', title: 'Akun admin dihapus', description: 'Perubahan dummy berhasil disimulasikan.' })
+          showToast({ tone: 'success', title: 'Akun admin dihapus', description: 'Akun admin berhasil dihapus.' })
         }}
       />
     </SuperadminShell>

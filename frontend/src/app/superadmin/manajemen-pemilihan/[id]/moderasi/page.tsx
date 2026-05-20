@@ -58,21 +58,21 @@ type ModerationDetail = {
 const moderationDetails: Record<string, ModerationDetail> = {
   [sharedDummyContext.electionId]: {
     network: 'Base Sepolia Testnet Secured',
-    electionCode: 'ID: BEM-UI-2024-X92',
+    electionCode: 'ID: UKM-RI-UAJY-2026-01',
     endLabel: 'Berakhir dalam 2 hari, 14 jam',
-    totalVotes: '12,842',
-    totalVotesDelta: '+4.2%',
+    totalVotes: '218',
+    totalVotesDelta: '+6.4%',
     verificationNote: 'Verifikasi on-chain: 100%',
-    participationValue: '68.4%',
+    participationValue: '67.3%',
     participationTarget: '80%',
-    participationNote: 'Quorum tercapai',
-    phaseTitle: 'Voting Langsung',
+    participationNote: 'Target partisipasi UKM hampir tercapai',
+    phaseTitle: 'Fase Commit',
     nextPhase: 'Reveal & Tally',
     blockNumber: '#19,482,102',
     blockSyncLabel: 'Terakhir sinkron 2 detik lalu',
     contractAddress: '0x42f1...91ec',
     contractUrl: 'https://sepolia.basescan.org/address/0x42f100000000000000000000000000000091ec',
-    suspensionNote: 'Penangguhan akan membekukan seluruh interaksi kontrak pintar secara permanen.',
+    suspensionNote: 'Penangguhan akan menghentikan sementara commit baru sampai admin membuka kembali ruang pemilihan ini.',
     candidateSectionTitle: 'Monitoring Kandidat',
     candidateSectionDescription: 'Status suara bersifat tersembunyi (commitment-based) hingga fase Reveal.',
     encryptedLabel: 'Suara Dienkripsi',
@@ -83,13 +83,13 @@ const moderationDetails: Record<string, ModerationDetail> = {
     ],
     supportCards: [
       { id: 's1', title: 'Commit-Reveal Verification', description: 'Setiap suara diverifikasi menggunakan skema komitmen kriptografi.', icon: 'shield' },
-      { id: 's2', title: 'Real-time IPFS Hash', description: 'Backup data pemilihan terdistribusi secara global.', icon: 'activity' },
+      { id: 's2', title: 'Cadangan Bukti Panitia', description: 'Ringkasan bukti pemilihan disiapkan untuk kebutuhan audit internal UKM dan pembina.', icon: 'activity' },
     ],
     feed: [
-      { id: 'f1', title: 'New Commitment Created', description: 'Suara baru telah didaftarkan pada kontrak melalui address 0x42f...91e.', hash: '0x9a2b...4f8c', time: '2 detik yang lalu', tone: 'info' },
-      { id: 'f2', title: 'Merkle Tree Update', description: 'Root hash diperbarui untuk validasi batch suara #921.', hash: '0x11e4...8a22', time: '1 menit yang lalu', tone: 'teal' },
-      { id: 'f3', title: 'New Commitment Created', description: 'Suara baru telah didaftarkan pada kontrak melalui address 0xbc1...22d.', hash: '0x77d1...f2e0', time: '3 menit yang lalu', tone: 'info' },
-      { id: 'f4', title: 'Admin Configuration Change', description: 'Penambahan Moderator View pada dashboard monitoring.', hash: '0xbb34...cc11', time: '12 menit yang lalu', tone: 'slate' },
+      { id: 'f1', title: 'Commit Baru Tercatat', description: 'Suara baru dari anggota UKM berhasil didaftarkan pada kontrak pemilihan.', hash: '0x9a2b...4f8c', time: '2 detik yang lalu', tone: 'info' },
+      { id: 'f2', title: 'Batch Whitelist Diperbarui', description: 'Panitia memperbarui daftar pemilih aktif semester berjalan.', hash: '0x11e4...8a22', time: '1 menit yang lalu', tone: 'teal' },
+      { id: 'f3', title: 'Commit Baru Tercatat', description: 'Satu anggota lain menyelesaikan tahap commit dari dashboard pemilih.', hash: '0x77d1...f2e0', time: '3 menit yang lalu', tone: 'info' },
+      { id: 'f4', title: 'Konfigurasi Panitia Diperbarui', description: 'Admin menyesuaikan catatan moderasi untuk audit pemilihan UKM.', hash: '0xbb34...cc11', time: '12 menit yang lalu', tone: 'slate' },
     ],
   },
 }
@@ -109,16 +109,16 @@ function getFallbackDetail(title: string, code: string): ModerationDetail {
     nextPhase: 'Reveal & Tally',
     blockNumber: '#19,480,000',
     blockSyncLabel: 'Terakhir sinkron 1 menit lalu',
-    contractAddress: '0x0000...demo',
+    contractAddress: '0x0000...84532',
     contractUrl: 'https://sepolia.basescan.org/',
-    suspensionNote: 'Penangguhan akan menghentikan alur demo moderasi ini.',
+    suspensionNote: 'Penangguhan akan menghentikan pemilihan ini sampai proses tinjauan selesai.',
     candidateSectionTitle: `Monitoring Kandidat ${title}`,
-    candidateSectionDescription: 'Detail kandidat untuk pemilihan ini masih menggunakan data dummy demonstrasi.',
+    candidateSectionDescription: 'Detail kandidat untuk pemilihan ini sedang dilengkapi untuk kebutuhan moderasi.',
     encryptedLabel: 'Suara Dienkripsi',
     candidates: [],
     supportCards: [
-      { id: 'sf1', title: 'Audit Placeholder', description: 'Konten dukungan belum diisi untuk pemilihan ini.', icon: 'shield' },
-      { id: 'sf2', title: 'Activity Placeholder', description: 'Silakan lengkapi dummy data jika ingin presentasi lebih detail.', icon: 'activity' },
+      { id: 'sf1', title: 'Audit Tambahan', description: 'Konten dukungan belum tersedia untuk pemilihan ini.', icon: 'shield' },
+      { id: 'sf2', title: 'Aktivitas Lanjutan', description: 'Lengkapi data aktivitas untuk melihat tinjauan yang lebih detail.', icon: 'activity' },
     ],
     feed: [],
   }
@@ -286,7 +286,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
                 </article>
               )) : (
                 <div className="rounded-[22px] border border-dashed border-slate-200 px-5 py-8 text-[15px] text-slate-500">
-                  Belum ada kandidat dummy yang terhubung untuk tampilan moderasi ini.
+                  Belum ada data kandidat yang terhubung untuk tampilan moderasi ini.
                 </div>
               )}
             </div>
@@ -328,7 +328,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
                 </article>
               )) : (
                 <div className="rounded-[22px] border border-dashed border-slate-200 px-5 py-8 text-[15px] text-slate-500">
-                  Aktivitas blockchain belum tersedia untuk mode dummy ini.
+                  Aktivitas blockchain belum tersedia untuk pemilihan ini.
                 </div>
               )}
             </div>
@@ -337,7 +337,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
           <div className="border-t border-slate-100 px-6 py-5">
             <button
               type="button"
-              onClick={() => showToast({ tone: 'info', title: 'Explorer lengkap dibuka', description: 'Versi demo hanya menampilkan feed aktivitas statis.' })}
+              onClick={() => showToast({ tone: 'info', title: 'Explorer lengkap dibuka', description: 'Feed aktivitas lengkap sedang disiapkan.' })}
               className="inline-flex w-full items-center justify-center gap-2 text-[15px] font-medium text-slate-900 hover:text-slate-700"
             >
               Buka Explorer Lengkap
@@ -351,14 +351,14 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
       <ConfirmDialog
         open={suspendDialogOpen}
         title="Tangguhkan pemilihan ini?"
-        description="Mode demo akan menandai pemilihan sebagai ditangguhkan lalu mengembalikan Anda ke daftar manajemen pemilihan."
+        description="Pemilihan akan ditandai sebagai ditangguhkan lalu Anda kembali ke daftar manajemen pemilihan."
         confirmLabel="Ya, Tangguhkan"
         tone="danger"
         onCancel={() => setSuspendDialogOpen(false)}
         onConfirm={() => {
           setSuspendDialogOpen(false)
           setElections((current) => current.map((item) => item.id === election.id ? { ...item, status: 'Ditangguhkan', note: 'Halted' } : item))
-          showToast({ tone: 'success', title: 'Pemilihan ditangguhkan', description: 'Status dummy berhasil diperbarui ke mode halted.' })
+          showToast({ tone: 'success', title: 'Pemilihan ditangguhkan', description: 'Status pemilihan berhasil diperbarui.' })
           window.setTimeout(() => {
             router.push('/superadmin/manajemen-pemilihan')
           }, 500)

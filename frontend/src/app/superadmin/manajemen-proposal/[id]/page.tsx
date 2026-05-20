@@ -37,16 +37,16 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       organizationName: row.organizationName,
       submittedAt: row.submittedAt,
       summary: [
-        `Proposal ${row.proposalType.toLowerCase()} dari ${row.organizationName} belum memiliki detail lengkap pada mode dummy lama.`,
-        'Halaman ini sekarang otomatis membuat detail fallback agar seluruh proposal tetap bisa direview tanpa 404.',
+        `Proposal ${row.proposalType.toLowerCase()} dari ${row.organizationName} belum memiliki detail lengkap.`,
+        'Halaman ini menampilkan ringkasan awal agar proses review tetap dapat dilanjutkan.',
       ],
       networkConfig: {
-        contractAddress: '0xAUTO...DUMMY',
+        contractAddress: '0xAUTO...84532',
         consensus: 'Commit-Reveal + Whitelist',
       },
       objectives: [
         { id: 'fallback-1', title: 'Data proposal dasar tersedia', description: 'Nama organisasi, tipe proposal, dan tanggal pengajuan sudah tercatat.', tone: 'success' as const },
-        { id: 'fallback-2', title: 'Butuh lampiran tambahan', description: 'Dokumen pendukung detail belum dilampirkan dalam seed awal dummy.', tone: 'danger' as const },
+        { id: 'fallback-2', title: 'Butuh lampiran tambahan', description: 'Dokumen pendukung detail belum dilampirkan pada data awal.', tone: 'danger' as const },
       ],
       riskProfile: {
         level: 'Medium',
@@ -60,7 +60,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         { id: 'fallback-t1', title: 'Proposal Diajukan', actor: `Oleh: ${row.organizationName}`, time: row.submittedAt },
       ],
       documents: [
-        { id: 'fallback-d1', name: 'Detail proposal masih disusun', meta: 'Dummy fallback' },
+        { id: 'fallback-d1', name: 'Detail proposal masih disusun', meta: 'Ringkasan awal' },
       ],
     }
   }, [params.id, proposals])
@@ -105,7 +105,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           <>
             <button
               type="button"
-              onClick={() => showToast({ tone: 'info', title: 'Unduhan ZIP belum tersedia', description: 'Pada versi demo, file belum benar-benar diunduh.' })}
+              onClick={() => showToast({ tone: 'info', title: 'Unduhan ZIP belum tersedia', description: 'Dokumen unduhan sedang disiapkan.' })}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-50"
             >
               <Download className="h-4 w-4" />
@@ -206,13 +206,13 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                 <FileText className="h-5 w-5 text-slate-700" />
                 <h2 className="text-[20px] font-semibold text-slate-900">Dokumen Pendukung</h2>
               </div>
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduhan ZIP belum tersedia', description: 'Pada versi demo, file belum benar-benar diunduh.' })} className="text-[14px] font-semibold text-slate-700 hover:text-slate-900">
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduhan ZIP belum tersedia', description: 'Dokumen unduhan sedang disiapkan.' })} className="text-[14px] font-semibold text-slate-700 hover:text-slate-900">
                 Unduh semua (ZIP)
               </button>
             </div>
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               {proposal.documents.map((document) => (
-                <SuperadminInteractiveCard key={document.id} onClick={() => showToast({ tone: 'success', title: 'Dokumen dibuka', description: `${document.name} tersedia pada mode dummy.` })} className="bg-slate-100 px-5 py-5 shadow-none">
+                <SuperadminInteractiveCard key={document.id} onClick={() => showToast({ tone: 'success', title: 'Dokumen dibuka', description: `${document.name} siap ditinjau dari halaman ini.` })} className="bg-slate-100 px-5 py-5 shadow-none">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="rounded-2xl bg-white p-3 text-slate-700">
@@ -225,7 +225,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                     </div>
                     <button type="button" onClick={(event) => {
                       event.stopPropagation()
-                      showToast({ tone: 'success', title: 'Dokumen siap diunduh', description: `${document.name} dibuka pada mode dummy.` })
+                      showToast({ tone: 'success', title: 'Dokumen siap diunduh', description: `${document.name} sedang disiapkan untuk diunduh.` })
                     }} className="rounded-2xl bg-white p-3 text-slate-700 hover:bg-slate-50">
                       <Download className="h-4 w-4" />
                     </button>
@@ -316,7 +316,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             <div className="mt-5 rounded-[20px] bg-slate-50 px-4 py-4 font-mono text-[14px] text-slate-700">
               {proposal.networkConfig.contractAddress}
             </div>
-            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Explorer draft dibuka', description: 'Pada mode demo, tautan draft kontrak belum terhubung ke backend nyata.' })} className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
+            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Explorer draft dibuka', description: 'Tautan draft kontrak sedang disiapkan.' })} className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
               Lihat Draft Explorer
             </button>
           </SuperadminSectionCard>
@@ -327,7 +327,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       <ConfirmDialog
         open={decisionType !== null}
         title={decisionMeta.title}
-        description={note.trim() ? `Catatan audit: ${note}` : 'Perubahan ini hanya diterapkan pada mode demo dan belum menyimpan ke backend nyata.'}
+        description={note.trim() ? `Catatan audit: ${note}` : 'Perubahan ini akan diterapkan pada status proposal setelah Anda konfirmasi.'}
         confirmLabel={decisionMeta.confirmLabel}
         tone={decisionType === 'reject' ? 'danger' : 'default'}
         onCancel={() => setDecisionType(null)}
@@ -343,7 +343,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                     : row.status,
               }
             : row))
-          showToast({ tone: decisionType === 'reject' ? 'error' : 'success', title, description: 'Aksi dummy berhasil dijalankan.' })
+          showToast({ tone: decisionType === 'reject' ? 'error' : 'success', title, description: 'Status proposal berhasil diperbarui.' })
           setDecisionType(null)
           window.setTimeout(() => router.push('/superadmin/manajemen-proposal'), 500)
         }}

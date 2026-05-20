@@ -76,13 +76,13 @@ export default function SuperadminRiskActivityPage() {
                   ) : null}
                   <button type="button" onClick={(event) => {
                     event.stopPropagation()
-                    showToast({ tone: 'info', title: 'Detail log dibuka', description: `Log dummy untuk ${alert.title} ditampilkan.` })
+                    showToast({ tone: 'info', title: 'Detail log dibuka', description: `Detail log untuk ${alert.title} sedang ditampilkan.` })
                   }} className="inline-flex h-10 items-center justify-center rounded-2xl bg-slate-200 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-300">
                     Lihat Detail Log
                   </button>
                 </div>
               </SuperadminInteractiveCard>
-            )) : <SuperadminEmptyState title="Tidak ada alert aktif" description="Semua anomali demo sudah ditangani. Coba muat ulang seed data jika ingin melihat skenario alert lagi." />}
+            )) : <SuperadminEmptyState title="Tidak ada alert aktif" description="Semua anomali aktif sudah ditangani. Coba muat ulang data untuk melihat alert lainnya." />}
           </div>
         </div>
 
@@ -132,7 +132,7 @@ export default function SuperadminRiskActivityPage() {
       <ConfirmDialog
         open={blockedAlertId !== null}
         title="Blokir akses aktor ini?"
-        description="Aksi ini hanya simulasi untuk demo threat monitoring. Sistem nyata perlu validasi tambahan sebelum pemblokiran permanen."
+        description="Tinjau kembali detail alert sebelum melakukan pemblokiran permanen."
         confirmLabel="Ya, Blokir"
         tone="danger"
         onCancel={() => setBlockedAlertId(null)}
@@ -140,7 +140,7 @@ export default function SuperadminRiskActivityPage() {
           if (blockedAlertId) {
             setAlerts((current) => current.filter((alert) => alert.id !== blockedAlertId))
           }
-          showToast({ tone: 'success', title: 'Akses berhasil diblokir', description: 'Mitigasi dummy berhasil diterapkan pada alert terpilih.' })
+          showToast({ tone: 'success', title: 'Akses berhasil diblokir', description: 'Langkah mitigasi berhasil diterapkan pada alert terpilih.' })
           setBlockedAlertId(null)
         }}
       />

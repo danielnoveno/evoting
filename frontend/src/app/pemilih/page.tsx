@@ -1,9 +1,11 @@
 'use client'
 
-import { ArrowRight, CircleCheck, ExternalLink, Hourglass } from 'lucide-react'
+import { ArrowRight, CircleCheck, ExternalLink, Hourglass, Fingerprint, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import { VoterPageSkeleton, VoterShell } from '@/components/voter/voter-shell'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import { useToast } from '@/components/ui/toast-provider'
+import { sharedDummyContext } from '@/lib/dummy-shared-context'
 import {
   formatNumber,
   getElectionProgress,
@@ -12,6 +14,8 @@ import {
   resolveElectionAction,
   sortDashboardElections,
   useVoterStore,
+  basescanTxUrl,
+  formatWallet,
 } from '@/lib/voter-mock-store'
 
 const logToneClassName = {
@@ -27,7 +31,8 @@ const logToneIcon = {
 } as const
 
 export default function VoterDashboardPage() {
-  const { store, loading } = useVoterStore()
+  const { store, loading, actions } = useVoterStore()
+  const { showToast } = useToast()
 
   if (loading || !store) {
     return (
@@ -38,16 +43,19 @@ export default function VoterDashboardPage() {
   }
 
   const elections = sortDashboardElections(store.elections)
-  const featuredElection = elections[0]
-  const secondaryElection = elections[1]
+  const featuredElection = elections.find((election) => election.id === sharedDummyContext.electionId)
+    ?? elections.find((election) => election.phase === 'commit' && !election.commitProof)
+    ?? elections.find((election) => election.phase === 'reveal' && !election.revealProof)
+    ?? elections[0]
+  const secondaryElection = elections.find((election) => election.id !== featuredElection.id) ?? featuredElection
   const logs = getRecentLogs(store)
-  const action = resolveElectionAction(featuredElection)
   const secondaryAction = resolveElectionAction(secondaryElection)
 
   const participated = store.elections.filter((election) => election.commitProof || election.revealProof).length
   const pendingReveal = store.elections.filter((election) => election.phase === 'reveal' && !election.revealProof).length
   const completed = store.elections.filter((election) => election.phase === 'ended').length
   const participationRate = Math.round((participated / store.elections.length) * 100)
+  const featuredLabel = 'Pemilihan aktif'
 
   return (
     <VoterShell>
@@ -62,38 +70,147 @@ export default function VoterDashboardPage() {
 
       <ScrollReveal variant="fade-up" delay={100} duration={800}>
       <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.72fr)]">
-        <article className="rounded-xl border border-slate-200 bg-white p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Deadline terdekat</p>
-              <h2 className="mt-4 text-[22px] font-semibold text-slate-900 md:text-[28px]">{featuredElection.title}</h2>
-              <p className="mt-3 max-w-3xl text-[14px] leading-7 text-slate-800">{featuredElection.summary}</p>
-            </div>
-            <span className="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">
-              {getPhaseLabel(featuredElection.phase)}
-            </span>
-          </div>
+        <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+          {(() => {
+            const isCommitPhase = featuredElection.phase === 'commit' && !featuredElection.commitProof
+            const isRevealPhase = (featuredElection.phase === 'reveal' && !featuredElection.revealProof) || (featuredElection.commitProof && !featuredElection.revealProof)
+            const isEndedPhase = featuredElection.phase === 'ended' || featuredElection.revealProof
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Waktu tersisa</p>
-              <p className="mt-2 text-[18px] font-semibold text-slate-900">{new Date(featuredElection.deadlineIso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total partisipan</p>
-              <p className="mt-2 text-[18px] font-semibold text-slate-900">{formatNumber(featuredElection.totalParticipants)}</p>
-            </div>
-          </div>
+            return (
+              <>
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">{featuredLabel}</p>
+                    <h2 className="mt-4 text-[22px] font-semibold text-slate-900 md:text-[28px] tracking-tight">{featuredElection.title}</h2>
+                    <p className="mt-3 max-w-3xl text-[14px] leading-7 text-slate-700">{featuredElection.summary}</p>
+                    
+                    {isCommitPhase && (
+                      <p className="mt-4 text-[13px] font-medium text-slate-800 bg-blue-50/50 border border-blue-100 rounded-lg p-3 leading-relaxed">
+                        💡 <span className="font-semibold text-blue-900">Langkah Pertama:</span> Berikan suara Anda untuk memilih salah satu kandidat. Pilihan Anda akan diubah menjadi hash komitmen kriptografis secara lokal di browser sebelum dikirim ke smart contract demi menjaga kerahasiaan pilihan.
+                      </p>
+                    )}
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Link href={action.href} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#0F172A] px-6 text-[13px] font-medium text-white hover:bg-[#1E293B] sm:w-auto">
-              {action.label}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link href="/pemilih/bukti-saya" className="inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-6 text-[13px] font-medium text-slate-900 hover:bg-slate-50 sm:w-auto">
-              Lihat Bukti Saya
-            </Link>
-          </div>
+                    {isRevealPhase && (
+                      <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50/40 space-y-3">
+                        <p className="text-[13px] font-medium text-amber-900 flex items-center gap-2">
+                          <Fingerprint className="h-4.5 w-4.5 text-amber-600 shrink-0" />
+                          <span className="font-semibold">Commitment Anda berhasil disimpan di smart contract!</span>
+                        </p>
+                        <div className="font-mono text-[11px] text-slate-800 bg-white border border-amber-100 rounded-lg p-2.5 break-all leading-relaxed shadow-inner">
+                          <span className="font-semibold text-slate-400 select-none">HASH COMMITMENT:</span> {featuredElection.commitmentHash}
+                        </div>
+                        <p className="text-[12px] leading-relaxed text-slate-700">
+                          💡 <span className="font-semibold text-amber-900">Langkah Kedua:</span> Silakan buka suara Anda (reveal) menggunakan perangkat dan browser yang sama agar kunci salt pencocokan suara Anda dapat divalidasi oleh smart contract.
+                        </p>
+                      </div>
+                    )}
+
+                    {isEndedPhase && (
+                      <div className="mt-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-3">
+                        <p className="text-[13px] font-medium text-emerald-900 flex items-center gap-2">
+                          <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+                          <span className="font-semibold">Reveal tervalidasi! Pilihan suara Anda telah sukses dihitung secara on-chain.</span>
+                        </p>
+                        {featuredElection.revealProof && (
+                          <div className="flex flex-col gap-1.5 text-[12px] text-slate-600 bg-white/70 border border-emerald-100 rounded-lg p-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-400">Nomor Block:</span>
+                              <strong className="font-mono text-slate-900">#{featuredElection.revealProof.blockNumber}</strong>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-400">Tx Hash:</span>
+                              <a 
+                                href={basescanTxUrl(featuredElection.revealProof.txHash)} 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="text-blue-600 hover:text-blue-800 font-mono text-[11px] hover:underline inline-flex items-center gap-0.5"
+                                aria-label="Lihat transaksi reveal di Basescan"
+                              >
+                                {formatWallet(featuredElection.revealProof.txHash)}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                        <p className="text-[12px] leading-relaxed text-slate-700">
+                          🎉 Terima kasih atas partisipasi Anda dalam menjaga proses demokrasi kampus yang aman, transparan, dan terdesentralisasi.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {isCommitPhase && (
+                    <span className="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700 border border-blue-100 shrink-0">
+                      Sedang Berlangsung
+                    </span>
+                  )}
+                  {isRevealPhase && (
+                    <span className="inline-flex w-fit rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700 border border-amber-200 shrink-0">
+                      Fase Reveal
+                    </span>
+                  )}
+                  {isEndedPhase && (
+                    <span className="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700 border border-emerald-200 shrink-0">
+                      Selesai
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-8 grid gap-4 sm:grid-cols-2 border-t border-slate-100 pt-6">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Waktu tersisa</p>
+                    <p className="mt-2 text-[18px] font-semibold text-slate-900">
+                      {new Date(featuredElection.deadlineIso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} · {new Date(featuredElection.deadlineIso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total partisipan</p>
+                    <p className="mt-2 text-[18px] font-semibold text-slate-900">{formatNumber(featuredElection.totalParticipants)} pemilih terdaftar</p>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  {isCommitPhase && (
+                    <Link
+                      href={`/pemilih/pemilihan/${featuredElection.id}/pilih-kandidat`}
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#0F172A] px-6 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none sm:w-auto"
+                      aria-label="Mulai pilih kandidat"
+                    >
+                      Pilih Kandidat
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
+                  {isRevealPhase && (
+                    <Link
+                      href={`/pemilih/pemilihan/${featuredElection.id}/reveal`}
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-amber-600 px-6 text-[13px] font-semibold text-white transition-colors hover:bg-amber-700 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:outline-none sm:w-auto"
+                      aria-label="Mulai reveal suara Anda"
+                    >
+                      Reveal Suara Anda
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
+                  {isEndedPhase && (
+                    <Link
+                      href={`/pemilih/pemilihan/${featuredElection.id}/hasil`}
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-6 text-[13px] font-semibold text-white transition-colors hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:outline-none sm:w-auto"
+                      aria-label="Lihat hasil akhir pemilihan"
+                    >
+                      Lihat Hasil Akhir
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
+                  <Link 
+                    href="/pemilih/bukti-saya" 
+                    className="inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-6 text-[13px] font-semibold text-slate-800 transition-colors hover:bg-slate-50 focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:outline-none sm:w-auto"
+                    aria-label="Lihat arsip bukti digital Anda"
+                  >
+                    Lihat Bukti Saya
+                  </Link>
+                </div>
+              </>
+            )
+          })()}
         </article>
 
         <article className="rounded-xl border border-slate-200 bg-white p-6">
@@ -130,7 +247,7 @@ export default function VoterDashboardPage() {
               <h2 className="text-[20px] font-semibold text-slate-900">Aktivitas Voting Terkini</h2>
               <p className="mt-2 text-[14px] leading-7 text-slate-800">Pantau commit, pembukaan reveal, dan bukti yang sudah tersimpan.</p>
             </div>
-            <Link href="/pemilih/bukti-saya" className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500 hover:text-slate-900 sm:text-right">
+            <Link href="/pemilih/bukti-saya" className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:text-slate-900 sm:text-right">
               Eksplorasi semua
             </Link>
           </div>
@@ -148,14 +265,14 @@ export default function VoterDashboardPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-[16px] font-semibold text-slate-900 md:text-[18px]">{log.title}</p>
-                      <p className="mt-1 break-words text-[13px] text-slate-500">{log.detail}</p>
+                      <p className="mt-1 break-words text-[13px] text-slate-700">{log.detail}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 md:justify-end">
                     <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${logToneClassName[log.tone]}`}>
                       {log.tone === 'success' ? 'Selesai' : log.tone === 'info' ? 'Berlangsung' : 'Menunggu'}
                     </span>
-                    <span className="text-[13px] text-slate-500">{log.timeLabel}</span>
+                    <span className="text-[13px] text-slate-700">{log.timeLabel}</span>
                   </div>
                 </div>
               </article>
@@ -170,7 +287,7 @@ export default function VoterDashboardPage() {
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
             <Hourglass className="h-5 w-5" />
           </div>
-          <span className="mt-6 inline-flex rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700">Menunggu</span>
+          <span className="mt-6 inline-flex rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-800 border border-amber-200">Menunggu</span>
           <h3 className="mt-5 text-[24px] font-semibold text-slate-900">{elections.find((election) => election.phase === 'registration')?.title ?? 'Belum ada pemilihan lain'}</h3>
           <p className="mt-4 text-[16px] leading-8 text-slate-800">
             Pendaftaran kandidat masih dibuka. Voting akan dimulai setelah admin mengaktifkan fase commit sesuai urutan resmi.
@@ -182,7 +299,7 @@ export default function VoterDashboardPage() {
         </article>
 
         <article className="rounded-xl border border-slate-100 bg-slate-50 p-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Partisipasi Anda</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">Partisipasi Anda</p>
           <div className="mt-6 flex items-end gap-3">
             <p className="text-[52px] font-semibold leading-none tracking-[-0.05em] text-slate-900 sm:text-[64px]">{participationRate}%</p>
             <p className="pb-2 text-[16px] font-semibold text-emerald-600 sm:text-[18px]">+12%</p>
@@ -219,7 +336,7 @@ export default function VoterDashboardPage() {
           ['Bukti final', completed],
         ].map(([label, value]) => (
            <article key={label} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">{label}</p>
+             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">{label}</p>
              <p className="mt-3 text-[24px] font-semibold leading-none text-slate-900">{value}</p>
            </article>
          ))}

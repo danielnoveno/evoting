@@ -14,29 +14,29 @@ const activeElections = [
     participation: `${sharedDummyContext.voterEstimate} Pemilih`,
     hash: '0x8f2a ... 9c3b',
     primary: 'Mulai Memilih',
-    href: `/pemilih/pemilihan/${sharedDummyContext.electionId}/commit`,
+    href: `/pemilih/pemilihan/${sharedDummyContext.electionId}/pilih-kandidat`,
     detailHref: `/pemilihan/${sharedDummyContext.electionId}/hasil`,
   },
   {
     phase: 'Fase Reveal',
     deadline: 'Berakhir dalam 2 hari',
-    title: 'Voting Kebijakan Publikasi Karya UKM Riset',
-    body: 'Pemungutan suara internal untuk menentukan kebijakan publikasi hasil riset anggota sebelum diterbitkan ke kanal resmi UKM.',
-    participation: '180 Pemilih',
+    title: 'Pemilihan Ketua Kelompok Praktikum Basis Data FTI 2026',
+    body: 'Pemungutan suara internal mahasiswa praktikum untuk menentukan ketua kelompok yang akan mengoordinasikan jadwal, pembagian tugas, dan komunikasi dengan asisten.',
+    participation: '36 Pemilih',
     hash: '0x1d9f ... 4a2e',
     primary: 'Lihat Statistik',
-    href: '/pemilih/pemilihan/ukm-riset-publikasi-2026/reveal',
-    detailHref: '/pemilihan/ukm-riset-publikasi-2026/hasil',
+    href: '/pemilih/pemilihan/ketua-kelompok-praktikum-bd-2026/reveal',
+    detailHref: '/pemilihan/ketua-kelompok-praktikum-bd-2026/hasil',
   },
 ]
 
 const upcoming = [
-  { title: 'Pemilihan Sekretaris UKM Riset 2026', href: '/pemilih/pemilihan/ukm-riset-sekretaris-2026/commit' },
-  { title: 'Sayembara Logo Inovasi UKM Riset', href: '/admin/daftar-proposal/p-ukm-riset-logo' },
+  { title: 'Pemilihan Sekretaris UKM Riset 2026', href: '/pemilih' },
+  { title: 'Pemilihan Koordinator Divisi PSDM HIMAFORKA 2026', href: '/admin/daftar-proposal/p-himaforka-psdm-2026' },
 ]
 
 const finished = [
-  { month: 'Agustus 2025', title: 'Pemilihan Kepala Divisi Inovasi UKM Riset 2025', total: '284' },
+  { month: 'Agustus 2025', title: 'Pemilihan Koordinator Divisi PSDM HIMAFORKA 2025', total: '284' },
   { month: 'Juli 2025', title: 'Pemilihan Sekretaris UKM Riset 2025', total: '301' },
 ]
 
@@ -186,7 +186,7 @@ export function PemilihanSections() {
                       <p className="mt-2 text-[18px] font-semibold text-slate-900">{item.total}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Link href="/pemilihan/ukm-riset-divisi-inovasi-2025/hasil" className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-50">Detail Hasil</Link>
+                      <Link href="/pemilihan/koordinator-psdm-himaforka-2025/hasil" className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-50">Detail Hasil</Link>
                       <a href="https://sepolia.basescan.org" target="_blank" rel="noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-900 hover:bg-slate-50">
                         <Download className="h-4 w-4" />
                       </a>

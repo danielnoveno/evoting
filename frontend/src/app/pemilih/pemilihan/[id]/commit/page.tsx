@@ -1,200 +1,186 @@
 'use client'
 
-import { AlertCircle, ArrowRight, CheckCircle2, Clock3, ExternalLink, Info } from 'lucide-react'
+import { CalendarDays, CheckCircle2, ExternalLink, Fingerprint, LockKeyhole, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
-import { basescanTxUrl, findElection, formatDateTime, getPhaseLabel, useVoterStore } from '@/lib/voter-mock-store'
-import {
-  DemoVoteCommitmentData,
-  generateDemoCommitment,
-  generateDemoSalt,
-  loadDemoVoteCommitment,
-  saveDemoVoteCommitment,
-} from '@/lib/vote-commitment-demo'
+import { basescanTxUrl, findElection, formatDateTime, formatNumber, useVoterStore } from '@/lib/voter-mock-store'
+import { loadDemoVoteCommitment } from '@/lib/vote-commitment-demo'
 
-function CandidateInitials({ name }: { name: string }) {
+const headshots: Record<string, string> = {
+  c1: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop',
+  c2: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop',
+  c3: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop',
+}
+
+const defaultHeadshot = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop'
+
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Fingerprint
+  label: string
+  value: string
+}) {
   return (
-    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-[14px] font-semibold text-blue-800">
-      {name
-        .split(' ')
-        .slice(0, 2)
-        .map((part) => part[0])
-        .join('')}
+    <div className="flex items-center gap-3 rounded-2xl bg-slate-100 px-4 py-4">
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-800">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{label}</p>
+        <p className="mt-1 break-all text-[13px] text-slate-800">{value}</p>
+      </div>
     </div>
   )
 }
 
-function CommitmentPreview({ preview }: { preview: DemoVoteCommitmentData }) {
-  return (
-    <pre className="rounded-md border border-slate-100 bg-slate-50 p-3 font-mono text-[11px] leading-6 text-slate-800 whitespace-pre-wrap break-all">
-      {`commitment: ${preview.commitment}\nsalt (tersimpan lokal): ${preview.salt}\ncandidateId: ${preview.candidateId}`}
-    </pre>
-  )
-}
-
 export default function VoterCommitPage({ params }: { params: { id: string } }) {
-  const router = useRouter()
   const { store, loading, actions } = useVoterStore()
-  const [preview, setPreview] = useState<DemoVoteCommitmentData | null>(null)
-  const [previewError, setPreviewError] = useState('')
-  const [previewLoading, setPreviewLoading] = useState(false)
-
-  const election = findElection(store, params.id)
-  const selectedCandidate = election?.candidates.find((candidate) => candidate.id === election.selectedCandidateId) ?? null
-
-  useEffect(() => {
-    if (!election?.selectedCandidateId) {
-      setPreview(null)
-      setPreviewError('')
-      setPreviewLoading(false)
-      return
-    }
-
-    let active = true
-
-    const preparePreview = async () => {
-      setPreviewLoading(true)
-      setPreviewError('')
-
-      try {
-        const selectedCandidateId = election.selectedCandidateId
-        if (!selectedCandidateId) return
-
-        const existing = loadDemoVoteCommitment(election.id)
-
-        if (existing && existing.candidateId === selectedCandidateId) {
-          if (!active) return
-          setPreview(existing)
-          setPreviewLoading(false)
-          return
-        }
-
-        const salt = generateDemoSalt()
-        const commitment = await generateDemoCommitment(election.id, selectedCandidateId, salt)
-
-        const nextPreview: DemoVoteCommitmentData = {
-          candidateId: selectedCandidateId,
-          salt,
-          commitment,
-          timestamp: new Date().toISOString(),
-        }
-
-        saveDemoVoteCommitment(election.id, nextPreview)
-
-        if (!active) return
-
-        setPreview(nextPreview)
-      } catch {
-        if (!active) return
-        setPreview(null)
-        setPreviewError('Salt tidak bisa disimpan di browser ini. Commit diblokir sampai penyimpanan lokal tersedia.')
-      } finally {
-        if (active) {
-          setPreviewLoading(false)
-        }
-      }
-    }
-
-    void preparePreview()
-
-    return () => {
-      active = false
-    }
-  }, [election?.id, election?.selectedCandidateId])
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (loading || !store) {
-    return <VoterShell><div className="h-[420px] animate-pulse rounded-xl bg-slate-200" /></VoterShell>
+    return (
+      <VoterShell>
+        <div className="h-[420px] animate-pulse rounded-xl bg-slate-200" />
+      </VoterShell>
+    )
   }
+
+  const election = findElection(store, params.id)
 
   if (!election) {
     return (
       <VoterShell>
-        <section className="rounded-xl border border-slate-200 bg-white p-6">
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h1 className="text-[20px] font-semibold text-slate-900">Pemilihan tidak ditemukan</h1>
           <p className="mt-2 text-[14px] leading-7 text-slate-800">Ruang voting yang Anda cari belum tersedia saat ini.</p>
-          <Link href="/pemilih" className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B]">Kembali ke Beranda</Link>
-        </section>
-      </VoterShell>
-    )
-  }
-
-  const stepState = election.commitProof
-    ? [
-        { label: 'Terdaftar', done: true },
-        { label: 'Commit', done: true },
-        { label: 'Reveal' },
-        { label: 'Selesai' },
-      ]
-    : [
-        { label: 'Terdaftar', done: true },
-        { label: 'Commit', active: true },
-        { label: 'Reveal' },
-        { label: 'Selesai' },
-      ]
-
-  if (election.commitProof) {
-    return (
-      <VoterShell>
-        <VoterStepper steps={stepState} />
-
-        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h1 className="text-[20px] font-semibold text-slate-900">Commit sudah tersimpan</h1>
-              <p className="mt-2 text-[14px] leading-7 text-slate-800">
-                Pilihan Anda sudah dikirim sebagai hash. Tunggu fase reveal dibuka untuk mengkonfirmasi suara dengan data yang sama.
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1 rounded bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800">
-              {getPhaseLabel(election.phase)}
-            </span>
-          </div>
-
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Commitment hash</p>
-              <p className="mt-2 break-all font-mono text-[12px] leading-6 text-slate-800">{election.commitmentHash ?? '-'}</p>
-            </div>
-            <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Bukti transaksi</p>
-              <p className="mt-2 text-[14px] font-semibold text-slate-900">{formatDateTime(election.commitProof.createdAt)}</p>
-              <a href={basescanTxUrl(election.commitProof.txHash)} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-blue-700 hover:text-blue-800">
-                Lihat di Basescan
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
-
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <Link href="/pemilih/bukti-saya" className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-900 hover:bg-slate-50">
-              Lihat Bukti Saya
-            </Link>
-            {election.phase === 'reveal' ? (
-              <Link href={`/pemilih/pemilihan/${election.id}/reveal`} className="inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B]">
-                Lanjut ke Reveal
-              </Link>
-            ) : null}
-          </div>
-        </section>
-      </VoterShell>
-    )
-  }
-
-  if (election.phase !== 'commit') {
-    return (
-      <VoterShell>
-        <VoterStepper steps={stepState} />
-        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
-          <h1 className="text-[20px] font-semibold text-slate-900">Fase commit belum tersedia</h1>
-          <p className="mt-2 text-[14px] leading-7 text-slate-800">
-            Halaman ini hanya aktif saat fase commit dibuka. Status saat ini: <span className="font-semibold text-slate-900">{getPhaseLabel(election.phase)}</span>.
-          </p>
-          <Link href="/pemilih" className="mt-5 inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-900 hover:bg-slate-50">
+          <Link href="/pemilih" className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B]">
             Kembali ke Beranda
           </Link>
+        </section>
+      </VoterShell>
+    )
+  }
+
+  const selectedCandidate = election.candidates.find((candidate) => candidate.id === election.selectedCandidateId)
+    ?? election.candidates.find((candidate) => candidate.id === election.committedCandidateId)
+    ?? null
+  const savedCommitment = loadDemoVoteCommitment(election.id)
+  const commitProof = election.commitProof
+
+  const stepState = commitProof
+    ? [
+        { label: 'pilih kandidat', done: true },
+        { label: 'commit', done: true },
+        { label: 'reveal' },
+        { label: 'result' },
+      ]
+    : [
+        { label: 'pilih kandidat', done: true },
+        { label: 'commit', active: true },
+        { label: 'reveal' },
+        { label: 'result' },
+      ]
+
+  if (!selectedCandidate || !savedCommitment) {
+    return (
+      <VoterShell>
+        <VoterStepper steps={stepState} />
+        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h1 className="text-[20px] font-semibold text-slate-900">Data pilihan belum siap</h1>
+          <p className="mt-2 text-[14px] leading-7 text-slate-800">
+            Pilih kandidat terlebih dahulu dari halaman pilih kandidat sebelum masuk ke tahap commit.
+          </p>
+          <Link
+            href={`/pemilih/pemilihan/${params.id}/pilih-kandidat`}
+            className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B]"
+          >
+            Ke Halaman Pilih Kandidat
+          </Link>
+        </section>
+      </VoterShell>
+    )
+  }
+
+  const handleCommit = () => {
+    setConfirmOpen(false)
+    setIsSubmitting(true)
+
+    setTimeout(() => {
+      actions.commitVote(election.id, savedCommitment.commitment)
+      setIsSubmitting(false)
+    }, 1200)
+  }
+
+  if (commitProof) {
+    return (
+      <VoterShell>
+        <VoterStepper steps={stepState} />
+
+        <section className="mt-6 rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+          <div className="flex justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600">
+              <CheckCircle2 className="h-8 w-8" />
+            </div>
+          </div>
+
+          <h1 className="mt-5 text-center text-[24px] font-semibold text-slate-900">Commit berhasil dikirim</h1>
+          <p className="mx-auto mt-3 max-w-2xl text-center text-[14px] leading-7 text-slate-700">
+            Suaramu sudah dienkripsi menjadi hash komitmen dan tercatat. Simpan browser yang sama sampai fase reveal dibuka.
+          </p>
+
+          <div className="mt-8 grid gap-4 xl:grid-cols-2">
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat terpilih</p>
+              <div className="mt-4 flex items-center gap-4">
+                <img
+                  src={headshots[selectedCandidate.id] || defaultHeadshot}
+                  alt={selectedCandidate.name}
+                  className="h-16 w-16 rounded-2xl object-cover grayscale"
+                />
+                <div>
+                  <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate.name}</h2>
+                  <p className="mt-1 text-[14px] text-slate-600">{selectedCandidate.vision}</p>
+                </div>
+              </div>
+            </article>
+
+            <article className="rounded-2xl bg-[#0F172A] p-5 text-white">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Hash komitmen</p>
+              <p className="mt-4 break-all font-mono text-[12px] leading-6 text-slate-200">{election.commitmentHash ?? savedCommitment.commitment}</p>
+              <p className="mt-4 text-[13px] leading-6 text-slate-300">Bukti ini bisa ditinjau kapan saja lewat Basescan sebagai jejak audit commit.</p>
+            </article>
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-3">
+            <DetailRow icon={Fingerprint} label="ID Pemilih" value={election.voterIdentifier} />
+            <DetailRow icon={CalendarDays} label="Waktu Transaksi" value={`${formatDateTime(commitProof.createdAt)} WIB`} />
+            <DetailRow icon={ShieldCheck} label="Nomor Block" value={formatNumber(commitProof.blockNumber)} />
+          </div>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <a
+              href={basescanTxUrl(commitProof.txHash)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 hover:bg-slate-50"
+            >
+              Lihat di Basescan
+              <ExternalLink className="h-4 w-4" />
+            </a>
+            <Link
+              href={`/pemilih/pemilihan/${election.id}/reveal`}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#0F172A] px-5 text-[13px] font-semibold text-white hover:bg-[#1E293B]"
+            >
+              Lanjut ke Reveal
+            </Link>
+          </div>
         </section>
       </VoterShell>
     )
@@ -205,98 +191,90 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
       <VoterStepper steps={stepState} />
 
       <section className="mt-6">
-        <h1 className="text-[20px] font-semibold text-slate-900">Pilih Kandidatmu</h1>
-        <p className="mt-1 text-[14px] text-slate-400">{election.title} · Fase Commit</p>
+        <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">
+          <LockKeyhole className="h-3.5 w-3.5" />
+          Konfirmasi pilihan
+        </span>
+        <h1 className="mt-5 text-[28px] font-semibold tracking-tight text-slate-900 md:text-[40px]">Tinjau Suara Anda</h1>
+        <p className="mt-4 max-w-3xl text-[16px] leading-8 text-slate-700">
+          Pastikan pilihan Anda sudah benar. Setelah dikonfirmasi, suara akan dienkripsi dan dikirim sebagai commit ke blockchain.
+        </p>
       </section>
 
-      <section className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-[12px] leading-6 text-blue-800">
-        <div className="flex items-start gap-3">
-          <Info className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>
-            Pilihanmu akan diubah menjadi hash di browser sebelum dikirim. Kamu akan mengkonfirmasi suara yang sama saat fase reveal dibuka.
-          </p>
-        </div>
-      </section>
-
-      <section className="mt-6 grid gap-4 xl:grid-cols-2">
-        {election.candidates.map((candidate) => {
-          const active = candidate.id === election.selectedCandidateId
-
-          return (
-            <button
-              key={candidate.id}
-              type="button"
-              onClick={() => actions.selectCandidate(election.id, candidate.id)}
-              className={`rounded-xl border bg-white p-5 text-left transition-colors ${active ? 'border-2 border-[#0F172A]' : 'border-slate-200 hover:border-slate-300'}`}
-              aria-label={`${candidate.name}, ${candidate.faculty}, ${active ? 'terpilih' : 'belum dipilih'}`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <CandidateInitials name={candidate.name} />
-                <div className={`mt-1 flex h-[22px] w-[22px] items-center justify-center rounded-full ${active ? 'border-2 border-[#0F172A] bg-[#0F172A]' : 'border border-slate-300 bg-white'}`}>
-                  {active ? <span className="h-2 w-2 rounded-full bg-white" /> : null}
-                </div>
-              </div>
-              <h2 className="mt-4 text-[15px] font-semibold text-slate-900">{candidate.name}</h2>
-              <p className="mt-1 font-mono text-[12px] text-slate-400">{candidate.faculty}</p>
-              <div className="my-3 h-px bg-slate-100" />
-              <p className="text-[13px] leading-6 text-slate-800 line-clamp-3">{candidate.vision}</p>
-            </button>
-          )
-        })}
-      </section>
-
-      {selectedCandidate ? (
-        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
-          <h2 className="text-[13px] font-semibold text-slate-900">Detail Komitmen</h2>
-          <p className="mt-1 text-[12px] leading-6 text-slate-400">
-            Hash ini disiapkan di browser sebelum commit dikirim. Isi pilihanmu tidak ditampilkan ke pengguna lain.
-          </p>
-
-          <div className="mt-4">
-            {previewLoading ? (
-              <div className="rounded-md border border-slate-100 bg-slate-50 p-3 text-[12px] text-slate-400">Menyiapkan hash komitmen...</div>
-            ) : preview ? (
-              <CommitmentPreview preview={preview} />
-            ) : (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-[12px] leading-6 text-red-700">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <p>{previewError}</p>
-                </div>
-              </div>
-            )}
+      <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(340px,0.85fr)]">
+        <article className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+          <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat terpilih</p>
+              <h2 className="mt-4 text-[24px] font-semibold text-slate-900">{selectedCandidate.name}</h2>
+              <p className="mt-2 text-[18px] text-slate-700">{selectedCandidate.vision}</p>
+            </div>
+            <img
+              src={headshots[selectedCandidate.id] || defaultHeadshot}
+              alt={selectedCandidate.name}
+              className="h-[96px] w-[96px] rounded-3xl object-cover grayscale"
+            />
           </div>
 
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={() => actions.selectCandidate(election.id, '')}
-              className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-900 hover:bg-slate-50"
-            >
-              Batal
-            </button>
-            <button
-              type="button"
-              disabled={!preview || previewLoading}
-              onClick={() => router.push(`/pemilih/pemilihan/${election.id}/konfirmasi`)}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Kirim Commit
-              <ArrowRight className="h-4 w-4" />
-            </button>
+          <div className="mt-8 grid gap-4">
+            <DetailRow icon={Fingerprint} label="ID Pemilih" value={election.voterIdentifier} />
+            <DetailRow icon={CalendarDays} label="Waktu Transaksi" value={`${formatDateTime(savedCommitment.timestamp)} WIB`} />
           </div>
-        </section>
-      ) : null}
+        </article>
 
-      <section className="mt-6 rounded-lg border border-slate-200 bg-white p-4">
-        <div className="flex items-start gap-3">
-          <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+        <article className="rounded-[28px] bg-[#0F172A] p-6 text-white shadow-sm md:p-8">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-slate-100">
+            <ShieldCheck className="h-6 w-6" />
+          </div>
+          <h2 className="mt-8 text-[18px] font-semibold text-white">Protokol Enkripsi</h2>
+          <p className="mt-4 text-[16px] leading-8 text-slate-300">
+            Suara Anda akan dienkripsi secara lokal di browser sebelum dikirim sebagai hash komitmen. Pilihan asli tetap tersembunyi sampai fase reveal dibuka.
+          </p>
+
+          <div className="mt-8 space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-300">Node aktif</p>
+            <p className="font-mono text-[12px] leading-6 text-slate-300">{savedCommitment.commitment}</p>
+          </div>
+        </article>
+      </section>
+
+      <section className="mt-8 rounded-[28px] border border-slate-200 bg-slate-100 px-6 py-5 md:px-8">
+        <div className="flex gap-3">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-slate-800" />
           <div>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.06em] text-slate-400">Batas fase commit</p>
-            <p className="mt-1 text-[14px] font-semibold text-slate-900">{formatDateTime(election.deadlineIso)}</p>
+            <h2 className="text-[18px] font-semibold text-slate-900">Pernyataan privasi</h2>
+            <p className="mt-2 text-[14px] leading-7 text-slate-700">
+              Setelah proses commit selesai, pilihan Anda tidak dapat dihubungkan kembali ke identitas Anda sampai Anda sendiri membuka reveal dengan salt yang sama.
+            </p>
           </div>
         </div>
       </section>
+
+      <section className="mt-8 flex flex-col gap-3 pb-2 sm:flex-row sm:justify-end">
+        <Link
+          href={`/pemilih/pemilihan/${election.id}/pilih-kandidat`}
+          className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-200 px-6 text-[13px] font-semibold text-slate-900 hover:bg-slate-300"
+        >
+          Batal & Ubah
+        </Link>
+        <button
+          type="button"
+          disabled={isSubmitting}
+          onClick={() => setConfirmOpen(true)}
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F172A] px-6 text-[13px] font-semibold text-white hover:bg-[#1E293B] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {isSubmitting ? 'Mengirim commit...' : 'Kirim Suara Terenkripsi'}
+        </button>
+      </section>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Kirim commit sekarang?"
+        description="Setelah commit dikirim, kamu harus kembali saat fase reveal dibuka untuk mengkonfirmasi suara yang sama. Pastikan pilihan kandidat sudah benar."
+        confirmLabel="Ya, Kirim Commit"
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={handleCommit}
+      />
     </VoterShell>
   )
 }

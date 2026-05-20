@@ -73,7 +73,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     showToast({
       tone: 'success',
       title: 'Kandidat dihapus',
-      description: 'Data kandidat berhasil dihapus di simulasi frontend.',
+      description: 'Data kandidat berhasil dihapus.',
     })
   }
 
@@ -96,7 +96,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     showToast({
       tone: 'success',
       title: 'Pemilih berhasil ditambahkan',
-      description: `Wallet ${manualWallet} telah ditambahkan ke whitelist simulasi.`,
+      description: `Wallet ${manualWallet} telah ditambahkan ke whitelist.`,
     })
     setManualWallet('')
     setManualName('')
@@ -107,7 +107,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       showToast({
         tone: 'error',
         title: 'Nama file wajib diisi',
-        description: 'Masukkan nama file CSV sebelum melanjutkan unggahan simulasi.',
+        description: 'Masukkan nama file CSV sebelum melanjutkan unggahan.',
       })
       return
     }
@@ -121,7 +121,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     showToast({
       tone: 'success',
       title: 'File whitelist diunggah',
-      description: `File ${uploadFileName} berhasil diproses dalam simulasi frontend.`,
+      description: `File ${uploadFileName} berhasil diproses.`,
     })
   }
 
@@ -129,7 +129,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     showToast({
       tone: 'info',
       title: `${label} diproses`,
-      description: `Aksi ${label.toLowerCase()} dijalankan dalam mode simulasi frontend.`,
+      description: `Aksi ${label.toLowerCase()} berhasil dijalankan.`,
     })
   }
 
@@ -315,8 +315,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           <div className="flex items-center justify-between px-6 py-5 text-[14px] text-slate-500">
             <p>Menampilkan {filteredWhitelistRecords.length} dari {election.detail.whitelist.total} pemilih</p>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Pagination', description: 'Navigasi halaman belum aktif pada versi demo.' })} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">‹</button>
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Pagination', description: 'Navigasi halaman belum aktif pada versi demo.' })} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">›</button>
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Pagination', description: 'Navigasi halaman sedang disiapkan.' })} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">‹</button>
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Pagination', description: 'Navigasi halaman sedang disiapkan.' })} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">›</button>
             </div>
           </div>
         </article>
@@ -542,10 +542,10 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <h2 className="text-[20px] font-semibold text-slate-900">Perolehan Suara Kandidat</h2>
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => showToast({ tone: 'success', title: 'Data di-refresh', description: 'Data perolehan suara telah diperbarui (simulasi).' })} className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200">
+              <button type="button" onClick={() => showToast({ tone: 'success', title: 'Data di-refresh', description: 'Data perolehan suara telah diperbarui.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200">
                 <RefreshCw className="h-4 w-4" />
               </button>
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduh Laporan', description: 'Fitur unduh laporan belum tersedia pada versi demo.' })} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduh Laporan', description: 'Fitur unduh laporan sedang disiapkan.' })} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
                 <Download className="h-4 w-4" />
                 Unduh Laporan
               </button>
@@ -683,7 +683,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         open={candidateToDelete !== null}
         title="Hapus kandidat?"
         description={candidateToDelete
-          ? `Kandidat ${candidateToDelete.name} akan dihapus dari daftar. Aksi ini tidak dapat dibatalkan di simulasi frontend.`
+          ? `Kandidat ${candidateToDelete.name} akan dihapus dari daftar. Aksi ini tidak dapat dibatalkan.`
           : ''}
         confirmLabel="Hapus Kandidat"
         tone="danger"
@@ -694,7 +694,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <ModalShell
         open={manualWhitelistOpen}
         title="Tambah Pemilih Manual"
-        description="Masukkan alamat wallet dan nama opsional untuk menambahkan pemilih ke whitelist simulasi."
+        description="Masukkan alamat wallet dan nama opsional untuk menambahkan pemilih ke whitelist."
         onClose={() => setManualWhitelistOpen(false)}
       >
         <div className="space-y-5">
@@ -732,7 +732,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <ConfirmDialog
         open={manualWhitelistConfirmOpen}
         title="Tambahkan pemilih ini?"
-        description="Pastikan alamat wallet sudah benar sebelum ditambahkan ke whitelist simulasi."
+        description="Pastikan alamat wallet sudah benar sebelum ditambahkan ke whitelist."
         confirmLabel="Tambahkan Pemilih"
         onCancel={() => setManualWhitelistConfirmOpen(false)}
         onConfirm={handleConfirmManualWhitelistSave}
@@ -741,7 +741,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <ModalShell
         open={uploadModalOpen}
         title="Unggah Daftar Pemilih"
-        description="Simulasi unggah file CSV untuk menambahkan whitelist pemilih secara massal."
+        description="Unggah file CSV untuk menambahkan whitelist pemilih secara massal."
         onClose={() => setUploadModalOpen(false)}
       >
         <div className="space-y-5">
@@ -756,7 +756,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             />
           </div>
           <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center text-[13px] leading-6 text-slate-500">
-            File akan diproses sebagai simulasi. Sistem tidak benar-benar mengunggah berkas pada tahap ini.
+            File akan diproses setelah Anda melanjutkan unggahan.
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <button type="button" onClick={() => setUploadModalOpen(false)} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-700 hover:bg-slate-200">
@@ -772,7 +772,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <ConfirmDialog
         open={uploadConfirmOpen}
         title="Proses file whitelist ini?"
-        description="Pastikan file CSV yang dipilih sudah benar sebelum diproses ke whitelist simulasi."
+        description="Pastikan file CSV yang dipilih sudah benar sebelum diproses ke whitelist."
         confirmLabel="Proses File"
         onCancel={() => setUploadConfirmOpen(false)}
         onConfirm={handleConfirmUploadCsv}

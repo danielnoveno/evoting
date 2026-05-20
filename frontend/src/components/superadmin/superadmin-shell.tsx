@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, FileCheck2, LayoutGrid, ShieldAlert, ShieldUser, Vote, ScrollText } from 'lucide-react'
+import { ArrowLeft, Database, FileCheck2, LayoutGrid, ShieldAlert, ShieldUser, Vote, ScrollText } from 'lucide-react'
 import Link from 'next/link'
 import { type InputHTMLAttributes, ReactNode, type SelectHTMLAttributes } from 'react'
 import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/console-shell'
@@ -12,6 +12,7 @@ const sidebarItems: ConsoleNavItem[] = [
   { href: '/superadmin/manajemen-pemilihan', label: 'Manajemen Pemilihan', icon: Vote },
   { href: '/superadmin/manajemen-proposal', label: 'Manajemen Proposal', icon: FileCheck2 },
   { href: '/superadmin/audit-log', label: 'Audit Log', icon: ScrollText },
+  { href: '/superadmin/pengaturan-platform', label: 'Data Master Voter', icon: Database },
   { href: '/superadmin/risk-activity', label: 'Risk Activity', icon: ShieldAlert },
 ]
 
@@ -24,12 +25,12 @@ export function SuperadminShell({ children }: { children: ReactNode }) {
       sidebarItems={sidebarItems}
       profile={{
         ...superadminShellContent.profile,
-        editHref: '/superadmin/pengaturan-platform',
+        editHref: '/superadmin/profil',
       }}
       footer={superadminShellContent.footer}
       logoutConfig={{
         title: 'Keluar dari sesi superadmin?',
-        description: 'Anda akan keluar dari panel superadmin dan kembali ke halaman login dummy.',
+        description: 'Anda akan keluar dari panel superadmin dan kembali ke halaman masuk.',
         confirmLabel: 'Keluar Sesi',
         successTitle: 'Sesi superadmin ditutup',
         successDescription: 'Anda diarahkan kembali ke halaman login.',

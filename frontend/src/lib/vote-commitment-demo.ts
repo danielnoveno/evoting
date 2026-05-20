@@ -17,6 +17,8 @@ function storageKey(electionId: string) {
   return `votein-demo-commitment:${electionId}`
 }
 
+const STORAGE_PREFIX = 'votein-demo-commitment:'
+
 export function generateDemoSalt(): `0x${string}` {
   const randomBytes = crypto.getRandomValues(new Uint8Array(32))
   return toHex(randomBytes)
@@ -50,4 +52,17 @@ export function loadDemoVoteCommitment(electionId: string): DemoVoteCommitmentDa
 
 export function clearDemoVoteCommitment(electionId: string) {
   window.localStorage.removeItem(storageKey(electionId))
+}
+
+export function clearAllDemoVoteCommitments() {
+  const keysToRemove: string[] = []
+
+  for (let index = 0; index < window.localStorage.length; index += 1) {
+    const key = window.localStorage.key(index)
+    if (key?.startsWith(STORAGE_PREFIX)) {
+      keysToRemove.push(key)
+    }
+  }
+
+  keysToRemove.forEach((key) => window.localStorage.removeItem(key))
 }

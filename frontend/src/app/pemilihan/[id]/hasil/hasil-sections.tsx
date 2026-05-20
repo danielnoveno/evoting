@@ -42,7 +42,7 @@ export function HasilSections({ id }: { id: string }) {
                 </div>
                 <h1 className="mt-6 text-[44px] font-semibold leading-[1.08] tracking-[-0.03em] text-slate-900 md:text-[64px]">{pageTitle}</h1>
                 <p className="mt-5 max-w-[760px] text-[18px] leading-9 text-slate-800">
-                  Halaman ini menampilkan ringkasan hasil dan jejak audit sebagai pratinjau antarmuka. Data masih disimulasikan dan belum berasal dari smart contract runtime nyata.
+                  Halaman ini menampilkan ringkasan hasil dan jejak audit pemilihan agar publik dapat meninjau perolehan suara serta aktivitas yang tersedia.
                 </p>
               </div>
               <button type="button" className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">

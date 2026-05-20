@@ -74,7 +74,7 @@ export default function AdminProposalPage() {
   const handleActionClick = (actionName: string) => {
     showToast({
       title: `Fitur ${actionName} belum tersedia`,
-      description: 'Halaman ini menggunakan data dummy untuk presentasi.',
+      description: 'Fitur ini sedang disiapkan untuk peninjauan proposal.',
       tone: 'info',
     })
   }
@@ -187,7 +187,7 @@ export default function AdminProposalPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-5 bg-slate-50/50 gap-4">
             <p className="text-[13px] text-slate-500 font-medium">
               Menampilkan {Math.min((currentPage - 1) * itemsPerPage + 1, actualTotalItems)} - {Math.min(currentPage * itemsPerPage, actualTotalItems)} dari {actualTotalItems} proposal
-              <span className="text-slate-400 font-normal ml-1">(Design dummy target: 128)</span>
+              <span className="text-slate-400 font-normal ml-1">(kapasitas tampilan: 128)</span>
             </p>
             <div className="flex items-center gap-2">
               <button

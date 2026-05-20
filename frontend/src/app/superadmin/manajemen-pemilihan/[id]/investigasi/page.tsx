@@ -20,7 +20,7 @@ type InvestigationDetail = {
 }
 
 const investigationMap: Record<string, InvestigationDetail> = {
-  e3: {
+  'ukm-riset-sekretaris-2026': {
     codeLabel: 'ID: ORG-9921-ASO',
     networkLabel: 'Base Sepolia Halted',
     contractUrl: 'https://sepolia.basescan.org/address/0x77dd0000000000000000000000000000009921',
@@ -37,7 +37,7 @@ const investigationMap: Record<string, InvestigationDetail> = {
     incidents: [
       { id: 'i1', title: 'Anomali pertama terdeteksi', time: 'Kemarin, 16:40', detail: 'Radar transaksi mendeteksi pola commitment serupa dari batch beruntun.' },
       { id: 'i2', title: 'Tim moderasi melakukan isolasi', time: 'Kemarin, 17:15', detail: 'Mode halt diterapkan untuk menahan transaksi baru selama pengecekan manual.' },
-      { id: 'i3', title: 'Pemilihan ditandai suspended', time: 'Kemarin, 18:05', detail: 'Superadmin menerima rekomendasi penghentian sementara pada dashboard demo.' },
+      { id: 'i3', title: 'Pemilihan ditandai suspended', time: 'Kemarin, 18:05', detail: 'Superadmin menerima rekomendasi penghentian sementara melalui dashboard pemantauan.' },
     ],
   },
 }
@@ -155,7 +155,7 @@ export default function SuperadminElectionInvestigationPage({ params }: { params
             <div className="mt-8 space-y-3">
               <button
                 type="button"
-                onClick={() => showToast({ tone: 'info', title: 'Log anomali dibuka', description: 'Panel log rinci masih berupa simulasi frontend.' })}
+                onClick={() => showToast({ tone: 'info', title: 'Log anomali dibuka', description: 'Panel log rinci sedang disiapkan.' })}
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-200"
               >
                 <ShieldAlert className="h-4 w-4" />
@@ -163,7 +163,7 @@ export default function SuperadminElectionInvestigationPage({ params }: { params
               </button>
               <button
                 type="button"
-                onClick={() => showToast({ tone: 'info', title: 'Checklist audit dibuka', description: 'Checklist audit lanjutan masih berupa simulasi frontend.' })}
+                onClick={() => showToast({ tone: 'info', title: 'Checklist audit dibuka', description: 'Checklist audit lanjutan sedang disiapkan.' })}
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-200"
               >
                 <ShieldCheck className="h-4 w-4" />
@@ -186,13 +186,13 @@ export default function SuperadminElectionInvestigationPage({ params }: { params
       <ConfirmDialog
         open={resumeDialogOpen}
         title="Lanjutkan kembali pemilihan ini?"
-        description="Mode demo akan mengubah status pemilihan menjadi aktif lalu mengarahkan Anda ke halaman moderasi. Tidak ada perubahan backend nyata."
+        description="Pemilihan akan diaktifkan kembali lalu Anda diarahkan ke halaman moderasi."
         confirmLabel="Ya, Lanjutkan"
         onCancel={() => setResumeDialogOpen(false)}
         onConfirm={() => {
           setResumeDialogOpen(false)
           setElections((current) => current.map((item) => item.id === election.id ? { ...item, status: 'Aktif', note: 'Online' } : item))
-          showToast({ tone: 'success', title: 'Pemilihan dilanjutkan kembali', description: 'Status dummy berhasil diubah ke mode aktif.' })
+          showToast({ tone: 'success', title: 'Pemilihan dilanjutkan kembali', description: 'Status pemilihan berhasil diubah ke aktif.' })
           window.setTimeout(() => {
             router.push(`/superadmin/manajemen-pemilihan/${election.id}/moderasi`)
           }, 500)

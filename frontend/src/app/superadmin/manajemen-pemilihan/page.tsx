@@ -36,7 +36,7 @@ export default function SuperadminElectionManagementPage() {
 
   const updateElectionStatus = (id: string, status: SuperadminElectionState, message: string) => {
     setElections((current) => current.map((election) => election.id === id ? { ...election, status, note: status === 'Ditangguhkan' ? 'Halted' : status === 'Aktif' ? 'Online' : 'Final' } : election))
-    showToast({ tone: 'success', title: message, description: 'Perubahan hanya tersimpan di state dummy halaman ini.' })
+    showToast({ tone: 'success', title: message, description: 'Perubahan berhasil diterapkan pada daftar pemilihan saat ini.' })
   }
 
   const getCardTarget = (id: string, status: SuperadminElectionState) => {
@@ -69,21 +69,23 @@ export default function SuperadminElectionManagementPage() {
             <SuperadminInteractiveCard
               key={election.id}
               onClick={() => router.push(getCardTarget(election.id, election.status))}
-              className="p-6"
+              className="p-6 flex flex-col h-full"
             >
-              <div className="flex items-start justify-between gap-4">
-                <span className="rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-[12px] text-slate-500">{election.code}</span>
-                <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${getElectionTone(election.status)}`}>
-                  {election.status === 'Ditangguhkan' ? <AlertTriangle className="h-3.5 w-3.5" /> : <span className="h-2 w-2 rounded-full bg-current" />}
-                  {election.note}
-                </span>
-              </div>
+              <div className="flex-1">
+                <div className="flex items-start justify-between gap-4">
+                  <span className="rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-[12px] text-slate-500">{election.code}</span>
+                  <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${getElectionTone(election.status)}`}>
+                    {election.status === 'Ditangguhkan' ? <AlertTriangle className="h-3.5 w-3.5" /> : <span className="h-2 w-2 rounded-full bg-current" />}
+                    {election.note}
+                  </span>
+                </div>
 
-              <h2 className="mt-5 max-w-[14ch] text-[22px] font-semibold leading-tight text-slate-900">{election.title}</h2>
-              <p className={`mt-8 flex items-center gap-2 text-[15px] ${election.status === 'Ditangguhkan' ? 'text-red-600' : 'text-slate-800'}`}>
-                <Clock3 className="h-4 w-4" />
-                {election.phaseLabel}
-              </p>
+                <h2 className="mt-5 max-w-[14ch] text-[22px] font-semibold leading-tight text-slate-900">{election.title}</h2>
+                <p className={`mt-8 flex items-center gap-2 text-[15px] ${election.status === 'Ditangguhkan' ? 'text-red-600' : 'text-slate-800'}`}>
+                  <Clock3 className="h-4 w-4" />
+                  {election.phaseLabel}
+                </p>
+              </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4 rounded-[20px] bg-slate-50 p-5">
                 <div>
@@ -159,7 +161,7 @@ export default function SuperadminElectionManagementPage() {
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation()
-                        showToast({ tone: 'info', title: 'Pemilihan selesai', description: 'Status final tidak dapat dimoderasi lagi pada mode demo ini.' })
+                        showToast({ tone: 'info', title: 'Pemilihan selesai', description: 'Status final tidak dapat dimoderasi lagi.' })
                       }}
                       className="rounded-2xl bg-black px-5 py-3 text-[15px] font-medium text-white hover:bg-slate-800"
                     >

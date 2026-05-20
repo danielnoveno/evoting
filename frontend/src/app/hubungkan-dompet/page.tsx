@@ -84,7 +84,7 @@ export default function ConnectWalletPage() {
         <AuthHeader />
         <AuthTitle
           title="Masuk ke Votein"
-          body="Gunakan akun kampus untuk membuka alur pemilih, admin, atau superadmin."
+          body="Gunakan akun kampus untuk masuk ke Votein sesuai peran akun Anda."
         />
 
         <form className="mt-7" onSubmit={handleSubmit}>
@@ -107,10 +107,6 @@ export default function ConnectWalletPage() {
               error={passwordError}
               autoComplete="current-password"
             />
-          </div>
-
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center text-[12px] leading-6 text-slate-800">
-            Onboarding smart wallet pada halaman ini masih berada pada tahap pratinjau antarmuka.
           </div>
 
           {formError ? (
@@ -141,7 +137,7 @@ export default function ConnectWalletPage() {
             Role akun akan disesuaikan otomatis berdasarkan data pengguna yang terdaftar di sistem kampus.
           </p>
             <p className="text-center text-[11px] leading-6 text-slate-600">
-              Akses pemilih, admin, dan superadmin tersedia untuk peninjauan alur aplikasi.
+              Akses pemilih, admin, dan superadmin tersedia sesuai hak akun yang terdaftar.
             </p>
         </div>
 

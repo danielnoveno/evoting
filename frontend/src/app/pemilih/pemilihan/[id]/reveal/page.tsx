@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertCircle, CheckCircle2, ExternalLink, Info } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ExternalLink, Info, ShieldCheck, LockKeyhole } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -11,11 +11,20 @@ import { clearDemoVoteCommitment, loadDemoVoteCommitment } from '@/lib/vote-comm
 
 function ProofRows({ rows }: { rows: Array<[string, string]> }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-100">
+    <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 font-mono text-[12px] text-slate-800 space-y-3 shadow-inner">
       {rows.map(([label, value], index) => (
-        <div key={label} className={`flex flex-col gap-2 px-4 py-3 md:flex-row md:items-start md:justify-between ${index < rows.length - 1 ? 'border-b border-slate-100' : ''}`}>
-          <span className="min-w-[112px] text-[12px] font-semibold text-slate-400">{label}</span>
-          <span className="break-all text-right font-mono text-[11px] leading-6 text-slate-800 md:max-w-[72%]">{value}</span>
+        <div 
+          key={label} 
+          className={`flex flex-col gap-1.5 md:flex-row md:items-start md:justify-between pb-2.5 ${
+            index < rows.length - 1 ? 'border-b border-slate-200/60' : ''
+          }`}
+        >
+          <span className="font-semibold text-slate-700 select-none uppercase tracking-wider text-[10px] min-w-[120px]">
+            {label}
+          </span>
+          <span className="break-all text-slate-900 font-semibold text-left md:text-right leading-relaxed max-w-full md:max-w-[70%] select-all">
+            {value}
+          </span>
         </div>
       ))}
     </div>
@@ -25,6 +34,7 @@ function ProofRows({ rows }: { rows: Array<[string, string]> }) {
 export default function VoterRevealPage({ params }: { params: { id: string } }) {
   const { store, loading, actions } = useVoterStore()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [isRevealing, setIsRevealing] = useState(false)
 
   if (loading || !store) {
     return <VoterShell><div className="h-[420px] animate-pulse rounded-xl bg-slate-200" /></VoterShell>
@@ -35,10 +45,16 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
   if (!election) {
     return (
       <VoterShell>
-        <section className="rounded-xl border border-slate-200 bg-white p-6 text-[14px] text-slate-800">
+        <section className="rounded-xl border border-slate-200 bg-white p-6 text-[14px] text-slate-800 shadow-sm">
           <h1 className="text-[20px] font-semibold text-slate-900">Data pemilihan tidak tersedia</h1>
-          <p className="mt-2 leading-7">Halaman reveal ini tidak menemukan data pemilihan yang diminta.</p>
-          <Link href="/pemilih" className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B]">Kembali ke Beranda</Link>
+          <p className="mt-2 leading-7 text-slate-700">Halaman reveal ini tidak menemukan data pemilihan yang diminta.</p>
+          <Link 
+            href="/pemilih" 
+            className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none"
+            aria-label="Kembali ke Beranda Pemilih"
+          >
+            Kembali ke Beranda
+          </Link>
         </section>
       </VoterShell>
     )
@@ -52,16 +68,22 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
       <VoterShell>
         <VoterStepper
           steps={[
-            { label: 'Terdaftar', done: true },
-            { label: 'Commit', active: true },
-            { label: 'Reveal' },
-            { label: 'Selesai' },
+            { label: 'pilih kandidat', done: true },
+            { label: 'commit', done: true },
+            { label: 'reveal', active: true },
+            { label: 'result' },
           ]}
         />
-        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
+        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h1 className="text-[20px] font-semibold text-slate-900">Commit belum ditemukan</h1>
           <p className="mt-2 text-[14px] leading-7 text-slate-800">Silakan kirim commit terlebih dahulu agar halaman reveal bisa digunakan.</p>
-          <Link href={`/pemilih/pemilihan/${params.id}/commit`} className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B]">Kembali ke Commit</Link>
+          <Link 
+            href={`/pemilih/pemilihan/${params.id}/commit`} 
+            className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none"
+            aria-label="Menuju ke halaman Kirim Commit"
+          >
+            Kembali ke Commit
+          </Link>
         </section>
       </VoterShell>
     )
@@ -72,13 +94,13 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
       <VoterShell>
         <VoterStepper
           steps={[
-            { label: 'Terdaftar', done: true },
-            { label: 'Commit', done: true },
-            { label: 'Reveal' },
-            { label: 'Selesai' },
+            { label: 'pilih kandidat', done: true },
+            { label: 'commit', done: true },
+            { label: 'reveal', active: true },
+            { label: 'result' },
           ]}
         />
-        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
+        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h1 className="text-[20px] font-semibold text-slate-900">Fase reveal belum dibuka</h1>
           <p className="mt-2 text-[14px] leading-7 text-slate-800">Tunggu admin membuka fase reveal sebelum mengirim kandidat dan salt yang sama.</p>
         </section>
@@ -87,130 +109,131 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
   }
 
   const handleReveal = () => {
+    setIsRevealing(true)
     setConfirmOpen(false)
-    const proof = actions.revealVote(election.id)
-
-    if (proof) {
-      clearDemoVoteCommitment(election.id)
-    }
+    
+    // Simulate smart contract interaction speed
+    setTimeout(() => {
+      const proof = actions.revealVote(election.id)
+      if (proof) {
+        clearDemoVoteCommitment(election.id)
+      }
+      setIsRevealing(false)
+    }, 1200)
   }
 
   const stepState = election.revealProof
     ? [
-        { label: 'Terdaftar', done: true },
-        { label: 'Commit', done: true },
-        { label: 'Reveal', done: true },
-        { label: 'Selesai', active: true },
+        { label: 'pilih kandidat', done: true },
+        { label: 'commit', done: true },
+        { label: 'reveal', done: true },
+        { label: 'result', active: true },
       ]
     : [
-        { label: 'Terdaftar', done: true },
-        { label: 'Commit', done: true },
-        { label: 'Reveal', active: true },
-        { label: 'Selesai' },
+        { label: 'pilih kandidat', done: true },
+        { label: 'commit', done: true },
+        { label: 'reveal', active: true },
+        { label: 'result' },
       ]
 
   return (
     <VoterShell>
       <VoterStepper steps={stepState} />
 
-      <section className="mt-6">
-        <h1 className="text-[20px] font-semibold text-slate-900">Konfirmasi Suara</h1>
-        <p className="mt-1 text-[14px] text-slate-400">{election.title} · Reveal</p>
-      </section>
+      <div className="mt-8 rounded-[24px] border border-slate-200 bg-white p-6 shadow-sm md:p-10">
+        <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 mb-6">
+          <LockKeyhole className="h-3.5 w-3.5 text-slate-700" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700">
+            Keamanan Blockchain Aktif
+          </span>
+        </div>
 
-      <section className="mt-6 grid gap-4 xl:grid-cols-2">
-        <article className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Data komitmenmu</p>
+        <h1 className="text-[28px] md:text-[36px] font-bold tracking-tight text-slate-900">
+          Buka Kunci Suara Anda (Reveal Phase)
+        </h1>
+        <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-slate-600">
+          Anda telah memberikan suara terenkripsi sebelumnya. Sekarang, masukkan kode rahasia (Secret Salt) yang Anda simpan saat memberikan suara untuk memvalidasi pilihan Anda di jaringan blockchain.
+        </p>
 
-          <div className="mt-4 space-y-4">
-            <ProofRows
-              rows={[
-                ['Kandidat', `${committedCandidate.name} (${committedCandidate.id})`],
-                ['Salt', savedCommitment?.salt ?? 'Salt tidak ditemukan di browser ini'],
-                ['Commitment', election.commitmentHash ?? '-'],
-                ['Nonce', '1'],
-                ['Waktu Commit', formatDateTime(election.commitProof.createdAt)],
-              ]}
+        <div className="mt-10">
+          <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 mb-2">
+            Secret Salt
+          </label>
+          <div className="relative flex items-center">
+            <LockKeyhole className="absolute left-4 h-4.5 w-4.5 text-slate-400" />
+            <input
+              type="text"
+              readOnly
+              value={savedCommitment?.salt || '..................'}
+              className="h-12 w-full rounded-xl bg-slate-100 pl-11 pr-4 font-mono text-[14px] text-slate-600 outline-none"
             />
-
-            <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-              <p className="text-[12px] text-slate-400">Kontrak memverifikasi:</p>
-              <code className="mt-2 block font-mono text-[11px] leading-6 text-slate-800">keccak256(candidateId + salt) == commitment</code>
-            </div>
-
-            {!savedCommitment ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-[12px] leading-6 text-red-700">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <p>Salt tidak ditemukan di perangkat ini. Kamu mungkin membuka dari browser yang berbeda.</p>
-                </div>
-              </div>
-            ) : null}
           </div>
+        </div>
+
+        <div className="mt-6 flex items-start gap-3 rounded-xl border-l-4 border-amber-400 bg-amber-50 p-4">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+          <p className="text-[13px] font-bold leading-relaxed text-amber-900">
+            Perhatian: Tanpa proses Reveal, suara Anda tidak akan dihitung oleh sistem. Pastikan kode yang Anda masukkan sama persis dengan yang diberikan saat fase pertama.
+          </p>
+        </div>
+
+        <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
+          <button
+            type="button"
+            disabled={!savedCommitment || isRevealing || !!election.revealProof}
+            onClick={() => setConfirmOpen(true)}
+            className="inline-flex h-11 w-full sm:w-auto items-center justify-center rounded-lg bg-[#0F172A] px-6 text-[13px] font-bold text-white transition-all hover:bg-[#1E293B] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isRevealing ? 'Memproses...' : 'Buka Suara Sekarang'}
+          </button>
+          <Link
+            href="/pemilih"
+            className="inline-flex h-11 w-full sm:w-auto items-center justify-center rounded-lg bg-transparent px-6 text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            Batal
+          </Link>
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <article className="rounded-[24px] border border-slate-200 bg-slate-50 p-6 shadow-sm">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4.5 w-4.5 text-slate-700" />
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-700">Hash Commitment</h2>
+          </div>
+          <p className="mt-4 break-all font-mono text-[12px] leading-relaxed text-slate-500">
+            {election.commitmentHash ?? savedCommitment?.commitment ?? 'Belum ada hash komitmen.'}
+          </p>
         </article>
 
-        <article className="rounded-xl border border-slate-200 bg-white p-5">
-          {!election.revealProof ? (
-            <>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Konfirmasi & kirim</p>
-              <p className="mt-4 text-[14px] leading-7 text-slate-800">
-                Dengan mengklik tombol di bawah, kamu mengirim candidateId dan salt yang sama untuk diverifikasi terhadap commit sebelumnya.
-              </p>
-
-              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-[12px] leading-6 text-amber-800">
-                <div className="flex items-start gap-3">
-                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                  <p>Pastikan admin telah membuka fase reveal sebelum melanjutkan.</p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                disabled={!savedCommitment}
-                onClick={() => setConfirmOpen(true)}
-                className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B] disabled:cursor-not-allowed disabled:opacity-40"
+        <article className="rounded-[24px] border border-slate-200 bg-slate-50 p-6 shadow-sm">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4.5 w-4.5 text-slate-700" />
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-700">Status Validasi</h2>
+          </div>
+          <div className="mt-4 flex items-center gap-2">
+            <div className={`h-2 w-2 rounded-full ${election.revealProof ? 'bg-emerald-500' : 'bg-blue-500'}`} />
+            <p className={`text-[14px] font-medium ${election.revealProof ? 'text-emerald-600' : 'text-blue-600'}`}>
+              {election.revealProof ? 'Suara Berhasil Terverifikasi' : 'Menunggu Dekripsi Suara'}
+            </p>
+          </div>
+          {election.revealProof && (
+            <div className="mt-4 border-t border-slate-200 pt-4">
+              <Link
+                href={`/pemilih/pemilihan/${election.id}/hasil`}
+                className="inline-flex h-9 items-center justify-center rounded-md bg-emerald-600 px-4 text-[12px] font-bold text-white transition-all hover:bg-emerald-700"
               >
-                Konfirmasi Suara ke Blockchain
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="flex justify-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                  <CheckCircle2 className="h-7 w-7" />
-                </div>
-              </div>
-              <h2 className="mt-4 text-center text-[16px] font-semibold text-slate-900">Suara Berhasil Dicatat</h2>
-              <p className="mt-2 text-center text-[13px] leading-6 text-slate-400">
-                Bukti reveal tetap ditampilkan di halaman ini agar mudah diverifikasi sebelum kamu melihat hasil akhir.
-              </p>
-
-              <div className="mt-5">
-                <ProofRows
-                  rows={[
-                    ['Tx Hash', election.revealProof.txHash],
-                    ['Block', formatNumber(election.revealProof.blockNumber)],
-                    ['Gas Used', formatNumber(election.revealProof.gasUsed)],
-                  ]}
-                />
-              </div>
-
-              <a href={basescanTxUrl(election.revealProof.txHash)} target="_blank" rel="noreferrer" className="mt-4 inline-flex w-full items-center justify-center gap-1 text-[13px] font-medium text-blue-700 hover:text-blue-800">
-                Lihat di Basescan
-                <ExternalLink className="h-4 w-4" />
-              </a>
-              <Link href={`/pemilih/pemilihan/${election.id}/hasil`} className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-900 hover:bg-slate-50">
-                Lanjut ke Hasil
+                Lihat Hasil Akhir
               </Link>
-            </>
+            </div>
           )}
         </article>
-      </section>
+      </div>
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Kirim reveal sekarang?"
-        description="candidateId dan salt yang sama akan dipakai untuk membuka commit. Setelah berhasil, hasil akhir dapat ditinjau dari halaman berikutnya."
+        title="Kirim reveal suara sekarang?"
+        description="Pilihan kandidat dan Kunci Salt Anda akan dikirim untuk divalidasi oleh Smart Contract secara terbuka. Tindakan ini permanen dan tidak dapat diubah."
         confirmLabel="Ya, Buka Suara"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleReveal}

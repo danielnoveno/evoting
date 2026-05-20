@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { clearAllDemoVoteCommitments } from '@/lib/vote-commitment-demo'
 
 export type VoterElectionPhase = 'registration' | 'commit' | 'reveal' | 'ended'
 
@@ -78,7 +79,7 @@ const voterStoreSeed: VoterStore = {
     bio: 'Mahasiswa aktif yang rutin berpartisipasi dalam pemilihan digital organisasi kampus.',
     avatarUrl: 'https://i.pravatar.cc/320?img=12',
   },
-  selectedProofElectionId: 'ukm-riset-divisi-inovasi-2025',
+  selectedProofElectionId: 'koordinator-psdm-himaforka-2025',
   elections: [
     {
       id: sharedDummyContext.electionId,
@@ -110,15 +111,15 @@ const voterStoreSeed: VoterStore = {
       })),
     },
     {
-      id: 'ukm-riset-publikasi-2026',
-      title: 'Voting Kebijakan Publikasi Karya UKM Riset',
-      organization: sharedDummyContext.organization,
-      summary: 'Berikan suara untuk kebijakan publikasi karya anggota dengan bukti audit yang bisa ditinjau publik.',
+      id: 'ketua-kelompok-praktikum-bd-2026',
+      title: 'Pemilihan Ketua Kelompok Praktikum Basis Data FTI 2026',
+      organization: 'Praktikum Basis Data FTI UAJY',
+      summary: 'Berikan suara untuk memilih ketua kelompok praktikum yang akan mengoordinasikan tugas, jadwal, dan komunikasi dengan asisten.',
       phase: 'reveal',
       deadlineIso: '2026-05-11T10:00:00+07:00',
-      totalParticipants: 842,
-      committedCount: 781,
-      revealedCount: 625,
+      totalParticipants: 36,
+      committedCount: 32,
+      revealedCount: 24,
       quorumPercent: 65,
       candidateCount: 3,
       selectedCandidateId: 'c1',
@@ -134,31 +135,31 @@ const voterStoreSeed: VoterStore = {
       revealProof: null,
       voterIdentifier: 'VOTER-SHA-9921-X',
       lastTransactionLabel: 'Commit berhasil dikirim. Menunggu fase reveal.',
-      supportCopy: 'Pastikan Anda menggunakan perangkat yang sama agar data komitmen tetap tersedia untuk reveal.',
+      supportCopy: 'Pastikan Anda menggunakan perangkat yang sama agar data komitmen tetap tersedia saat reveal.',
       candidates: [
         {
           id: 'c1',
-          name: 'Cluster Infrastruktur',
-          faculty: 'Opsi A',
-          vision: 'Upgrade server pembelajaran dan sistem backup laboratorium.',
-          mission: ['Tambah penyimpanan 20 TB.', 'Failover untuk layanan internal.'],
-          votes: 312,
+          name: 'Gina Maharani',
+          faculty: 'Informatika ’23',
+          vision: 'Membangun kelompok praktikum yang disiplin, komunikatif, dan saling membantu.',
+          mission: ['Menyusun jadwal internal kelompok.', 'Menjaga komunikasi rutin dengan asisten.'],
+          votes: 12,
         },
         {
           id: 'c2',
-          name: 'Cluster Pengembangan',
-          faculty: 'Opsi B',
-          vision: 'Akselerasi lisensi software pembelajaran dan sandbox eksperimen.',
-          mission: ['Lisensi IDE institusi.', 'Lingkungan latihan keamanan.'],
-          votes: 206,
+          name: 'Kevin Adinata',
+          faculty: 'Sistem Informasi ’23',
+          vision: 'Mewujudkan kelompok praktikum yang tertib, transparan, dan tepat waktu.',
+          mission: ['Membagi peran sesuai kekuatan anggota.', 'Mencatat progres tiap pertemuan.'],
+          votes: 8,
         },
         {
           id: 'c3',
-          name: 'Cluster Pelatihan',
-          faculty: 'Opsi C',
-          vision: 'Dukungan workshop sertifikasi dan pelatihan rutin untuk asisten laboratorium.',
-          mission: ['Bootcamp cloud.', 'Kelas DevSecOps bulanan.'],
-          votes: 107,
+          name: 'Laras Putri',
+          faculty: 'Informatika ’23',
+          vision: 'Mendorong kelompok praktikum yang suportif, siap presentasi, dan konsisten mengumpulkan tugas.',
+          mission: ['Menjaga komunikasi antaranggota.', 'Memastikan kesiapan presentasi sebelum deadline.'],
+          votes: 4,
         },
       ],
     },
@@ -187,30 +188,30 @@ const voterStoreSeed: VoterStore = {
           id: 'c1',
           name: 'Maya Kartika',
           faculty: 'Teknik Sipil',
-          vision: 'Mewakili citra kampus yang kolaboratif dan berprestasi.',
-          mission: ['Program promosi lintas komunitas.', 'Pendampingan duta fakultas.'],
+          vision: 'Membangun sekretariat UKM yang rapi, responsif, dan membantu seluruh pengurus bekerja lebih terstruktur.',
+          mission: ['Merapikan arsip kegiatan.', 'Menyusun notulensi dan pengingat agenda rutin.'],
           votes: 0,
         },
         {
           id: 'c2',
           name: 'Rizki Fadillah',
           faculty: 'Teknik Mesin',
-          vision: 'Mendorong partisipasi mahasiswa dalam diplomasi dan jejaring eksternal.',
-          mission: ['Roadshow sekolah mitra.', 'Pelatihan public speaking.'],
+          vision: 'Mewujudkan administrasi UKM yang tertib, transparan, dan mudah diakses anggota.',
+          mission: ['Digitalisasi dokumen organisasi.', 'Mempercepat distribusi informasi internal.'],
           votes: 0,
         },
       ],
     },
     {
-      id: 'ukm-riset-divisi-inovasi-2025',
-      title: 'Pemilihan Kepala Divisi Inovasi UKM Riset 2025',
-      organization: sharedDummyContext.organization,
-      summary: 'Hasil final telah diumumkan dan bukti sertifikat digital tersedia untuk diunduh.',
+      id: 'koordinator-psdm-himaforka-2025',
+      title: 'Pemilihan Koordinator Divisi PSDM HIMAFORKA 2025',
+      organization: 'HIMAFORKA FTI UAJY',
+      summary: 'Hasil final telah diumumkan dan bukti audit pemilihan kepengurusan tersedia untuk diunduh.',
       phase: 'ended',
       deadlineIso: '2026-04-15T09:42:00+07:00',
-      totalParticipants: 284,
-      committedCount: 284,
-      revealedCount: 284,
+      totalParticipants: 86,
+      committedCount: 86,
+      revealedCount: 86,
       quorumPercent: 100,
       candidateCount: 3,
       selectedCandidateId: 'c2',
@@ -230,33 +231,33 @@ const voterStoreSeed: VoterStore = {
         createdAt: '2026-04-15T10:15:00+07:00',
         statusLabel: 'Finalized',
       },
-      voterIdentifier: 'EV-2024-X921',
+      voterIdentifier: 'EV-HMF-2025-021',
       lastTransactionLabel: 'Sertifikat publik sudah tersedia.',
       supportCopy: 'Anda bisa menyalin hash transaksi untuk diverifikasi langsung di Basescan.',
       candidates: [
         {
           id: 'c1',
-          name: 'Siti Aminah',
-          faculty: 'FISIP',
-          vision: 'Perwakilan lintas fakultas dengan fokus tata kelola yang terbuka.',
-          mission: ['Forum evaluasi bulanan.', 'Panel kebijakan terbuka.'],
-          votes: 84,
+          name: 'Nabila Putri',
+          faculty: 'Informatika ’22',
+          vision: 'PSDM HIMAFORKA yang hadir untuk pengembangan anggota sejak awal masa studi.',
+          mission: ['Program mentoring antarangkatan.', 'Pemetaan minat dan potensi anggota.'],
+          votes: 24,
         },
         {
           id: 'c2',
-          name: 'Budi Santoso',
-          faculty: 'PMB',
-          vision: 'Partai Maju Bersama.',
-          mission: ['Kolaborasi lintas unit.', 'Program advokasi mahasiswa.'],
-          votes: 124,
+          name: 'Bagas Pramana',
+          faculty: 'Sistem Informasi ’22',
+          vision: 'Divisi PSDM yang terukur, dekat dengan anggota, dan aktif menyiapkan kader organisasi.',
+          mission: ['Pelatihan kader berkala.', 'Evaluasi kebutuhan pengembangan anggota per semester.'],
+          votes: 39,
         },
         {
           id: 'c3',
-          name: 'Ahmad Fauzi',
-          faculty: 'FKIP',
-          vision: 'Kampus inklusif dan adaptif berbasis data.',
-          mission: ['Kanal aspirasi digital.', 'Transparansi laporan kebijakan.'],
-          votes: 21,
+          name: 'Cindy Maharani',
+          faculty: 'Informatika ’23',
+          vision: 'Pengembangan anggota berbasis komunitas, apresiasi, dan ruang belajar yang konsisten.',
+          mission: ['Kelas pengembangan soft skill.', 'Program apresiasi anggota aktif.'],
+          votes: 23,
         },
       ],
     },
@@ -360,14 +361,28 @@ export function getElectionProgress(election: VoterElection) {
 }
 
 export function sortDashboardElections(elections: VoterElection[]) {
-  return [...elections].sort((left, right) => new Date(left.deadlineIso).getTime() - new Date(right.deadlineIso).getTime())
+  const getPriority = (election: VoterElection) => {
+    if (election.phase === 'commit' && !election.commitProof) return 0
+    if (election.phase === 'reveal' && !election.revealProof) return 1
+    if (election.phase === 'registration') return 2
+    if (election.phase === 'commit') return 3
+    if (election.phase === 'reveal') return 4
+    return 5
+  }
+
+  return [...elections].sort((left, right) => {
+    const priorityDiff = getPriority(left) - getPriority(right)
+    if (priorityDiff !== 0) return priorityDiff
+
+    return new Date(left.deadlineIso).getTime() - new Date(right.deadlineIso).getTime()
+  })
 }
 
 export function resolveElectionAction(election: VoterElection) {
   if (election.phase === 'commit') {
     return {
       label: 'Berikan Suara',
-      href: `/pemilih/pemilihan/${election.id}/commit`,
+      href: `/pemilih/pemilihan/${election.id}/pilih-kandidat`,
     }
   }
 
@@ -465,6 +480,7 @@ export function useVoterStore() {
   const actions = useMemo(() => ({
     reset() {
       const next = cloneStore(voterStoreSeed)
+      clearAllDemoVoteCommitments()
       persistStore(next)
       setStore(next)
     },

@@ -142,7 +142,7 @@ export default function SuperadminProposalManagementPage() {
               </div>
             </div>
           </SuperadminInteractiveCard>
-        )) : <SuperadminEmptyState title="Belum ada proposal yang sesuai" description="Coba ubah kata kunci pencarian untuk menampilkan proposal lain pada mode dummy." />}
+        )) : <SuperadminEmptyState title="Belum ada proposal yang sesuai" description="Coba ubah kata kunci pencarian untuk menampilkan proposal lain." />}
       </StaggerContainer>
     </SuperadminShell>
   )

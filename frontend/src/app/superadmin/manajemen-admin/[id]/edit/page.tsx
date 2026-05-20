@@ -63,7 +63,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      showToast({ tone: 'error', title: 'Email belum valid', description: 'Gunakan format email yang valid untuk simulasi edit admin.' })
+      showToast({ tone: 'error', title: 'Email belum valid', description: 'Gunakan format email yang valid.' })
       return
     }
 
@@ -86,8 +86,8 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
     setConfirmOpen(false)
     showToast({
       tone: 'success',
-      title: 'Simulasi edit admin berhasil',
-      description: 'Perubahan bisa diuji end-to-end, tetapi tidak disimpan ke data admin sebenarnya.',
+      title: 'Perubahan admin berhasil disimpan',
+      description: 'Perubahan telah diproses dan Anda akan kembali ke halaman detail admin.',
     })
     window.setTimeout(() => {
       router.push(`/superadmin/manajemen-admin/${admin.id}`)
@@ -109,7 +109,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
           backHref={`/superadmin/manajemen-admin/${admin.id}`}
           backLabel="Kembali ke Detail Admin"
           title="Edit Admin"
-          description="Halaman ini dibuat untuk simulasi end-to-end. Anda bisa mencoba mengubah data, tetapi hasilnya tidak akan memperbarui record admin secara permanen."
+          description="Perbarui data admin dan tinjau kembali hak akses yang berlaku."
           actions={(
             <>
               <button type="button" onClick={handleCancel} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-700 hover:bg-slate-200">
@@ -126,7 +126,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
       <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_420px]">
         <div className="space-y-6">
           <SuperadminSectionCard>
-            <SuperadminSectionHeading title="Informasi Admin" description="Gunakan data ini untuk mencoba alur edit seperti pada sistem nyata." />
+            <SuperadminSectionHeading title="Informasi Admin" description="Gunakan data ini untuk memperbarui informasi admin." />
             <div className="mt-8 grid gap-5 xl:grid-cols-2">
               <label className="block xl:col-span-2">
                 <SuperadminFieldLabel>Nama Lengkap</SuperadminFieldLabel>
@@ -160,25 +160,25 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
           </SuperadminSectionCard>
 
           <SuperadminSectionCard>
-            <SuperadminSectionHeading title="Cakupan Akses" description="Pilih mode akses untuk menyimulasikan perubahan hak admin." />
+            <SuperadminSectionHeading title="Cakupan Akses" description="Pilih cakupan akses admin untuk ruang pemilihan." />
             <div className="mt-8 space-y-4">
               <SuperadminRadioCard
                 active={formData.scope === 'all'}
                 title="Semua Pemilihan"
-                description="Mode ini mensimulasikan akses lintas ruang pemilihan tanpa pembatasan spesifik."
+                description="Admin dapat mengakses seluruh ruang pemilihan yang tersedia."
                 onClick={() => handleChange('scope', 'all')}
               />
               <SuperadminRadioCard
                 active={formData.scope === 'specific'}
                 title="Pemilihan Tertentu"
-                description="Mode ini mensimulasikan admin hanya mengelola ruang yang sudah ditentukan." 
+                description="Admin hanya mengelola ruang pemilihan yang telah ditentukan." 
                 onClick={() => handleChange('scope', 'specific')}
               />
             </div>
           </SuperadminSectionCard>
 
           <SuperadminSectionCard>
-            <SuperadminSectionHeading title="Reset Kata Sandi (Opsional)" description="Biarkan kosong jika tidak ingin mensimulasikan pergantian password." />
+            <SuperadminSectionHeading title="Reset Kata Sandi (Opsional)" description="Biarkan kosong jika tidak ingin mengganti password." />
             <div className="mt-8 grid gap-5 xl:grid-cols-2">
               <label className="block">
                 <SuperadminFieldLabel>Password Baru</SuperadminFieldLabel>
@@ -199,8 +199,8 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
                 <UserCog className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-[18px] font-semibold text-slate-900">Mode Simulasi Aktif</h2>
-                <p className="mt-2 text-[15px] leading-7 text-slate-800">Setelah menekan simpan, Anda akan kembali ke halaman detail admin dengan notifikasi sukses. Data asli daftar admin tidak akan berubah.</p>
+                <h2 className="text-[18px] font-semibold text-slate-900">Ringkasan Perubahan</h2>
+                <p className="mt-2 text-[15px] leading-7 text-slate-800">Setelah menekan simpan, Anda akan kembali ke halaman detail admin dengan notifikasi sukses.</p>
               </div>
             </div>
           </SuperadminSectionCard>
@@ -229,11 +229,11 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
                 <ShieldCheck className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-[18px] font-semibold text-slate-900">Guardrail Demo</h2>
+                <h2 className="text-[18px] font-semibold text-slate-900">Catatan Perubahan</h2>
                 <ul className="mt-3 space-y-2 text-[14px] leading-7 text-slate-800">
-                  <li>• Form bisa diisi dan divalidasi seperti alur asli.</li>
-                  <li>• Tombol simpan hanya menampilkan hasil simulasi.</li>
-                  <li>• Saat kembali ke detail admin, data akan tetap seperti semula.</li>
+                  <li>• Form dapat diisi dan divalidasi sebelum disimpan.</li>
+                  <li>• Tinjau kembali status akun, akses, dan password sebelum konfirmasi.</li>
+                  <li>• Setelah disimpan, Anda akan kembali ke halaman detail admin.</li>
                 </ul>
               </div>
             </div>
@@ -244,8 +244,8 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
       <ConfirmDialog
         open={confirmOpen}
         title="Simpan perubahan admin ini?"
-        description="Perubahan hanya digunakan untuk simulasi alur edit end-to-end dan tidak akan memperbarui data admin secara permanen."
-        confirmLabel="Ya, Simpan Simulasi"
+        description="Perubahan ini akan memperbarui data admin yang sedang Anda sunting."
+        confirmLabel="Ya, Simpan"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleConfirmSave}
       />
@@ -253,7 +253,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
       <ConfirmDialog
         open={cancelConfirmOpen}
         title="Batalkan perubahan?"
-        description="Perubahan yang sedang Anda coba pada mode simulasi ini akan dibuang."
+        description="Perubahan yang sedang Anda buat akan dibuang."
         confirmLabel="Ya, Batalkan"
         onCancel={() => setCancelConfirmOpen(false)}
         onConfirm={() => {

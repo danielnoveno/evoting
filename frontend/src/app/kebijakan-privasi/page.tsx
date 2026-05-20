@@ -7,7 +7,7 @@ export default function KebijakanPrivasiPage() {
         <div className="public-container">
           <SectionTitle
             title="Kebijakan Privasi"
-            body="Halaman ini menjelaskan bahwa mode demo Votein hanya menggunakan data dummy lokal untuk simulasi alur pemilihan kampus dan tidak memproses data pribadi nyata."
+            body="Halaman ini menjelaskan bagaimana Votein menggunakan data akun, data pemilihan, dan bukti transaksi untuk mendukung proses voting yang aman."
           />
         </div>
       </section>

@@ -34,6 +34,9 @@ const moduleHrefs: Record<AdminModuleKey, string> = {
 export default function AdminPage() {
   const router = useRouter()
   const { showToast } = useToast()
+  const visibleModules = adminDashboardContent.modules.filter(
+    (module) => !['fase', 'kandidat', 'whitelist', 'monitoring', 'hasil'].includes(module.key)
+  )
 
   return (
     <AdminShell>
@@ -54,7 +57,7 @@ export default function AdminPage() {
                 <button type="button" onClick={() => router.push('/admin/manajemen-pemilihan')} className="inline-flex h-12 items-center justify-center rounded-2xl bg-black px-6 text-[15px] font-medium text-white hover:bg-slate-900">
                   {adminDashboardContent.hero.primaryCta}
                 </button>
-                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduh Ringkasan', description: 'Fitur unduh ringkasan belum tersedia pada versi demo.' })} className="inline-flex h-12 items-center justify-center rounded-2xl bg-white px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-50">
+                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduh Ringkasan', description: 'Fitur unduh ringkasan sedang disiapkan.' })} className="inline-flex h-12 items-center justify-center rounded-2xl bg-white px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-50">
                   {adminDashboardContent.hero.secondaryCta}
                 </button>
               </div>
@@ -82,8 +85,8 @@ export default function AdminPage() {
           <p className="mt-2 text-[16px] text-slate-500">{adminDashboardContent.section.description}</p>
         </ScrollReveal>
 
-        <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-5 md:grid-cols-2 2xl:grid-cols-4">
-          {adminDashboardContent.modules.map((module) => (
+        <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {visibleModules.map((module) => (
             <AdminModuleCard
               key={module.title}
               title={module.title}

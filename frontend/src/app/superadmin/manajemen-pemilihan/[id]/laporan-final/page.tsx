@@ -20,15 +20,15 @@ type FinalReportDetail = {
 }
 
 const finalReportMap: Record<string, FinalReportDetail> = {
-  e4: {
+  'koordinator-psdm-himaforka-2025': {
     codeLabel: 'ID: ORG-7744-FTI',
     networkLabel: 'Base Sepolia Finalized',
     contractUrl: 'https://sepolia.basescan.org/address/0xaa440000000000000000000000000000007744',
-    summary: 'Laporan final ini merangkum hasil pemilihan yang telah selesai dan teraudit. Seluruh data pada halaman ini bersifat dummy untuk kebutuhan presentasi end-to-end.',
+    summary: 'Laporan final ini merangkum hasil pemilihan yang telah selesai dan teraudit untuk kebutuhan peninjauan dan dokumentasi.',
     metrics: [
       { id: 'm1', label: 'Total Suara Valid', value: '1,165', note: 'Setelah verifikasi reveal dan tally' },
       { id: 'm2', label: 'Partisipasi Final', value: '91%', note: 'Turnout tertinggi pada batch ini' },
-      { id: 'm3', label: 'Commitment Valid', value: '100%', note: 'Tidak ada mismatch pada mode demo' },
+      { id: 'm3', label: 'Commitment Valid', value: '100%', note: 'Tidak ada mismatch pada verifikasi akhir' },
       { id: 'm4', label: 'Status Audit', value: 'Final', note: 'Rekap siap dipresentasikan' },
     ],
     winners: [
@@ -38,13 +38,13 @@ const finalReportMap: Record<string, FinalReportDetail> = {
     ],
     auditChecks: [
       { id: 'a1', title: 'Reveal lengkap', description: 'Seluruh commitment yang diterima berhasil direveal dan masuk tally akhir.' },
-      { id: 'a2', title: 'Whitelist konsisten', description: 'Tidak ada wallet di luar daftar yang tercatat pada ringkasan final demo.' },
+      { id: 'a2', title: 'Whitelist konsisten', description: 'Tidak ada wallet di luar daftar yang tercatat pada ringkasan final.' },
       { id: 'a3', title: 'Bukti on-chain siap', description: 'Smart contract dan rekap dapat dibuka melalui tautan explorer yang tersedia.' },
     ],
     timeline: [
       { id: 't1', title: 'Fase reveal ditutup', time: '2 hari lalu, 17:00', note: 'Sistem menghentikan penerimaan reveal baru.' },
       { id: 't2', title: 'Tally final disimpan', time: '2 hari lalu, 18:20', note: 'Rekap suara dikunci untuk kebutuhan audit dan presentasi.' },
-      { id: 't3', title: 'Review superadmin selesai', time: 'Kemarin, 09:30', note: 'Tidak ditemukan konflik data pada simulasi final.' },
+      { id: 't3', title: 'Review superadmin selesai', time: 'Kemarin, 09:30', note: 'Tidak ditemukan konflik data pada review final.' },
     ],
   },
 }
@@ -91,7 +91,7 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
             </a>
             <button
               type="button"
-              onClick={() => showToast({ tone: 'success', title: 'Rekap siap diunduh', description: 'Unduhan laporan final masih berupa simulasi frontend.' })}
+              onClick={() => showToast({ tone: 'success', title: 'Rekap siap diunduh', description: 'File laporan final sedang disiapkan.' })}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-5 text-[15px] font-medium text-white hover:bg-slate-800"
             >
               <Download className="h-4 w-4" />
@@ -179,7 +179,7 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
             <BarChart3 className="h-5 w-5 text-slate-700" />
             <h2 className="text-[20px] font-semibold text-slate-900">Ringkasan Presentasi</h2>
           </div>
-          <p className="mt-5 text-[15px] leading-7 text-slate-800">Gunakan halaman ini sebagai laporan final siap presentasi. Semua angka bersifat dummy tetapi flow-nya sudah end-to-end untuk kebutuhan demo.</p>
+          <p className="mt-5 text-[15px] leading-7 text-slate-800">Gunakan halaman ini sebagai ringkasan akhir untuk peninjauan hasil, audit, dan dokumentasi pemilihan.</p>
         </SuperadminSectionCard>
 
         <SuperadminSectionCard className="border border-slate-200 bg-white">
@@ -188,8 +188,8 @@ export default function SuperadminElectionFinalReportPage({ params }: { params: 
             <h2 className="text-[20px] font-semibold text-slate-900">Dokumen Rekap</h2>
           </div>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-            <button type="button" onClick={() => showToast({ tone: 'info', title: 'CSV disiapkan', description: 'Export CSV masih berupa simulasi frontend.' })} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-200">Unduh CSV</button>
-            <button type="button" onClick={() => showToast({ tone: 'info', title: 'PDF disiapkan', description: 'Export PDF masih berupa simulasi frontend.' })} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-200">Unduh PDF</button>
+            <button type="button" onClick={() => showToast({ tone: 'info', title: 'CSV disiapkan', description: 'File CSV sedang disiapkan.' })} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-200">Unduh CSV</button>
+            <button type="button" onClick={() => showToast({ tone: 'info', title: 'PDF disiapkan', description: 'File PDF sedang disiapkan.' })} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-200">Unduh PDF</button>
           </div>
         </SuperadminSectionCard>
         </section>

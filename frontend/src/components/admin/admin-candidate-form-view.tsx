@@ -120,7 +120,7 @@ export function AdminCandidateFormView({
     showToast({
       tone: 'success',
       title: 'Perubahan disimpan',
-      description: 'Data kandidat berhasil diperbarui di simulasi frontend.',
+      description: 'Data kandidat berhasil diperbarui.',
     })
     window.setTimeout(() => {
       router.push(`/admin/manajemen-pemilihan/${election.id}?tab=kandidat`)
@@ -314,7 +314,7 @@ export function AdminCandidateFormView({
       <ConfirmDialog
         open={confirmOpen}
         title={confirmTitle}
-        description="Pastikan seluruh informasi kandidat sudah benar sebelum disimpan. Perubahan akan digunakan pada tampilan admin dan simulasi proses voting."
+        description="Pastikan seluruh informasi kandidat sudah benar sebelum disimpan. Perubahan akan digunakan pada tampilan admin dan proses voting."
         confirmLabel={primaryActionLabel}
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleConfirmSave}
