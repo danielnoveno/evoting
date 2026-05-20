@@ -71,6 +71,15 @@ export interface VoterStore {
 const STORAGE_KEY = 'votein-voter-mock-store-v2'
 const BASESCAN_ROOT = 'https://sepolia.basescan.org'
 
+/* ──────────────────────────────────────────────────────────────────────────────
+ *  4 ELECTIONS yang voter ikuti (lintas organisasi):
+ *
+ *  #1  Koordinator UKM Riset 2026    — COMMIT        (belum vote)
+ *  #2  Ketua BEM FTI 2026            — REVEAL        (sudah commit)
+ *  #3  Bendahara UKM Riset 2026      — REGISTRATION  (menunggu)
+ *  #4  Koordinator PSDM HIMAFORKA 25 — ENDED         (selesai, ada bukti)
+ * ────────────────────────────────────────────────────────────────────────────*/
+
 const voterStoreSeed: VoterStore = {
   profile: {
     name: 'Aditya Pratama',
@@ -81,6 +90,7 @@ const voterStoreSeed: VoterStore = {
   },
   selectedProofElectionId: 'koordinator-psdm-himaforka-2025',
   elections: [
+    /* ── #1 Koordinator UKM Riset 2026 · COMMIT ──────────────────────────── */
     {
       id: sharedDummyContext.electionId,
       title: sharedDummyContext.proposalTitle,
@@ -110,26 +120,28 @@ const voterStoreSeed: VoterStore = {
         votes: 0,
       })),
     },
+
+    /* ── #2 Ketua BEM FTI 2026 · REVEAL ──────────────────────────────────── */
     {
-      id: 'ketua-kelompok-praktikum-bd-2026',
-      title: 'Pemilihan Ketua Kelompok Praktikum Basis Data FTI 2026',
-      organization: 'Praktikum Basis Data FTI UAJY',
-      summary: 'Berikan suara untuk memilih ketua kelompok praktikum yang akan mengoordinasikan tugas, jadwal, dan komunikasi dengan asisten.',
+      id: 'ketua-bem-fti-2026',
+      title: 'Pemilihan Ketua BEM FTI 2026',
+      organization: 'BEM FTI UAJY',
+      summary: 'Berikan suara untuk memilih ketua BEM FTI yang akan memimpin kegiatan kemahasiswaan fakultas selama periode 2026–2027.',
       phase: 'reveal',
-      deadlineIso: '2026-05-11T10:00:00+07:00',
-      totalParticipants: 36,
-      committedCount: 32,
-      revealedCount: 24,
-      quorumPercent: 65,
-      candidateCount: 3,
-      selectedCandidateId: 'c1',
-      committedCandidateId: 'c1',
+      deadlineIso: '2026-06-25T10:00:00+07:00',
+      totalParticipants: 520,
+      committedCount: 418,
+      revealedCount: 186,
+      quorumPercent: 80,
+      candidateCount: 4,
+      selectedCandidateId: 'c-bem-1',
+      committedCandidateId: 'c-bem-1',
       commitmentHash: '0x8f2aedc018cf718930ab7cb2f8165b4d3152afe2fcaa8cb9ab88d3351122f19d',
       commitProof: {
         txHash: '0x9f8d2ab5d91ec14ccba7f344a233f4ad77f1d4ac82f31ef624ad99821bc4ef77',
         blockNumber: 18294201,
         gasUsed: 20841,
-        createdAt: '2026-05-08T19:30:00+07:00',
+        createdAt: '2026-06-18T19:30:00+07:00',
         statusLabel: 'Commit tersimpan',
       },
       revealProof: null,
@@ -138,39 +150,49 @@ const voterStoreSeed: VoterStore = {
       supportCopy: 'Pastikan Anda menggunakan perangkat yang sama agar data komitmen tetap tersedia saat reveal.',
       candidates: [
         {
-          id: 'c1',
-          name: 'Gina Maharani',
-          faculty: 'Informatika ’23',
-          vision: 'Membangun kelompok praktikum yang disiplin, komunikatif, dan saling membantu.',
-          mission: ['Menyusun jadwal internal kelompok.', 'Menjaga komunikasi rutin dengan asisten.'],
-          votes: 12,
+          id: 'c-bem-1',
+          name: 'Nanda Putri',
+          faculty: 'Teknik Industri ’22',
+          vision: 'Membangun BEM FTI yang efisien, terukur, dan berdampak langsung pada kebutuhan mahasiswa.',
+          mission: ['Mengintegrasikan evaluasi kegiatan berbasis data.', 'Memperkuat koordinasi unit kerja.'],
+          votes: 182,
         },
         {
-          id: 'c2',
-          name: 'Kevin Adinata',
-          faculty: 'Sistem Informasi ’23',
-          vision: 'Mewujudkan kelompok praktikum yang tertib, transparan, dan tepat waktu.',
-          mission: ['Membagi peran sesuai kekuatan anggota.', 'Mencatat progres tiap pertemuan.'],
-          votes: 8,
+          id: 'c-bem-2',
+          name: 'Rizky Samudra',
+          faculty: 'Informatika ’21',
+          vision: 'Menjadikan BEM FTI sebagai ekosistem inovasi digital yang berkelanjutan dan kolaboratif.',
+          mission: ['Membangun platform informasi terpusat.', 'Memperkuat sinergi komunitas teknologi.'],
+          votes: 146,
         },
         {
-          id: 'c3',
-          name: 'Laras Putri',
-          faculty: 'Informatika ’23',
-          vision: 'Mendorong kelompok praktikum yang suportif, siap presentasi, dan konsisten mengumpulkan tugas.',
-          mission: ['Menjaga komunikasi antaranggota.', 'Memastikan kesiapan presentasi sebelum deadline.'],
-          votes: 4,
+          id: 'c-bem-3',
+          name: 'Aulia Fadhilah',
+          faculty: 'Arsitektur ’21',
+          vision: 'Mewujudkan kepengurusan yang cepat, terbuka, dan benar-benar dekat dengan kehidupan mahasiswa.',
+          mission: ['Menyederhanakan birokrasi internal.', 'Membuka kanal umpan balik real-time.'],
+          votes: 90,
+        },
+        {
+          id: 'c-bem-4',
+          name: 'Satria Dharma',
+          faculty: 'Teknik Sipil ’20',
+          vision: 'Membangun organisasi mahasiswa yang dipercaya melalui komunikasi yang jelas dan akuntabilitas anggaran.',
+          mission: ['Mempublikasikan laporan berkala.', 'Menyusun strategi komunikasi yang konsisten.'],
+          votes: 0,
         },
       ],
     },
+
+    /* ── #3 Bendahara UKM Riset 2026 · REGISTRATION ──────────────────────── */
     {
-      id: 'ukm-riset-sekretaris-2026',
-      title: 'Pemilihan Sekretaris UKM Riset 2026',
+      id: 'bendahara-ukm-riset-2026',
+      title: 'Pemilihan Bendahara UKM Riset 2026',
       organization: sharedDummyContext.organization,
       summary: 'Pendaftaran kandidat masih dibuka. Voting akan dimulai saat fase commit dibuka oleh admin.',
       phase: 'registration',
-      deadlineIso: '2026-05-14T14:00:00+07:00',
-      totalParticipants: 524,
+      deadlineIso: '2026-07-14T14:00:00+07:00',
+      totalParticipants: 310,
       committedCount: 0,
       revealedCount: 0,
       quorumPercent: 0,
@@ -185,23 +207,25 @@ const voterStoreSeed: VoterStore = {
       supportCopy: 'Pantau pembukaan fase commit di beranda atau menu Bukti Saya.',
       candidates: [
         {
-          id: 'c1',
+          id: 'c-bend-1',
           name: 'Maya Kartika',
-          faculty: 'Teknik Sipil',
-          vision: 'Membangun sekretariat UKM yang rapi, responsif, dan membantu seluruh pengurus bekerja lebih terstruktur.',
-          mission: ['Merapikan arsip kegiatan.', 'Menyusun notulensi dan pengingat agenda rutin.'],
+          faculty: 'Teknik Sipil ’22',
+          vision: 'Membangun pengelolaan keuangan UKM yang rapi, transparan, dan akuntabel untuk semua anggota.',
+          mission: ['Merapikan pelaporan keuangan bulanan.', 'Menyusun anggaran program kerja secara terbuka.'],
           votes: 0,
         },
         {
-          id: 'c2',
+          id: 'c-bend-2',
           name: 'Rizki Fadillah',
-          faculty: 'Teknik Mesin',
-          vision: 'Mewujudkan administrasi UKM yang tertib, transparan, dan mudah diakses anggota.',
-          mission: ['Digitalisasi dokumen organisasi.', 'Mempercepat distribusi informasi internal.'],
+          faculty: 'Teknik Mesin ’22',
+          vision: 'Mewujudkan administrasi keuangan UKM yang tertib, digital, dan mudah diaudit anggota.',
+          mission: ['Digitalisasi pencatatan keuangan.', 'Mempercepat distribusi laporan realisasi anggaran.'],
           votes: 0,
         },
       ],
     },
+
+    /* ── #4 Koordinator PSDM HIMAFORKA 2025 · ENDED ──────────────────────── */
     {
       id: 'koordinator-psdm-himaforka-2025',
       title: 'Pemilihan Koordinator Divisi PSDM HIMAFORKA 2025',
@@ -214,8 +238,8 @@ const voterStoreSeed: VoterStore = {
       revealedCount: 86,
       quorumPercent: 100,
       candidateCount: 3,
-      selectedCandidateId: 'c2',
-      committedCandidateId: 'c2',
+      selectedCandidateId: 'c-psdm-2',
+      committedCandidateId: 'c-psdm-2',
       commitmentHash: '0x7f8832a886b84518a996f01119b9109012f2c8d23467e7c8a001b1e32fbe8019',
       commitProof: {
         txHash: '0x7f8832a886b84518a996f01119b9109012f2c8d23467e7c8a001b1e32fbe8019',
@@ -236,7 +260,7 @@ const voterStoreSeed: VoterStore = {
       supportCopy: 'Anda bisa menyalin hash transaksi untuk diverifikasi langsung di Basescan.',
       candidates: [
         {
-          id: 'c1',
+          id: 'c-psdm-1',
           name: 'Nabila Putri',
           faculty: 'Informatika ’22',
           vision: 'PSDM HIMAFORKA yang hadir untuk pengembangan anggota sejak awal masa studi.',
@@ -244,7 +268,7 @@ const voterStoreSeed: VoterStore = {
           votes: 24,
         },
         {
-          id: 'c2',
+          id: 'c-psdm-2',
           name: 'Bagas Pramana',
           faculty: 'Sistem Informasi ’22',
           vision: 'Divisi PSDM yang terukur, dekat dengan anggota, dan aktif menyiapkan kader organisasi.',
@@ -252,7 +276,7 @@ const voterStoreSeed: VoterStore = {
           votes: 39,
         },
         {
-          id: 'c3',
+          id: 'c-psdm-3',
           name: 'Cindy Maharani',
           faculty: 'Informatika ’23',
           vision: 'Pengembangan anggota berbasis komunitas, apresiasi, dan ruang belajar yang konsisten.',

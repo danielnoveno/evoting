@@ -1,3 +1,5 @@
+import { sharedDummyContext } from '@/lib/dummy-shared-context'
+
 export type AdminModuleKey =
   | 'beranda'
   | 'proposal'
@@ -241,25 +243,25 @@ export const adminDashboardContent: AdminDashboardContent = {
     },
     {
       block: '#48,290,998',
-      text: 'Admin menambahkan 120 wallet ke whitelist pemilih Base Sepolia untuk simulasi skripsi.',
+      text: `${sharedDummyContext.organizationShort} menambahkan 120 wallet ke whitelist pemilih Base Sepolia.`,
       time: '12 menit lalu',
       status: 'Sukses',
     },
   ],
   metricCard: {
     label: 'Total suara masuk',
-    value: '12,842',
-    change: '+12% dari target minimum partisipasi',
+    value: '218',
+    change: `+12% dari target minimum partisipasi (${sharedDummyContext.voterEstimate})`,
     progressLabel: 'Kuorum Tercapai',
-    progressValue: '82%',
-    progressWidthClassName: 'w-[82%]',
+    progressValue: '67%',
+    progressWidthClassName: 'w-[67%]',
   },
 }
 
 export const adminElectionManagementContent: AdminElectionManagementContent = {
   header: {
     title: 'Manajemen Pemilihan',
-    description: 'Kelola dan pantau seluruh ruang pemilihan yang Anda pimpin',
+    description: `Kelola dan pantau seluruh ruang pemilihan ${sharedDummyContext.organizationShort}`,
     primaryCta: 'Buat Pemilihan Baru',
   },
   filters: ['Semua', 'Aktif', 'Selesai', 'Draft'],
@@ -274,7 +276,7 @@ export const adminElectionManagementContent: AdminElectionManagementContent = {
       badge: 'Fase Aktif: Commit',
       badgeClassName: 'bg-emerald-100 text-emerald-700',
       variant: 'active',
-      voters: ['DN', 'AP', 'RS'],
+      voters: ['NP', 'RM', 'SW'],
         extraVotersLabel: '+18',
         stats: [
         { label: 'Total Commit', value: '218', subValue: ` / ${sharedDummyContext.voterEstimate}` },
@@ -288,10 +290,10 @@ export const adminElectionManagementContent: AdminElectionManagementContent = {
       ],
     },
     {
-      id: 'ukm-riset-divisi-2026',
+      id: 'bendahara-ukm-riset-2026',
       iconKey: 'document',
       iconClassName: 'bg-orange-50 text-orange-600',
-      title: 'Pemilihan Koordinator Divisi PSDM HIMAFORKA 2026',
+      title: 'Pemilihan Bendahara UKM Riset 2026',
       meta: 'Draft • Kandidat belum final • Menunggu unggah whitelist',
       badge: 'Status: Draft',
       badgeClassName: 'bg-orange-50 text-orange-600',
@@ -301,22 +303,22 @@ export const adminElectionManagementContent: AdminElectionManagementContent = {
       progressLabel: '40% complete',
     },
     {
-      id: 'ukm-riset-sekretaris-2025',
+      id: 'sekretaris-ukm-riset-2025',
       iconKey: 'shield',
       iconClassName: 'bg-blue-50 text-blue-600',
       title: 'Pemilihan Sekretaris UKM Riset 2025',
-      meta: 'Selesai 20 Des 2025 • Partisipasi 96% • Bukti siap audit',
+      meta: 'Selesai 11 Mei 2026 • Partisipasi 91% • Bukti siap audit',
       badge: 'Final',
       badgeClassName: 'bg-blue-50 text-blue-600',
       variant: 'final',
       reportButton: 'Lihat Laporan',
     },
     {
-      id: 'koordinator-psdm-himaforka-2025',
+      id: 'ketua-divisi-acara-ukm-riset-2025',
       iconKey: 'shield',
       iconClassName: 'bg-blue-50 text-blue-600',
-      title: 'Pemilihan Koordinator Divisi PSDM HIMAFORKA 2025',
-      meta: 'Selesai 05 Nov 2025 • 54 suara valid • Reveal 100% berhasil',
+      title: 'Pemilihan Ketua Divisi Acara UKM Riset 2025',
+      meta: 'Selesai 20 Sep 2025 • 52 suara valid • Reveal 100% berhasil',
       badge: 'Final',
       badgeClassName: 'bg-blue-50 text-blue-600',
       variant: 'final',
@@ -325,7 +327,6 @@ export const adminElectionManagementContent: AdminElectionManagementContent = {
   ],
   createCard: {
     title: 'Buat Ruang Pemilihan Baru',
-    description: 'Konfigurasi ruang voting baru untuk kebutuhan organisasi mahasiswa dalam hitungan menit.',
+    description: `Konfigurasi ruang voting baru untuk kebutuhan internal ${sharedDummyContext.organizationShort} dalam hitungan menit.`,
   },
 }
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
