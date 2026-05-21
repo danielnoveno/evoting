@@ -16,7 +16,9 @@ export interface ProposalFormData {
   revealDate: string
 }
 
-type ProposalFormErrors = Partial<Record<'title' | 'commitDate' | 'revealDate' | 'dateRange', string>>
+type ProposalFormErrors = Partial<Record<'title' | 'candidateCount' | 'voterCount' | 'commitDate' | 'revealDate' | 'dateRange', string>>
+
+const MIN_REVEAL_GAP_MINUTES = 60
 
 interface ProposalFormProps {
   initialData?: Partial<ProposalFormData>
@@ -56,6 +58,16 @@ export function ProposalForm({
 
     if (!data.title.trim()) {
       nextErrors.title = 'Nama pemilihan wajib diisi.'
+    } else if (data.title.trim().length > 80) {
+      nextErrors.title = 'Nama pemilihan maksimal 80 karakter.'
+    }
+
+    if (Number(data.candidateCount) < 2) {
+      nextErrors.candidateCount = 'Minimal harus ada 2 kandidat.'
+    }
+
+    if (Number(data.voterCount) < 0) {
+      nextErrors.voterCount = 'Jumlah pemilih tidak boleh kurang dari 0.'
     }
 
     if (!data.commitDate) {
@@ -72,6 +84,11 @@ export function ProposalForm({
 
       if (Number.isFinite(commitTime) && Number.isFinite(revealTime) && revealTime <= commitTime) {
         nextErrors.dateRange = 'Jadwal reveal harus setelah jadwal commit.'
+      } else if (Number.isFinite(commitTime) && Number.isFinite(revealTime)) {
+        const minGap = MIN_REVEAL_GAP_MINUTES * 60 * 1000
+        if (revealTime - commitTime < minGap) {
+          nextErrors.dateRange = 'Jadwal reveal minimal 1 jam setelah jadwal commit.'
+        }
       }
     }
 
@@ -81,8 +98,13 @@ export function ProposalForm({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     if (isReadOnly) return
     const { name, value } = e.target
+
+    const parsedValue = name === 'candidateCount' || name === 'voterCount'
+      ? Number(value)
+      : value
+
     setFormData((prev) => {
-      const next = { ...prev, [name]: value }
+      const next = { ...prev, [name]: parsedValue } as ProposalFormData
       setErrors(validateForm(next))
       return next
     })
@@ -122,14 +144,13 @@ export function ProposalForm({
   return (
     <ScrollReveal variant="fade-up" duration={700}>
     <div>
-      {/* Header */}
       <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between mb-10">
         <div className="max-w-[760px]">
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={handleCancel}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
               aria-label="Kembali"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -145,7 +166,7 @@ export function ProposalForm({
             <button
               type="button"
               onClick={handleSubmit}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-6 text-[15px] font-medium text-white shadow-lg hover:bg-slate-800 transition-colors"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-6 text-[15px] font-medium text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
             >
               <Save className="h-5 w-5" />
               {submitLabel}
@@ -154,13 +175,10 @@ export function ProposalForm({
         </div>
       </section>
 
-      {/* Main Content Grid */}
-      <div className="grid gap-8 lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_420px]">
-        
-        {/* Left Column - Form Fields */}
-        <div className="space-y-10">
-          {/* Section: INFORMASI DASAR */}
-          <section className="space-y-6">
+        <div className="grid gap-8 lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_420px]">
+
+         <div className="space-y-10">
+            <section className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="h-6 w-1.5 bg-black rounded-full" />
               <h2 className="text-[14px] font-bold uppercase tracking-[0.1em] text-slate-900">INFORMASI DASAR</h2>
@@ -176,9 +194,9 @@ export function ProposalForm({
                 onChange={handleChange}
                 disabled={isReadOnly}
                 placeholder="Contoh: Pemilihan Ketua Umum 2024" 
-                className="w-full h-12 px-4 rounded-xl bg-slate-100/80 border-transparent focus:bg-white focus:border-slate-300 focus:ring-0 text-[15px] text-slate-900 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
-              />
-              {errors.title ? <p className="text-[12px] text-red-600">{errors.title}</p> : null}
+                 className={`w-full h-12 rounded-xl border px-4 text-[15px] text-slate-900 transition-all outline-none disabled:cursor-not-allowed disabled:opacity-70 ${errors.title ? 'border-red-500 bg-red-50/40 focus:border-red-500' : 'border-transparent bg-slate-100/80 focus:border-slate-300 focus:bg-white'} focus:outline-none focus:ring-2 focus:ring-slate-900/10`}
+               />
+               {errors.title ? <p className="text-[12px] text-red-600">{errors.title}</p> : null}
             </div>
 
             <div className="space-y-2">
@@ -189,8 +207,8 @@ export function ProposalForm({
                   value={formData.category}
                   onChange={handleChange}
                   disabled={isReadOnly}
-                  className="w-full h-12 px-4 rounded-xl bg-slate-100/80 border-transparent focus:bg-white focus:border-slate-300 focus:ring-0 text-[15px] text-slate-900 transition-all appearance-none outline-none disabled:opacity-70 disabled:cursor-not-allowed"
-                >
+                   className="w-full h-12 appearance-none rounded-xl border border-transparent bg-slate-100/80 px-4 text-[15px] text-slate-900 transition-all outline-none disabled:cursor-not-allowed disabled:opacity-70 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                 >
                   <option value="Internal Organisasi">Internal Organisasi</option>
                   <option value="Pemilihan Umum">Pemilihan Umum</option>
                   <option value="Pendidikan">Pendidikan</option>
@@ -216,12 +234,11 @@ export function ProposalForm({
                 onChange={handleChange}
                 disabled={isReadOnly}
                 placeholder="Jelaskan tujuan dan mekanisme pemilihan ini secara detail..." 
-                className="w-full h-32 p-4 rounded-xl bg-slate-100/80 border-transparent focus:bg-white focus:border-slate-300 focus:ring-0 text-[15px] text-slate-900 transition-all resize-none outline-none disabled:opacity-70 disabled:cursor-not-allowed"
-              />
-            </div>
-          </section>
+                 className="h-32 w-full resize-none rounded-xl border border-transparent bg-slate-100/80 p-4 text-[15px] text-slate-900 transition-all outline-none disabled:cursor-not-allowed disabled:opacity-70 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+               />
+             </div>
+           </section>
 
-          {/* Section: ESTIMASI & KAPASITAS */}
           <section className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="h-6 w-1.5 bg-black rounded-full" />
@@ -239,13 +256,14 @@ export function ProposalForm({
                     value={formData.candidateCount}
                     onChange={handleChange}
                     disabled={isReadOnly}
-                    className="w-full h-14 pl-4 pr-12 rounded-xl bg-slate-100/80 border-transparent focus:bg-white focus:border-slate-300 focus:ring-0 text-[20px] font-semibold text-slate-900 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
-                  />
+                     className={`h-14 w-full rounded-xl border bg-slate-100/80 pl-4 pr-12 text-[20px] font-semibold text-slate-900 transition-all outline-none disabled:cursor-not-allowed disabled:opacity-70 ${errors.candidateCount ? 'border-red-500 bg-red-50/40 focus:border-red-500' : 'border-transparent focus:border-slate-300 focus:bg-white'} focus:outline-none focus:ring-2 focus:ring-slate-900/10`}
+                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
                     <Users className="h-5 w-5" />
                   </div>
                 </div>
                 <p className="text-[12px] italic text-slate-500 mt-2">Minimal 2 kandidat untuk pemilihan valid.</p>
+                {errors.candidateCount ? <p className="text-[12px] text-red-600">{errors.candidateCount}</p> : null}
               </div>
 
               <div className="space-y-2">
@@ -258,18 +276,18 @@ export function ProposalForm({
                     value={formData.voterCount}
                     onChange={handleChange}
                     disabled={isReadOnly}
-                    className="w-full h-14 pl-4 pr-12 rounded-xl bg-slate-100/80 border-transparent focus:bg-white focus:border-slate-300 focus:ring-0 text-[20px] font-semibold text-slate-900 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed"
-                  />
+                     className={`h-14 w-full rounded-xl border bg-slate-100/80 pl-4 pr-12 text-[20px] font-semibold text-slate-900 transition-all outline-none disabled:cursor-not-allowed disabled:opacity-70 ${errors.voterCount ? 'border-red-500 bg-red-50/40 focus:border-red-500' : 'border-transparent focus:border-slate-300 focus:bg-white'} focus:outline-none focus:ring-2 focus:ring-slate-900/10`}
+                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
                     <UserCheck className="h-5 w-5" />
                   </div>
                 </div>
                 <p className="text-[12px] italic text-slate-500 mt-2">Estimasi total wallet address yang terdaftar.</p>
+                {errors.voterCount ? <p className="text-[12px] text-red-600">{errors.voterCount}</p> : null}
               </div>
             </div>
           </section>
 
-          {/* Section: KONFIGURASI TEKNIS BLOCKCHAIN */}
           <section className="space-y-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -291,7 +309,7 @@ export function ProposalForm({
                   value={formData.commitDate}
                   onChange={handleChange}
                   disabled={isReadOnly}
-                  className={`w-full h-14 px-4 rounded-xl bg-slate-100/80 border focus:bg-white focus:ring-0 text-[15px] font-medium text-slate-900 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed ${errors.commitDate ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-slate-300'}`}
+                 className={`h-14 w-full rounded-xl border bg-slate-100/80 px-4 text-[15px] font-medium text-slate-900 transition-all outline-none disabled:cursor-not-allowed disabled:opacity-70 ${errors.commitDate ? 'border-red-500 bg-red-50/40 focus:border-red-500' : 'border-transparent focus:border-slate-300 focus:bg-white'} focus:outline-none focus:ring-2 focus:ring-slate-900/10`}
                 />
                 <p className="text-[12px] text-slate-500 mt-2">Fase saat pemilih mengirim commit pilihannya.</p>
                 {errors.commitDate ? <p className="text-[12px] text-red-600">{errors.commitDate}</p> : null}
@@ -306,7 +324,7 @@ export function ProposalForm({
                   value={formData.revealDate}
                   onChange={handleChange}
                   disabled={isReadOnly}
-                  className={`w-full h-14 px-4 rounded-xl bg-slate-100/80 border focus:bg-white focus:ring-0 text-[15px] font-medium text-slate-900 transition-all outline-none disabled:opacity-70 disabled:cursor-not-allowed ${errors.revealDate || errors.dateRange ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-slate-300'}`}
+                 className={`h-14 w-full rounded-xl border bg-slate-100/80 px-4 text-[15px] font-medium text-slate-900 transition-all outline-none disabled:cursor-not-allowed disabled:opacity-70 ${errors.revealDate || errors.dateRange ? 'border-red-500 bg-red-50/40 focus:border-red-500' : 'border-transparent focus:border-slate-300 focus:bg-white'} focus:outline-none focus:ring-2 focus:ring-slate-900/10`}
                 />
                 <p className="text-[12px] text-slate-500 mt-2">Fase saat pemilih membuka commit dengan kandidat dan salt yang sama.</p>
                 {errors.revealDate ? <p className="text-[12px] text-red-600">{errors.revealDate}</p> : null}
@@ -317,11 +335,8 @@ export function ProposalForm({
 
         </div>
 
-        {/* Right Column - Info Panels */}
         <div className="space-y-6">
-          {/* Panel 1: Validasi Alur */}
-          <div className="rounded-[24px] bg-[#1a202c] p-8 text-white relative overflow-hidden shadow-xl">
-            {/* Background pattern */}
+          <div className="relative overflow-hidden rounded-[24px] bg-[#1a202c] p-8 text-white">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
             
             <div className="flex items-center justify-between mb-8 relative z-10">
@@ -329,13 +344,13 @@ export function ProposalForm({
                 <Shield className="h-5 w-5 text-blue-400" />
               </div>
               <span className="px-3 py-1 rounded-full bg-white/10 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-300">
-                SECURE NODE
+                 SIAP DITINJAU
               </span>
             </div>
 
             <h3 className="text-[20px] font-semibold mb-4 relative z-10">Validasi Alur</h3>
             <p className="text-[14px] leading-6 text-slate-300 mb-8 relative z-10">
-              Antarmuka ini menyiapkan alur commit-reveal agar urutan commit dan reveal mudah dipahami saat peninjauan dan pengujian.
+              Pastikan urutan fase, kapasitas peserta, dan bukti transaksi sudah sesuai sebelum proposal dilanjutkan ke tahap berikutnya.
             </p>
 
             <div className="space-y-5 relative z-10">
@@ -350,13 +365,13 @@ export function ProposalForm({
                 <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
                 <div>
                   <p className="text-[13px] font-bold text-white mb-1">Bukti mudah ditinjau</p>
-                  <p className="text-[12px] text-slate-400 leading-5">Hash, waktu, dan tautan audit bisa disiapkan untuk dokumentasi hasil.</p>
+                  <p className="text-[12px] text-slate-400 leading-5">Hash, waktu, dan tautan audit dapat disiapkan untuk dokumentasi hasil.</p>
                 </div>
               </div>
             </div>
 
             <div className="mt-8 pt-6 border-t border-white/10 relative z-10">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-2">STATUS DEPLOYMENT</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-2">STATUS TINJAUAN</p>
               <div className="flex items-center gap-3">
                 <span className="text-[24px] font-mono font-medium">Siap Ditinjau</span>
                 <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400">
@@ -367,7 +382,6 @@ export function ProposalForm({
             </div>
           </div>
 
-          {/* Panel 2: Keamanan & Audit */}
           <div className="rounded-[24px] bg-slate-50 border border-slate-100 p-8">
             <h3 className="text-[12px] font-bold uppercase tracking-[0.1em] text-slate-900 mb-6">KEAMANAN & AUDIT</h3>
             
@@ -387,15 +401,13 @@ export function ProposalForm({
                 </div>
                 <div>
                   <p className="text-[13px] font-bold text-slate-900 mb-1">Audit implementasi</p>
-                  <p className="text-[12px] text-slate-500 leading-5">Simpan konfigurasi ini sebagai dasar bukti Bab IV dan Bab V.</p>
-                </div>
-              </div>
-            </div>
-          </div>
+                   <p className="text-[12px] text-slate-500 leading-5">Simpan konfigurasi ini sebagai dasar bukti implementasi dan evaluasi.</p>
+                 </div>
+               </div>
+             </div>
+           </div>
 
-          {/* Panel 3: Arsitektur Illustration */}
           <div className="rounded-[24px] bg-slate-900 overflow-hidden relative h-[180px] flex flex-col items-center justify-center border border-slate-800">
-            {/* Dummy graphic representation of nodes */}
             <div className="absolute inset-0 opacity-30 flex items-center justify-center">
                <Network className="w-48 h-48 text-blue-500/50 absolute" />
                <div className="w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-500/20 via-transparent to-transparent" />

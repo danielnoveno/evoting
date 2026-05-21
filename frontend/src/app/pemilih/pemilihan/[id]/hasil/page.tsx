@@ -16,7 +16,7 @@ import {
 
 function MetricCard({ label, value, subValue }: { label: string; value: string; subValue?: string }) {
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-300">
+    <article className="rounded-xl border border-slate-200 bg-white p-5 transition-all duration-300 hover:border-slate-300">
       <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-700">{label}</p>
       <p className="mt-3 text-[28px] font-bold leading-none text-slate-950 tracking-tight">{value}</p>
       {subValue ? <p className="mt-2 text-[12px] font-medium text-slate-600 leading-relaxed">{subValue}</p> : null}
@@ -116,9 +116,9 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
       </section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
-        <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300">
+        <article className="rounded-xl border border-slate-200 bg-white p-6 transition-all duration-300 hover:border-slate-300">
           <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-slate-800">Perolehan suara kandidat</h2>
-          <p className="mt-1 text-[13px] text-slate-600 mb-6">Hasil rekapitulasi data real-time on-chain platform.</p>
+          <p className="mt-1 mb-6 text-[13px] text-slate-600">Ringkasan perolehan suara akhir yang dapat ditinjau publik.</p>
 
           <div className="space-y-4">
             {resultRows.map((candidate, index) => {
@@ -128,7 +128,7 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
                   key={candidate.id} 
                   className={`rounded-xl border p-4 transition-all duration-300 hover:shadow-sm ${
                     isWinner 
-                      ? 'border-amber-200 bg-amber-50/15 shadow-sm' 
+                      ? 'border-amber-200 bg-amber-50/20' 
                       : 'border-slate-100 bg-white'
                   }`}
                 >
@@ -147,7 +147,7 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
                         <h3 className="flex items-center gap-2 text-[15px] font-bold text-slate-950">
                           {candidate.name}
                           {isWinner ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-200">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-900">
                               <Trophy className="h-3 w-3 text-amber-700" />
                               Pemenang
                             </span>
@@ -168,7 +168,7 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
                       <div 
                         className={`h-full rounded-full transition-all duration-1000 ease-out ${
                           isWinner 
-                            ? 'bg-gradient-to-r from-amber-500 to-slate-900 shadow-inner' 
+                            ? 'bg-[#0F172A]' 
                             : 'bg-slate-400'
                         }`} 
                         style={{ width: `${candidate.percentage}%` }} 
@@ -181,10 +181,10 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
           </div>
         </article>
 
-        <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+        <article className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 transition-all duration-300 hover:border-slate-300">
           <div>
-            <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-slate-800">Ringkasan bukti on-chain</h2>
-            <p className="mt-1 text-[13px] text-slate-600 mb-6">Jejak cryptographic proof yang tercatat secara permanen.</p>
+            <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-slate-800">Ringkasan bukti transaksi</h2>
+            <p className="mt-1 mb-6 text-[13px] text-slate-600">Jejak transaksi yang dapat Anda cocokkan kembali melalui Basescan.</p>
 
             {election.revealProof ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 font-mono text-[12px] text-slate-800 space-y-3 shadow-inner">
@@ -220,7 +220,7 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
             <div className="flex gap-2">
               <ShieldCheck className="h-4.5 w-4.5 text-emerald-600 shrink-0 mt-0.5" />
               <p className="text-[12px] font-medium leading-relaxed text-slate-700">
-                Hasil voting ini aman dan telah diverifikasi secara matematis menggunakan teknologi Zero-Knowledge Proofs & Smart Contracts.
+                Hasil voting ini dilengkapi bukti transaksi yang dapat diperiksa publik untuk mendukung transparansi proses pemungutan suara.
               </p>
             </div>
           </div>

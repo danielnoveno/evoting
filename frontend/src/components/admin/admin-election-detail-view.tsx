@@ -138,7 +138,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <div>
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {candidates.map((candidate) => (
-            <article key={candidate.id} className={`rounded-[30px] bg-white p-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] ${canAddCandidate ? 'cursor-pointer transition-all duration-150 hover:-translate-y-px hover:shadow-[0_22px_70px_rgba(15,23,42,0.12)]' : ''}`} onClick={canAddCandidate ? () => window.location.assign(`/admin/manajemen-pemilihan/${election.id}/kandidat/${candidate.id}/edit`) : undefined}>
+            <article key={candidate.id} className={`rounded-[30px] border border-slate-200 bg-white p-5 ${canAddCandidate ? 'cursor-pointer transition-all duration-150 hover:-translate-y-px hover:border-slate-300' : ''}`} onClick={canAddCandidate ? () => window.location.assign(`/admin/manajemen-pemilihan/${election.id}/kandidat/${candidate.id}/edit`) : undefined}>
               <div className="relative">
                 <div className="absolute left-4 top-4 z-10 rounded-xl bg-black px-3 py-2 text-[14px] font-semibold text-white">
                   {candidate.number}
@@ -156,12 +156,12 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 <div className="mt-6 flex items-center justify-end gap-4">
                   {canAddCandidate ? (
                     <div className="flex items-center gap-2">
-                      <button type="button" onClick={(event) => { event.stopPropagation(); setCandidateToDelete({ id: candidate.id, name: candidate.name }) }} className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                      <Link href={`/admin/manajemen-pemilihan/${election.id}/kandidat/${candidate.id}/edit`} onClick={(event) => event.stopPropagation()} className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
-                        <Pencil className="h-4 w-4" />
-                      </Link>
+                       <button type="button" onClick={(event) => { event.stopPropagation(); setCandidateToDelete({ id: candidate.id, name: candidate.name }) }} className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
+                         <Trash2 className="h-4 w-4" />
+                       </button>
+                       <Link href={`/admin/manajemen-pemilihan/${election.id}/kandidat/${candidate.id}/edit`} onClick={(event) => event.stopPropagation()} className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
+                         <Pencil className="h-4 w-4" />
+                       </Link>
                     </div>
                   ) : null}
                 </div>
@@ -169,7 +169,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           ))}
 
           {canAddCandidate ? (
-            <Link href={`/admin/manajemen-pemilihan/${election.id}/tambah-kandidat`} className="rounded-[30px] border border-dashed border-slate-300 bg-white p-5 hover:border-slate-400">
+            <Link href={`/admin/manajemen-pemilihan/${election.id}/tambah-kandidat`} className="rounded-[30px] border border-dashed border-slate-300 bg-white p-5 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
               <div className="flex h-full min-h-[540px] flex-col items-center justify-center text-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-700">
                   <CirclePlus className="h-8 w-8" />
@@ -198,7 +198,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
       <aside className="space-y-6">
         <article className="rounded-[28px] bg-slate-100 p-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Blockchain Anchor</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Anchor Transaksi</p>
           <div className="mt-5 rounded-2xl bg-white p-5">
             <p className="font-mono text-[12px] leading-6 text-slate-500 break-all">{election.detail.blockchainAnchor}</p>
           </div>
@@ -208,7 +208,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           </p>
         </article>
 
-        <article className="rounded-[28px] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+        <article className="rounded-[28px] border border-slate-200 bg-white p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Status Pemilih</p>
           <div className="mt-5 flex items-end justify-between gap-4">
             <p className="text-[52px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.turnout.total}</p>
@@ -221,11 +221,11 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           <p className="mt-4 text-center text-[12px] leading-6 text-slate-400">{election.detail.turnout.note}</p>
         </article>
 
-        <article className="rounded-[28px] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+        <article className="rounded-[28px] border border-slate-200 bg-white p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Tindakan Cepat</p>
           <div className="mt-5 grid grid-cols-2 gap-4">
             {election.detail.quickActions.map((action) => (
-              <button key={action.label} type="button" onClick={() => handleQuickAction(action.label)} className="flex h-[92px] flex-col items-center justify-center rounded-[22px] bg-slate-100 text-slate-700 hover:bg-slate-200">
+              <button key={action.label} type="button" onClick={() => handleQuickAction(action.label)} className="flex h-[92px] flex-col items-center justify-center rounded-[22px] bg-slate-100 text-slate-700 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
                 <QuickActionIcon icon={action.icon} />
                 <span className="mt-3 text-[13px] font-semibold">{action.label}</span>
               </button>
@@ -239,7 +239,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const renderWhitelistTab = () => (
     <section className="mt-8 space-y-8">
       <div className="grid gap-6 xl:grid-cols-3">
-        <article className="rounded-[28px] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)] xl:col-span-1">
+        <article className="rounded-[28px] border border-slate-200 bg-white p-6 xl:col-span-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total Pemilih</p>
           <div className="mt-5 flex items-end gap-3">
             <p className="text-[56px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.whitelist.total}</p>
@@ -250,7 +250,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           </div>
         </article>
 
-        <article className="rounded-[28px] border-l-4 border-l-emerald-500 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)] xl:col-span-1">
+        <article className="rounded-[28px] border border-emerald-200 border-l-4 border-l-emerald-500 bg-white p-6 xl:col-span-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Integritas Database</p>
           <div className="mt-5 flex items-start gap-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
@@ -264,7 +264,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         </article>
 
         <article className="rounded-[28px] border-l-4 border-l-black bg-slate-100 p-6 xl:col-span-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Blockchain Evidence</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Bukti Transaksi</p>
           <div className="mt-5 rounded-2xl bg-white p-5">
             <p className="font-mono text-[12px] leading-6 text-slate-800 break-all">{election.detail.whitelist.evidence}</p>
           </div>
@@ -276,7 +276,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       </div>
 
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.45fr)_420px]">
-        <article className="overflow-hidden rounded-[30px] bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+        <article className="overflow-hidden rounded-[30px] border border-slate-200 bg-white">
           <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-6 md:flex-row md:items-center md:justify-between">
             <h2 className="text-[20px] font-semibold text-slate-900">Daftar Whitelist Terbaru</h2>
             <div className="inline-flex h-11 items-center gap-3 rounded-2xl bg-slate-100 px-4 text-slate-400 md:w-[260px]">
@@ -434,7 +434,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         <article className="rounded-[30px] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <h2 className="text-[20px] font-semibold text-slate-900">Detail Smart Contract</h2>
+          <h2 className="text-[20px] font-semibold text-slate-900">Detail Kontrak</h2>
           <div className="mt-8 space-y-4">
             <div className="rounded-[20px] border-l-4 border-l-black bg-slate-100 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Alamat Kontrak</p>
@@ -622,7 +622,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/admin/manajemen-pemilihan"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
               aria-label="Kembali ke manajemen pemilihan"
             >
               <ArrowLeft className="h-5 w-5" />

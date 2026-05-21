@@ -114,7 +114,7 @@ export function SuperadminInteractiveCard({
           onClick()
         }
       }}
-      className={`cursor-pointer rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-[0_20px_70px_rgba(15,23,42,0.12)] focus:outline-none focus:ring-2 focus:ring-slate-300 ${className}`}
+      className={`cursor-pointer rounded-[28px] border border-slate-200 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-300 ${className}`}
     >
       {children}
     </article>
@@ -189,7 +189,7 @@ export function SuperadminTextInput(
   return (
     <input
       {...rest}
-      className={`h-14 w-full rounded-[20px] border border-transparent bg-slate-200 px-4 text-[16px] text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white ${className}`}
+      className={`h-14 w-full rounded-[20px] border border-transparent bg-slate-200 px-4 text-[16px] text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-900/10 ${className}`}
     />
   )
 }
@@ -202,7 +202,7 @@ export function SuperadminSelectInput(
   return (
     <select
       {...rest}
-      className={`h-14 w-full rounded-[20px] border border-transparent bg-slate-200 px-4 text-[16px] text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white ${className}`}
+      className={`h-14 w-full rounded-[20px] border border-transparent bg-slate-200 px-4 text-[16px] text-slate-900 outline-none transition focus:border-slate-300 focus:bg-white focus:ring-2 focus:ring-slate-900/10 ${className}`}
     >
       {children}
     </select>
@@ -224,7 +224,7 @@ export function SuperadminRadioCard({
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-start gap-4 rounded-[24px] border px-5 py-4 text-left transition ${
+      className={`flex w-full items-start gap-4 rounded-[24px] border px-5 py-4 text-left transition focus:outline-none focus:ring-2 focus:ring-slate-900/10 ${
         active ? 'border-slate-900 bg-white' : 'border-slate-200 bg-white/70 hover:border-slate-300 hover:bg-white'
       }`}
       aria-pressed={active}
@@ -244,7 +244,7 @@ export function SuperadminBackButton({ href, label = 'Kembali' }: { href: string
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-[15px] text-slate-700 transition hover:bg-slate-200 hover:text-slate-900"
+      className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-[15px] text-slate-700 transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
       aria-label={label}
     >
       <ArrowLeft className="h-4 w-4" />

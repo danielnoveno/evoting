@@ -68,6 +68,17 @@ export interface VoterStore {
   selectedProofElectionId: string
 }
 
+export type VoterElectionAction = 'commit' | 'reveal' | 'results' | 'wait'
+
+export interface VoterElectionViewState {
+  hasCommitted: boolean
+  hasRevealed: boolean
+  canCommit: boolean
+  canReveal: boolean
+  canViewResults: boolean
+  nextAction: VoterElectionAction
+}
+
 const STORAGE_KEY = 'votein-voter-mock-store-v2'
 const BASESCAN_ROOT = 'https://sepolia.basescan.org'
 
@@ -315,13 +326,21 @@ function randomHex(size: number) {
   return Array.from({ length: size }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('')
 }
 
-function createProof(statusLabel: string): VoterProof {
+function createProof(statusLabel: string, options?: { previousProof?: VoterProof | null; minOffsetMinutes?: number }): VoterProof {
+  const previousProof = options?.previousProof ?? null
+  const minOffsetMinutes = options?.minOffsetMinutes ?? 3
   const now = new Date()
+  const previousCreatedAt = previousProof ? new Date(previousProof.createdAt) : null
+  const baseTime = previousCreatedAt && previousCreatedAt.getTime() >= now.getTime()
+    ? new Date(previousCreatedAt.getTime() + minOffsetMinutes * 60_000)
+    : now
+  const blockBase = previousProof ? previousProof.blockNumber + 7 : 18400000
+
   return {
     txHash: `0x${randomHex(64)}`,
-    blockNumber: 18400000 + Math.floor(Math.random() * 50000),
+    blockNumber: blockBase + Math.floor(Math.random() * 45),
     gasUsed: 20500 + Math.floor(Math.random() * 3000),
-    createdAt: now.toISOString(),
+    createdAt: baseTime.toISOString(),
     statusLabel,
   }
 }
@@ -384,13 +403,38 @@ export function getElectionProgress(election: VoterElection) {
   return Math.min(100, Math.round((counted / election.totalParticipants) * 100))
 }
 
+export function getElectionViewState(election: VoterElection): VoterElectionViewState {
+  const hasCommitted = Boolean(election.commitProof && election.committedCandidateId)
+  const hasRevealed = Boolean(election.revealProof)
+  const canCommit = election.phase === 'commit' && !hasCommitted
+  const canReveal = election.phase === 'reveal' && hasCommitted && !hasRevealed
+  const canViewResults = election.phase === 'ended' || hasRevealed
+
+  if (canCommit) {
+    return { hasCommitted, hasRevealed, canCommit, canReveal, canViewResults, nextAction: 'commit' }
+  }
+
+  if (canReveal) {
+    return { hasCommitted, hasRevealed, canCommit, canReveal, canViewResults, nextAction: 'reveal' }
+  }
+
+  if (canViewResults) {
+    return { hasCommitted, hasRevealed, canCommit, canReveal, canViewResults, nextAction: 'results' }
+  }
+
+  return { hasCommitted, hasRevealed, canCommit, canReveal, canViewResults, nextAction: 'wait' }
+}
+
 export function sortDashboardElections(elections: VoterElection[]) {
   const getPriority = (election: VoterElection) => {
-    if (election.phase === 'commit' && !election.commitProof) return 0
-    if (election.phase === 'reveal' && !election.revealProof) return 1
+    const viewState = getElectionViewState(election)
+
+    if (viewState.nextAction === 'commit') return 0
+    if (viewState.nextAction === 'reveal') return 1
     if (election.phase === 'registration') return 2
     if (election.phase === 'commit') return 3
     if (election.phase === 'reveal') return 4
+    if (viewState.nextAction === 'results') return 5
     return 5
   }
 
@@ -403,23 +447,23 @@ export function sortDashboardElections(elections: VoterElection[]) {
 }
 
 export function resolveElectionAction(election: VoterElection) {
-  if (election.phase === 'commit') {
+  const viewState = getElectionViewState(election)
+
+  if (viewState.nextAction === 'commit') {
     return {
       label: 'Berikan Suara',
       href: `/pemilih/pemilihan/${election.id}/pilih-kandidat`,
     }
   }
 
-  if (election.phase === 'reveal') {
+  if (viewState.nextAction === 'reveal') {
     return {
-      label: election.revealProof ? 'Lihat Hasil' : 'Mulai Reveal Suara',
-      href: election.revealProof
-        ? `/pemilih/pemilihan/${election.id}/hasil`
-        : `/pemilih/pemilihan/${election.id}/reveal`,
+      label: 'Mulai Reveal Suara',
+      href: `/pemilih/pemilihan/${election.id}/reveal`,
     }
   }
 
-  if (election.phase === 'ended') {
+  if (viewState.nextAction === 'results') {
     return {
       label: 'Lihat Hasil',
       href: `/pemilih/pemilihan/${election.id}/hasil`,
@@ -524,7 +568,6 @@ export function useVoterStore() {
 
         return {
           ...election,
-          phase: 'reveal',
           committedCandidateId: election.selectedCandidateId,
           committedCount: Math.min(election.totalParticipants, election.committedCount + 1),
           commitmentHash: commitmentHash ?? `0x${randomHex(64)}`,
@@ -541,11 +584,13 @@ export function useVoterStore() {
       applyStore((current) => updateElection(current, electionId, (election) => {
         if (!election.committedCandidateId || election.revealProof) return election
 
-        proof = createProof('Finalized')
+        proof = createProof('Finalized', {
+          previousProof: election.commitProof,
+          minOffsetMinutes: 12,
+        })
 
         return {
           ...election,
-          phase: 'ended',
           revealProof: proof,
           revealedCount: Math.min(election.totalParticipants, election.revealedCount + 1),
           lastTransactionLabel: 'Hasil akhir dapat dilihat dan diverifikasi di Basescan.',

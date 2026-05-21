@@ -7,6 +7,7 @@ import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
 import { sharedDummyContext } from '@/lib/dummy-shared-context'
 import {
+  getElectionViewState,
   formatNumber,
   getElectionProgress,
   getPhaseLabel,
@@ -31,8 +32,7 @@ const logToneIcon = {
 } as const
 
 export default function VoterDashboardPage() {
-  const { store, loading, actions } = useVoterStore()
-  const { showToast } = useToast()
+  const { store, loading } = useVoterStore()
 
   if (loading || !store) {
     return (
@@ -50,9 +50,10 @@ export default function VoterDashboardPage() {
   const secondaryElection = elections.find((election) => election.id !== featuredElection.id) ?? featuredElection
   const logs = getRecentLogs(store)
   const secondaryAction = resolveElectionAction(secondaryElection)
+  const featuredViewState = getElectionViewState(featuredElection)
 
   const participated = store.elections.filter((election) => election.commitProof || election.revealProof).length
-  const pendingReveal = store.elections.filter((election) => election.phase === 'reveal' && !election.revealProof).length
+  const pendingReveal = store.elections.filter((election) => getElectionViewState(election).canReveal).length
   const completed = store.elections.filter((election) => election.phase === 'ended').length
   const participationRate = Math.round((participated / store.elections.length) * 100)
   const featuredLabel = 'Pemilihan aktif'
@@ -63,18 +64,18 @@ export default function VoterDashboardPage() {
         <section>
           <h1 className="mt-3 text-[28px] font-semibold text-slate-900 sm:text-[34px] md:text-[40px]">Ruang Voting Saya</h1>
           <p className="mt-3 max-w-3xl text-[14px] leading-7 text-slate-800 md:text-[16px] md:leading-8">
-            Pantau ruang voting yang sedang aktif, bukti commit yang sudah tersimpan, dan langkah berikutnya untuk menyelesaikan reveal.
+            Pantau ruang voting yang sedang aktif, bukti komitmen yang sudah tersimpan, dan langkah berikutnya untuk menyelesaikan konfirmasi suara.
           </p>
         </section>
       </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={100} duration={800}>
-      <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.72fr)]">
-        <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+        <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.72fr)]">
+        <article className="rounded-xl border border-slate-200 bg-white p-6 transition-colors duration-300 hover:border-slate-300">
           {(() => {
-            const isCommitPhase = featuredElection.phase === 'commit' && !featuredElection.commitProof
-            const isRevealPhase = (featuredElection.phase === 'reveal' && !featuredElection.revealProof) || (featuredElection.commitProof && !featuredElection.revealProof)
-            const isEndedPhase = featuredElection.phase === 'ended' || featuredElection.revealProof
+            const isCommitPhase = featuredViewState.nextAction === 'commit'
+            const isRevealPhase = featuredViewState.nextAction === 'reveal'
+            const isEndedPhase = featuredViewState.nextAction === 'results'
 
             return (
               <>
@@ -86,7 +87,7 @@ export default function VoterDashboardPage() {
                     
                     {isCommitPhase && (
                       <p className="mt-4 text-[13px] font-medium text-slate-800 bg-blue-50/50 border border-blue-100 rounded-lg p-3 leading-relaxed">
-                        💡 <span className="font-semibold text-blue-900">Langkah Pertama:</span> Berikan suara Anda untuk memilih salah satu kandidat. Pilihan Anda akan diubah menjadi hash komitmen kriptografis secara lokal di browser sebelum dikirim ke smart contract demi menjaga kerahasiaan pilihan.
+                        💡 <span className="font-semibold text-blue-900">Langkah pertama:</span> Pilih satu kandidat untuk menyiapkan komitmen suara Anda. Setelah itu Anda akan masuk ke tahap kirim komitmen.
                       </p>
                     )}
 
@@ -94,13 +95,13 @@ export default function VoterDashboardPage() {
                       <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50/40 space-y-3">
                         <p className="text-[13px] font-medium text-amber-900 flex items-center gap-2">
                           <Fingerprint className="h-4.5 w-4.5 text-amber-600 shrink-0" />
-                          <span className="font-semibold">Commitment Anda berhasil disimpan di smart contract!</span>
+                          <span className="font-semibold">Komitmen suara Anda sudah tersimpan.</span>
                         </p>
                         <div className="font-mono text-[11px] text-slate-800 bg-white border border-amber-100 rounded-lg p-2.5 break-all leading-relaxed shadow-inner">
-                          <span className="font-semibold text-slate-400 select-none">HASH COMMITMENT:</span> {featuredElection.commitmentHash}
+                          <span className="font-semibold text-slate-400 select-none">HASH KOMITMEN:</span> {featuredElection.commitmentHash}
                         </div>
                         <p className="text-[12px] leading-relaxed text-slate-700">
-                          💡 <span className="font-semibold text-amber-900">Langkah Kedua:</span> Silakan buka suara Anda (reveal) menggunakan perangkat dan browser yang sama agar kunci salt pencocokan suara Anda dapat divalidasi oleh smart contract.
+                          💡 <span className="font-semibold text-amber-900">Langkah berikutnya:</span> Konfirmasi suara Anda menggunakan browser dan perangkat yang sama agar kode rahasia dapat terbaca dengan benar.
                         </p>
                       </div>
                     )}
@@ -109,7 +110,7 @@ export default function VoterDashboardPage() {
                       <div className="mt-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-3">
                         <p className="text-[13px] font-medium text-emerald-900 flex items-center gap-2">
                           <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                          <span className="font-semibold">Reveal tervalidasi! Pilihan suara Anda telah sukses dihitung secara on-chain.</span>
+                          <span className="font-semibold">Konfirmasi suara selesai. Pilihan Anda sudah masuk ke hasil akhir.</span>
                         </p>
                         {featuredElection.revealProof && (
                           <div className="flex flex-col gap-1.5 text-[12px] text-slate-600 bg-white/70 border border-emerald-100 rounded-lg p-3">
@@ -133,7 +134,7 @@ export default function VoterDashboardPage() {
                           </div>
                         )}
                         <p className="text-[12px] leading-relaxed text-slate-700">
-                          🎉 Terima kasih atas partisipasi Anda dalam menjaga proses demokrasi kampus yang aman, transparan, dan terdesentralisasi.
+                          🎉 Terima kasih atas partisipasi Anda dalam menjaga proses voting kampus yang tertib dan transparan.
                         </p>
                       </div>
                     )}
@@ -144,11 +145,11 @@ export default function VoterDashboardPage() {
                       Sedang Berlangsung
                     </span>
                   )}
-                  {isRevealPhase && (
-                    <span className="inline-flex w-fit rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700 border border-amber-200 shrink-0">
-                      Fase Reveal
-                    </span>
-                  )}
+                    {isRevealPhase && (
+                      <span className="inline-flex w-fit rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700 border border-amber-200 shrink-0">
+                        Fase Konfirmasi
+                      </span>
+                    )}
                   {isEndedPhase && (
                     <span className="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700 border border-emerald-200 shrink-0">
                       Selesai
@@ -184,9 +185,9 @@ export default function VoterDashboardPage() {
                     <Link
                       href={`/pemilih/pemilihan/${featuredElection.id}/reveal`}
                       className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-amber-600 px-6 text-[13px] font-semibold text-white transition-colors hover:bg-amber-700 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:outline-none sm:w-auto"
-                      aria-label="Mulai reveal suara Anda"
+                      aria-label="Mulai konfirmasi suara Anda"
                     >
-                      Reveal Suara Anda
+                      Konfirmasi Suara
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   )}
@@ -226,7 +227,7 @@ export default function VoterDashboardPage() {
           <div className="mt-8">
             <div className="flex items-center justify-between text-[12px] uppercase tracking-[0.06em] text-slate-400">
               <span>Progress</span>
-              <span>{getElectionProgress(secondaryElection)}% quorum</span>
+              <span>{getElectionProgress(secondaryElection)}% partisipasi</span>
             </div>
             <div className="mt-3 h-2 rounded-full bg-slate-100">
               <div className="h-2 rounded-full bg-[#0F172A]" style={{ width: `${getElectionProgress(secondaryElection)}%` }} />
@@ -241,11 +242,11 @@ export default function VoterDashboardPage() {
       </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={150} duration={800}>
-      <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
+        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-[20px] font-semibold text-slate-900">Aktivitas Voting Terkini</h2>
-              <p className="mt-2 text-[14px] leading-7 text-slate-800">Pantau commit, pembukaan reveal, dan bukti yang sudah tersimpan.</p>
+              <p className="mt-2 text-[14px] leading-7 text-slate-800">Pantau komitmen suara, pembukaan fase konfirmasi, dan bukti transaksi yang sudah tersimpan.</p>
             </div>
             <Link href="/pemilih/bukti-saya" className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:text-slate-900 sm:text-right">
               Eksplorasi semua
@@ -290,7 +291,7 @@ export default function VoterDashboardPage() {
           <span className="mt-6 inline-flex rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-800 border border-amber-200">Menunggu</span>
           <h3 className="mt-5 text-[24px] font-semibold text-slate-900">{elections.find((election) => election.phase === 'registration')?.title ?? 'Belum ada pemilihan lain'}</h3>
           <p className="mt-4 text-[16px] leading-8 text-slate-800">
-            Pendaftaran kandidat masih dibuka. Voting akan dimulai setelah admin mengaktifkan fase commit sesuai urutan resmi.
+            Pendaftaran kandidat masih dibuka. Voting akan dimulai setelah admin membuka fase commit sesuai urutan resmi.
           </p>
           <div className="mt-10 flex items-center justify-between border-t border-slate-100 pt-5 text-[14px]">
             <span className="text-slate-400">Status</span>
@@ -320,7 +321,7 @@ export default function VoterDashboardPage() {
         <article className="rounded-xl border border-slate-200 bg-white p-6">
           <h3 className="text-[20px] font-semibold text-slate-900 md:text-[24px]">Butuh Bantuan?</h3>
           <p className="mt-3 text-[14px] leading-7 text-slate-800">
-            Panduan langkah demi langkah untuk commit, konfirmasi, reveal, hingga verifikasi hasil dapat diakses kapan saja.
+            Panduan langkah demi langkah untuk pilih kandidat, kirim komitmen, konfirmasi suara, hingga verifikasi hasil dapat diakses kapan saja.
           </p>
           <Link href="/pemilih/bantuan" className="mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-slate-900 hover:text-slate-800">
             Buka Pusat Bantuan
@@ -330,11 +331,11 @@ export default function VoterDashboardPage() {
       </StaggerContainer>
 
       <StaggerContainer stagger={100} variant="fade-up" className="mt-6 grid gap-6 md:grid-cols-3">
-        {[
-          ['Space diikuti', store.elections.length],
-          ['Menunggu reveal', pendingReveal],
-          ['Bukti final', completed],
-        ].map(([label, value]) => (
+         {[
+           ['Space diikuti', store.elections.length],
+           ['Menunggu konfirmasi', pendingReveal],
+           ['Bukti final', completed],
+         ].map(([label, value]) => (
            <article key={label} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">{label}</p>
              <p className="mt-3 text-[24px] font-semibold leading-none text-slate-900">{value}</p>

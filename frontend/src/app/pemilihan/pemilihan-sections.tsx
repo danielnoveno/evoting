@@ -14,7 +14,7 @@ const activeElections = [
     participation: `${sharedDummyContext.voterEstimate} Pemilih`,
     hash: '0x8f2a ... 9c3b',
     primary: 'Mulai Memilih',
-    href: `/pemilih/pemilihan/${sharedDummyContext.electionId}/pilih-kandidat`,
+    href: '/hubungkan-dompet?redirect=pilih-kandidat',
     detailHref: `/pemilihan/${sharedDummyContext.electionId}/hasil`,
   },
   {

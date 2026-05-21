@@ -76,10 +76,10 @@ export function VoterShell({ children }: { children: ReactNode }) {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">{topLabel}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2 md:gap-3">
-                <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100 lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Buka menu pemilih">
+                <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Buka menu pemilih">
                   <Menu className="h-5 w-5" />
                 </button>
-                <button type="button" onClick={() => setSearchOpen(true)} className="hidden h-10 items-center gap-3 rounded-md border border-slate-200 bg-white px-4 text-left transition-colors hover:bg-slate-50 md:flex md:w-[280px]" aria-label="Cari kandidat atau pemilihan">
+                <button type="button" onClick={() => setSearchOpen(true)} className="hidden h-10 items-center gap-3 rounded-md border border-slate-200 bg-white px-4 text-left transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:flex md:w-[280px]" aria-label="Cari kandidat atau pemilihan">
                   <Search className="h-4 w-4 shrink-0 text-slate-400" />
                   <span className="flex-1 truncate text-[13px] text-slate-400">Cari kandidat, pemilihan...</span>
                   <kbd className="hidden h-5 items-center gap-1 rounded border border-slate-300 bg-white px-1.5 font-mono text-[10px] font-medium text-slate-500 md:inline-flex">
@@ -90,7 +90,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
                   {profile ? formatWallet(profile.wallet) : '0x71C...4f21'}
                 </div>
-                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia saat ini.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100" aria-label="Notifikasi pemilih">
+                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia saat ini.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2" aria-label="Notifikasi pemilih">
                   <Bell className="h-4 w-4" />
                 </button>
                 <Link
@@ -116,7 +116,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
 
           <AppFooter className="px-4 py-4 md:px-6 lg:px-8">
             <div className="flex flex-col gap-3 text-[10px] uppercase tracking-[0.06em] text-slate-400 sm:text-[11px] md:flex-row md:items-center md:justify-between">
-              <p>© 2026 Votein · Pratinjau antarmuka pemilih</p>
+              <p>© 2026 Votein · Portal pemilih</p>
               <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                 <Link href="/kebijakan-privasi" className="hover:text-slate-800">Kebijakan Privasi</Link>
                 <Link href="/ketentuan-layanan" className="hover:text-slate-800">Ketentuan Layanan</Link>

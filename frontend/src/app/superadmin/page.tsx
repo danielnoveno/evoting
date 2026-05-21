@@ -92,7 +92,7 @@ export default function SuperadminDashboardPage() {
                     key={item}
                     type="button"
                     onClick={() => setRange(item)}
-                    className={range === item ? 'rounded-xl bg-slate-100 px-4 py-2 text-[14px] font-semibold text-slate-900' : 'rounded-xl px-4 py-2 text-[14px] text-slate-500'}
+                    className={range === item ? 'rounded-xl bg-slate-100 px-4 py-2 text-[14px] font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10' : 'rounded-xl px-4 py-2 text-[14px] text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-900/10'}
                   >
                     {item}
                   </button>
@@ -122,7 +122,7 @@ export default function SuperadminDashboardPage() {
           <AppSectionCard className="h-full">
             <div className="flex items-start justify-between gap-4">
               <h2 className="max-w-[12ch] text-[18px] font-semibold text-slate-900">Log Aktivitas Terbaru</h2>
-              <button type="button" onClick={() => router.push('/superadmin/manajemen-admin')} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-700">
+              <button type="button" onClick={() => router.push('/superadmin/manajemen-admin')} className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-900/10">
                 Lihat Semua
               </button>
             </div>

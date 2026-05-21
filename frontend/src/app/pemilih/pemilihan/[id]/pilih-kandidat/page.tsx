@@ -8,7 +8,7 @@ import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { findElection, formatDateTime, useVoterStore } from '@/lib/voter-mock-store'
-import { generateDemoCommitment, generateDemoSalt, saveDemoVoteCommitment } from '@/lib/vote-commitment-demo'
+import { generateCommitment, generateSalt, saveVoteCommitment } from '@/lib/vote-commitment-demo'
 
 const headshots: Record<string, string> = {
   c1: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop',
@@ -86,9 +86,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     if (candidateToConfirm) {
       actions.selectCandidate(election.id, candidateToConfirm)
       
-      const salt = generateDemoSalt()
-      const commitment = await generateDemoCommitment(election.id, candidateToConfirm, salt)
-      saveDemoVoteCommitment(election.id, {
+      const salt = generateSalt()
+      const commitment = await generateCommitment(election.id, candidateToConfirm, salt)
+      saveVoteCommitment(election.id, {
         candidateId: candidateToConfirm,
         salt,
         commitment,
@@ -104,11 +104,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
   return (
     <VoterShell>
-      {/* Dynamic Stepper */}
       <VoterStepper steps={stepState} />
 
-      {/* Dynamic Dark Banner - Figma: Voter - Beranda - Commit.png */}
-      <div className="mt-6 rounded-2xl bg-[#0F172A] text-white p-6 shadow-xl border border-slate-800">
+      <div className="mt-6 rounded-2xl border border-slate-800 bg-[#0F172A] p-6 text-white">
         <div className="grid gap-6 md:grid-cols-[1fr_auto] items-center">
           <div>
             <span className="inline-flex rounded bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-blue-400">
@@ -116,7 +114,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             </span>
             <h1 className="mt-3 text-[26px] font-bold tracking-tight text-white md:text-[32px]">Fase Commit</h1>
             <p className="mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-slate-300">
-              Berikan suara Anda secara terenkripsi ke dalam blockchain. Suara Anda bersifat privat hingga fase reveal dimulai.
+              Pilih satu kandidat untuk menyiapkan komitmen suara Anda. Pilihan tetap tersimpan aman dan baru dapat dikonfirmasi pada fase berikutnya.
             </p>
           </div>
 
@@ -148,7 +146,6 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         </div>
       </div>
 
-      {/* Candidates Header */}
       <section className="mt-10 flex flex-col sm:flex-row sm:items-baseline sm:justify-between border-b border-slate-100 pb-4">
         <div>
           <h2 className="text-[20px] font-bold text-slate-900 tracking-tight">Kandidat Aktif</h2>
@@ -161,32 +158,30 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         </span>
       </section>
 
-      {/* Info Warning */}
-      <section className="mt-6 rounded-xl border border-blue-100 bg-blue-50/40 p-4 text-[12.5px] leading-relaxed text-blue-900 shadow-sm">
+      <section className="mt-6 rounded-xl border border-blue-100 bg-blue-50/40 p-4 text-[12.5px] leading-relaxed text-blue-900">
         <div className="flex items-start gap-3">
           <Info className="mt-0.5 h-4.5 w-4.5 shrink-0 text-blue-700" />
           <p>
-            Pilihan Anda akan diubah menjadi hash komitmen kriptografis secara lokal di browser sebelum dikirim ke smart contract demi menjaga kerahasiaan pilihan.
+            Setelah kandidat dipilih, sistem akan menyiapkan komitmen suara di browser ini sebelum dikirim. Simpan perangkat dan browser yang sama untuk tahap konfirmasi suara.
           </p>
         </div>
       </section>
 
-      {/* Candidate Cards Grid */}
       <section className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {election.candidates.map((candidate, index) => {
           return (
             <article
               key={candidate.id}
-              className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden"
+              className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-slate-300"
             >
               <div>
                 <div className="relative overflow-hidden bg-slate-50 border-b border-slate-100">
                   <img
                     src={headshots[candidate.id] || defaultHeadshot}
                     alt={candidate.name}
-                    className="w-full h-[250px] object-cover grayscale contrast-[1.12] brightness-[0.93] transition-transform duration-500 group-hover:scale-102"
+                   className="h-[250px] w-full object-cover grayscale contrast-[1.12] brightness-[0.93] transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute top-3 left-3 bg-black/85 text-white font-mono text-[10px] font-bold px-2.5 py-0.5 rounded border border-white/10 uppercase tracking-widest shadow-md">
+                   <div className="absolute top-3 left-3 rounded border border-white/10 bg-black/85 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white">
                     K0{index + 1}
                   </div>
                 </div>
@@ -238,8 +233,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         })}
       </section>
 
-      {/* Deadline Info Footer */}
-      <section className="mt-8 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="mt-8 rounded-xl border border-slate-200 bg-white p-4">
         <div className="flex items-center gap-3">
           <Clock3 className="h-4.5 w-4.5 shrink-0 text-slate-400" />
           <div>
@@ -254,7 +248,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       <ConfirmDialog
         open={confirmOpen}
         title="Konfirmasi Pilihan"
-        description="Apakah Anda yakin ingin memilih kandidat ini? Anda akan diarahkan ke tahap commit setelah ini."
+        description="Apakah Anda yakin ingin melanjutkan dengan kandidat ini? Setelah itu Anda akan masuk ke tahap kirim komitmen suara."
         confirmLabel="Ya, Pilih Kandidat"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleConfirm}

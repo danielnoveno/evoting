@@ -51,7 +51,7 @@ export function PublicNavbar({ activePath }: { activePath: string }) {
           <button
             type="button"
             onClick={() => showToast({ tone: 'info', title: 'Shortcut audit', description: 'Fitur audit shortcut belum tersedia saat ini.' })}
-            className="hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 md:inline-flex"
+            className="hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:inline-flex"
             aria-label="Buka shortcut audit"
           >
             <CopyCheck className="h-4 w-4" />
@@ -59,21 +59,21 @@ export function PublicNavbar({ activePath }: { activePath: string }) {
           <button
             type="button"
             onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia saat ini.' })}
-            className="hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 md:inline-flex"
+            className="hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:inline-flex"
             aria-label="Notifikasi"
           >
             <Bell className="h-4 w-4" />
           </button>
           <Link
             href="/hubungkan-dompet"
-            className="inline-flex h-9 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B] md:h-10"
+            className="inline-flex h-9 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:h-10"
           >
             Sambungkan Wallet
           </Link>
           <button
             type="button"
             onClick={() => setMobileOpen((v) => !v)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:hidden"
             aria-label="Menu navigasi"
           >
             {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -111,7 +111,7 @@ export function PublicFooter() {
   return (
     <AppFooter className="py-4">
       <div className="public-container flex flex-col gap-3 text-[11px] uppercase tracking-[0.06em] text-slate-400 md:flex-row md:items-center md:justify-between">
-        <p>© 2026 Votein · Pratinjau antarmuka e-voting</p>
+        <p>© 2026 Votein · Platform e-voting</p>
         <div className="flex items-center gap-4">
           <Link href="/kebijakan-privasi" className="hover:text-slate-800">Kebijakan Privasi</Link>
           <Link href="/ketentuan-layanan" className="hover:text-slate-800">Ketentuan Layanan</Link>
@@ -144,7 +144,7 @@ export function SectionTitle({ title, body }: { title: string; body: string }) {
 
 export function BasescanLink({ href, label = 'Lihat di Basescan' }: { href: string; label?: string }) {
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[13px] font-medium text-blue-700 hover:text-blue-800">
+    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[13px] font-medium text-blue-700 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2">
       {label}
       <ExternalLink className="h-4 w-4" />
     </a>
@@ -153,7 +153,7 @@ export function BasescanLink({ href, label = 'Lihat di Basescan' }: { href: stri
 
 export function PublicElectionBackLink({ href = '/pemilihan', label = 'Kembali ke daftar pemilihan' }: { href?: string; label?: string }) {
   return (
-    <Link href={href} className="inline-flex items-center gap-2 text-[14px] font-medium text-slate-800 transition-colors hover:text-slate-900">
+    <Link href={href} className="inline-flex items-center gap-2 text-[14px] font-medium text-slate-800 transition-colors hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
       <ArrowLeft className="h-4 w-4" />
       {label}
     </Link>

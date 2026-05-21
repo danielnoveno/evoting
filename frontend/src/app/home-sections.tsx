@@ -55,7 +55,7 @@ export function HeroSection() {
 
             <ScrollReveal variant="fade-up" delay={450} duration={800}>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center">
-                <Link href={`/pemilih/pemilihan/${sharedDummyContext.electionId}/pilih-kandidat`} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-6 text-[14px] font-medium text-white hover:bg-[#1E293B]">
+                <Link href="/hubungkan-dompet?redirect=pilih-kandidat" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-6 text-[14px] font-medium text-white hover:bg-[#1E293B]">
                   Mulai Memilih
                   <ArrowRight className="h-4 w-4" />
                 </Link>

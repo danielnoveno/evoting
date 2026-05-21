@@ -50,7 +50,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 <p className="text-[13px] font-semibold">{toast.title}</p>
                 {toast.description ? <p className="mt-1 text-[12px] leading-6 opacity-90">{toast.description}</p> : null}
               </div>
-              <button type="button" onClick={() => dismissToast(toast.id)} className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-white/10" aria-label="Tutup notifikasi">
+              <button type="button" onClick={() => dismissToast(toast.id)} className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-current/30" aria-label="Tutup notifikasi">
                 <X className="h-4 w-4" />
               </button>
             </div>

@@ -1,11 +1,13 @@
 'use client'
 
-export interface DemoVoteCommitmentData {
+export interface VoteCommitmentRecord {
   candidateId: string
   salt: `0x${string}`
   commitment: `0x${string}`
   timestamp: string
 }
+
+export type DemoVoteCommitmentData = VoteCommitmentRecord
 
 function toHex(bytes: Uint8Array): `0x${string}` {
   return `0x${Array.from(bytes)
@@ -24,6 +26,8 @@ export function generateDemoSalt(): `0x${string}` {
   return toHex(randomBytes)
 }
 
+export const generateSalt = generateDemoSalt
+
 export async function generateDemoCommitment(
   electionId: string,
   candidateId: string,
@@ -35,26 +39,28 @@ export async function generateDemoCommitment(
   return toHex(new Uint8Array(hashBuffer))
 }
 
-export function saveDemoVoteCommitment(electionId: string, data: DemoVoteCommitmentData) {
+export const generateCommitment = generateDemoCommitment
+
+export function saveVoteCommitment(electionId: string, data: VoteCommitmentRecord) {
   window.localStorage.setItem(storageKey(electionId), JSON.stringify(data))
 }
 
-export function loadDemoVoteCommitment(electionId: string): DemoVoteCommitmentData | null {
+export function loadVoteCommitment(electionId: string): VoteCommitmentRecord | null {
   const raw = window.localStorage.getItem(storageKey(electionId))
   if (!raw) return null
 
   try {
-    return JSON.parse(raw) as DemoVoteCommitmentData
+    return JSON.parse(raw) as VoteCommitmentRecord
   } catch {
     return null
   }
 }
 
-export function clearDemoVoteCommitment(electionId: string) {
+export function clearVoteCommitment(electionId: string) {
   window.localStorage.removeItem(storageKey(electionId))
 }
 
-export function clearAllDemoVoteCommitments() {
+export function clearAllVoteCommitments() {
   const keysToRemove: string[] = []
 
   for (let index = 0; index < window.localStorage.length; index += 1) {
@@ -66,3 +72,8 @@ export function clearAllDemoVoteCommitments() {
 
   keysToRemove.forEach((key) => window.localStorage.removeItem(key))
 }
+
+export const saveDemoVoteCommitment = saveVoteCommitment
+export const loadDemoVoteCommitment = loadVoteCommitment
+export const clearDemoVoteCommitment = clearVoteCommitment
+export const clearAllDemoVoteCommitments = clearAllVoteCommitments

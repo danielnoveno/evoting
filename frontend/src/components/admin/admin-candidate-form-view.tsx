@@ -213,7 +213,7 @@ export function AdminCandidateFormView({
                 <label htmlFor="cand-hash-preview" className="mb-3 block text-[13px] font-semibold text-slate-700">{form.hashPreviewLabel}</label>
                 <div id="cand-hash-preview" className="flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-4 border border-slate-200">
                   <p className="font-mono text-[12px] break-all text-slate-800">{election.detail.blockchainAnchor.slice(0, 42)}...</p>
-                  <button type="button" onClick={() => { navigator.clipboard.writeText(election.detail.blockchainAnchor).then(() => showToast({ tone: 'success', title: 'Hash disalin', description: 'Hash preview berhasil disalin ke clipboard.' })).catch(() => showToast({ tone: 'error', title: 'Gagal menyalin', description: 'Terjadi kesalahan saat menyalin hash.' })) }} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 focus:ring-2 focus:ring-black focus:outline-none" aria-label="Salin hash blockchain anchor">
+                  <button type="button" onClick={() => { navigator.clipboard.writeText(election.detail.blockchainAnchor).then(() => showToast({ tone: 'success', title: 'Hash disalin', description: 'Hash pratinjau berhasil disalin.' })).catch(() => showToast({ tone: 'error', title: 'Gagal menyalin', description: 'Terjadi kesalahan saat menyalin hash.' })) }} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 focus:ring-2 focus:ring-black focus:outline-none" aria-label="Salin hash pratinjau blockchain">
                     <Copy className="h-4 w-4" />
                   </button>
                 </div>

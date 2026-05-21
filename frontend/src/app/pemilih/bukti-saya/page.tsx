@@ -32,13 +32,13 @@ export default function VoterProofPage() {
   return (
     <VoterShell>
       <ScrollReveal variant="fade-up" duration={800}>
-      <section className="max-w-4xl">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Arsip digital</p>
-        <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Bukti Saya</h1>
-        <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
-          Riwayat pemilihan yang akan, sedang, dan sudah Anda ikuti beserta bukti kriptografis yang dapat diverifikasi secara publik.
-        </p>
-      </section>
+        <section className="max-w-4xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Arsip digital</p>
+          <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Bukti Saya</h1>
+          <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
+            Riwayat pemilihan yang akan, sedang, dan sudah Anda ikuti beserta bukti transaksi yang dapat ditinjau secara publik.
+          </p>
+        </section>
       </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={100} duration={800}>
@@ -83,7 +83,7 @@ export default function VoterProofPage() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">Siap diverifikasi</span>
+                  <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">Siap ditinjau</span>
                 </div>
                 <h2 className="mt-5 text-[24px] font-semibold text-slate-900 sm:text-[28px] md:text-[40px]">{selectedElection.title}</h2>
                 <p className="mt-3 text-[15px] leading-8 text-slate-800">Dilaksanakan pada {formatDateShort(selectedElection.deadlineIso)} · {selectedElection.lastTransactionLabel}</p>
@@ -95,7 +95,7 @@ export default function VoterProofPage() {
             </div>
 
             <div className="mt-8 rounded-[24px] bg-slate-100 p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Blockchain transaction hash</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Hash transaksi</p>
               <p className="mt-4 overflow-hidden break-all rounded-2xl bg-white px-4 py-4 font-mono text-[12px] text-slate-700 sm:text-[13px]">
                 {selectedElection.revealProof?.txHash ?? selectedElection.commitProof?.txHash ?? 'Belum ada transaksi'}
               </p>
@@ -109,7 +109,7 @@ export default function VoterProofPage() {
                   <p className="mt-2 font-mono text-[20px] font-semibold text-emerald-600">{selectedElection.revealProof?.statusLabel ?? selectedElection.commitProof?.statusLabel ?? 'Pending'}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Gas Used</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Gas Terpakai</p>
                   <p className="mt-2 text-[24px] font-semibold text-slate-900">{formatNumber(selectedElection.revealProof?.gasUsed ?? selectedElection.commitProof?.gasUsed ?? 0)}</p>
                 </div>
               </div>
@@ -124,7 +124,7 @@ export default function VoterProofPage() {
         <article className="rounded-[32px] bg-slate-100 p-8">
           <h2 className="text-[26px] font-semibold text-slate-900 sm:text-[32px]">Bagaimana cara verifikasi?</h2>
           <p className="mt-4 max-w-3xl text-[16px] leading-8 text-slate-800">
-            Setiap bukti suara berisi tanda tangan digital unik yang dapat diverifikasi mandiri melalui penjelajah blockchain publik.
+            Setiap bukti suara menyertakan hash transaksi yang dapat Anda cocokkan sendiri melalui penjelajah blockchain publik.
           </p>
           <ol className="mt-8 space-y-4">
             {[
