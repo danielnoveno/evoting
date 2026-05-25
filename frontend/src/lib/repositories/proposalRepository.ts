@@ -108,7 +108,6 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
     ended_at: input.endedAt ?? null,
     status: input.status ?? 'draft',
   }
-  ...
 
   const { data, error } = await client
     .schema('app')
