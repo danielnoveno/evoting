@@ -4,6 +4,40 @@
 
 :root {
   color-scheme: light;
+
+  /* Override OnchainKit theme variables to match project design system */
+  --ock-bg-primary: #0F172A;
+  --ock-bg-primary-hover: #1E293B;
+  --ock-bg-primary-active: #0F172A;
+  --ock-bg-primary-disabled: #64748b;
+  --ock-border-radius: 0.75rem; /* rounded-xl */
+  --ock-border-radius-inner: 0.5rem;
+}
+
+/* Override OnchainKit Connect Wallet button to match project buttons */
+[data-testid="ockConnectButton"] {
+  min-width: unset !important;
+  padding: 0 1.25rem !important;
+  height: 2.5rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  background-color: #0F172A !important;
+  color: #f8fafc !important;
+  border-radius: 0.75rem !important;
+}
+
+[data-testid="ockConnectButton"]:hover {
+  background-color: #1E293B !important;
+}
+
+[data-testid="ockConnectButton"] * {
+  color: #f8fafc !important;
+}
+
+/* Override OnchainKit spinner to be white inside dark buttons */
+[data-testid="ockConnectWallet_Container"] [data-testid="ockSpinner"] > div {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  border-top-color: #ffffff !important;
 }
 
 html {

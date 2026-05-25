@@ -8,6 +8,8 @@ import { BarChart2, CheckCircle2, ChevronLeft, ChevronRight, Eye, Hourglass, Plu
 import { useToast } from '@/components/ui/toast-provider'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAdminProposalList } from '@/hooks/use-admin-proposal-list'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 
 function getStatusBadgeClass(status: ProposalStatus) {
   switch (status) {
@@ -53,14 +55,13 @@ function getStatCardColor(iconKey: string) {
 }
 
 export default function AdminProposalPage() {
-  const { header, stats, banner, proposals } = adminProposalContent
+  const { header, banner } = adminProposalContent
   const { showToast } = useToast()
   const router = useRouter()
+  const { rows: proposals, stats, error, isLoading, isUsingFallback } = useAdminProposalList()
 
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 4
-  const totalItems = 128 // Based on design dummy number, but we only have 6 rows in dummy data.
-  // Actually, let's use the real length of the array to make pagination functional
   const actualTotalItems = proposals.length
 
   const paginatedRows = useMemo(() => {
@@ -101,6 +102,18 @@ export default function AdminProposalPage() {
       </ScrollReveal>
 
       {/* Stats Section */}
+      {error ? (
+        <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700" role="alert">
+          {getRepositoryErrorMessage(error, 'Gagal memuat daftar proposal. Coba lagi.')}
+        </div>
+      ) : null}
+
+      {isUsingFallback ? (
+        <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
+          Data proposal masih menggunakan mode transisi. Hubungkan backend Supabase dan sesi pengguna untuk memuat data live.
+        </div>
+      ) : null}
+
       <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, idx) => (
           <article key={idx} className="rounded-[24px] bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)] border border-slate-100 flex flex-col justify-between h-[140px]">
@@ -135,6 +148,15 @@ export default function AdminProposalPage() {
                 </tr>
               </thead>
               <tbody>
+                {isLoading ? (
+                  Array.from({ length: 4 }).map((_, index) => (
+                    <tr key={`loading-${index}`} className="border-b border-slate-50">
+                      <td className="px-6 py-5" colSpan={6}>
+                        <div className="h-12 animate-pulse rounded-2xl bg-slate-100" />
+                      </td>
+                    </tr>
+                  ))
+                ) : null}
                 {paginatedRows.map((row) => (
                   <tr 
                     key={row.id} 

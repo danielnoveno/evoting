@@ -3,6 +3,7 @@
 import { CircleHelp, FileText, Gauge, LayoutGrid, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import { ReactNode } from 'react'
+import { RoleGate } from '@/components/auth/role-gate'
 import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/console-shell'
 import { adminShellContent } from '@/lib/dummy-admin-content'
 
@@ -21,28 +22,34 @@ const sidebarItems: ConsoleNavItem[] = adminShellContent.sidebarItems.map((item)
 
 export function AdminShell({ children }: { children: ReactNode }) {
   return (
-    <ConsoleShell
-      role="admin"
-      headerLabel={adminShellContent.headerLabel}
-      brandTagline={adminShellContent.brandTagline}
-      searchPlaceholder={adminShellContent.searchPlaceholder}
-      sidebarItems={sidebarItems}
-      profile={{
-        ...adminShellContent.profile,
-        editHref: '/admin/profil',
-      }}
-      footer={adminShellContent.footer}
-      logoutConfig={{
-        title: 'Keluar dari sesi admin?',
-        description: 'Anda akan keluar dari panel admin dan kembali ke halaman login. Pastikan semua perubahan penting sudah disimpan.',
-        confirmLabel: 'Keluar Sesi',
-        successTitle: 'Keluar berhasil',
-        successDescription: 'Sesi admin telah diakhiri dan Anda diarahkan ke halaman login.',
-        redirectTo: '/',
-      }}
+    <RoleGate
+      allowedRoles={['platform_admin', 'super_admin']}
+      fallbackTitle="Akses admin tidak tersedia"
+      fallbackDescription="Halaman ini hanya dapat dibuka oleh admin platform atau super admin yang memiliki sesi backend aktif."
     >
-      {children}
-    </ConsoleShell>
+      <ConsoleShell
+        role="admin"
+        headerLabel={adminShellContent.headerLabel}
+        brandTagline={adminShellContent.brandTagline}
+        searchPlaceholder={adminShellContent.searchPlaceholder}
+        sidebarItems={sidebarItems}
+        profile={{
+          ...adminShellContent.profile,
+          editHref: '/admin/profil',
+        }}
+        footer={adminShellContent.footer}
+        logoutConfig={{
+          title: 'Keluar dari sesi admin?',
+          description: 'Anda akan keluar dari panel admin dan kembali ke halaman login. Pastikan semua perubahan penting sudah disimpan.',
+          confirmLabel: 'Keluar Sesi',
+          successTitle: 'Keluar berhasil',
+          successDescription: 'Sesi admin telah diakhiri dan Anda diarahkan ke halaman login.',
+          redirectTo: '/',
+        }}
+      >
+        {children}
+      </ConsoleShell>
+    </RoleGate>
   )
 }
 

@@ -3,6 +3,7 @@ export const dummyAuthSeeds = {
     voter: { identifier: 'mahasiswa220711663@students.uajy.ac.id', secret: 'voter12345' },
     admin: { identifier: 'admin.ukmriset@uajy.ac.id', secret: 'admin12345' },
     superadmin: { identifier: 'superadmin.fti@uajy.ac.id', secret: 'superadmin123456' },
+    developer: { identifier: '220611938@students.uajy.ac.id', secret: 'E;GvRX@E3-#d>Cx' },
   },
 } as const
 

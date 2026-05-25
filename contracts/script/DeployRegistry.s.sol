@@ -6,11 +6,8 @@ import "../src/VoteChainRegistry.sol";
 
 contract DeployRegistry is Script {
     function run() external {
-        // The private key should be loaded from the environment
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-
-        // Start broadcasting transactions
-        vm.startBroadcast(deployerPrivateKey);
+        // Start broadcasting transactions using the account provided via CLI (--private-key or --interactive)
+        vm.startBroadcast();
 
         // Deploy the VoteChainRegistry
         VoteChainRegistry registry = new VoteChainRegistry();

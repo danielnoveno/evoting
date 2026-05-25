@@ -1,0 +1,25 @@
+# Konfigurasi awal Supabase CLI untuk VoteChain.
+# Sesuaikan project_id dan parameter lokal saat phase berikutnya.
+
+project_id = "votechain-local"
+
+[api]
+enabled = true
+port = 54321
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed/seed.sql"]
+
+[studio]
+enabled = true
+port = 54323
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"

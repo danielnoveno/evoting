@@ -10,6 +10,13 @@ import { ModalShell } from '@/components/ui/modal-shell'
 import { useToast } from '@/components/ui/toast-provider'
 import { adminElectionDetailTabs, AdminElectionDetailTabId, AdminElectionRecord } from '@/lib/admin-election-dummy-data'
 import { ScrollReveal } from '@/components/public/parallax'
+import { useCreateWhitelistEntriesBulk, useCreateWhitelistEntry, useDeleteWhitelistEntry, useWhitelistEntries } from '@/hooks/use-whitelist-status'
+import { useWhitelistImportJobs } from '@/hooks/use-whitelist-import-jobs'
+import { useWhitelistImportSignedUrl } from '@/hooks/use-whitelist-import-file'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+import { countInvalidWhitelistCsvRows, parseWhitelistCsv } from '@/lib/whitelist-csv'
+import { useSpaceRegistryMap } from '@/hooks/use-election-map'
+import { useElectionContract } from '@/hooks/use-election-contract'
 
 function QuickActionIcon({ icon }: { icon: 'download' | 'share' | 'audit' | 'report' }) {
   if (icon === 'download') return <Download className="h-5 w-5" />
@@ -48,7 +55,42 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [uploadConfirmOpen, setUploadConfirmOpen] = useState(false)
   const [uploadFileName, setUploadFileName] = useState('daftar-pemilih.csv')
+  const [uploadCsvContent, setUploadCsvContent] = useState('')
+  const [syncOnchainConfirmOpen, setSyncOnchainConfirmOpen] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
   const [whitelistSearch, setWhitelistSearch] = useState('')
+  const whitelistQuery = useWhitelistEntries(election.id)
+  const createWhitelistEntry = useCreateWhitelistEntry()
+  const deleteWhitelistEntry = useDeleteWhitelistEntry(election.id)
+  const createWhitelistEntriesBulk = useCreateWhitelistEntriesBulk(election.id)
+  const whitelistImportJobsQuery = useWhitelistImportJobs(election.id)
+  const whitelistImportSignedUrl = useWhitelistImportSignedUrl()
+
+  const whitelistRecords = useMemo(() => {
+    if (!whitelistQuery.data || whitelistQuery.data.length === 0) {
+      return election.detail.whitelist.records.map((record) => ({
+        id: record.wallet,
+        wallet: record.wallet,
+        name: record.name,
+        status: record.status,
+        addedAt: record.addedAt,
+        isFallback: true,
+      }))
+    }
+
+    return whitelistQuery.data.map((record) => ({
+      id: record.id,
+      wallet: record.walletAddress,
+      name: record.voterName ?? 'Nama belum diisi',
+      status: record.syncStatus === 'synced' || record.validationStatus === 'valid' ? 'verified' as const : 'pending' as const,
+      addedAt: new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(new Date(record.createdAt)),
+      isFallback: false,
+    }))
+  }, [election.detail.whitelist.records, whitelistQuery.data])
 
   useEffect(() => {
     const stored = loadStoredCandidates(election.id)
@@ -59,11 +101,11 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
   const filteredWhitelistRecords = useMemo(() => {
     const keyword = whitelistSearch.trim().toLowerCase()
-    if (!keyword) return election.detail.whitelist.records
-    return election.detail.whitelist.records.filter((record) => {
+    if (!keyword) return whitelistRecords
+    return whitelistRecords.filter((record) => {
       return record.wallet.toLowerCase().includes(keyword) || record.name.toLowerCase().includes(keyword)
     })
-  }, [election.detail.whitelist.records, whitelistSearch])
+  }, [whitelistRecords, whitelistSearch])
 
   const handleDeleteCandidate = () => {
     if (!candidateToDelete) return
@@ -92,14 +134,61 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
   const handleConfirmManualWhitelistSave = () => {
     setManualWhitelistConfirmOpen(false)
-    setManualWhitelistOpen(false)
-    showToast({
-      tone: 'success',
-      title: 'Pemilih berhasil ditambahkan',
-      description: `Wallet ${manualWallet} telah ditambahkan ke whitelist.`,
+
+    createWhitelistEntry.mutate(
+      {
+        proposalDraftId: election.id,
+        walletAddress: manualWallet,
+        voterName: manualName || null,
+      },
+      {
+        onSuccess: () => {
+          setManualWhitelistOpen(false)
+          showToast({
+            tone: 'success',
+            title: 'Pemilih berhasil ditambahkan',
+            description: `Wallet ${manualWallet} telah ditambahkan ke whitelist.`,
+          })
+          setManualWallet('')
+          setManualName('')
+        },
+        onError: (error) => {
+          showToast({
+            tone: 'error',
+            title: 'Gagal menambahkan pemilih',
+            description: getRepositoryErrorMessage(error, 'Tambah whitelist live belum tersedia untuk data ini.'),
+          })
+        },
+      },
+    )
+  }
+
+  const handleDeleteWhitelistEntry = (recordId: string, wallet: string, isFallback: boolean) => {
+    if (isFallback) {
+      showToast({
+        tone: 'info',
+        title: 'Mode transisi aktif',
+        description: `Hapus whitelist live untuk ${wallet} belum tersedia karena data masih lokal.`,
+      })
+      return
+    }
+
+    deleteWhitelistEntry.mutate(recordId, {
+      onSuccess: () => {
+        showToast({
+          tone: 'success',
+          title: 'Pemilih dihapus',
+          description: `Wallet ${wallet} berhasil dihapus dari whitelist.`,
+        })
+      },
+      onError: (error) => {
+        showToast({
+          tone: 'error',
+          title: 'Gagal menghapus pemilih',
+          description: getRepositoryErrorMessage(error, 'Hapus whitelist live belum tersedia untuk data ini.'),
+        })
+      },
     })
-    setManualWallet('')
-    setManualName('')
   }
 
   const handleUploadCsv = () => {
@@ -112,17 +201,61 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       return
     }
 
+    if (!uploadCsvContent.trim()) {
+      showToast({
+        tone: 'error',
+        title: 'Isi CSV wajib diisi',
+        description: 'Tempelkan isi CSV sebelum memproses unggahan whitelist.',
+      })
+      return
+    }
+
     setUploadConfirmOpen(true)
   }
 
   const handleConfirmUploadCsv = () => {
-    setUploadConfirmOpen(false)
-    setUploadModalOpen(false)
-    showToast({
-      tone: 'success',
-      title: 'File whitelist diunggah',
-      description: `File ${uploadFileName} berhasil diproses.`,
-    })
+    const entries = parseWhitelistCsv(uploadCsvContent)
+    const invalidCount = countInvalidWhitelistCsvRows(uploadCsvContent)
+
+    if (entries.length === 0) {
+      setUploadConfirmOpen(false)
+      showToast({
+        tone: 'error',
+        title: 'CSV tidak valid',
+        description: 'Tidak ada alamat wallet valid yang dapat diproses dari isi CSV.',
+      })
+      return
+    }
+
+    createWhitelistEntriesBulk.mutate(
+      {
+        proposalDraftId: election.id,
+        fileName: uploadFileName,
+        rawContent: uploadCsvContent,
+        entries,
+        invalidCount,
+      },
+      {
+        onSuccess: () => {
+          setUploadConfirmOpen(false)
+          setUploadModalOpen(false)
+          setUploadCsvContent('')
+          showToast({
+            tone: 'success',
+            title: 'File whitelist diunggah',
+            description: `File ${uploadFileName} berhasil diproses. ${entries.length} wallet valid ditambahkan${invalidCount > 0 ? `, ${invalidCount} baris diabaikan.` : '.'}`,
+          })
+        },
+        onError: (error) => {
+          setUploadConfirmOpen(false)
+          showToast({
+            tone: 'error',
+            title: 'Gagal memproses CSV',
+            description: getRepositoryErrorMessage(error, 'Unggahan CSV whitelist belum tersedia untuk data ini.'),
+          })
+        },
+      },
+    )
   }
 
   const handleQuickAction = (label: string) => {
@@ -130,6 +263,34 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       tone: 'info',
       title: `${label} diproses`,
       description: `Aksi ${label.toLowerCase()} berhasil dijalankan.`,
+    })
+  }
+
+  const handleConfirmSyncOnchain = () => {
+    setIsSyncing(true)
+    setTimeout(() => {
+      setIsSyncing(false)
+      setSyncOnchainConfirmOpen(false)
+      showToast({
+        tone: 'success',
+        title: 'Sinkronisasi Berhasil',
+        description: 'Data proposal telah dikunci dan disinkronisasikan ke blockchain.',
+      })
+    }, 2000)
+  }
+
+  const handleOpenImportFile = (filePath: string) => {
+    whitelistImportSignedUrl.mutate(filePath, {
+      onSuccess: (signedUrl) => {
+        window.open(signedUrl, '_blank', 'noopener,noreferrer')
+      },
+      onError: (error) => {
+        showToast({
+          tone: 'error',
+          title: 'Gagal membuka file impor',
+          description: getRepositoryErrorMessage(error, 'Tautan file impor belum tersedia.'),
+        })
+      },
     })
   }
 
@@ -278,18 +439,44 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.45fr)_420px]">
         <article className="overflow-hidden rounded-[30px] border border-slate-200 bg-white">
           <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-6 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-[20px] font-semibold text-slate-900">Daftar Whitelist Terbaru</h2>
-            <div className="inline-flex h-11 items-center gap-3 rounded-2xl bg-slate-100 px-4 text-slate-400 md:w-[260px]">
-              <Link2 className="h-4 w-4" />
-              <input
-                type="text"
-                value={whitelistSearch}
-                onChange={(event) => setWhitelistSearch(event.target.value)}
-                placeholder="Cari alamat atau nama..."
-                className="w-full bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-slate-400"
-              />
+            <div>
+              <h2 className="text-[20px] font-semibold text-slate-900">Daftar Whitelist Terbaru</h2>
+              <p className="mt-1 text-[13px] text-slate-500">
+                {whitelistRecords.filter(r => r.status === 'pending').length} pemilih menunggu sinkronisasi on-chain.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                type="button" 
+                onClick={() => setSyncWhitelistConfirmOpen(true)}
+                disabled={electionContract.isWritePending || !spaceMap?.spaceAddress}
+                className="inline-flex h-11 items-center gap-2 rounded-2xl bg-indigo-600 px-5 text-[14px] font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+              >
+                <RefreshCw className={`h-4 w-4 ${electionContract.isWritePending ? 'animate-spin' : ''}`} />
+                Sync On-chain
+              </button>
+              <div className="inline-flex h-11 items-center gap-3 rounded-2xl bg-slate-100 px-4 text-slate-400 md:w-[260px]">
+                <Link2 className="h-4 w-4" />
+                <input
+                  type="text"
+                  value={whitelistSearch}
+                  onChange={(event) => setWhitelistSearch(event.target.value)}
+                  placeholder="Cari alamat atau nama..."
+                  className="w-full bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-slate-400"
+                />
+              </div>
             </div>
           </div>
+          {whitelistQuery.error ? (
+            <div className="border-b border-amber-200 bg-amber-50 px-6 py-3 text-[13px] text-amber-800" role="status">
+              {getRepositoryErrorMessage(whitelistQuery.error, 'Daftar pemilih live belum tersedia. Menampilkan data transisi lokal.')}
+            </div>
+          ) : null}
+          {!whitelistQuery.data || whitelistQuery.data.length === 0 ? (
+            <div className="border-b border-slate-100 bg-slate-50 px-6 py-3 text-[13px] text-slate-600">
+              Mode transisi aktif. Data whitelist masih memakai fallback lokal sampai proposal live tersedia.
+            </div>
+          ) : null}
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead>
@@ -298,15 +485,36 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                   <th className="px-6 py-4">Nama (Opsional)</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">Tanggal Ditambahkan</th>
+                  <th className="px-6 py-4 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
+                {whitelistQuery.isLoading ? (
+                  Array.from({ length: 3 }).map((_, index) => (
+                    <tr key={`whitelist-loading-${index}`} className="border-b border-slate-100">
+                      <td className="px-6 py-5" colSpan={5}>
+                        <div className="h-10 animate-pulse rounded-2xl bg-slate-100" />
+                      </td>
+                    </tr>
+                  ))
+                ) : null}
                 {filteredWhitelistRecords.map((record) => (
                   <tr key={record.wallet} className="border-b border-slate-100 text-[15px] text-slate-700">
                     <td className="px-6 py-5 font-mono">{record.wallet}</td>
                     <td className="px-6 py-5">{record.name}</td>
                     <td className="px-6 py-5"><StatusBadge status={record.status} /></td>
                     <td className="px-6 py-5 text-slate-500">{record.addedAt}</td>
+                    <td className="px-6 py-5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteWhitelistEntry(record.id, record.wallet, record.isFallback)}
+                        disabled={deleteWhitelistEntry.isPending}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-50"
+                        aria-label={`Hapus pemilih ${record.wallet}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -340,6 +548,49 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             <p className="mt-3 text-[15px] leading-7 text-slate-500">Maksimal 10.000 alamat wallet per unggahan.</p>
             <span className="mt-5 inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{election.detail.whitelist.uploadSupport}</span>
           </button>
+
+          <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Riwayat Import</p>
+                <p className="mt-2 text-[14px] text-slate-700">Pantau file CSV yang pernah diproses untuk whitelist draft.</p>
+              </div>
+            </div>
+
+            {whitelistImportJobsQuery.isLoading ? (
+              <div className="mt-4 h-16 animate-pulse rounded-2xl bg-white" />
+            ) : null}
+
+            {whitelistImportJobsQuery.data && whitelistImportJobsQuery.data.length > 0 ? (
+              <div className="mt-4 space-y-3">
+                {whitelistImportJobsQuery.data.slice(0, 3).map((job) => (
+                  <div key={job.id} className="rounded-2xl bg-white px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <Link href={`/admin/manajemen-pemilihan/${election.id}/import-job/${job.id}`} className="text-[13px] font-semibold text-blue-600 hover:underline">{job.fileName}</Link>
+                        <p className="mt-1 text-[12px] text-slate-500">{job.rowCount} wallet valid · {job.invalidCount} baris diabaikan</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">{job.status}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenImportFile(job.filePath)}
+                          disabled={whitelistImportSignedUrl.isPending}
+                          className="inline-flex h-9 items-center justify-center rounded-xl bg-slate-100 px-3 text-[12px] font-medium text-slate-700 hover:bg-slate-200 disabled:opacity-50"
+                        >
+                          Buka File
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {!whitelistImportJobsQuery.isLoading && (!whitelistImportJobsQuery.data || whitelistImportJobsQuery.data.length === 0) ? (
+              <p className="mt-4 text-[13px] text-slate-500">Belum ada riwayat import CSV untuk proposal ini.</p>
+            ) : null}
+          </div>
         </article>
       </div>
     </section>
@@ -355,6 +606,10 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         <button type="button" onClick={() => showToast({ tone: 'info', title: 'Edit Parameter', description: 'Parameter pemilihan hanya dapat diubah sebelum fase commit dimulai.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-500 px-5 text-[15px] font-medium text-white hover:bg-slate-600">
           <Pencil className="h-4 w-4" />
           Edit Parameter
+        </button>
+        <button type="button" onClick={() => setSyncOnchainConfirmOpen(true)} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 text-[15px] font-medium text-white hover:bg-indigo-700">
+          <Link2 className="h-4 w-4" />
+          Sinkronisasi ke Blockchain
         </button>
       </div>
 
@@ -746,24 +1001,34 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       >
         <div className="space-y-5">
           <div>
-            <label className="mb-2 block text-[12px] font-semibold text-slate-800">Nama File CSV</label>
+            <label className="mb-2 block text-[12px] font-semibold text-slate-800">File CSV Whitelist</label>
             <input
-              type="text"
-              value={uploadFileName}
-              onChange={(event) => setUploadFileName(event.target.value)}
-              placeholder="contoh: whitelist-pemilih.csv"
-              className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none placeholder:text-slate-400"
+              type="file"
+              accept=".csv"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (!file) return
+                setUploadFileName(file.name)
+                const reader = new FileReader()
+                reader.onload = (e) => {
+                  const content = e.target?.result as string
+                  setUploadCsvContent(content)
+                }
+                reader.readAsText(file)
+              }}
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 file:mr-4 file:rounded-xl file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-[13px] file:font-medium file:text-slate-700 hover:file:bg-slate-200 outline-none"
             />
+            <p className="mt-2 text-[12px] leading-6 text-slate-500">Gunakan format CSV sederhana: satu baris per wallet, opsional diikuti nama setelah koma.</p>
           </div>
           <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center text-[13px] leading-6 text-slate-500">
-            File akan diproses setelah Anda melanjutkan unggahan.
+            File akan diproses setelah Anda melanjutkan unggahan. Baris wallet yang tidak valid akan diabaikan.
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <button type="button" onClick={() => setUploadModalOpen(false)} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-700 hover:bg-slate-200">
               Batal
             </button>
-            <button type="button" onClick={handleUploadCsv} className="inline-flex h-11 items-center justify-center rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
-              Proses Unggahan
+            <button type="button" onClick={handleUploadCsv} disabled={createWhitelistEntriesBulk.isPending} className="inline-flex h-11 items-center justify-center rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900 disabled:opacity-60">
+              {createWhitelistEntriesBulk.isPending ? 'Memproses...' : 'Proses Unggahan'}
             </button>
           </div>
         </div>
@@ -776,6 +1041,15 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         confirmLabel="Proses File"
         onCancel={() => setUploadConfirmOpen(false)}
         onConfirm={handleConfirmUploadCsv}
+      />
+
+      <ConfirmDialog
+        open={syncOnchainConfirmOpen}
+        title="Sinkronisasi ke Blockchain?"
+        description="Data proposal (kandidat, parameter, dan whitelist) akan disinkronisasikan ke blockchain. Proses ini akan memakan biaya gas dan data tidak dapat diubah lagi."
+        confirmLabel={isSyncing ? "Memproses..." : "Ya, Sinkronisasikan"}
+        onCancel={() => setSyncOnchainConfirmOpen(false)}
+        onConfirm={handleConfirmSyncOnchain}
       />
     </AdminShell>
   )

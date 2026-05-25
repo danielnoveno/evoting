@@ -1,21 +1,39 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { Camera, ShieldCheck, Copy, Lock, Pencil } from 'lucide-react'
 import { useToast } from '@/components/ui/toast-provider'
 import { ScrollReveal } from '@/components/public/parallax'
+import { useProfileByWallet, useSaveCurrentProfile } from '@/hooks/use-profile'
+import { mapProfileToViewModel } from '@/lib/mappers/profileMapper'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 
 export default function AdminProfilePage() {
   const { showToast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
-  const [displayName, setDisplayName] = useState('Budi Santoso')
-  const [bio, setBio] = useState('Warga negara yang aktif dalam partisipasi demokrasi digital.')
-  const [photoUrl, setPhotoUrl] = useState('https://i.pravatar.cc/300?img=11')
-  
+
   const walletAddress = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
-  const email = 'budi.santoso@email.com'
+  const profileQuery = useProfileByWallet(walletAddress)
+  const saveProfile = useSaveCurrentProfile()
+
+  const fallbackProfile = mapProfileToViewModel(profileQuery.data ?? null, {
+    displayName: 'Budi Santoso',
+    email: 'budi.santoso@email.com',
+    walletAddress,
+    bio: 'Warga negara yang aktif dalam partisipasi demokrasi digital.',
+    avatarUrl: 'https://i.pravatar.cc/300?img=11',
+  })
+
+  const [displayName, setDisplayName] = useState(fallbackProfile.displayName)
+  const [bio, setBio] = useState(fallbackProfile.bio)
+  const [photoUrl, setPhotoUrl] = useState(fallbackProfile.avatarUrl ?? 'https://i.pravatar.cc/300?img=11')
+
+  useEffect(() => {
+    setDisplayName(fallbackProfile.displayName)
+    setBio(fallbackProfile.bio)
+    setPhotoUrl(fallbackProfile.avatarUrl ?? 'https://i.pravatar.cc/300?img=11')
+  }, [fallbackProfile.avatarUrl, fallbackProfile.bio, fallbackProfile.displayName])
 
   const handleCopyWallet = async () => {
     try {
@@ -62,11 +80,30 @@ export default function AdminProfilePage() {
   }
 
   const handleSaveChanges = () => {
-    showToast({
-      title: 'Perubahan Disimpan',
-      description: 'Profil Anda berhasil diperbarui di sistem frontend.',
-      tone: 'success'
-    })
+    saveProfile.mutate(
+      {
+        walletAddress,
+        displayName,
+        email: fallbackProfile.email,
+        avatarUrl: photoUrl,
+      },
+      {
+        onSuccess: () => {
+          showToast({
+            title: 'Perubahan Disimpan',
+            description: 'Profil admin berhasil diperbarui.',
+            tone: 'success'
+          })
+        },
+        onError: (error) => {
+          showToast({
+            title: 'Gagal menyimpan profil',
+            description: getRepositoryErrorMessage(error, 'Simpan profil akan diaktifkan penuh setelah sesi backend tersedia.'),
+            tone: 'error'
+          })
+        },
+      },
+    )
   }
 
   return (
@@ -74,6 +111,12 @@ export default function AdminProfilePage() {
       <ScrollReveal variant="fade-up" duration={700}>
         {/* Breadcrumb & Header */}
         <section className="mb-10">
+          {profileQuery.error ? (
+            <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800" role="status">
+              {getRepositoryErrorMessage(profileQuery.error, 'Profil live belum tersedia. Halaman memakai data transisi lokal.')}
+            </div>
+          ) : null}
+
           <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400 mb-6">
             <span>ADMIN</span>
             <span>›</span>
@@ -190,7 +233,7 @@ export default function AdminProfilePage() {
                 </label>
                 <input 
                   type="email"
-                  value={email}
+                  value={fallbackProfile.email}
                   disabled
                   className="w-full h-14 px-5 rounded-2xl bg-slate-50 border-transparent text-[16px] text-slate-500 cursor-not-allowed outline-none"
                 />
@@ -237,13 +280,14 @@ export default function AdminProfilePage() {
 
             {/* Footer Buttons */}
             <div className="mt-10 pt-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-end gap-4">
-              <button 
-                type="button"
-                onClick={handleSaveChanges}
-                className="h-12 px-8 rounded-2xl bg-black text-[14px] font-semibold text-white hover:bg-slate-800 shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:-translate-y-px"
-              >
-                Simpan Perubahan
-              </button>
+                <button 
+                  type="button"
+                  onClick={handleSaveChanges}
+                  disabled={saveProfile.isPending}
+                  className="h-12 px-8 rounded-2xl bg-black text-[14px] font-semibold text-white hover:bg-slate-800 shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:-translate-y-px"
+                >
+                  {saveProfile.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
+                </button>
             </div>
           </article>
           </ScrollReveal>

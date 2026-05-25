@@ -1,5 +1,7 @@
 'use client'
 
+import { encodePacked, keccak256 } from 'viem'
+
 export interface VoteCommitmentRecord {
   candidateId: string
   salt: `0x${string}`
@@ -9,37 +11,25 @@ export interface VoteCommitmentRecord {
 
 export type DemoVoteCommitmentData = VoteCommitmentRecord
 
-function toHex(bytes: Uint8Array): `0x${string}` {
-  return `0x${Array.from(bytes)
+function storageKey(electionId: string) {
+  return `votein-commitment:${electionId}`
+}
+
+const STORAGE_PREFIX = 'votein-commitment:'
+
+export function generateSalt(): `0x${string}` {
+  const randomBytes = crypto.getRandomValues(new Uint8Array(32))
+  return `0x${Array.from(randomBytes)
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('')}` as `0x${string}`
 }
 
-function storageKey(electionId: string) {
-  return `votein-demo-commitment:${electionId}`
-}
-
-const STORAGE_PREFIX = 'votein-demo-commitment:'
-
-export function generateDemoSalt(): `0x${string}` {
-  const randomBytes = crypto.getRandomValues(new Uint8Array(32))
-  return toHex(randomBytes)
-}
-
-export const generateSalt = generateDemoSalt
-
-export async function generateDemoCommitment(
-  electionId: string,
-  candidateId: string,
+export function generateCommitment(
+  candidateId: number,
   salt: `0x${string}`,
-): Promise<`0x${string}`> {
-  const content = `${electionId}:${candidateId}:${salt}`
-  const bytes = new TextEncoder().encode(content)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', bytes)
-  return toHex(new Uint8Array(hashBuffer))
+): `0x${string}` {
+  return keccak256(encodePacked(['uint256', 'bytes32'], [BigInt(candidateId), salt]))
 }
-
-export const generateCommitment = generateDemoCommitment
 
 export function saveVoteCommitment(electionId: string, data: VoteCommitmentRecord) {
   window.localStorage.setItem(storageKey(electionId), JSON.stringify(data))

@@ -1,14 +1,16 @@
 'use client'
 
-import { ArrowRight, Clock3, Info } from 'lucide-react'
+import { ArrowRight, Clock3, Info, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { findElection, formatDateTime, useVoterStore } from '@/lib/voter-mock-store'
+import { formatDateTime, useVoterStore } from '@/lib/voter-mock-store'
 import { generateCommitment, generateSalt, saveVoteCommitment } from '@/lib/vote-commitment-demo'
+import { useQuery } from '@tanstack/react-query'
+import { getVoterElectionDetail } from '@/lib/repositories/voterRepository'
 
 const headshots: Record<string, string> = {
   c1: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop',
@@ -19,17 +21,26 @@ const defaultHeadshot = 'https://images.unsplash.com/photo-1535713875002-d1d0cf3
 
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const { store, loading, actions } = useVoterStore()
-  const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 8 })
+  const { actions } = useVoterStore()
+  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 })
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [candidateToConfirm, setCandidateToConfirm] = useState<string | null>(null)
 
-  const election = findElection(store, params.id)
+  // Real database fetch
+  const { data: detail, isLoading: detailLoading } = useQuery({
+    queryKey: ['voter-election-detail', params.id],
+    queryFn: () => getVoterElectionDetail(params.id)
+  })
+
+  const election = detail?.election
+  const candidates = detail?.candidates ?? []
 
   useEffect(() => {
-    if (!election?.deadlineIso) return
+    if (!election?.commitStartAt) return
 
-    const target = new Date(election.deadlineIso).getTime()
+    // Since we don't have a specific deadline yet in the simplified schema for the mock timer,
+    // let's assume 24 hours from commitStartAt or just show a fixed far-future date.
+    const target = new Date(election.commitStartAt).getTime() + (24 * 60 * 60 * 1000)
     const updateTimer = () => {
       const now = new Date().getTime()
       const diff = target - now
@@ -46,9 +57,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
-  }, [election?.deadlineIso])
+  }, [election?.commitStartAt])
 
-  if (loading || !store) {
+  if (detailLoading) {
     return (
       <VoterShell>
         <div className="h-[420px] animate-pulse rounded-xl bg-slate-200" />
@@ -84,12 +95,18 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
   const handleConfirm = async () => {
     if (candidateToConfirm) {
+      const candidate = candidates.find(c => c.id === candidateToConfirm)
+      if (!candidate) return
+
+      // Extract number from candidateLocalId (e.g. "candidate-1" -> 1)
+      const candidateNumber = parseInt(candidate.candidateLocalId.split('-').pop() || '1')
+
       actions.selectCandidate(election.id, candidateToConfirm)
       
       const salt = generateSalt()
-      const commitment = await generateCommitment(election.id, candidateToConfirm, salt)
+      const commitment = await generateCommitment(candidateNumber, salt)
       saveVoteCommitment(election.id, {
-        candidateId: candidateToConfirm,
+        candidateId: candidate.candidateLocalId,
         salt,
         commitment,
         timestamp: new Date().toISOString()
@@ -154,21 +171,12 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
           </p>
         </div>
         <span className="mt-2 sm:mt-0 inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700 border border-slate-200 shadow-sm">
-          {election.candidates.length} Kandidat Terdaftar
+          {candidates.length} Kandidat Terdaftar
         </span>
       </section>
 
-      <section className="mt-6 rounded-xl border border-blue-100 bg-blue-50/40 p-4 text-[12.5px] leading-relaxed text-blue-900">
-        <div className="flex items-start gap-3">
-          <Info className="mt-0.5 h-4.5 w-4.5 shrink-0 text-blue-700" />
-          <p>
-            Setelah kandidat dipilih, sistem akan menyiapkan komitmen suara di browser ini sebelum dikirim. Simpan perangkat dan browser yang sama untuk tahap konfirmasi suara.
-          </p>
-        </div>
-      </section>
-
       <section className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {election.candidates.map((candidate, index) => {
+        {candidates.map((candidate, index) => {
           return (
             <article
               key={candidate.id}
@@ -176,11 +184,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             >
               <div>
                 <div className="relative overflow-hidden bg-slate-50 border-b border-slate-100">
-                  <img
-                    src={headshots[candidate.id] || defaultHeadshot}
-                    alt={candidate.name}
-                   className="h-[250px] w-full object-cover grayscale contrast-[1.12] brightness-[0.93] transition-transform duration-500 group-hover:scale-105"
-                  />
+                  <div className="h-[250px] w-full bg-slate-200 flex items-center justify-center">
+                     <p className="text-[40px] font-bold text-slate-300">{index + 1}</p>
+                  </div>
                    <div className="absolute top-3 left-3 rounded border border-white/10 bg-black/85 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white">
                     K0{index + 1}
                   </div>
@@ -188,7 +194,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
                 <div className="p-5">
                   <h3 className="text-[17px] font-bold text-slate-900 group-hover:text-slate-950 transition-colors">
-                    {candidate.name}
+                    {candidate.fullName}
                   </h3>
                   <p className="mt-1 font-mono text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                     {candidate.faculty}
@@ -201,18 +207,6 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                         {candidate.vision}
                       </p>
                     </div>
-
-                    <div>
-                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Misi</h4>
-                      <ul className="mt-1.5 space-y-1">
-                        {candidate.mission.map((item, mIndex) => (
-                          <li key={mIndex} className="text-[12px] leading-relaxed text-slate-600 flex items-start gap-1.5">
-                            <span className="text-slate-400 font-bold select-none shrink-0">•</span>
-                            <span className="line-clamp-2">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -222,7 +216,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                   type="button"
                   onClick={() => handleSelectClick(candidate.id)}
                   className="mt-4 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#0F172A] px-4 text-[13px] font-bold text-white transition-all hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none active:scale-[0.98] shadow-sm"
-                  aria-label={`Pilih kandidat ${candidate.name}`}
+                  aria-label={`Pilih kandidat ${candidate.fullName}`}
                 >
                   Pilih Kandidat
                   <ArrowRight className="h-4 w-4" />
@@ -239,7 +233,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-slate-500">Batas Fase Commit</p>
             <p className="mt-0.5 text-[13.5px] font-semibold text-slate-900">
-              {formatDateTime(election.deadlineIso)} WIB
+              {election.commitStartAt ? formatDateTime(election.commitStartAt) : '-'} WIB
             </p>
           </div>
         </div>

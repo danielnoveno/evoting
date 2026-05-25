@@ -6,6 +6,9 @@ import { ScrollReveal } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { useVoterStore } from '@/lib/voter-mock-store'
+import { useProfileByWallet, useSaveCurrentProfile } from '@/hooks/use-profile'
+import { mapProfileToViewModel } from '@/lib/mappers/profileMapper'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 
 export default function VoterProfilePage() {
   const { showToast } = useToast()
@@ -13,19 +16,28 @@ export default function VoterProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [displayName, setDisplayName] = useState('')
   const [bio, setBio] = useState('')
+  const saveProfile = useSaveCurrentProfile()
+  const profileQuery = useProfileByWallet(store?.profile.wallet)
+
+  const resolvedProfile = mapProfileToViewModel(profileQuery.data ?? null, {
+    displayName: store?.profile.name ?? 'Pemilih',
+    email: store?.profile.email ?? '',
+    walletAddress: store?.profile.wallet ?? '',
+    bio: store?.profile.bio ?? '',
+    avatarUrl: store?.profile.avatarUrl ?? null,
+  })
 
   useEffect(() => {
-    if (!store) return
-    setDisplayName(store.profile.name)
-    setBio(store.profile.bio)
-  }, [store])
+    setDisplayName(resolvedProfile.displayName)
+    setBio(resolvedProfile.bio)
+  }, [resolvedProfile.bio, resolvedProfile.displayName])
 
   if (loading || !store) {
     return <VoterShell><div className="h-[420px] animate-pulse rounded-[32px] bg-slate-200" /></VoterShell>
   }
 
   const handleCopyWallet = async () => {
-    await navigator.clipboard.writeText(store.profile.wallet)
+    await navigator.clipboard.writeText(resolvedProfile.walletAddress)
     showToast({ tone: 'success', title: 'Alamat berhasil disalin', description: 'Wallet pemilih sudah disalin ke clipboard.' })
   }
 
@@ -44,13 +56,44 @@ export default function VoterProfilePage() {
 
   const handleSave = () => {
     actions.updateProfile({ name: displayName, bio })
-    showToast({ tone: 'success', title: 'Perubahan disimpan', description: 'Profil pemilih berhasil diperbarui.' })
+
+    if (!store?.profile.wallet) {
+      showToast({ tone: 'success', title: 'Perubahan disimpan', description: 'Profil pemilih berhasil diperbarui.' })
+      return
+    }
+
+    saveProfile.mutate(
+      {
+        walletAddress: store.profile.wallet,
+        displayName,
+        email: resolvedProfile.email,
+        avatarUrl: store.profile.avatarUrl,
+      },
+      {
+        onSuccess: () => {
+          showToast({ tone: 'success', title: 'Perubahan disimpan', description: 'Profil pemilih berhasil diperbarui.' })
+        },
+        onError: (error) => {
+          showToast({
+            tone: 'error',
+            title: 'Gagal menyimpan profil',
+            description: getRepositoryErrorMessage(error, 'Perubahan lokal tersimpan, tetapi sinkronisasi backend belum aktif.'),
+          })
+        },
+      },
+    )
   }
 
   return (
     <VoterShell>
       <ScrollReveal variant="fade-up" duration={800}>
       <section className="max-w-4xl">
+        {profileQuery.error ? (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800" role="status">
+            {getRepositoryErrorMessage(profileQuery.error, 'Profil live belum tersedia. Halaman masih memakai data transisi lokal.')}
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
           <span>Portal Pemilih</span>
           <span>›</span>
@@ -68,7 +111,7 @@ export default function VoterProfilePage() {
         <div className="space-y-6">
           <article className="rounded-[32px] border border-slate-100 bg-white p-8 text-center">
             <div className="relative mx-auto h-[136px] w-[136px]">
-              <img src={store.profile.avatarUrl} alt={store.profile.name} className="h-full w-full rounded-full object-cover ring-4 ring-white" />
+              <img src={resolvedProfile.avatarUrl ?? store.profile.avatarUrl} alt={resolvedProfile.displayName} className="h-full w-full rounded-full object-cover ring-4 ring-white" />
               <button type="button" onClick={() => fileRef.current?.click()} className="absolute bottom-1 right-1 flex h-11 w-11 items-center justify-center rounded-full bg-black text-white hover:bg-slate-900">
                 <Camera className="h-4 w-4" />
               </button>
@@ -97,14 +140,14 @@ export default function VoterProfilePage() {
             <div>
               <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Nama tampilan (display name)</label>
               <div className="relative">
-                <input value={displayName || store.profile.name} onChange={(event) => setDisplayName(event.target.value)} className="h-14 w-full rounded-2xl bg-slate-100 px-4 pr-12 text-[16px] text-slate-900 outline-none focus:bg-white focus:ring-1 focus:ring-slate-300 sm:px-5" />
+                 <input value={displayName || resolvedProfile.displayName} onChange={(event) => setDisplayName(event.target.value)} className="h-14 w-full rounded-2xl bg-slate-100 px-4 pr-12 text-[16px] text-slate-900 outline-none focus:bg-white focus:ring-1 focus:ring-slate-300 sm:px-5" />
                 <Pencil className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
 
             <div>
               <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Alamat email terdaftar</label>
-              <input value={store.profile.email} disabled className="h-14 w-full cursor-not-allowed rounded-2xl bg-slate-100 px-4 text-[16px] text-slate-500 outline-none sm:px-5" />
+               <input value={resolvedProfile.email} disabled className="h-14 w-full cursor-not-allowed rounded-2xl bg-slate-100 px-4 text-[16px] text-slate-500 outline-none sm:px-5" />
               <p className="mt-3 text-[12px] leading-6 text-slate-400">Email dikunci untuk keamanan akun. Hubungi administrator jika ada perubahan data vital.</p>
             </div>
 
@@ -112,7 +155,7 @@ export default function VoterProfilePage() {
               <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Hash identitas (wallet address)</label>
               <div className="flex h-14 items-center overflow-hidden rounded-2xl bg-slate-100">
                 <div className="h-full w-1.5 bg-black" />
-                <div className="flex-1 truncate px-3 font-mono text-[12px] text-slate-800 sm:px-4 sm:text-[14px]">{store.profile.wallet}</div>
+                 <div className="flex-1 truncate px-3 font-mono text-[12px] text-slate-800 sm:px-4 sm:text-[14px]">{resolvedProfile.walletAddress}</div>
                 <button type="button" onClick={handleCopyWallet} className="px-3 text-slate-500 hover:text-slate-900 sm:px-5" aria-label="Salin alamat wallet pemilih">
                   <Copy className="h-5 w-5" />
                 </button>
@@ -121,17 +164,17 @@ export default function VoterProfilePage() {
 
             <div>
               <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Bio singkat</label>
-              <textarea value={bio || store.profile.bio} onChange={(event) => setBio(event.target.value)} rows={4} className="w-full rounded-2xl bg-slate-100 p-4 text-[16px] leading-8 text-slate-900 outline-none focus:bg-white focus:ring-1 focus:ring-slate-300 sm:p-5" />
+               <textarea value={bio || resolvedProfile.bio} onChange={(event) => setBio(event.target.value)} rows={4} className="w-full rounded-2xl bg-slate-100 p-4 text-[16px] leading-8 text-slate-900 outline-none focus:bg-white focus:ring-1 focus:ring-slate-300 sm:p-5" />
             </div>
           </div>
 
           <div className="mt-8 flex flex-col gap-3 border-t border-slate-100 pt-8 sm:flex-row sm:justify-end">
-            <button type="button" onClick={() => { setDisplayName(store.profile.name); setBio(store.profile.bio) }} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-6 text-[14px] font-medium text-slate-700 hover:bg-slate-200">
-              Batalkan
-            </button>
-            <button type="button" onClick={handleSave} className="inline-flex h-12 items-center justify-center rounded-2xl bg-black px-6 text-[14px] font-medium text-white hover:bg-slate-900">
-              Simpan Perubahan
-            </button>
+             <button type="button" onClick={() => { setDisplayName(resolvedProfile.displayName); setBio(resolvedProfile.bio) }} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-6 text-[14px] font-medium text-slate-700 hover:bg-slate-200">
+               Batalkan
+             </button>
+             <button type="button" onClick={handleSave} disabled={saveProfile.isPending} className="inline-flex h-12 items-center justify-center rounded-2xl bg-black px-6 text-[14px] font-medium text-white hover:bg-slate-900 disabled:opacity-60">
+               {saveProfile.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
+             </button>
           </div>
         </article>
       </section>

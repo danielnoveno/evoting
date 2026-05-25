@@ -9,6 +9,8 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { AppNavbar, AppFooter } from '@/components/ui/app-bar'
 import { AppSidebar, useSidebarLayout, type SidebarNavItem } from '@/components/ui/app-sidebar'
 import { useToast } from '@/components/ui/toast-provider'
+import { useCurrentProfile } from '@/hooks/use-profile'
+import { useLogoutSession } from '@/hooks/use-auth-session'
 
 export type { SidebarNavItem as ConsoleNavItem }
 
@@ -62,17 +64,29 @@ export function ConsoleShell({
   const router = useRouter()
   const { showToast } = useToast()
   const { sidebarWidthClass } = useSidebarLayout(collapsed)
+  const { data: currentProfile } = useCurrentProfile()
+  const logoutSession = useLogoutSession()
+
+  const resolvedProfile = {
+    ...profile,
+    name: currentProfile?.displayName ?? profile.name,
+    wallet: currentProfile?.walletAddress ?? profile.wallet,
+  }
 
   const handleConfirmLogout = () => {
     setLogoutConfirmOpen(false)
-    showToast({
-      tone: 'success',
-      title: logoutConfig.successTitle,
-      description: logoutConfig.successDescription,
+    logoutSession.mutate(undefined, {
+      onSettled: () => {
+        showToast({
+          tone: 'success',
+          title: logoutConfig.successTitle,
+          description: logoutConfig.successDescription,
+        })
+        window.setTimeout(() => {
+          router.push(logoutConfig.redirectTo)
+        }, 500)
+      },
     })
-    window.setTimeout(() => {
-      router.push(logoutConfig.redirectTo)
-    }, 500)
   }
 
   return (
@@ -81,11 +95,11 @@ export function ConsoleShell({
         <AppSidebar
           items={sidebarItems}
           profile={{
-            name: profile.name,
-            wallet: profile.wallet,
-            editLabel: profile.editLabel,
-            editHref: profile.editHref,
-            logoutLabel: profile.logoutLabel,
+            name: resolvedProfile.name,
+            wallet: resolvedProfile.wallet,
+            editLabel: resolvedProfile.editLabel,
+            editHref: resolvedProfile.editHref,
+            logoutLabel: resolvedProfile.logoutLabel,
           }}
           rootPaths={['/admin', '/superadmin', '/pemilih']}
           brandExtra={
@@ -123,10 +137,10 @@ export function ConsoleShell({
                   <Bell className="h-4 w-4" />
                 </button>
                 <Link
-                  href={profile.editHref}
-                  aria-label={`Buka profil ${profile.name}`}
+                  href={resolvedProfile.editHref}
+                  aria-label={`Buka profil ${resolvedProfile.name}`}
                   className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
-                    pathname === profile.editHref ? 'bg-slate-800 text-white' : 'bg-slate-900 text-white hover:bg-slate-700'
+                    pathname === resolvedProfile.editHref ? 'bg-slate-800 text-white' : 'bg-slate-900 text-white hover:bg-slate-700'
                   }`}
                 >
                   <UserCircle2 className="h-5 w-5" />

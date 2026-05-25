@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ReactNode, useState } from 'react'
 import { AppNavbar, AppFooter } from '@/components/ui/app-bar'
 import { useToast } from '@/components/ui/toast-provider'
+import { ConnectWalletButton } from '@/components/wallet/ConnectWalletButton'
 
 const navItems = [
   { href: '/', label: 'Beranda' },
@@ -64,12 +65,7 @@ export function PublicNavbar({ activePath }: { activePath: string }) {
           >
             <Bell className="h-4 w-4" />
           </button>
-          <Link
-            href="/hubungkan-dompet"
-            className="inline-flex h-9 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:h-10"
-          >
-            Sambungkan Wallet
-          </Link>
+          <ConnectWalletButton />
           <button
             type="button"
             onClick={() => setMobileOpen((v) => !v)}

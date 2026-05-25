@@ -2,6 +2,16 @@
   "chainId": 84532,
   "network": "base-sepolia",
   "contracts": {
+    "VoteChainUnified": {
+      "address": "0x4F2F9167eEb9F33E5609511499822ecb30B9AED4",
+      "deployTxHash": "0x69178bf6dd011a740cde3b869c41985407510d1e046fe2304e755163d78501eb",
+      "verified": true
+    },
+    "VoteChainRegistry": {
+      "address": "0xa91568d64d24d42Ec1Cd10C20B2F9D8d341250D0",
+      "deployTxHash": "0x843ef31e2214000d907b0ca51ad4dde4660df1cc79b57ec61ca75fe9669071c1",
+      "verified": true
+    },
     "VoteChainMVP": {
       "address": "",
       "deployTxHash": "",

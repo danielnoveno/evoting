@@ -1,0 +1,311 @@
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
+export type Database = {
+  public: {
+    Tables: Record<string, never>
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
+  }
+  app: {
+    Tables: {
+      app_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          wallet_address: string
+          display_name: string | null
+          email: string | null
+          role: 'voter' | 'platform_admin' | 'super_admin'
+          role_hint: string | null
+          avatar_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          wallet_address: string
+          display_name?: string | null
+          email?: string | null
+          role?: 'voter' | 'platform_admin' | 'super_admin'
+          role_hint?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          wallet_address?: string
+          display_name?: string | null
+          email?: string | null
+          role?: 'voter' | 'platform_admin' | 'super_admin'
+          role_hint?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      proposal_drafts: {
+        Row: {
+          id: string
+          created_by: string
+          title: string
+          description: string | null
+          organization_name: string | null
+          theme_color: string
+          rules_text: string | null
+          candidate_count: number
+          status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'deployed' | 'archived'
+          metadata_version: number
+          onchain_proposal_id: number | null
+          proposal_tx_hash: string | null
+          review_tx_hash: string | null
+          deployment_tx_hash: string | null
+          deployed_space_id: number | null
+          deployed_space_address: string | null
+          commit_start_at: string | null
+          reveal_start_at: string | null
+          ended_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          created_by: string
+          title: string
+          description?: string | null
+          organization_name?: string | null
+          theme_color?: string
+          rules_text?: string | null
+          candidate_count?: number
+          status?: 'draft' | 'submitted' | 'approved' | 'rejected' | 'deployed' | 'archived'
+          metadata_version?: number
+          onchain_proposal_id?: number | null
+          proposal_tx_hash?: string | null
+          review_tx_hash?: string | null
+          deployment_tx_hash?: string | null
+          deployed_space_id?: number | null
+          deployed_space_address?: string | null
+          commit_start_at?: string | null
+          reveal_start_at?: string | null
+          ended_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          created_by?: string
+          title?: string
+          description?: string | null
+          organization_name?: string | null
+          theme_color?: string
+          rules_text?: string | null
+          candidate_count?: number
+          status?: 'draft' | 'submitted' | 'approved' | 'rejected' | 'deployed' | 'archived'
+          metadata_version?: number
+          onchain_proposal_id?: number | null
+          proposal_tx_hash?: string | null
+          review_tx_hash?: string | null
+          deployment_tx_hash?: string | null
+          deployed_space_id?: number | null
+          deployed_space_address?: string | null
+          commit_start_at?: string | null
+          reveal_start_at?: string | null
+          ended_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      proposal_whitelist_entries: {
+        Row: {
+          id: string
+          proposal_draft_id: string
+          import_job_id: string | null
+          wallet_address: string
+          voter_name: string | null
+          source: 'manual' | 'csv' | 'sync'
+          validation_status: 'pending' | 'valid' | 'invalid' | 'synced' | 'failed'
+          sync_status: 'pending' | 'valid' | 'invalid' | 'synced' | 'failed'
+          latest_sync_tx_hash: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          proposal_draft_id: string
+          import_job_id?: string | null
+          wallet_address: string
+          voter_name?: string | null
+          source?: 'manual' | 'csv' | 'sync'
+          validation_status?: 'pending' | 'valid' | 'invalid' | 'synced' | 'failed'
+          sync_status?: 'pending' | 'valid' | 'invalid' | 'synced' | 'failed'
+          latest_sync_tx_hash?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          proposal_draft_id?: string
+          import_job_id?: string | null
+          wallet_address?: string
+          voter_name?: string | null
+          source?: 'manual' | 'csv' | 'sync'
+          validation_status?: 'pending' | 'valid' | 'invalid' | 'synced' | 'failed'
+          sync_status?: 'pending' | 'valid' | 'invalid' | 'synced' | 'failed'
+          latest_sync_tx_hash?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      proposal_candidates: {
+        Row: {
+          id: string
+          proposal_draft_id: string
+          candidate_local_id: string
+          full_name: string
+          student_id: string | null
+          faculty: string | null
+          bio: string | null
+          vision: string | null
+          mission: Json
+          avatar_path: string | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          proposal_draft_id: string
+          candidate_local_id: string
+          full_name: string
+          student_id?: string | null
+          faculty?: string | null
+          bio?: string | null
+          vision?: string | null
+          mission?: Json
+          avatar_path?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          proposal_draft_id?: string
+          candidate_local_id?: string
+          full_name?: string
+          student_id?: string | null
+          faculty?: string | null
+          bio?: string | null
+          vision?: string | null
+          mission?: Json
+          avatar_path?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      whitelist_import_jobs: {
+        Row: {
+          id: string
+          proposal_draft_id: string
+          created_by: string
+          file_path: string
+          file_name: string
+          row_count: number
+          invalid_count: number
+          status: 'pending' | 'valid' | 'invalid' | 'synced' | 'failed'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          proposal_draft_id: string
+          created_by: string
+          file_path: string
+          file_name: string
+          row_count?: number
+          invalid_count?: number
+          status?: 'pending' | 'valid' | 'invalid' | 'synced' | 'failed'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          proposal_draft_id?: string
+          created_by?: string
+          file_path?: string
+          file_name?: string
+          row_count?: number
+          invalid_count?: number
+          status?: 'pending' | 'valid' | 'invalid' | 'synced' | 'failed'
+          created_at?: string
+          updated_at?: string
+        }
+      }
+    }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
+  }
+  indexer: {
+    Tables: {
+      indexer_sync_status: {
+        Row: {
+          id: string
+          chain_id: number
+          source_key: string
+          latest_indexed_block: number | null
+          latest_indexed_block_time: string | null
+          latest_safe_block: number | null
+          head_lag_blocks: number | null
+          head_lag_seconds: number | null
+          health_status: 'ok' | 'lagging' | 'resyncing' | 'degraded'
+          last_error_message: string | null
+          last_error_at: string | null
+          last_reorg_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          chain_id?: number
+          source_key: string
+          latest_indexed_block?: number | null
+          latest_indexed_block_time?: string | null
+          latest_safe_block?: number | null
+          head_lag_blocks?: number | null
+          head_lag_seconds?: number | null
+          health_status?: 'ok' | 'lagging' | 'resyncing' | 'degraded'
+          last_error_message?: string | null
+          last_error_at?: string | null
+          last_reorg_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          chain_id?: number
+          source_key?: string
+          latest_indexed_block?: number | null
+          latest_indexed_block_time?: string | null
+          latest_safe_block?: number | null
+          head_lag_blocks?: number | null
+          head_lag_seconds?: number | null
+          health_status?: 'ok' | 'lagging' | 'resyncing' | 'degraded'
+          last_error_message?: string | null
+          last_error_at?: string | null
+          last_reorg_at?: string | null
+          updated_at?: string
+        }
+      }
+    }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
+  }
+}
+
+export type StorageBucket = 'space-metadata' | 'proof-exports'

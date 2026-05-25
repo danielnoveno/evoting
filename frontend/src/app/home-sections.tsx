@@ -41,7 +41,7 @@ export function HeroSection() {
 
             <ScrollReveal variant="fade-up" delay={150} duration={900}>
               <h1 className="mt-8 text-[44px] font-semibold leading-[1.05] tracking-[-0.03em] text-slate-900 md:text-[64px] lg:text-[72px]">
-                Tata kelola pemilihan yang lebih bermartabat.
+                Tata kelola pemilihan yang lebih transparan.
               </h1>
             </ScrollReveal>
 

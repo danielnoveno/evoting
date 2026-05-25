@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { AppProviders } from '@/components/ui/providers'
+import { BackendStatusBanner } from '@/components/ui/backend-status-banner'
 import './globals.css'
 
 const inter = Inter({
@@ -31,6 +32,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${inter.variable} ${jetBrainsMono.variable} font-sans`}>
+        <BackendStatusBanner />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/toast-provider'
 import { upsertStoredCandidate } from '@/lib/admin-candidate-mock-store'
 import { AdminElectionRecord } from '@/lib/admin-election-dummy-data'
 import { ScrollReveal } from '@/components/public/parallax'
+import { useCandidateAssetUpload } from '@/hooks/use-candidate-asset-upload'
 
 type CandidatePrefill = {
   fullName: string
@@ -45,6 +46,9 @@ export function AdminCandidateFormView({
   const [mission, setMission] = useState(prefill?.mission ?? '')
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const uploadAssetMutation = useCandidateAssetUpload()
 
   type CandidateFormErrors = Partial<Record<'fullName' | 'identityNumber' | 'vision' | 'mission', string>>
   const [errors, setErrors] = useState<CandidateFormErrors>({})
@@ -101,8 +105,27 @@ export function AdminCandidateFormView({
     setConfirmOpen(true)
   }
 
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     setConfirmOpen(false)
+    let imageUrl = null
+
+    if (imageFile) {
+      try {
+        imageUrl = await uploadAssetMutation.mutateAsync({
+          file: imageFile,
+          candidateId: candidateId ?? `cand-local-${Date.now()}`,
+          electionId: election.id,
+        })
+      } catch (error) {
+        showToast({
+          tone: 'error',
+          title: 'Gagal mengunggah foto',
+          description: error instanceof Error ? error.message : 'Terjadi kesalahan saat mengunggah foto kandidat.',
+        })
+        return
+      }
+    }
+
     const normalizedName = fullName.trim()
     const generatedSummary = bio.trim() || normalizedName
     upsertStoredCandidate(election.id, {
@@ -179,14 +202,35 @@ export function AdminCandidateFormView({
         <div className="space-y-6">
           <article className="rounded-[30px] bg-slate-100 p-6">
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{form.uploadLabel}</p>
-            <div className="mt-6 rounded-[28px] border border-dashed border-slate-300 bg-slate-200/60 p-8 text-center">
-              <div className="flex min-h-[260px] flex-col items-center justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-500">
-                  <Camera className="h-8 w-8" />
-                </div>
-                <p className="mt-6 max-w-[260px] text-[18px] font-semibold leading-8 text-slate-700">{form.uploadHint}</p>
-                <p className="mt-4 text-[13px] text-slate-500">{form.uploadSupport}</p>
-              </div>
+            <div className="mt-6">
+              <label className="block w-full cursor-pointer rounded-[28px] border border-dashed border-slate-300 bg-slate-200/60 p-8 text-center hover:border-slate-400">
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      setImageFile(file)
+                      setImagePreview(URL.createObjectURL(file))
+                    }
+                  }}
+                />
+                {imagePreview ? (
+                  <div className="flex flex-col items-center justify-center">
+                    <img src={imagePreview} alt="Preview" className="h-[200px] w-auto rounded-2xl object-cover" />
+                    <p className="mt-4 text-[13px] font-semibold text-slate-700">Klik untuk mengganti foto</p>
+                  </div>
+                ) : (
+                  <div className="flex min-h-[260px] flex-col items-center justify-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-500">
+                      <Camera className="h-8 w-8" />
+                    </div>
+                    <p className="mt-6 max-w-[260px] text-[18px] font-semibold leading-8 text-slate-700">{form.uploadHint}</p>
+                    <p className="mt-4 text-[13px] text-slate-500">{form.uploadSupport}</p>
+                  </div>
+                )}
+              </label>
             </div>
           </article>
 

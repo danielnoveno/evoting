@@ -1,8 +1,8 @@
 'use client'
 
-import { BadgeCheck, CalendarDays, Check, CircleAlert, Download, ExternalLink, FileText, Landmark, ListChecks, ShieldCheck, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { BadgeCheck, CalendarDays, Check, CircleAlert, Download, ExternalLink, FileText, Landmark, ListChecks, ShieldCheck, ThumbsDown, ThumbsUp, Loader2, Rocket } from 'lucide-react'
 import { notFound, useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import {
   SuperadminDetailIntro,
   SuperadminInteractiveCard,
@@ -15,13 +15,28 @@ import { useToast } from '@/components/ui/toast-provider'
 import { superadminProposalDetails } from '@/lib/superadmin-dummy-data'
 import { useSuperadminProposalsStore } from '@/lib/superadmin-mock-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import { useRegistryContract } from '@/hooks/use-registry-contract'
 
-type DecisionType = 'approve' | 'revise' | 'reject' | null
+type DecisionType = 'approve' | 'revise' | 'reject' | 'deploy' | null
 
 export default function SuperadminProposalDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { showToast } = useToast()
   const { proposals, setProposals } = useSuperadminProposalsStore()
+  
+  // Real contract integration
+  const { 
+    reviewProposal, 
+    createElection, 
+    isWritePending, 
+    isConfirming, 
+    isConfirmed, 
+    hash, 
+    writeError,
+    receipt,
+    resetWrite
+  } = useRegistryContract()
+
   const proposal = useMemo(() => {
     const detailed = superadminProposalDetails[params.id]
     if (detailed) return detailed
@@ -64,19 +79,72 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       ],
     }
   }, [params.id, proposals])
+  
   const [decisionType, setDecisionType] = useState<DecisionType>(null)
   const [note, setNote] = useState('')
+
+  useEffect(() => {
+    if (isConfirmed && hash && receipt) {
+      const title = decisionType === 'approve' 
+        ? 'Proposal Disetujui On-Chain' 
+        : decisionType === 'deploy' 
+          ? 'Pemilihan Berhasil Di-deploy' 
+          : 'Status Berhasil Diperbarui'
+      
+      showToast({
+        title,
+        description: 'Transaksi blockchain berhasil dikonfirmasi.',
+        tone: 'success',
+      })
+
+      // Sync local mock store
+      if (decisionType === 'approve') {
+        setProposals((current) => current.map((row) => row.id === params.id ? { ...row, status: 'Disetujui' } : row))
+      } else if (decisionType === 'deploy') {
+        setProposals((current) => current.map((row) => row.id === params.id ? { ...row, status: 'Berjalan' } : row))
+        window.setTimeout(() => router.push('/superadmin/manajemen-pemilihan'), 1500)
+      }
+      
+      resetWrite()
+      setDecisionType(null)
+    }
+  }, [isConfirmed, hash, receipt, decisionType, params.id, setProposals, showToast, router, resetWrite])
 
   if (!proposal) notFound()
 
   const decisionMeta = decisionType === 'approve'
-    ? { title: 'Setujui proposal ini?', confirmLabel: 'Setujui Proposal' }
-    : decisionType === 'revise'
-      ? { title: 'Minta revisi proposal ini?', confirmLabel: 'Kirim Permintaan Revisi' }
-      : { title: 'Tolak permanen proposal ini?', confirmLabel: 'Tolak Proposal' }
+    ? { title: 'Setujui proposal ini secara on-chain?', confirmLabel: 'Setujui di Blockchain' }
+    : decisionType === 'deploy'
+      ? { title: 'Deploy pemilihan ini sekarang?', confirmLabel: 'Deploy Pemilihan' }
+      : decisionType === 'revise'
+        ? { title: 'Minta revisi proposal ini?', confirmLabel: 'Kirim Permintaan Revisi' }
+        : { title: 'Tolak permanen proposal ini?', confirmLabel: 'Tolak Proposal' }
 
   const readinessScore = proposal.objectives.filter((item) => item.tone === 'success').length
   const totalChecks = proposal.objectives.length
+
+  const handleConfirmAction = () => {
+    // Map params.id to numeric ID for contract
+    const numericId = parseInt(params.id.replace(/\D/g, '') || '1')
+
+    if (decisionType === 'approve') {
+      reviewProposal(numericId, true)
+    } else if (decisionType === 'deploy') {
+      createElection(numericId)
+    } else {
+      // Off-chain actions
+      const title = decisionType === 'revise' ? 'Permintaan revisi dikirim' : 'Proposal ditolak'
+      setProposals((current) => current.map((row) => row.id === proposal.id
+        ? {
+            ...row,
+            status: decisionType === 'revise' ? 'Perlu Revisi' : row.status,
+          }
+        : row))
+      showToast({ tone: decisionType === 'reject' ? 'error' : 'success', title, description: 'Status proposal berhasil diperbarui.' })
+      setDecisionType(null)
+      window.setTimeout(() => router.push('/superadmin/manajemen-proposal'), 500)
+    }
+  }
 
   return (
     <SuperadminShell>
@@ -111,18 +179,45 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               <Download className="h-4 w-4" />
               Unduh Dokumen
             </button>
-            <button
-              type="button"
-              onClick={() => setDecisionType('approve')}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-5 text-[15px] font-medium text-white hover:bg-slate-800"
-            >
-              <ThumbsUp className="h-4 w-4" />
-              Setujui Cepat
-            </button>
+            {proposal.badge === 'Disetujui' ? (
+              <button
+                type="button"
+                disabled={isWritePending || isConfirming}
+                onClick={() => setDecisionType('deploy')}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 text-[15px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {isWritePending || isConfirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+                Deploy ke Blockchain
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={isWritePending || isConfirming || proposal.badge === 'Selesai'}
+                onClick={() => setDecisionType('approve')}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-5 text-[15px] font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+              >
+                {isWritePending || isConfirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ThumbsUp className="h-4 w-4" />}
+                Setujui Cepat
+              </button>
+            )}
           </>
         )}
       />
       </ScrollReveal>
+
+      {writeError && (
+        <section className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 flex gap-3">
+          <CircleAlert className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <h2 className="text-[15px] font-semibold text-red-900">Gagal memproses transaksi</h2>
+            <p className="mt-1 text-[13px] text-red-800 leading-relaxed">
+              {writeError.message.includes('User rejected') 
+                ? 'Transaksi dibatalkan oleh admin.' 
+                : 'Terjadi kesalahan on-chain. Pastikan Anda masuk sebagai Super Admin yang sah di wallet.'}
+            </p>
+          </div>
+        </section>
+      )}
 
       <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-6 lg:grid-cols-4">
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
@@ -240,15 +335,41 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Aksi Review</p>
             <div className="mt-6 space-y-3">
-              <button type="button" onClick={() => setDecisionType('approve')} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-6 text-[15px] font-medium text-white hover:bg-slate-800">
+              <button 
+                type="button" 
+                disabled={isWritePending || isConfirming || proposal.badge === 'Disetujui'}
+                onClick={() => setDecisionType('approve')} 
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-6 text-[15px] font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+              >
                 <ThumbsUp className="h-4 w-4" />
                 Setujui Proposal
               </button>
-              <button type="button" onClick={() => setDecisionType('revise')} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-200">
+              {proposal.badge === 'Disetujui' && (
+                <button 
+                  type="button" 
+                  disabled={isWritePending || isConfirming}
+                  onClick={() => setDecisionType('deploy')} 
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 text-[15px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  <Rocket className="h-4 w-4" />
+                  Deploy Pemilihan
+                </button>
+              )}
+              <button 
+                type="button" 
+                disabled={isWritePending || isConfirming}
+                onClick={() => setDecisionType('revise')} 
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-200"
+              >
                 <ListChecks className="h-4 w-4" />
                 Minta Revisi
               </button>
-              <button type="button" onClick={() => setDecisionType('reject')} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-red-50 px-6 text-[15px] font-medium text-red-600 hover:bg-red-100">
+              <button 
+                type="button" 
+                disabled={isWritePending || isConfirming}
+                onClick={() => setDecisionType('reject')} 
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-red-50 px-6 text-[15px] font-medium text-red-600 hover:bg-red-100"
+              >
                 <ThumbsDown className="h-4 w-4" />
                 Tolak Permanen
               </button>
@@ -327,26 +448,14 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       <ConfirmDialog
         open={decisionType !== null}
         title={decisionMeta.title}
-        description={note.trim() ? `Catatan audit: ${note}` : 'Perubahan ini akan diterapkan pada status proposal setelah Anda konfirmasi.'}
+        description={note.trim() ? `Catatan audit: ${note}` : 'Perubahan ini akan dikirim ke Smart Contract Registry di Base Sepolia.'}
         confirmLabel={decisionMeta.confirmLabel}
-        tone={decisionType === 'reject' ? 'danger' : 'default'}
-        onCancel={() => setDecisionType(null)}
-        onConfirm={() => {
-          const title = decisionType === 'approve' ? 'Proposal disetujui' : decisionType === 'revise' ? 'Permintaan revisi dikirim' : 'Proposal ditolak'
-          setProposals((current) => current.map((row) => row.id === proposal.id
-            ? {
-                ...row,
-                status: decisionType === 'approve'
-                  ? 'Disetujui'
-                  : decisionType === 'revise'
-                    ? 'Perlu Revisi'
-                    : row.status,
-              }
-            : row))
-          showToast({ tone: decisionType === 'reject' ? 'error' : 'success', title, description: 'Status proposal berhasil diperbarui.' })
+        tone={decisionType === 'reject' ? 'danger' : decisionType === 'deploy' ? 'success' : 'default'}
+        onCancel={() => {
           setDecisionType(null)
-          window.setTimeout(() => router.push('/superadmin/manajemen-proposal'), 500)
+          resetWrite()
         }}
+        onConfirm={handleConfirmAction}
       />
     </SuperadminShell>
   )

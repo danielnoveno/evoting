@@ -3,6 +3,7 @@
 import { ArrowLeft, Database, FileCheck2, LayoutGrid, ShieldAlert, ShieldUser, Vote, ScrollText } from 'lucide-react'
 import Link from 'next/link'
 import { type InputHTMLAttributes, ReactNode, type SelectHTMLAttributes } from 'react'
+import { RoleGate } from '@/components/auth/role-gate'
 import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/console-shell'
 import { superadminShellContent } from '@/lib/superadmin-dummy-data'
 
@@ -18,27 +19,33 @@ const sidebarItems: ConsoleNavItem[] = [
 
 export function SuperadminShell({ children }: { children: ReactNode }) {
   return (
-    <ConsoleShell
-      role="superadmin"
-      headerLabel={superadminShellContent.headerLabel}
-      searchPlaceholder={superadminShellContent.searchPlaceholder}
-      sidebarItems={sidebarItems}
-      profile={{
-        ...superadminShellContent.profile,
-        editHref: '/superadmin/profil',
-      }}
-      footer={superadminShellContent.footer}
-      logoutConfig={{
-        title: 'Keluar dari sesi superadmin?',
-        description: 'Anda akan keluar dari panel superadmin dan kembali ke halaman masuk.',
-        confirmLabel: 'Keluar Sesi',
-        successTitle: 'Sesi superadmin ditutup',
-        successDescription: 'Anda diarahkan kembali ke halaman login.',
-        redirectTo: '/',
-      }}
+    <RoleGate
+      allowedRoles={['super_admin']}
+      fallbackTitle="Akses super admin tidak tersedia"
+      fallbackDescription="Halaman ini hanya dapat dibuka oleh super admin yang memiliki sesi backend aktif."
     >
-      {children}
-    </ConsoleShell>
+      <ConsoleShell
+        role="superadmin"
+        headerLabel={superadminShellContent.headerLabel}
+        searchPlaceholder={superadminShellContent.searchPlaceholder}
+        sidebarItems={sidebarItems}
+        profile={{
+          ...superadminShellContent.profile,
+          editHref: '/superadmin/profil',
+        }}
+        footer={superadminShellContent.footer}
+        logoutConfig={{
+          title: 'Keluar dari sesi superadmin?',
+          description: 'Anda akan keluar dari panel superadmin dan kembali ke halaman masuk.',
+          confirmLabel: 'Keluar Sesi',
+          successTitle: 'Sesi superadmin ditutup',
+          successDescription: 'Anda diarahkan kembali ke halaman login.',
+          redirectTo: '/',
+        }}
+      >
+        {children}
+      </ConsoleShell>
+    </RoleGate>
   )
 }
 

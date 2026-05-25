@@ -5,11 +5,14 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { ReactNode, useMemo, useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { RoleGate } from '@/components/auth/role-gate'
 import { AppNavbar, AppFooter } from '@/components/ui/app-bar'
 import { AppSidebar, useSidebarLayout } from '@/components/ui/app-sidebar'
 import { useToast } from '@/components/ui/toast-provider'
 import { CommandPalette } from '@/components/ui/command-palette'
 import { formatWallet, useVoterStore } from '@/lib/voter-mock-store'
+import { useCurrentProfile } from '@/hooks/use-profile'
+import { useLogoutSession } from '@/hooks/use-auth-session'
 
 const sidebarItems = [
   { href: '/pemilih', label: 'Beranda', icon: Home },
@@ -27,17 +30,31 @@ export function VoterShell({ children }: { children: ReactNode }) {
   const { showToast } = useToast()
   const { store } = useVoterStore()
   const { sidebarWidthClass } = useSidebarLayout(collapsed)
+  const { data: currentProfile } = useCurrentProfile()
+  const logoutSession = useLogoutSession()
 
-  const profile = store?.profile
+  const profile = currentProfile
+    ? {
+        name: currentProfile.displayName ?? store?.profile.name ?? 'Pemilih',
+        email: currentProfile.email ?? store?.profile.email ?? '',
+        wallet: currentProfile.walletAddress,
+        bio: store?.profile.bio ?? '',
+        avatarUrl: currentProfile.avatarUrl ?? store?.profile.avatarUrl ?? '',
+      }
+    : store?.profile
 
   const handleConfirmLogout = () => {
     setLogoutConfirmOpen(false)
-    showToast({
-      tone: 'success',
-      title: 'Keluar berhasil',
-      description: 'Sesi pemilih ditutup. Anda diarahkan kembali ke halaman utama.',
+    logoutSession.mutate(undefined, {
+      onSettled: () => {
+        showToast({
+          tone: 'success',
+          title: 'Keluar berhasil',
+          description: 'Sesi pemilih ditutup. Anda diarahkan kembali ke halaman utama.',
+        })
+        window.setTimeout(() => router.push('/'), 400)
+      },
     })
-    window.setTimeout(() => router.push('/'), 400)
   }
 
   const topLabel = useMemo(() => {
@@ -49,6 +66,11 @@ export function VoterShell({ children }: { children: ReactNode }) {
   }, [pathname])
 
   return (
+    <RoleGate
+      allowedRoles={['voter', 'platform_admin', 'super_admin']}
+      fallbackTitle="Akses portal pemilih tidak tersedia"
+      fallbackDescription="Masuk kembali dengan akun yang memiliki akses pemilih untuk membuka halaman ini."
+    >
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <div className="flex min-h-screen">
         <AppSidebar
@@ -137,6 +159,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
 
       <CommandPalette role="voter" open={searchOpen} onOpenChange={setSearchOpen} />
     </main>
+    </RoleGate>
   )
 }
 

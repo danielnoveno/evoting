@@ -1,10 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/toast-provider'
 import { Save, Users, UserCheck, Shield, CheckCircle2, Network, Clock, ShieldCheck, ArrowLeft } from 'lucide-react'
 import { ScrollReveal } from '@/components/public/parallax'
+import { useSaveProposalDraft } from '@/hooks/use-save-proposal-draft'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+import type { ProposalCandidateInput } from '@/lib/repositories/types'
 
 export interface ProposalFormData {
   title: string
@@ -14,6 +17,17 @@ export interface ProposalFormData {
   voterCount: number
   commitDate: string
   revealDate: string
+  candidateEntries: ProposalCandidateInput[]
+  whitelistWallets: string
+}
+
+const EMPTY_CANDIDATE: ProposalCandidateInput = {
+  name: '',
+  studentId: '',
+  faculty: '',
+  bio: '',
+  vision: '',
+  avatarPath: '',
 }
 
 type ProposalFormErrors = Partial<Record<'title' | 'candidateCount' | 'voterCount' | 'commitDate' | 'revealDate' | 'dateRange', string>>
@@ -21,6 +35,7 @@ type ProposalFormErrors = Partial<Record<'title' | 'candidateCount' | 'voterCoun
 const MIN_REVEAL_GAP_MINUTES = 60
 
 interface ProposalFormProps {
+  proposalId?: string
   initialData?: Partial<ProposalFormData>
   isReadOnly?: boolean
   pageTitle: string
@@ -31,6 +46,7 @@ interface ProposalFormProps {
 }
 
 export function ProposalForm({
+  proposalId,
   initialData,
   isReadOnly = false,
   pageTitle,
@@ -41,6 +57,7 @@ export function ProposalForm({
 }: ProposalFormProps) {
   const router = useRouter()
   const { showToast } = useToast()
+  const saveProposalDraft = useSaveProposalDraft()
   
   const [formData, setFormData] = useState<ProposalFormData>({
     title: initialData?.title || '',
@@ -49,9 +66,25 @@ export function ProposalForm({
     candidateCount: initialData?.candidateCount ?? 2,
     voterCount: initialData?.voterCount ?? 0,
     commitDate: initialData?.commitDate || '',
-    revealDate: initialData?.revealDate || ''
+    revealDate: initialData?.revealDate || '',
+    candidateEntries: initialData?.candidateEntries || [EMPTY_CANDIDATE, EMPTY_CANDIDATE],
+    whitelistWallets: initialData?.whitelistWallets || '',
   })
   const [errors, setErrors] = useState<ProposalFormErrors>({})
+
+  useEffect(() => {
+    setFormData({
+      title: initialData?.title || '',
+      category: initialData?.category || 'Internal Organisasi',
+      description: initialData?.description || '',
+      candidateCount: initialData?.candidateCount ?? 2,
+      voterCount: initialData?.voterCount ?? 0,
+      commitDate: initialData?.commitDate || '',
+      revealDate: initialData?.revealDate || '',
+      candidateEntries: initialData?.candidateEntries || [EMPTY_CANDIDATE, EMPTY_CANDIDATE],
+      whitelistWallets: initialData?.whitelistWallets || '',
+    })
+  }, [initialData])
 
   const validateForm = (data: ProposalFormData) => {
     const nextErrors: ProposalFormErrors = {}
@@ -110,6 +143,50 @@ export function ProposalForm({
     })
   }
 
+  const handleCandidateChange = (index: number, field: keyof ProposalCandidateInput, value: string) => {
+    if (isReadOnly) return
+
+    setFormData((prev) => {
+      const nextEntries = prev.candidateEntries.map((candidate, candidateIndex) => (
+        candidateIndex === index ? { ...candidate, [field]: value } : candidate
+      ))
+
+      const next = {
+        ...prev,
+        candidateEntries: nextEntries,
+        candidateCount: nextEntries.filter((candidate) => candidate.name.trim()).length,
+      }
+
+      setErrors(validateForm(next))
+      return next
+    })
+  }
+
+  const handleAddCandidateRow = () => {
+    if (isReadOnly) return
+
+    setFormData((prev) => ({
+      ...prev,
+      candidateEntries: [...prev.candidateEntries, { ...EMPTY_CANDIDATE }],
+    }))
+  }
+
+  const handleRemoveCandidateRow = (index: number) => {
+    if (isReadOnly) return
+
+    setFormData((prev) => {
+      const nextEntries = prev.candidateEntries.filter((_, candidateIndex) => candidateIndex !== index)
+      const safeEntries = nextEntries.length > 0 ? nextEntries : [{ ...EMPTY_CANDIDATE }]
+      const next = {
+        ...prev,
+        candidateEntries: safeEntries,
+        candidateCount: safeEntries.filter((candidate) => candidate.name.trim()).length,
+      }
+      setErrors(validateForm(next))
+      return next
+    })
+  }
+
   const handleSubmit = () => {
     if (isReadOnly) return
 
@@ -125,16 +202,53 @@ export function ProposalForm({
       return
     }
 
-    showToast({
-      title: successMessageTitle,
-      description: successMessageDesc,
-      tone: 'success'
-    })
-    
-    // Redirect back after short delay to simulate process
-    setTimeout(() => {
-      router.push('/admin/daftar-proposal')
-    }, 1500)
+    saveProposalDraft.mutate(
+      {
+        id: proposalId,
+        title: formData.title,
+        organizationName: formData.category,
+        description: formData.description,
+        candidateCount: formData.candidateCount,
+        commitStartAt: formData.commitDate ? new Date(formData.commitDate).toISOString() : null,
+        revealStartAt: formData.revealDate ? new Date(formData.revealDate).toISOString() : null,
+        status: 'draft',
+        candidates: formData.candidateEntries
+          .map((candidate) => ({
+            name: candidate.name.trim(),
+            studentId: candidate.studentId?.trim() || null,
+            faculty: candidate.faculty?.trim() || null,
+            bio: candidate.bio?.trim() || null,
+            vision: candidate.vision?.trim() || null,
+            avatarPath: candidate.avatarPath?.trim() || null,
+          }))
+          .filter((candidate) => candidate.name.length > 0),
+        whitelistEntries: formData.whitelistWallets
+          .split('\n')
+          .map((walletAddress) => walletAddress.trim())
+          .filter(Boolean)
+          .map((walletAddress) => ({ walletAddress })),
+      },
+      {
+        onSuccess: () => {
+          showToast({
+            title: successMessageTitle,
+            description: successMessageDesc,
+            tone: 'success'
+          })
+
+          setTimeout(() => {
+            router.push('/admin/daftar-proposal')
+          }, 900)
+        },
+        onError: (error) => {
+          showToast({
+            title: 'Gagal menyimpan proposal',
+            description: getRepositoryErrorMessage(error, 'Simpan proposal live belum tersedia untuk sesi ini.'),
+            tone: 'error'
+          })
+        },
+      },
+    )
   }
 
   const handleCancel = () => {
@@ -166,10 +280,11 @@ export function ProposalForm({
             <button
               type="button"
               onClick={handleSubmit}
+              disabled={saveProposalDraft.isPending}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-6 text-[15px] font-medium text-white transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
             >
               <Save className="h-5 w-5" />
-              {submitLabel}
+              {saveProposalDraft.isPending ? 'Menyimpan...' : submitLabel}
             </button>
           )}
         </div>
@@ -330,6 +445,106 @@ export function ProposalForm({
                 {errors.revealDate ? <p className="text-[12px] text-red-600">{errors.revealDate}</p> : null}
                 {errors.dateRange ? <p className="text-[12px] text-red-600 font-semibold">{errors.dateRange}</p> : null}
               </div>
+            </div>
+          </section>
+
+          <section className="space-y-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-6 w-1.5 bg-black rounded-full" />
+              <h2 className="text-[14px] font-bold uppercase tracking-[0.1em] text-slate-900">RELASI PROPOSAL</h2>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">DAFTAR KANDIDAT</label>
+              <div className="space-y-3">
+                {formData.candidateEntries.map((candidate, index) => (
+                  <div key={`candidate-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_auto]">
+                      <input
+                        type="text"
+                        value={candidate.name}
+                        onChange={(event) => handleCandidateChange(index, 'name', event.target.value)}
+                        disabled={isReadOnly}
+                        placeholder={`Nama kandidat ${index + 1}`}
+                        className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-[14px] text-slate-900 outline-none focus:border-slate-300"
+                      />
+                      <input
+                        type="text"
+                        value={candidate.studentId ?? ''}
+                        onChange={(event) => handleCandidateChange(index, 'studentId', event.target.value)}
+                        disabled={isReadOnly}
+                        placeholder="NIM / ID"
+                        className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-[14px] text-slate-900 outline-none focus:border-slate-300"
+                      />
+                      {!isReadOnly ? (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCandidateRow(index)}
+                          className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-100 px-4 text-[13px] font-medium text-slate-700 hover:bg-slate-200"
+                        >
+                          Hapus
+                        </button>
+                      ) : null}
+                    </div>
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      <input
+                        type="text"
+                        value={candidate.faculty ?? ''}
+                        onChange={(event) => handleCandidateChange(index, 'faculty', event.target.value)}
+                        disabled={isReadOnly}
+                        placeholder="Fakultas / Program Studi"
+                        className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-[14px] text-slate-900 outline-none focus:border-slate-300"
+                      />
+                      <input
+                        type="text"
+                        value={candidate.vision ?? ''}
+                        onChange={(event) => handleCandidateChange(index, 'vision', event.target.value)}
+                        disabled={isReadOnly}
+                        placeholder="Ringkasan visi"
+                        className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-[14px] text-slate-900 outline-none focus:border-slate-300"
+                      />
+                      <input
+                        type="text"
+                        value={candidate.avatarPath ?? ''}
+                        onChange={(event) => handleCandidateChange(index, 'avatarPath', event.target.value)}
+                        disabled={isReadOnly}
+                        placeholder="Path avatar kandidat"
+                        className="h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-[14px] text-slate-900 outline-none focus:border-slate-300 md:col-span-2"
+                      />
+                    </div>
+                    <textarea
+                      value={candidate.bio ?? ''}
+                      onChange={(event) => handleCandidateChange(index, 'bio', event.target.value)}
+                      disabled={isReadOnly}
+                      placeholder="Bio singkat kandidat"
+                      className="mt-3 h-24 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-4 text-[14px] text-slate-900 outline-none focus:border-slate-300"
+                    />
+                  </div>
+                ))}
+              </div>
+              {!isReadOnly ? (
+                <button
+                  type="button"
+                  onClick={handleAddCandidateRow}
+                  className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-slate-100 px-4 text-[13px] font-medium text-slate-800 hover:bg-slate-200"
+                >
+                  + Tambah Kandidat
+                </button>
+              ) : null}
+              <p className="text-[12px] text-slate-500 mt-2">Simpan kandidat sebagai data terstruktur agar relasi proposal lebih mudah ditinjau dan diperbarui.</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500">DAFTAR PEMILIH (WALLET)</label>
+              <textarea
+                name="whitelistWallets"
+                value={formData.whitelistWallets}
+                onChange={handleChange}
+                disabled={isReadOnly}
+                placeholder="Satu alamat wallet per baris"
+                className="h-32 w-full resize-none rounded-xl border border-transparent bg-slate-100/80 p-4 font-mono text-[14px] text-slate-900 transition-all outline-none disabled:cursor-not-allowed disabled:opacity-70 focus:border-slate-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+              />
+              <p className="text-[12px] text-slate-500 mt-2">Wallet tidak valid akan diabaikan saat sinkronisasi draft whitelist.</p>
             </div>
           </section>
 
