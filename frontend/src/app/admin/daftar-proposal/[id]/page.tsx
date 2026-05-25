@@ -64,7 +64,7 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
       vision: c.vision ?? '',
       avatarPath: c.avatarPath ?? '',
     })) ?? [],
-    whitelistWallets: whitelistQuery.data?.map(e => entry.walletAddress).join('\n') ?? '',
+    whitelistWallets: whitelistQuery.data?.map(e => e.walletAddress).join('\n') ?? '',
   }
 
   const handleSubmitToBlockchain = () => {

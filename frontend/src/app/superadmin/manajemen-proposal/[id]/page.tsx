@@ -450,7 +450,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         title={decisionMeta.title}
         description={note.trim() ? `Catatan audit: ${note}` : 'Perubahan ini akan dikirim ke Smart Contract Registry di Base Sepolia.'}
         confirmLabel={decisionMeta.confirmLabel}
-        tone={decisionType === 'reject' ? 'danger' : decisionType === 'deploy' ? 'success' : 'default'}
+        tone={decisionType === 'reject' ? 'danger' : 'default'}
         onCancel={() => {
           setDecisionType(null)
           resetWrite()

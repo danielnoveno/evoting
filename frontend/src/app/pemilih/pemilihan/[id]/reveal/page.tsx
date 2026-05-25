@@ -181,7 +181,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
           <button
             type="button"
-            disabled={!savedCommitment || isWritePending || isConfirming || !!election.revealProof || hasRevealedOnChain}
+            disabled={!savedCommitment || isWritePending || isConfirming || !!election.revealProof || !!(hasRevealedOnChain as boolean | undefined)}
             onClick={() => setConfirmOpen(true)}
             className="inline-flex h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-[#0F172A] px-6 text-[13px] font-bold text-white transition-all hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-w-[220px]"
           >
@@ -230,7 +230,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
               {election.revealProof || hasRevealedOnChain ? 'Suara Berhasil Dikonfirmasi' : 'Menunggu Konfirmasi Suara'}
             </p>
           </div>
-          {(election.revealProof || hasRevealedOnChain) && (
+          {(election.revealProof || !!(hasRevealedOnChain as boolean | undefined)) && (
             <div className="mt-4 border-t border-slate-200 pt-4">
               <Link
                 href={`/pemilih/pemilihan/${election.id}/hasil`}

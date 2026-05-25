@@ -1,7 +1,7 @@
 import { sharedDummyContext } from '@/lib/dummy-shared-context'
 
 export type SuperadminStatus = 'Aktif' | 'Menunggu' | 'Nonaktif'
-export type SuperadminProposalStatus = 'Menunggu Review' | 'Disetujui' | 'Perlu Revisi'
+export type SuperadminProposalStatus = 'Menunggu Review' | 'Disetujui' | 'Perlu Revisi' | 'Berjalan'
 export type SuperadminElectionState = 'Aktif' | 'Selesai' | 'Ditangguhkan'
 
 export interface SuperadminMetric {

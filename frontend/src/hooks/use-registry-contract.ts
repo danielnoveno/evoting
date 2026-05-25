@@ -57,10 +57,26 @@ export function useRegistryContract() {
     })
   }
 
+  const submitProposal = (
+    title: string,
+    metadataURI: string,
+    candidateCount: number,
+    commitDuration: number,
+    revealDuration: number
+  ) => {
+    writeContract({
+      address: REGISTRY_ADDRESS as `0x${string}`,
+      abi: registryAbi,
+      functionName: 'submitProposal',
+      args: [title, metadataURI, BigInt(candidateCount), BigInt(commitDuration), BigInt(revealDuration)],
+    })
+  }
+
   return {
     isSuperAdmin,
     reviewProposal,
     createElection,
+    submitProposal,
     hash,
     isWritePending,
     isConfirming,

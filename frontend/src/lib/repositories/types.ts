@@ -54,7 +54,6 @@ export interface ProposalDraftUpsertInput {
   revealStartAt?: string | null
   endedAt?: string | null
   status?: ProposalDraftStatus
-...
 
   candidates?: Array<{
     name: string
