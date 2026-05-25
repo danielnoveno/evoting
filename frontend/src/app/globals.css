@@ -1,3 +1,5 @@
+@import '@coinbase/onchainkit/styles.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -38,6 +40,23 @@
 [data-testid="ockConnectWallet_Container"] [data-testid="ockSpinner"] > div {
   border-color: rgba(255, 255, 255, 0.25) !important;
   border-top-color: #ffffff !important;
+}
+
+/* Prevent OnchainKit from injecting extra UI containers in the navbar */
+[data-testid="ockConnectWallet_Container"] {
+  display: contents !important;
+}
+
+/* Ensure Tailwind flex utilities are not overridden by OnchainKit CSS */
+.flex { display: flex !important; }
+.flex-col { flex-direction: column !important; }
+.sm\:flex-row { flex-direction: row !important; }
+@media (min-width: 640px) {
+  .sm\:flex-row { flex-direction: row !important; }
+}
+@media (min-width: 768px) {
+  .md\:flex { display: flex !important; }
+  .md\:flex-row { flex-direction: row !important; }
 }
 
 html {

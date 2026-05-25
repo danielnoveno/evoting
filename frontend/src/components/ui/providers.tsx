@@ -8,7 +8,6 @@ import { baseSepolia } from 'wagmi/chains'
 import { wagmiConfig } from '@/lib/wagmi'
 import { DynamicPageTitle } from '@/components/ui/dynamic-page-title'
 import { ToastProvider } from '@/components/ui/toast-provider'
-import '@coinbase/onchainkit/styles.css'
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
