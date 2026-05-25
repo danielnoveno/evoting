@@ -105,8 +105,10 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
     candidate_count: input.candidateCount,
     commit_start_at: input.commitStartAt ?? null,
     reveal_start_at: input.revealStartAt ?? null,
+    ended_at: input.endedAt ?? null,
     status: input.status ?? 'draft',
   }
+  ...
 
   const { data, error } = await client
     .schema('app')

@@ -2,7 +2,6 @@
 
 import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
 import VoteChainRegistryArtifact from '@/lib/abi/VoteChainRegistry.json'
-import { capabilities } from '@/lib/wagmi'
 
 const registryAbi = VoteChainRegistryArtifact.abi
 
@@ -40,23 +39,12 @@ export function useRegistryContract() {
   })
 
   // Write functions
-  const submitProposal = (title: string, metadataURI: string, candidateCount: number) => {
-    writeContract({
-      address: REGISTRY_ADDRESS as `0x${string}`,
-      abi: registryAbi,
-      functionName: 'submitProposal',
-      args: [title, metadataURI, BigInt(candidateCount)],
-      capabilities,
-    })
-  }
-
   const reviewProposal = (proposalId: number, approve: boolean) => {
     writeContract({
       address: REGISTRY_ADDRESS as `0x${string}`,
       abi: registryAbi,
       functionName: 'reviewProposal',
       args: [BigInt(proposalId), approve],
-      capabilities,
     })
   }
 
@@ -66,13 +54,11 @@ export function useRegistryContract() {
       abi: registryAbi,
       functionName: 'createElectionFromProposal',
       args: [BigInt(proposalId)],
-      capabilities,
     })
   }
 
   return {
     isSuperAdmin,
-    submitProposal,
     reviewProposal,
     createElection,
     hash,

@@ -15,8 +15,6 @@ import { useWhitelistImportJobs } from '@/hooks/use-whitelist-import-jobs'
 import { useWhitelistImportSignedUrl } from '@/hooks/use-whitelist-import-file'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { countInvalidWhitelistCsvRows, parseWhitelistCsv } from '@/lib/whitelist-csv'
-import { useSpaceRegistryMap } from '@/hooks/use-election-map'
-import { useElectionContract } from '@/hooks/use-election-contract'
 
 function QuickActionIcon({ icon }: { icon: 'download' | 'share' | 'audit' | 'report' }) {
   if (icon === 'download') return <Download className="h-5 w-5" />
@@ -439,32 +437,16 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.45fr)_420px]">
         <article className="overflow-hidden rounded-[30px] border border-slate-200 bg-white">
           <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-[20px] font-semibold text-slate-900">Daftar Whitelist Terbaru</h2>
-              <p className="mt-1 text-[13px] text-slate-500">
-                {whitelistRecords.filter(r => r.status === 'pending').length} pemilih menunggu sinkronisasi on-chain.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button 
-                type="button" 
-                onClick={() => setSyncWhitelistConfirmOpen(true)}
-                disabled={electionContract.isWritePending || !spaceMap?.spaceAddress}
-                className="inline-flex h-11 items-center gap-2 rounded-2xl bg-indigo-600 px-5 text-[14px] font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-              >
-                <RefreshCw className={`h-4 w-4 ${electionContract.isWritePending ? 'animate-spin' : ''}`} />
-                Sync On-chain
-              </button>
-              <div className="inline-flex h-11 items-center gap-3 rounded-2xl bg-slate-100 px-4 text-slate-400 md:w-[260px]">
-                <Link2 className="h-4 w-4" />
-                <input
-                  type="text"
-                  value={whitelistSearch}
-                  onChange={(event) => setWhitelistSearch(event.target.value)}
-                  placeholder="Cari alamat atau nama..."
-                  className="w-full bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-slate-400"
-                />
-              </div>
+            <h2 className="text-[20px] font-semibold text-slate-900">Daftar Whitelist Terbaru</h2>
+            <div className="inline-flex h-11 items-center gap-3 rounded-2xl bg-slate-100 px-4 text-slate-400 md:w-[260px]">
+              <Link2 className="h-4 w-4" />
+              <input
+                type="text"
+                value={whitelistSearch}
+                onChange={(event) => setWhitelistSearch(event.target.value)}
+                placeholder="Cari alamat atau nama..."
+                className="w-full bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-slate-400"
+              />
             </div>
           </div>
           {whitelistQuery.error ? (

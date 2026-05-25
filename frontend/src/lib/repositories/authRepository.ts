@@ -3,14 +3,6 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { RepositoryError } from '@/lib/repositories/errors'
 
-function getOAuthRedirectUrl(nextPath: string) {
-  if (typeof window === 'undefined') return undefined
-
-  const callbackUrl = new URL('/auth/callback', window.location.origin)
-  callbackUrl.searchParams.set('next', nextPath)
-  return callbackUrl.toString()
-}
-
 export async function getCurrentSession() {
   const client = getSupabaseBrowserClient()
   if (!client) return null
@@ -31,31 +23,44 @@ export async function signInWithEmailPassword(email: string, password: string) {
   return data.session
 }
 
-export async function signInWithMicrosoftCampus(nextPath: string) {
+export async function signUpWithEmailPassword(email: string, password: string) {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend login belum dikonfigurasi.')
 
-  const { data, error } = await client.auth.signInWithOAuth({
-    provider: 'azure',
+  const { data, error } = await client.auth.signUp({ 
+    email, 
+    password,
     options: {
-      redirectTo: getOAuthRedirectUrl(nextPath),
-      scopes: 'openid email profile',
-      queryParams: {
-        prompt: 'select_account',
-        domain_hint: 'uajy.ac.id',
-      },
-    },
+      data: {
+        full_name: email.split('@')[0],
+      }
+    }
+  })
+  
+  if (error) throw new RepositoryError(error.message)
+  return data.session
+}
+
+export async function resetPasswordForEmail(email: string) {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend login belum dikonfigurasi.')
+
+  const { error } = await client.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/auth/update-password`,
+  })
+  
+  if (error) throw new RepositoryError(error.message)
+}
+
+export async function updatePassword(newPassword: string) {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend login belum dikonfigurasi.')
+
+  const { error } = await client.auth.updateUser({
+    password: newPassword,
   })
 
-  if (error) {
-    throw new RepositoryError('Login Microsoft kampus belum berhasil. Coba lagi atau hubungi admin.')
-  }
-
-  if (!data.url) {
-    throw new RepositoryError('Tautan login Microsoft kampus tidak tersedia.')
-  }
-
-  window.location.assign(data.url)
+  if (error) throw new RepositoryError(error.message)
 }
 
 export async function signOutCurrentSession() {

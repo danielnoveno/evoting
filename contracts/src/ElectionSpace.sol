@@ -117,21 +117,6 @@ contract ElectionSpace {
         emit WhitelistUpdated(spaceId, voter, true, msg.sender);
     }
 
-    function registerVotersBatch(address[] calldata voters)
-        external
-        onlySpaceAdminOrSuperAdmin
-        onlyActive
-        onlyPhase(Phase.Registration)
-    {
-        for (uint256 i = 0; i < voters.length; i++) {
-            address voter = voters[i];
-            if (!isWhitelisted[voter]) {
-                isWhitelisted[voter] = true;
-                emit WhitelistUpdated(spaceId, voter, true, msg.sender);
-            }
-        }
-    }
-
     function unregisterVoter(address voter)
         external
         onlySpaceAdminOrSuperAdmin

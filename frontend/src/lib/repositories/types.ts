@@ -44,7 +44,6 @@ export interface ProposalListItem {
   hash: string
   status: ProposalListStatus
 }
-
 export interface ProposalDraftUpsertInput {
   id?: string
   title: string
@@ -53,7 +52,10 @@ export interface ProposalDraftUpsertInput {
   candidateCount: number
   commitStartAt?: string | null
   revealStartAt?: string | null
+  endedAt?: string | null
   status?: ProposalDraftStatus
+...
+
   candidates?: Array<{
     name: string
     studentId?: string | null

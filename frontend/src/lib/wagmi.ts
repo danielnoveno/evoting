@@ -16,15 +16,6 @@ export const wagmiConfig = createConfig({
   },
 })
 
-// Gasless capabilities for Smart Wallets
-export const capabilities = {
-  paymasterService: {
-    [baseSepolia.id]: {
-      url: `https://api.developer.coinbase.com/rpc/v1/base-sepolia/${process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}`,
-    },
-  },
-}
-
 declare module 'wagmi' {
   interface Register {
     config: typeof wagmiConfig

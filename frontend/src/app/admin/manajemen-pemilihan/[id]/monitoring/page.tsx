@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarDays, Download, Eye, FileText, Search, Share2, ShieldCheck, Users, CircleGauge, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import { CalendarDays, Download, Eye, FileText, Search, Share2, ShieldCheck, Users, CircleGauge, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { useMemo, useState } from 'react'
@@ -9,18 +9,18 @@ import { getAdminElectionById } from '@/lib/admin-election-dummy-data'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { ScrollReveal } from '@/components/public/parallax'
-import { useAuditLogs } from '@/hooks/use-audit-logs'
 
-function actionToneClass(action: string) {
-  if (action === 'commit_vote') return 'bg-blue-50 text-blue-600'
-  if (action === 'reveal_vote') return 'bg-purple-50 text-purple-600'
+function actionToneClass(tone: 'blue' | 'amber' | 'slate' | 'purple') {
+  if (tone === 'blue') return 'bg-blue-50 text-blue-600'
+  if (tone === 'amber') return 'bg-amber-50 text-amber-600'
+  if (tone === 'purple') return 'bg-purple-50 text-purple-600'
   return 'bg-slate-100 text-slate-800'
 }
 
-function mapActionLabel(action: string) {
-  if (action === 'commit_vote') return 'Kirim Komitmen Suara'
-  if (action === 'reveal_vote') return 'Konfirmasi Suara'
-  return action
+function statusToneClass(status: 'selesai' | 'berlangsung' | 'menunggu') {
+  if (status === 'selesai') return 'bg-emerald-50 text-emerald-700'
+  if (status === 'berlangsung') return 'bg-blue-50 text-blue-600'
+  return 'bg-amber-50 text-amber-700'
 }
 
 const dateRangeOptions = [
@@ -32,48 +32,45 @@ const dateRangeOptions = [
 
 export default function AdminElectionMonitoringPage({ params }: { params: { id: string } }) {
   const election = getAdminElectionById(params.id)
-  const { showToast } = useToast()
-  const auditLogsQuery = useAuditLogs(params.id)
 
   if (!election) notFound()
 
+  const monitoring = election.detail.monitoring
+  const { showToast } = useToast()
+
   const [selectedRange, setSelectedRange] = useState<(typeof dateRangeOptions)[number]['key']>('semua')
+  const [selectedCategory, setSelectedCategory] = useState(monitoring.selectedCategory)
   const [actorKeyword, setActorKeyword] = useState('')
 
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const [exportType, setExportType] = useState<'csv' | 'pdf'>('csv')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
-
-  const allLogs = useMemo(() => {
-    if (!auditLogsQuery.data) return []
-    return auditLogsQuery.data
-  }, [auditLogsQuery.data])
+  const itemsPerPage = 5
 
   const filteredRows = useMemo(() => {
     const keyword = actorKeyword.trim().toLowerCase()
 
-    return allLogs.filter((row) => {
-      // Basic time filtering
-      if (selectedRange === 'hari-ini') {
-        const today = new Date().toDateString()
-        if (new Date(row.createdAt).toDateString() !== today) return false
-      }
-
+    return monitoring.logRows.filter((row) => {
+      const matchesRange = selectedRange === 'semua' ? true : row.rangeKey === selectedRange
+      const matchesCategory = selectedCategory === monitoring.categories[0] ? true : row.category === selectedCategory
       const matchesActor = !keyword
         ? true
-        : row.walletAddress.toLowerCase().includes(keyword)
+        : row.actorName.toLowerCase().includes(keyword) || row.actorWallet.toLowerCase().includes(keyword)
 
-      return matchesActor
+      return matchesRange && matchesCategory && matchesActor
     })
-  }, [allLogs, actorKeyword, selectedRange])
+  }, [actorKeyword, monitoring.categories, monitoring.logRows, selectedCategory, selectedRange])
+
+  useMemo(() => {
+    setCurrentPage(1)
+  }, [selectedRange, selectedCategory, actorKeyword])
 
   const paginatedRows = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage
     const end = start + itemsPerPage
     return filteredRows.slice(start, end)
   }, [filteredRows, currentPage])
-
+  
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / itemsPerPage))
 
   const handleOpenExport = (type: 'csv' | 'pdf') => {
@@ -102,172 +99,7 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
       />
 
       <ScrollReveal variant="fade-up" duration={700}>
-      <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/admin/manajemen-pemilihan/${params.id}`}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Link>
-            <h1 className="text-[32px] font-semibold tracking-tight text-slate-900 md:text-[40px]">Monitoring Real-Time</h1>
-          </div>
-          <p className="mt-2 text-[15px] leading-7 text-slate-500">
-            Pantau aktivitas on-chain pemilih dan integritas suara secara langsung.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-           <button 
-            type="button" 
-            onClick={() => auditLogsQuery.refetch()}
-            className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-[14px] font-semibold text-slate-700 hover:bg-slate-50"
-           >
-            <RefreshCw className={`h-4 w-4 ${auditLogsQuery.isRefetching ? 'animate-spin' : ''}`} />
-            Refresh Data
-           </button>
-           <button onClick={() => handleOpenExport('pdf')} className="inline-flex h-11 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-[14px] font-semibold text-slate-700 hover:bg-slate-50">
-            <FileText className="h-4 w-4" />
-            Ekspor PDF
-          </button>
-          <button onClick={() => handleOpenExport('csv')} className="inline-flex h-11 items-center gap-2 rounded-2xl bg-black px-5 text-[14px] font-semibold text-white hover:bg-slate-900">
-            <Download className="h-4 w-4" />
-            Ekspor CSV
-          </button>
-        </div>
-      </section>
-
-      <section className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: 'Total Partisipasi', value: `${filteredRows.length} Suara`, icon: Users, tone: 'blue' },
-          { label: 'Blok Terakhir', value: auditLogsQuery.data?.[0]?.blockNumber || '-', icon: ShieldCheck, tone: 'emerald' },
-          { label: 'Kecepatan Rata-rata', value: '2.4 tx/menit', icon: CircleGauge, tone: 'purple' },
-          { label: 'Integritas Node', value: '100% Valid', icon: ShieldCheck, tone: 'emerald' },
-        ].map((stat, index) => (
-          <article key={index} className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-${stat.tone}-50 text-${stat.tone}-600`}>
-              <stat.icon className="h-5 w-5" />
-            </div>
-            <p className="mt-4 text-[13px] font-medium text-slate-500">{stat.label}</p>
-            <p className="mt-2 text-[24px] font-bold text-slate-900">{stat.value}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="mt-10 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/50 px-8 py-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2">
-              <Search className="h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Cari wallet pemilih..."
-                className="w-[200px] bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-slate-400 focus:w-[260px] transition-all"
-                value={actorKeyword}
-                onChange={(e) => setActorKeyword(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-               {dateRangeOptions.map(opt => (
-                  <button
-                    key={opt.key}
-                    onClick={() => setSelectedRange(opt.key)}
-                    className={`rounded-xl px-4 py-2 text-[13px] font-medium transition-colors ${selectedRange === opt.key ? 'bg-black text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                  >
-                    {opt.label}
-                  </button>
-               ))}
-            </div>
-          </div>
-          <p className="text-[13px] text-slate-500">Menampilkan {filteredRows.length} entitas audit</p>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b border-slate-100 bg-white text-[11px] font-bold uppercase tracking-[0.1em] text-slate-400">
-                <th className="px-8 py-5">Waktu</th>
-                <th className="px-8 py-5">Aksi On-Chain</th>
-                <th className="px-8 py-5">Pemilih (Wallet)</th>
-                <th className="px-8 py-5">Nomor Blok</th>
-                <th className="px-8 py-5 text-right">Bukti Hash</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {auditLogsQuery.isLoading ? (
-                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td colSpan={5} className="px-8 py-6"><div className="h-10 rounded-xl bg-slate-100" /></td>
-                  </tr>
-                ))
-              ) : paginatedRows.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center text-slate-500">Belum ada aktivitas on-chain yang tercatat.</td>
-                </tr>
-              ) : paginatedRows.map((row) => (
-                <tr key={row.id} className="group hover:bg-slate-50 transition-colors">
-                  <td className="px-8 py-6">
-                    <p className="text-[14px] font-semibold text-slate-900">{new Date(row.createdAt).toLocaleTimeString('id-ID')}</p>
-                    <p className="mt-1 text-[12px] text-slate-500">{new Date(row.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</p>
-                  </td>
-                  <td className="px-8 py-6">
-                    <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider ${actionToneClass(row.actionType)}`}>
-                      {mapActionLabel(row.actionType)}
-                    </span>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-slate-200 border-2 border-white" />
-                      <div>
-                        <p className="text-[14px] font-mono font-medium text-slate-900">{row.walletAddress.slice(0, 6)}...{row.walletAddress.slice(-4)}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <p className="text-[14px] font-medium text-slate-700">#{row.blockNumber}</p>
-                  </td>
-                  <td className="px-8 py-6 text-right">
-                    <a
-                      href={`https://sepolia.basescan.org/tx/${row.txHash}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-black hover:text-white transition-all"
-                    >
-                      <Share2 className="h-4 w-4" />
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/30 px-8 py-6">
-          <p className="text-[13px] text-slate-500">Halaman {currentPage} dari {totalPages}</p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 disabled:opacity-30"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 disabled:opacity-30"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      </section>
-      </ScrollReveal>
-    </AdminShell>
-  )
-}
-"flex flex-col gap-4 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-400 md:flex-row md:items-center">
+      <section className="flex flex-col gap-4 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-400 md:flex-row md:items-center">
         <Link href="/admin/manajemen-pemilihan" className="hover:text-slate-800">Manajemen Pemilihan</Link>
         <span>›</span>
         <Link href={`/admin/manajemen-pemilihan/${election.id}`} className="hover:text-slate-800">{election.title}</Link>

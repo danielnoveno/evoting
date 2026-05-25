@@ -6,12 +6,10 @@ import { useState, useEffect } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
-import { basescanTxUrl, formatDateTime, formatNumber, useVoterStore } from '@/lib/voter-mock-store'
-import { loadVoteCommitment } from '@/lib/vote-commitment-demo'
+import { basescanTxUrl, findElection, formatDateTime, formatNumber, useVoterStore } from '@/lib/voter-mock-store'
+import { loadVoteCommitment, saveVoteCommitment } from '@/lib/vote-commitment-demo'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
-import { useQuery } from '@tanstack/react-query'
-import { getVoterElectionDetail } from '@/lib/repositories/voterRepository'
 
 const headshots: Record<string, string> = {
   c1: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop',
@@ -44,18 +42,16 @@ function DetailRow({
 }
 
 export default function VoterCommitPage({ params }: { params: { id: string } }) {
-  const { actions } = useVoterStore()
+  const { store, loading: storeLoading, actions } = useVoterStore()
   const { showToast } = useToast()
   
-  // Real database fetch
-  const { data: detail, isLoading: detailLoading } = useQuery({
-    queryKey: ['voter-election-detail', params.id],
-    queryFn: () => getVoterElectionDetail(params.id)
-  })
-
-  const election = detail?.election
-  const candidates = detail?.candidates ?? []
-  const contractAddress = detail?.spaceAddress ?? undefined
+  // Real contract integration
+  // For MVP, we use the contractAddress from sharedDummyContext if it matches the electionId
+  // In real production, this would be fetched from Supabase based on params.id
+  const election = findElection(store, params.id)
+  const contractAddress = election?.id === 'ukm-riset-koordinator-2026' 
+    ? '0x71C7656EC7ab88b098defB751B7401B5f6d8976F' // Placeholder dari sharedDummyContext
+    : undefined
 
   const { 
     commitVote, 
@@ -69,6 +65,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   } = useElectionContract(contractAddress)
 
   const [confirmOpen, setConfirmOpen] = useState(false)
+
   const savedCommitment = loadVoteCommitment(params.id)
   
   useEffect(() => {
@@ -78,12 +75,12 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         description: 'Suara Anda telah dicatat di blockchain.',
         tone: 'success',
       })
-      // We still update mock store for UI feedback if needed
+      // Sync mock store with real TX data
       actions.commitVote(params.id, savedCommitment?.commitment)
     }
   }, [isConfirmed, hash, receipt, params.id, actions, showToast, savedCommitment?.commitment])
 
-  if (detailLoading) {
+  if (storeLoading || !store) {
     return (
       <VoterShell>
         <div className="h-[420px] animate-pulse rounded-xl bg-slate-200" />
@@ -105,17 +102,19 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     )
   }
 
-  const selectedCandidate = candidates.find((c) => c.candidateLocalId === savedCommitment?.candidateId) ?? null
+  const selectedCandidate = election.candidates.find((candidate) => candidate.id === election.selectedCandidateId)
+    ?? election.candidates.find((candidate) => candidate.id === election.committedCandidateId)
+    ?? null
 
-  const commitProof = isConfirmed && hash && receipt ? {
+  const commitProof = election.commitProof || (isConfirmed && hash && receipt ? {
     txHash: hash,
     blockNumber: Number(receipt.blockNumber),
     gasUsed: Number(receipt.gasUsed),
     createdAt: new Date().toISOString(),
     statusLabel: 'Confirmed',
-  } : null
+  } : null)
 
-  const stepState = (commitProof || hasCommittedOnChain)
+  const stepState = commitProof
     ? [
         { label: 'pilih kandidat', done: true },
         { label: 'commit', done: true },
@@ -129,7 +128,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         { label: 'result' },
       ]
 
-  if (!savedCommitment || !selectedCandidate) {
+  if (!selectedCandidate || !savedCommitment) {
     return (
       <VoterShell>
         <VoterStepper steps={stepState} />
@@ -151,7 +150,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
 
   const handleCommit = () => {
     setConfirmOpen(false)
-    commitVote(savedCommitment.commitment as `0x${string}`)
+    commitVote(savedCommitment.commitment)
   }
 
   if (commitProof || hasCommittedOnChain) {
@@ -175,23 +174,27 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
             <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat terpilih</p>
               <div className="mt-4 flex items-center gap-4">
-                <div className="h-16 w-16 rounded-2xl bg-slate-200" />
+                <img
+                  src={headshots[selectedCandidate.id] || defaultHeadshot}
+                  alt={selectedCandidate.name}
+                  className="h-16 w-16 rounded-2xl object-cover grayscale"
+                />
                 <div>
-                  <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate.fullName}</h2>
-                  <p className="mt-1 text-[14px] text-slate-600">{selectedCandidate.faculty}</p>
+                  <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate.name}</h2>
+                  <p className="mt-1 text-[14px] text-slate-600">{selectedCandidate.vision}</p>
                 </div>
               </div>
             </article>
 
             <article className="rounded-2xl bg-[#0F172A] p-5 text-white">
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Hash komitmen (On-Chain)</p>
-              <p className="mt-4 break-all font-mono text-[12px] leading-6 text-slate-200">{savedCommitment.commitment}</p>
-              <p className="mt-4 text-[13px] leading-6 text-slate-300">Bukti ini tersimpan secara permanen di blockchain.</p>
+              <p className="mt-4 break-all font-mono text-[12px] leading-6 text-slate-200">{election.commitmentHash ?? savedCommitment.commitment}</p>
+              <p className="mt-4 text-[13px] leading-6 text-slate-300">Bukti ini tersimpan secara permanen di Base Sepolia.</p>
             </article>
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
-             <DetailRow icon={ShieldCheck} label="Jaringan" value="Base Sepolia" />
+            <DetailRow icon={Fingerprint} label="ID Pemilih" value={election.voterIdentifier} />
             <DetailRow icon={CalendarDays} label="Waktu Transaksi" value={commitProof ? `${formatDateTime(commitProof.createdAt)} WIB` : 'Tersimpan'} />
             <DetailRow icon={ShieldCheck} label="Nomor Block" value={commitProof ? formatNumber(commitProof.blockNumber) : '-'} />
           </div>
@@ -209,7 +212,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
               </a>
             )}
             <Link
-              href={`/pemilih/pemilihan/${params.id}/reveal`}
+              href={`/pemilih/pemilihan/${election.id}/reveal`}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-[#0F172A] px-5 text-[13px] font-semibold text-white hover:bg-[#1E293B]"
             >
                Lanjut ke Konfirmasi
@@ -243,7 +246,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
             <p className="mt-1 text-[13px] text-red-800 leading-relaxed">
               {writeError.message.includes('User rejected') 
                 ? 'Transaksi dibatalkan oleh pengguna.' 
-                : 'Terjadi kesalahan saat mengirim transaksi ke blockchain. Pastikan dompet terhubung.'}
+                : 'Terjadi kesalahan saat mengirim transaksi ke blockchain. Pastikan saldo Sepolia ETH mencukupi.'}
             </p>
           </div>
         </section>
@@ -254,13 +257,18 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat terpilih</p>
-              <h2 className="mt-4 text-[24px] font-semibold text-slate-900">{selectedCandidate.fullName}</h2>
-              <p className="mt-2 text-[18px] text-slate-700">{selectedCandidate.faculty}</p>
+              <h2 className="mt-4 text-[24px] font-semibold text-slate-900">{selectedCandidate.name}</h2>
+              <p className="mt-2 text-[18px] text-slate-700">{selectedCandidate.vision}</p>
             </div>
-            <div className="h-[96px] w-[96px] rounded-3xl bg-slate-100" />
+            <img
+              src={headshots[selectedCandidate.id] || defaultHeadshot}
+              alt={selectedCandidate.name}
+              className="h-[96px] w-[96px] rounded-3xl object-cover grayscale"
+            />
           </div>
 
           <div className="mt-8 grid gap-4">
+            <DetailRow icon={Fingerprint} label="ID Pemilih" value={election.voterIdentifier} />
             <DetailRow icon={CalendarDays} label="Waktu Lokal" value={`${formatDateTime(savedCommitment.timestamp)} WIB`} />
           </div>
         </article>
@@ -307,7 +315,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
 
       <section className="mt-8 flex flex-col gap-3 pb-2 sm:flex-row sm:justify-end">
         <Link
-          href={`/pemilih/pemilihan/${params.id}/pilih-kandidat`}
+          href={`/pemilih/pemilihan/${election.id}/pilih-kandidat`}
           className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-200 px-6 text-[13px] font-semibold text-slate-900 hover:bg-slate-300"
         >
           Batal & Ubah
