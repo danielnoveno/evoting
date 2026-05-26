@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation'
 import { AdminElectionDetailView } from '@/components/admin/admin-election-detail-view'
-import { AdminElectionDetailTabId, adminElectionDetailTabs, getAdminElectionById, AdminElectionRecord } from '@/lib/admin-election-data'
+import { AdminElectionDetailTabId, adminElectionData, adminElectionDetailTabs, getAdminElectionById, AdminElectionRecord } from '@/lib/admin-election-data'
 import { useProposalDraft } from '@/hooks/use-proposal-draft'
 import { useMemo } from 'react'
 import { Loader2 } from 'lucide-react'
@@ -20,26 +20,32 @@ export default function AdminElectionDetailPage({
   const election = useMemo<AdminElectionRecord | null>(() => {
     const p = proposalQuery.data
     if (!p) return fallbackElection ?? null
+    const baseElection = fallbackElection ?? adminElectionData[0]
+    if (!baseElection) return null
+    const voterTarget = String(p.candidateCount * 10)
 
     return {
+      ...baseElection,
       id: p.id,
       title: p.title,
       code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
-      status: (p.status === 'deployed' ? 'aktif' : 'selesai') as any,
+      status: p.status === 'deployed' ? 'aktif' : 'selesai',
       badge: p.status === 'deployed' ? 'Active' : 'Approved',
       meta: p.description ?? 'Ruang pemilihan blockchain.',
-      iconTone: (p.status === 'deployed' ? 'emerald' : 'blue') as any,
+      iconTone: p.status === 'deployed' ? 'emerald' : 'blue',
       actionLabel: p.status === 'deployed' ? 'Monitoring' : 'Review Draft',
       secondaryActionLabel: 'Statistik',
-      actionTone: 'blue' as any,
+      actionTone: 'blue',
       periodLabel: 'Mei - Juni 2026',
+      turnoutLabel: `${voterTarget} pemilih terdaftar`,
       detail: {
+        ...baseElection.detail,
         statusPill: p.status === 'deployed' ? 'Sedang Berjalan' : 'Siap Sinkronisasi',
         blockchainAnchor: p.deploymentTxHash ?? 'Menunggu deployment...',
         blockchainNetworkLabel: 'Base Sepolia Testnet',
         turnout: {
-          total: 0,
-          target: p.candidateCount * 10,
+          total: '0',
+          target: voterTarget,
           percentage: '0%',
           progressWidthClassName: 'w-[0%]',
           note: 'Data partisipasi akan diperbarui secara realtime dari indexer.'
@@ -50,11 +56,11 @@ export default function AdminElectionDetailPage({
           { label: 'Share Link', icon: 'share' },
         ],
         whitelist: {
-          total: 0,
-          target: 0,
+          total: '0',
+          target: '0',
           integrityTitle: 'Database Terkunci',
           integrityDescription: 'Daftar pemilih telah di-hash dan diamankan di blockchain.',
-          evidence: p.proposal_tx_hash ?? 'N/A',
+          evidence: p.proposalTxHash ?? 'N/A',
           evidenceStatus: 'Verified On-Chain',
           records: [],
           uploadSupport: 'CSV, Manual'
@@ -80,15 +86,16 @@ export default function AdminElectionDetailPage({
           privacy: {
             headline: 'Privasi Terjamin',
             items: [
-              { title: 'Zero-Knowledge Commitment', description: 'Pilihan Anda dienkripsi sebelum dikirim ke blockchain.' }
+              { title: 'Commit-Reveal', description: 'Pilihan disimpan sebagai hash saat fase commit, lalu diverifikasi pada fase reveal.' }
             ],
             ctaLabel: 'Verifikasi Keamanan'
           }
         },
         realtime: {
+          ...baseElection.detail.realtime,
           connectedLabel: 'Live Sync',
-          totalVotes: 0,
-          totalTarget: 100,
+          totalVotes: '0',
+          totalTarget: voterTarget,
           participation: '0%',
           remaining: { hours: '00', minutes: '00', seconds: '00', label: 'Waktu Habis' },
           networkStatus: { title: 'Jaringan Stabil', subtitle: 'Syncing with Base Sepolia' },

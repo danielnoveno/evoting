@@ -53,7 +53,7 @@ export default function AdminProfilePage() {
   const fallbackProfile = mapProfileToViewModel(profileQuery.data ?? null, {
     displayName: 'Budi Santoso',
     email: 'budi.santoso@email.com',
-    walletAddress,
+    walletAddress: walletAddress ?? 'Wallet belum terhubung',
     bio: 'Warga negara yang aktif dalam partisipasi demokrasi digital.',
     avatarUrl: 'https://i.pravatar.cc/300?img=11',
   })
@@ -114,6 +114,15 @@ export default function AdminProfilePage() {
   }
 
   const handleSaveChanges = () => {
+    if (!walletAddress) {
+      showToast({
+        title: 'Wallet belum terhubung',
+        description: 'Hubungkan wallet terlebih dahulu sebelum menyimpan profil.',
+        tone: 'error'
+      })
+      return
+    }
+
     saveProfile.mutate(
       {
         walletAddress,

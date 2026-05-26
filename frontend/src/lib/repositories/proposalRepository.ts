@@ -187,6 +187,9 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
     }
   }
 
+  return mapProposalRow(data)
+}
+
 export async function updateProposalStatus(
   id: string,
   status: Database['app']['Tables']['proposal_drafts']['Row']['status'],

@@ -4,13 +4,16 @@ import { AlertTriangle, Clock3 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
+import { AppPageHeader } from '@/components/ui/app-page-header'
+import { AppSectionCard } from '@/components/ui/app-section-card'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import {
   SuperadminFilterChip,
   SuperadminInteractiveCard,
   SuperadminShell,
 } from '@/components/superadmin/superadmin-shell'
 import { useSuperadminProposalDrafts } from '@/hooks/use-proposal-draft'
-import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+import { SuperadminElectionState, superadminElectionFilters } from '@/lib/superadmin-data'
 
 type ElectionFilter = (typeof superadminElectionFilters)[number]
 

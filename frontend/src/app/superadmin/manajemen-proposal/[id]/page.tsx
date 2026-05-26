@@ -13,7 +13,9 @@ import {
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
-import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+import { useRegistryContract } from '@/hooks/use-registry-contract'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import type { SuperadminProposalDetail } from '@/lib/superadmin-data'
 
 type DecisionType = 'approve' | 'revise' | 'reject' | 'deploy' | null
 
@@ -39,7 +41,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
 
   const liveProposal = proposalQuery.data
 
-  const proposal = useMemo(() => {
+  const proposal = useMemo<SuperadminProposalDetail | null>(() => {
     if (!liveProposal) return null
 
     return {

@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react'
 import { SuperadminEmptyState, SuperadminInteractiveCard, SuperadminShell, SuperadminStatusBadge } from '@/components/superadmin/superadmin-shell'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useSuperadminProposalDrafts } from '@/hooks/use-proposal-draft'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 

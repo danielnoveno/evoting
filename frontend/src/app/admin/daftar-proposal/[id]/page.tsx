@@ -47,7 +47,7 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
           router.push('/admin/daftar-proposal')
         },
         onError: () => {
-          showToast({ title: 'Terjadi Kesalahan', description: 'Proposal terkirim ke blockchain tetapi gagal memperbarui status lokal.', tone: 'warning' })
+          showToast({ title: 'Terjadi Kesalahan', description: 'Proposal terkirim ke blockchain tetapi gagal memperbarui status lokal.', tone: 'error' })
         }
       })
     }

@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { listProposalDrafts } from '@/lib/repositories/proposalRepository'
 import { mapProposalDraftToListItem } from '@/lib/mappers/proposalMapper'
 import { adminProposalContent } from '@/lib/admin-proposal-data'
+import { adminElectionData, AdminElectionRecord } from '@/lib/admin-election-data'
 
 export function useAdminProposalList() {
   const query = useQuery({
@@ -54,31 +55,38 @@ export function useAdminElectionList() {
     retry: false,
   })
 
-  const elections = useMemo(() => {
+  const elections = useMemo<AdminElectionRecord[]>(() => {
     if (!query.data || query.data.length === 0) return []
     
     return query.data
       .filter(p => p.status === 'approved' || p.status === 'deployed')
-      .map(p => ({
-        id: p.id,
-        title: p.title,
-        code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
-        status: (p.status === 'deployed' ? 'aktif' : 'selesai') as any,
-        badge: p.status === 'deployed' ? 'Active' : 'Approved',
-        meta: p.description ?? 'Ruang pemilihan blockchain.',
-        iconTone: (p.status === 'deployed' ? 'emerald' : 'blue') as any,
-        actionLabel: p.status === 'deployed' ? 'Monitoring' : 'Review Draft',
-        secondaryActionLabel: 'Statistik',
-        actionTone: 'blue' as any,
-        periodLabel: 'Mei - Juni 2026',
-        commits: p.status === 'deployed' ? {
-          total: 0,
-          target: p.candidateCount * 10, // Mock target
-          hash: p.deploymentTxHash?.slice(0, 10) ?? '0x...',
-          revealStart: p.revealStartAt ? new Date(p.revealStartAt).toLocaleDateString() : '-',
-          integrity: 'Verified'
-        } : undefined
-      }))
+      .map((p, index) => {
+        const baseElection = adminElectionData[index % adminElectionData.length] ?? adminElectionData[0]
+        const voterTarget = String(p.candidateCount * 10)
+
+        return {
+          ...baseElection,
+          id: p.id,
+          title: p.title,
+          code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
+          status: p.status === 'deployed' ? 'aktif' : 'selesai',
+          badge: p.status === 'deployed' ? 'Active' : 'Approved',
+          meta: p.description ?? 'Ruang pemilihan blockchain.',
+          iconTone: p.status === 'deployed' ? 'emerald' : 'blue',
+          actionLabel: p.status === 'deployed' ? 'Monitoring' : 'Review Draft',
+          secondaryActionLabel: 'Statistik',
+          actionTone: 'blue',
+          periodLabel: 'Mei - Juni 2026',
+          turnoutLabel: `${voterTarget} pemilih terdaftar`,
+          commits: p.status === 'deployed' ? {
+            total: '0',
+            target: voterTarget,
+            hash: p.deploymentTxHash?.slice(0, 10) ?? '0x...',
+            revealStart: p.revealStartAt ? new Date(p.revealStartAt).toLocaleDateString() : '-',
+            integrity: 'Verified'
+          } : undefined
+        }
+      })
   }, [query.data])
 
   return {
