@@ -1,4 +1,4 @@
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { sharedContext } from '@/lib/shared-context'
 
 export type AdminElectionStatus = 'aktif' | 'selesai'
 
@@ -348,31 +348,31 @@ const sharedQuickActions: AdminElectionRecord['detail']['quickActions'] = [
  *  #4  Ketua Divisi Acara 2025     — SELESAI          —  54 pemilih
  * ────────────────────────────────────────────────────────────────────────────*/
 
-export const adminElectionDummyData: AdminElectionRecord[] = [
+export const adminElectionData: AdminElectionRecord[] = [
   /* ── #1 Koordinator UKM Riset 2026 · COMMIT ────────────────────────────── */
   {
-    id: sharedDummyContext.electionId,
-    title: sharedDummyContext.proposalTitle,
-    meta: `Commit dibuka 12–18 Juni 2026 • ${sharedDummyContext.voterEstimate} pemilih terdaftar`,
+    id: sharedContext.electionId,
+    title: sharedContext.proposalTitle,
+    meta: `Commit dibuka 12–18 Juni 2026 • ${sharedContext.voterEstimate} pemilih terdaftar`,
     status: 'aktif',
     badge: 'Fase Aktif: Commit',
     iconTone: 'emerald',
     actionLabel: 'Monitor Phase',
     actionTone: 'indigo',
     secondaryActionLabel: 'Kandidat',
-    code: sharedDummyContext.electionCode,
+    code: sharedContext.electionCode,
     periodLabel: '12 Jun 2026 - 19 Jun 2026',
-    turnoutLabel: `${sharedDummyContext.voterEstimate} pemilih terdaftar`,
+    turnoutLabel: `${sharedContext.voterEstimate} pemilih terdaftar`,
     commits: {
       total: '218',
-      target: String(sharedDummyContext.voterEstimate),
+      target: String(sharedContext.voterEstimate),
       hash: '0x71c...a3e4',
       revealStart: '19 Juni 2026, 09.00',
       integrity: 'Whitelist Aktif',
     },
     detail: {
       statusPill: 'Berlangsung',
-      candidates: sharedDummyContext.candidates.map((candidate, index) => ({
+      candidates: sharedContext.candidates.map((candidate, index) => ({
         id: candidate.id,
         number: candidate.number,
         name: candidate.name,
@@ -388,34 +388,34 @@ export const adminElectionDummyData: AdminElectionRecord[] = [
       blockchainNetworkLabel: 'Tervalidasi pada Base Sepolia',
       turnout: {
         total: '218',
-        target: String(sharedDummyContext.voterEstimate),
+        target: String(sharedContext.voterEstimate),
         percentage: '67.3%',
         progressWidthClassName: 'w-[67.3%]',
         note: 'Memantau pembaruan commit dari smart contract secara berkala.',
       },
       quickActions: sharedQuickActions,
-      whitelist: createWhitelistDetail(String(sharedDummyContext.voterEstimate), String(sharedDummyContext.voterEstimate), '0x71C7656EC7ab88b098defB75', [
+      whitelist: createWhitelistDetail(String(sharedContext.voterEstimate), String(sharedContext.voterEstimate), '0x71C7656EC7ab88b098defB75', [
         { wallet: '0x3fA...8dE2', name: 'Ahmad Zulfikar', status: 'verified', addedAt: '10 Jun 2026' },
         { wallet: '0x921...72C1', name: 'Maria Clarissa', status: 'verified', addedAt: '10 Jun 2026' },
         { wallet: '0xb42...D9a1', name: '—', status: 'pending', addedAt: 'Baru saja' },
         { wallet: '0x77c...E55a', name: 'Bambang Wijaya', status: 'verified', addedAt: '09 Jun 2026' },
       ]),
       parameterVoting: createParameterVotingDetail(
-        sharedDummyContext.contractAddress,
+        sharedContext.contractAddress,
         '0x892a3c71c1234567890abcdef1234567890abcdef1234567890abcdef1234567',
         { commitStart: '12 Jun 2026, 08:00', commitEnd: '18 Jun 2026, 18:00', revealStart: '19 Jun 2026, 09:00', revealEnd: '20 Jun 2026, 12:00' },
       ),
-      realtime: createRealtimeDetail('218', String(sharedDummyContext.voterEstimate), '67%', 'w-[67%]', [
-        { candidateNumber: '01', candidateName: sharedDummyContext.candidates[0].name, votes: '96', percentage: '44.0%', barWidthClassName: 'w-[44%]', tone: 'primary' },
-        { candidateNumber: '02', candidateName: sharedDummyContext.candidates[1].name, votes: '72', percentage: '33.0%', barWidthClassName: 'w-[33%]', tone: 'secondary' },
-        { candidateNumber: '03', candidateName: sharedDummyContext.candidates[2].name, votes: '50', percentage: '23.0%', barWidthClassName: 'w-[23%]', tone: 'secondary' },
+      realtime: createRealtimeDetail('218', String(sharedContext.voterEstimate), '67%', 'w-[67%]', [
+        { candidateNumber: '01', candidateName: sharedContext.candidates[0].name, votes: '96', percentage: '44.0%', barWidthClassName: 'w-[44%]', tone: 'primary' },
+        { candidateNumber: '02', candidateName: sharedContext.candidates[1].name, votes: '72', percentage: '33.0%', barWidthClassName: 'w-[33%]', tone: 'secondary' },
+        { candidateNumber: '03', candidateName: sharedContext.candidates[2].name, votes: '50', percentage: '23.0%', barWidthClassName: 'w-[23%]', tone: 'secondary' },
       ]),
       monitoring: createMonitoringDetail({
         title: 'Detail Log Audit',
         description: 'Laporan aktivitas teknis terenkripsi dan perubahan status sistem pada Smart Contract Votein.',
         currentPhase: 'COMMIT',
         timeRemaining: '14:22:05',
-        totalWhitelist: String(sharedDummyContext.voterEstimate),
+        totalWhitelist: String(sharedContext.voterEstimate),
         totalCommits: '218',
         commitProgress: '67%',
         totalReveals: '0',
@@ -443,7 +443,7 @@ export const adminElectionDummyData: AdminElectionRecord[] = [
         breadcrumbParent: 'Manajemen Pemilihan',
         breadcrumbCurrent: 'Tambah Kandidat',
         title: 'Profil Kandidat',
-        description: `Silakan lengkapi informasi detail kandidat untuk pemilihan ${sharedDummyContext.proposalTitle}. Pastikan data akurat sebelum sinkronisasi dummy on-chain.`,
+        description: `Silakan lengkapi informasi detail kandidat untuk pemilihan ${sharedContext.proposalTitle}. Pastikan data akurat sebelum sinkronisasi on-chain.`,
         ...sharedCandidateFormFields,
         identityPlaceholder: 'Contoh: 220711663',
         validationDescription: 'Sistem otomatis akan memverifikasi NPM kandidat',
@@ -826,7 +826,7 @@ export const adminElectionDetailTabs = [
 export type AdminElectionDetailTabId = (typeof adminElectionDetailTabs)[number]['id']
 
 export function getAdminElectionById(id: string) {
-  return adminElectionDummyData.find((election) => election.id === id) ?? null
+  return adminElectionData.find((election) => election.id === id) ?? null
 }
 
 export function getAdminElectionCandidateById(electionId: string, candidateId: string) {

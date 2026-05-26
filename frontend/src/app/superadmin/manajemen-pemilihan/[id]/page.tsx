@@ -2,7 +2,7 @@
 
 import { notFound, redirect } from 'next/navigation'
 import { useMemo } from 'react'
-import { useSuperadminElectionsStore } from '@/lib/superadmin-mock-store'
+import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
 
 export default function SuperadminElectionRouteResolverPage({ params }: { params: { id: string } }) {
   const { elections } = useSuperadminElectionsStore()

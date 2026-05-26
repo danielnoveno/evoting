@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
-import { findElection, useVoterStore } from '@/lib/voter-mock-store'
+import { findElection, useVoterStore } from '@/lib/voter-store'
 import { clearVoteCommitment, loadVoteCommitment } from '@/lib/vote-commitment-demo'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
@@ -45,7 +45,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         description: 'Pilihan Anda telah divalidasi dan dihitung.',
         tone: 'success',
       })
-      // Sync mock store
+      // Sync store
       actions.revealVote(params.id)
       // Clear commitment since it's used
       clearVoteCommitment(params.id)

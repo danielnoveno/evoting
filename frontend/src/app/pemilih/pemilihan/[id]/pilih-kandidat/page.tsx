@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { findElection, formatDateTime, useVoterStore } from '@/lib/voter-mock-store'
+import { findElection, formatDateTime, useVoterStore } from '@/lib/voter-store'
 import { generateCommitment, generateSalt, saveVoteCommitment } from '@/lib/vote-commitment-demo'
 
 const headshots: Record<string, string> = {

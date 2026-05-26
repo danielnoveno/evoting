@@ -6,9 +6,9 @@ import { useMemo, useState } from 'react'
 import { SuperadminDetailIntro, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
-import { type SuperadminElectionState } from '@/lib/superadmin-dummy-data'
-import { useSuperadminElectionsStore } from '@/lib/superadmin-mock-store'
+import { sharedContext } from '@/lib/shared-context'
+import { type SuperadminElectionState } from '@/lib/superadmin-data'
+import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 type ModerationDetail = {
@@ -56,7 +56,7 @@ type ModerationDetail = {
 }
 
 const moderationDetails: Record<string, ModerationDetail> = {
-  [sharedDummyContext.electionId]: {
+  [sharedContext.electionId]: {
     network: 'Base Sepolia Testnet Secured',
     electionCode: 'ID: UKM-RI-UAJY-2026-01',
     endLabel: 'Berakhir dalam 2 hari, 14 jam',
@@ -77,9 +77,9 @@ const moderationDetails: Record<string, ModerationDetail> = {
     candidateSectionDescription: 'Status suara bersifat tersembunyi (commitment-based) hingga fase Reveal.',
     encryptedLabel: 'Suara Dienkripsi',
     candidates: [
-      { id: sharedDummyContext.candidates[0].id, ballotNumber: 'KANDIDAT 01', name: sharedDummyContext.candidates[0].name, vision: `Visi: ${sharedDummyContext.candidates[0].vision}`, commitmentCount: '96', initials: 'NP' },
-      { id: sharedDummyContext.candidates[1].id, ballotNumber: 'KANDIDAT 02', name: sharedDummyContext.candidates[1].name, vision: `Visi: ${sharedDummyContext.candidates[1].vision}`, commitmentCount: '72', initials: 'RM' },
-      { id: sharedDummyContext.candidates[2].id, ballotNumber: 'KANDIDAT 03', name: sharedDummyContext.candidates[2].name, vision: `Visi: ${sharedDummyContext.candidates[2].vision}`, commitmentCount: '50', initials: 'SW' },
+      { id: sharedContext.candidates[0].id, ballotNumber: 'KANDIDAT 01', name: sharedContext.candidates[0].name, vision: `Visi: ${sharedContext.candidates[0].vision}`, commitmentCount: '96', initials: 'NP' },
+      { id: sharedContext.candidates[1].id, ballotNumber: 'KANDIDAT 02', name: sharedContext.candidates[1].name, vision: `Visi: ${sharedContext.candidates[1].vision}`, commitmentCount: '72', initials: 'RM' },
+      { id: sharedContext.candidates[2].id, ballotNumber: 'KANDIDAT 03', name: sharedContext.candidates[2].name, vision: `Visi: ${sharedContext.candidates[2].vision}`, commitmentCount: '50', initials: 'SW' },
     ],
     supportCards: [
       { id: 's1', title: 'Commit-Reveal Verification', description: 'Setiap suara diverifikasi menggunakan skema komitmen kriptografi.', icon: 'shield' },

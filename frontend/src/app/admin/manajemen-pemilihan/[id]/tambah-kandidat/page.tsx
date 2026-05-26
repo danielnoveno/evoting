@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { AdminCandidateFormView } from '@/components/admin/admin-candidate-form-view'
-import { getAdminElectionById } from '@/lib/admin-election-dummy-data'
+import { getAdminElectionById } from '@/lib/admin-election-data'
 
 export default function AdminElectionAddCandidatePage({ params }: { params: { id: string } }) {
   const election = getAdminElectionById(params.id)

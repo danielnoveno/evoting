@@ -19,8 +19,8 @@ import {
   SuperadminTextInput,
   SuperadminToolbarButton,
 } from '@/components/superadmin/superadmin-shell'
-import { superadminAdminStatuses, superadminAdminTabs, type SuperadminAdminRecord } from '@/lib/superadmin-dummy-data'
-import { useSuperadminAdminsStore } from '@/lib/superadmin-mock-store'
+import { superadminAdminStatuses, superadminAdminTabs, type SuperadminAdminRecord } from '@/lib/superadmin-data'
+import { useSuperadminAdminsStore } from '@/lib/superadmin-store'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'

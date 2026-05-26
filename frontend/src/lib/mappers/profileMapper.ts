@@ -22,8 +22,8 @@ export function mapProfileToViewModel(
     roleLabel:
       profile?.role === 'super_admin'
         ? 'Super Admin'
-        : profile?.role === 'platform_admin'
-          ? 'Admin Platform'
+        : profile?.role === 'admin'
+          ? 'Admin'
           : 'Pemilih',
   }
 }

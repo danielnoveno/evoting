@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
-import { adminHelpData } from '@/lib/admin-help-dummy-data'
+import { adminHelpData } from '@/lib/admin-help-data'
 import { useToast } from '@/components/ui/toast-provider'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'

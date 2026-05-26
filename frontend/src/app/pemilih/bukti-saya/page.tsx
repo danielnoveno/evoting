@@ -11,7 +11,7 @@ import {
   getPhaseLabel,
   getPhaseTone,
   useVoterStore,
-} from '@/lib/voter-mock-store'
+} from '@/lib/voter-store'
 
 const phaseToneClassName = {
   success: 'bg-emerald-50 text-emerald-700',

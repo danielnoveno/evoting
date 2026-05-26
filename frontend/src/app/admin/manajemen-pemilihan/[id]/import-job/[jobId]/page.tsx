@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { AdminImportJobDetailView } from '@/components/admin/admin-import-job-detail-view'
-import { getAdminElectionById } from '@/lib/admin-election-dummy-data'
+import { getAdminElectionById } from '@/lib/admin-election-data'
 
 export default function AdminImportJobDetailPage({ params }: { params: { id: string; jobId: string } }) {
   const election = getAdminElectionById(params.id)

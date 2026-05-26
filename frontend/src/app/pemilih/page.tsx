@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { VoterPageSkeleton, VoterShell } from '@/components/voter/voter-shell'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { sharedContext } from '@/lib/shared-context'
 import {
   getElectionViewState,
   formatNumber,
@@ -17,7 +17,7 @@ import {
   useVoterStore,
   basescanTxUrl,
   formatWallet,
-} from '@/lib/voter-mock-store'
+} from '@/lib/voter-store'
 
 const logToneClassName = {
   success: 'bg-emerald-50 text-emerald-700',
@@ -43,7 +43,7 @@ export default function VoterDashboardPage() {
   }
 
   const elections = sortDashboardElections(store.elections)
-  const featuredElection = elections.find((election) => election.id === sharedDummyContext.electionId)
+  const featuredElection = elections.find((election) => election.id === sharedContext.electionId)
     ?? elections.find((election) => election.phase === 'commit' && !election.commitProof)
     ?? elections.find((election) => election.phase === 'reveal' && !election.revealProof)
     ?? elections[0]

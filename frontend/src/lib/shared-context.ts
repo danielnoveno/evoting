@@ -1,4 +1,4 @@
-export const sharedDummyContext = {
+export const sharedContext = {
   organization: 'UKM Riset dan Inovasi UAJY',
   organizationShort: 'UKM Riset dan Inovasi',
   proposalId: 'p-ukm-riset',

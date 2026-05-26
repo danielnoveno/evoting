@@ -1,4 +1,4 @@
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { sharedContext } from '@/lib/shared-context'
 
 export type ProposalStatus = 'DISETUJUI' | 'MENUNGGU REVIEW' | 'DRAF' | 'DITOLAK'
 
@@ -15,7 +15,7 @@ export interface ProposalRow {
 export const adminProposalContent = {
   header: {
     title: 'Ringkasan Pengajuan Proposal',
-    description: `Pantau dan kelola seluruh proposal pemilihan internal ${sharedDummyContext.organizationShort}. Pastikan integritas data sebelum proposal dipublikasikan.`,
+    description: `Pantau dan kelola seluruh proposal pemilihan internal ${sharedContext.organizationShort}. Pastikan integritas data sebelum proposal dipublikasikan.`,
     primaryCta: 'Buat Proposal Baru',
   },
   stats: [
@@ -35,11 +35,11 @@ export const adminProposalContent = {
   },
   proposals: [
     {
-      id: sharedDummyContext.proposalId,
-      title: sharedDummyContext.proposalTitle,
+      id: sharedContext.proposalId,
+      title: sharedContext.proposalTitle,
       category: 'Kepengurusan',
       date: '10 Mar 2026',
-      votersEstimate: String(sharedDummyContext.voterEstimate),
+      votersEstimate: String(sharedContext.voterEstimate),
       hash: '0x71C...4f92',
       status: 'DISETUJUI',
     },

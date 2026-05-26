@@ -13,7 +13,7 @@ import {
   SuperadminStatusBadge,
   SuperadminToolbarButton,
 } from '@/components/superadmin/superadmin-shell'
-import { useSuperadminAdminsStore } from '@/lib/superadmin-mock-store'
+import { useSuperadminAdminsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 export default function SuperadminAdminDetailPage({ params }: { params: { id: string } }) {

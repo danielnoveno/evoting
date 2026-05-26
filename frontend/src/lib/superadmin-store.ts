@@ -14,7 +14,7 @@ import {
   type SuperadminPlatformSession,
   type SuperadminProposalRecord,
   type SuperadminRiskAlert,
-} from '@/lib/superadmin-dummy-data'
+} from '@/lib/superadmin-data'
 
 const STORAGE_KEYS = {
   admins: 'votein_superadmin_admins_v2',

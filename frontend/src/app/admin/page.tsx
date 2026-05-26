@@ -4,10 +4,10 @@ import { FileText, LayoutGrid, ListChecks, PieChart, Plus, ShieldCheck, TimerRes
 import { useRouter } from 'next/navigation'
 import { ReactNode } from 'react'
 import { AdminMetricCard, AdminModuleCard, AdminShell } from '@/components/admin/admin-shell'
-import { adminDashboardContent, type AdminModuleKey } from '@/lib/dummy-admin-content'
+import { adminDashboardContent, type AdminModuleKey } from '@/lib/admin-content'
 import { useToast } from '@/components/ui/toast-provider'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { sharedContext } from '@/lib/shared-context'
 
 const moduleIcons: Record<AdminModuleKey, ReactNode> = {
   beranda: <LayoutGrid className="h-5 w-5" />,
@@ -23,11 +23,11 @@ const moduleIcons: Record<AdminModuleKey, ReactNode> = {
 const moduleHrefs: Record<AdminModuleKey, string> = {
   beranda: '/admin',
   proposal: '/admin/daftar-proposal',
-  fase: `/admin/manajemen-pemilihan/${sharedDummyContext.electionId}?tab=parameter`,
-  kandidat: `/admin/manajemen-pemilihan/${sharedDummyContext.electionId}?tab=kandidat`,
-  whitelist: `/admin/manajemen-pemilihan/${sharedDummyContext.electionId}?tab=whitelist`,
-  monitoring: `/admin/manajemen-pemilihan/${sharedDummyContext.electionId}/monitoring`,
-  hasil: `/admin/manajemen-pemilihan/${sharedDummyContext.electionId}?tab=realtime`,
+  fase: `/admin/manajemen-pemilihan/${sharedContext.electionId}?tab=parameter`,
+  kandidat: `/admin/manajemen-pemilihan/${sharedContext.electionId}?tab=kandidat`,
+  whitelist: `/admin/manajemen-pemilihan/${sharedContext.electionId}?tab=whitelist`,
+  monitoring: `/admin/manajemen-pemilihan/${sharedContext.electionId}/monitoring`,
+  hasil: `/admin/manajemen-pemilihan/${sharedContext.electionId}?tab=realtime`,
   tambah: '/admin/manajemen-pemilihan',
 }
 

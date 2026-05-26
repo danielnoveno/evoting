@@ -7,8 +7,8 @@ import { SuperadminInteractiveCard, SuperadminShell } from '@/components/superad
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { superadminDashboardData } from '@/lib/superadmin-dummy-data'
-import { useSuperadminAdminsStore, useSuperadminElectionsStore, useSuperadminProposalsStore, useSuperadminRiskAlertsStore } from '@/lib/superadmin-mock-store'
+import { superadminDashboardData } from '@/lib/superadmin-data'
+import { useSuperadminAdminsStore, useSuperadminElectionsStore, useSuperadminProposalsStore, useSuperadminRiskAlertsStore } from '@/lib/superadmin-store'
 
 const metricIcons = {
   admins: Users,

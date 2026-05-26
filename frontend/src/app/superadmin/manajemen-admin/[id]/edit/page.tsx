@@ -17,7 +17,7 @@ import {
 } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
-import { useSuperadminAdminsStore } from '@/lib/superadmin-mock-store'
+import { useSuperadminAdminsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 type AdminScope = 'all' | 'specific'

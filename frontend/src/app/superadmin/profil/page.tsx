@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { useToast } from '@/components/ui/toast-provider'
-import { superadminPlatformData } from '@/lib/superadmin-dummy-data'
-import { useSuperadminPlatformStore } from '@/lib/superadmin-mock-store'
+import { superadminPlatformData } from '@/lib/superadmin-data'
+import { useSuperadminPlatformStore } from '@/lib/superadmin-store'
 
 export default function SuperadminProfilePage() {
   const { showToast } = useToast()

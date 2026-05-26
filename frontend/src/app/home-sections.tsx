@@ -4,7 +4,7 @@ import { ArrowRight, FileCheck2, Globe, LockKeyhole, ShieldCheck, SquarePen, Use
 import Link from 'next/link'
 import { ScrollReveal, ParallaxLayer, FloatingShape, StaggerContainer } from '@/components/public/parallax'
 import { AsciiBackground } from '@/components/public/ascii-background'
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { sharedContext } from '@/lib/shared-context'
 
 /* ─────────────────────────────────────────────
    Hero Section
@@ -49,7 +49,7 @@ export function HeroSection() {
               <p className="mt-8 max-w-[720px] text-[18px] leading-9 text-slate-800">
                 Keamanan kelas institusi bertemu dengan transparansi yang dapat diaudit. Platform e-voting ini
                 mengubah kepercayaan abstrak menjadi jejak kriptografis yang tercatat permanen untuk konteks
-                organisasi mahasiswa seperti {sharedDummyContext.organizationShort}.
+                organisasi mahasiswa seperti {sharedContext.organizationShort}.
               </p>
             </ScrollReveal>
 

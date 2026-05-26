@@ -5,8 +5,8 @@ import { useMemo, useState } from 'react'
 import { ModalShell } from '@/components/ui/modal-shell'
 import { useToast } from '@/components/ui/toast-provider'
 import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
-import { superadminAuditLogData, type SuperadminAuditLogItem } from '@/lib/superadmin-dummy-data'
-import { useSuperadminAuditLogsStore } from '@/lib/superadmin-mock-store'
+import { superadminAuditLogData, type SuperadminAuditLogItem } from '@/lib/superadmin-data'
+import { useSuperadminAuditLogsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 function AuditIcon({ icon }: { icon: SuperadminAuditLogItem['icon'] }) {

@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     if (profile?.role === 'super_admin') {
       resolvedPath = '/superadmin'
-    } else if (profile?.role === 'platform_admin') {
+    } else if (profile?.role === 'admin') {
       resolvedPath = '/admin'
     }
   }

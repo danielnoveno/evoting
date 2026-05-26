@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ReactNode } from 'react'
 import { RoleGate } from '@/components/auth/role-gate'
 import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/console-shell'
-import { adminShellContent } from '@/lib/dummy-admin-content'
+import { adminShellContent } from '@/lib/admin-content'
 
 const sidebarIconMap: Record<'layout-grid' | 'gauge' | 'file-text' | 'circle-help', LucideIcon> = {
   'layout-grid': LayoutGrid,
@@ -23,7 +23,7 @@ const sidebarItems: ConsoleNavItem[] = adminShellContent.sidebarItems.map((item)
 export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <RoleGate
-      allowedRoles={['platform_admin', 'super_admin']}
+      allowedRoles={['admin', 'super_admin']}
       fallbackTitle="Akses admin tidak tersedia"
       fallbackDescription="Halaman ini hanya dapat dibuka oleh admin platform atau super admin yang memiliki sesi backend aktif."
     >

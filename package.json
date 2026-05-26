@@ -6,8 +6,5 @@
     "build:frontend": "npm --prefix frontend run build",
     "build:frontend:wasm": "npm --prefix frontend run build:wasm",
     "typecheck:frontend": "npm --prefix frontend run typecheck"
-  },
-  "dependencies": {
-    "@opencode-ai/plugin": "1.4.3"
   }
 }

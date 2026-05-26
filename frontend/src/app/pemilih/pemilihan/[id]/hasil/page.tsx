@@ -12,7 +12,7 @@ import {
   formatNumber,
   getElectionResultRows,
   useVoterStore,
-} from '@/lib/voter-mock-store'
+} from '@/lib/voter-store'
 
 function MetricCard({ label, value, subValue }: { label: string; value: string; subValue?: string }) {
   return (

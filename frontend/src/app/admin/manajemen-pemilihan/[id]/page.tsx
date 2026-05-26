@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { AdminElectionDetailView } from '@/components/admin/admin-election-detail-view'
-import { AdminElectionDetailTabId, adminElectionDetailTabs, getAdminElectionById } from '@/lib/admin-election-dummy-data'
+import { AdminElectionDetailTabId, adminElectionDetailTabs, getAdminElectionById } from '@/lib/admin-election-data'
 
 export default function AdminElectionDetailPage({
   params,

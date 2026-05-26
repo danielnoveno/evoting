@@ -9,8 +9,8 @@ import {
   SuperadminInteractiveCard,
   SuperadminShell,
 } from '@/components/superadmin/superadmin-shell'
-import { superadminElectionFilters, type SuperadminElectionState } from '@/lib/superadmin-dummy-data'
-import { useSuperadminElectionsStore } from '@/lib/superadmin-mock-store'
+import { superadminElectionFilters, type SuperadminElectionState } from '@/lib/superadmin-data'
+import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'

@@ -10,7 +10,7 @@ import { AppNavbar, AppFooter } from '@/components/ui/app-bar'
 import { AppSidebar, useSidebarLayout } from '@/components/ui/app-sidebar'
 import { useToast } from '@/components/ui/toast-provider'
 import { CommandPalette } from '@/components/ui/command-palette'
-import { formatWallet, useVoterStore } from '@/lib/voter-mock-store'
+import { formatWallet, useVoterStore } from '@/lib/voter-store'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { useLogoutSession } from '@/hooks/use-auth-session'
 
@@ -67,7 +67,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
 
   return (
     <RoleGate
-      allowedRoles={['voter', 'platform_admin', 'super_admin']}
+      allowedRoles={['voter', 'admin', 'super_admin']}
       fallbackTitle="Akses portal pemilih tidak tersedia"
       fallbackDescription="Masuk kembali dengan akun yang memiliki akses pemilih untuk membuka halaman ini."
     >

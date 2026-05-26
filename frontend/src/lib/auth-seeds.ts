@@ -1,4 +1,4 @@
-export const dummyAuthSeeds = {
+export const authSeeds = {
   campusLogin: {
     voter: { identifier: 'mahasiswa220711663@students.uajy.ac.id', secret: 'voter12345' },
     admin: { identifier: 'admin.ukmriset@uajy.ac.id', secret: 'admin12345' },
@@ -11,9 +11,9 @@ export function resolveCampusLoginRole(identifier: string, secret: string) {
   const normalizedIdentifier = identifier.trim().toLowerCase()
   const normalizedSecret = secret.trim()
 
-  const entries = Object.entries(dummyAuthSeeds.campusLogin) as Array<[
-    keyof typeof dummyAuthSeeds.campusLogin,
-    (typeof dummyAuthSeeds.campusLogin)[keyof typeof dummyAuthSeeds.campusLogin],
+  const entries = Object.entries(authSeeds.campusLogin) as Array<[
+    keyof typeof authSeeds.campusLogin,
+    (typeof authSeeds.campusLogin)[keyof typeof authSeeds.campusLogin],
   ]>
 
   return entries.find(([, seed]) => {

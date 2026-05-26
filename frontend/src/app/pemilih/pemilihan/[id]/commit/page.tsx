@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
-import { basescanTxUrl, findElection, formatDateTime, formatNumber, useVoterStore } from '@/lib/voter-mock-store'
+import { basescanTxUrl, findElection, formatDateTime, formatNumber, useVoterStore } from '@/lib/voter-store'
 import { loadVoteCommitment, saveVoteCommitment } from '@/lib/vote-commitment-demo'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
@@ -46,11 +46,11 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const { showToast } = useToast()
   
   // Real contract integration
-  // For MVP, we use the contractAddress from sharedDummyContext if it matches the electionId
+  // For MVP, we use the contractAddress from sharedContext if it matches the electionId
   // In real production, this would be fetched from Supabase based on params.id
   const election = findElection(store, params.id)
   const contractAddress = election?.id === 'ukm-riset-koordinator-2026' 
-    ? '0x71C7656EC7ab88b098defB751B7401B5f6d8976F' // Placeholder dari sharedDummyContext
+    ? '0x71C7656EC7ab88b098defB751B7401B5f6d8976F' // Placeholder dari sharedContext
     : undefined
 
   const { 
@@ -75,7 +75,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         description: 'Suara Anda telah dicatat di blockchain.',
         tone: 'success',
       })
-      // Sync mock store with real TX data
+      // Sync store with real TX data
       actions.commitVote(params.id, savedCommitment?.commitment)
     }
   }, [isConfirmed, hash, receipt, params.id, actions, showToast, savedCommitment?.commitment])

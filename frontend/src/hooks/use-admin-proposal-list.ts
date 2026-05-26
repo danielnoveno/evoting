@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listProposalDrafts } from '@/lib/repositories/proposalRepository'
 import { mapProposalDraftToListItem } from '@/lib/mappers/proposalMapper'
-import { adminProposalContent } from '@/lib/admin-proposal-dummy-data'
+import { adminProposalContent } from '@/lib/admin-proposal-data'
 
 export function useAdminProposalList() {
   const query = useQuery({

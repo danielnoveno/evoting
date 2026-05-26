@@ -1,7 +1,7 @@
 import { ArrowRight, FileCheck2, Globe, LockKeyhole, ShieldCheck, SquarePen, Users, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { PublicPage } from '@/components/public/site-shell'
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { sharedContext } from '@/lib/shared-context'
 import { HeroSection, FeatureCardsSection, InfrastructureSection } from './home-sections'
 
 const auditItems = [

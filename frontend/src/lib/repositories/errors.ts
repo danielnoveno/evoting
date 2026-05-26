@@ -9,11 +9,18 @@ export function getRepositoryErrorMessage(error: unknown, fallback = 'Data belum
   if (error instanceof RepositoryError) return error.message
 
   if (error instanceof Error) {
-    if (error.message.toLowerCase().includes('permission')) {
+    const msg = error.message.toLowerCase()
+    
+    // Pass-through specific informative messages
+    if (msg.length > 0 && !msg.includes('object object')) {
+      return error.message
+    }
+
+    if (msg.includes('permission')) {
       return 'Kamu tidak memiliki akses ke data ini.'
     }
 
-    if (error.message.toLowerCase().includes('auth')) {
+    if (msg.includes('auth')) {
       return 'Sesi kamu sudah berakhir. Silakan masuk lagi.'
     }
   }

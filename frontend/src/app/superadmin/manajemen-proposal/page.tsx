@@ -7,7 +7,7 @@ import { useMemo, useState } from 'react'
 import { SuperadminEmptyState, SuperadminInteractiveCard, SuperadminShell, SuperadminStatusBadge } from '@/components/superadmin/superadmin-shell'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
-import { useSuperadminProposalsStore } from '@/lib/superadmin-mock-store'
+import { useSuperadminProposalsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 type SortField = 'tanggal' | 'organisasi' | 'jenis' | 'status'

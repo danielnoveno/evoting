@@ -43,5 +43,7 @@ Menggunakan **Ponder** sebagai indexer off-chain yang menangkap seluruh *events*
 *   `frontend/` — Aplikasi web Next.js untuk antarmuka Voter, Admin, dan dashboard hasil pemilihan.
 *   `indexer/` — Konfigurasi Ponder indexer untuk melacak dan menstrukturkan log event on-chain.
 *   `shared/` — Tempat penyimpanan ABI contract, alamat deployment, dan konstanta konfigurasi jaringan yang digunakan bersama antara frontend dan indexer.
-*   `.docs/` — *(Diabaikan oleh git)* Menyimpan dokumen penulisan skripsi (SKPL, DDPL, Laporan Akhir), panduan internal, catatan review brutal antarmuka, serta seluruh bukti/artefak pengujian akademik (*evidence pack*).
-*   `.opencode/` — Kontrol koordinasi dan konfigurasi interaksi agen kecerdasan buatan (AI) di lingkungan pengembangan.
+*   `supabase/` — Konfigurasi backend, migrasi database, dan fungsi edge untuk layanan Supabase.
+*   `scripts/` — Skrip utilitas untuk pemeliharaan data, pembersihan environment, dan bantuan pengembangan.
+*   `.docs/` — *(Diabaikan oleh git)* Berisi dokumen akademik (SKPL, DDPL), aset desain Figma, bukti pengujian, serta artefak pengembangan internal.
+

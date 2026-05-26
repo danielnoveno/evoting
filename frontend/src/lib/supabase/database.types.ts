@@ -17,7 +17,7 @@ export type Database = {
           wallet_address: string
           display_name: string | null
           email: string | null
-          role: 'voter' | 'platform_admin' | 'super_admin'
+          role: 'voter' | 'admin' | 'super_admin'
           role_hint: string | null
           avatar_url: string | null
           created_at: string
@@ -29,7 +29,7 @@ export type Database = {
           wallet_address: string
           display_name?: string | null
           email?: string | null
-          role?: 'voter' | 'platform_admin' | 'super_admin'
+          role?: 'voter' | 'admin' | 'super_admin'
           role_hint?: string | null
           avatar_url?: string | null
           created_at?: string
@@ -41,7 +41,7 @@ export type Database = {
           wallet_address?: string
           display_name?: string | null
           email?: string | null
-          role?: 'voter' | 'platform_admin' | 'super_admin'
+          role?: 'voter' | 'admin' | 'super_admin'
           role_hint?: string | null
           avatar_url?: string | null
           created_at?: string

@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react'
 import { SuperadminDetailIntro, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
-import { useSuperadminElectionsStore } from '@/lib/superadmin-mock-store'
+import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 type InvestigationDetail = {

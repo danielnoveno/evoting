@@ -7,7 +7,7 @@ import { useMemo, useState } from 'react'
 import { AdminFilterPill, AdminShell } from '@/components/admin/admin-shell'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { AppPageHeader } from '@/components/ui/app-page-header'
-import { adminElectionDummyData, adminElectionFilters, AdminElectionRecord, AdminElectionStatus } from '@/lib/admin-election-dummy-data'
+import { adminElectionData, adminElectionFilters, AdminElectionRecord, AdminElectionStatus } from '@/lib/admin-election-data'
 import { useToast } from '@/components/ui/toast-provider'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
@@ -133,8 +133,8 @@ export default function AdminElectionManagementPage() {
   const { showToast } = useToast()
 
   const filteredElections = useMemo(() => {
-    if (activeFilter === 'semua') return adminElectionDummyData
-    return adminElectionDummyData.filter((election) => election.status === activeFilter)
+    if (activeFilter === 'semua') return adminElectionData
+    return adminElectionData.filter((election) => election.status === activeFilter)
   }, [activeFilter])
 
   const electionsWithEmptyCard = useMemo(() => {

@@ -5,7 +5,7 @@ import { type ChangeEvent, type DragEvent, useRef, useState } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { SuperadminSectionCard, SuperadminShell } from '@/components/superadmin/superadmin-shell'
 import { useToast } from '@/components/ui/toast-provider'
-import { type SuperadminMasterVoter, useSuperadminMasterVotersStore } from '@/lib/superadmin-mock-store'
+import { type SuperadminMasterVoter, useSuperadminMasterVotersStore } from '@/lib/superadmin-store'
 
 export default function SuperadminPlatformSettingsPage() {
   const { showToast } = useToast()

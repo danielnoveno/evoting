@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
-import { adminProposalContent, ProposalStatus } from '@/lib/admin-proposal-dummy-data'
+import { adminProposalContent, ProposalStatus } from '@/lib/admin-proposal-data'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { BarChart2, CheckCircle2, ChevronLeft, ChevronRight, Eye, Hourglass, PlusCircle, Rocket, ShieldCheck, FileKey, Pencil } from 'lucide-react'
 import { useToast } from '@/components/ui/toast-provider'

@@ -10,7 +10,7 @@ import { useWhitelistImportJobEntries } from '@/hooks/use-whitelist-import-job-e
 import { useWhitelistImportSignedUrl } from '@/hooks/use-whitelist-import-file'
 import { useToast } from '@/components/ui/toast-provider'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
-import { AdminElectionRecord } from '@/lib/admin-election-dummy-data'
+import { AdminElectionRecord } from '@/lib/admin-election-data'
 
 function StatusBadge({ status }: { status: string }) {
   const isOk = status === 'valid'

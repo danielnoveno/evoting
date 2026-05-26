@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { sharedContext } from '@/lib/shared-context'
 import { clearAllDemoVoteCommitments } from '@/lib/vote-commitment-demo'
 
 export type VoterElectionPhase = 'registration' | 'commit' | 'reveal' | 'ended'
@@ -79,7 +79,7 @@ export interface VoterElectionViewState {
   nextAction: VoterElectionAction
 }
 
-const STORAGE_KEY = 'votein-voter-mock-store-v2'
+const STORAGE_KEY = 'votein-voter-store-v2'
 const BASESCAN_ROOT = 'https://sepolia.basescan.org'
 
 /* ──────────────────────────────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ const BASESCAN_ROOT = 'https://sepolia.basescan.org'
  *  #4  Koordinator PSDM HIMAFORKA 25 — ENDED         (selesai, ada bukti)
  * ────────────────────────────────────────────────────────────────────────────*/
 
-const voterStoreSeed: VoterStore = {
+const voterStoreInitial: VoterStore = {
   profile: {
     name: 'Aditya Pratama',
     email: 'aditya.pratama@students.uajy.ac.id',
@@ -103,13 +103,13 @@ const voterStoreSeed: VoterStore = {
   elections: [
     /* ── #1 Koordinator UKM Riset 2026 · COMMIT ──────────────────────────── */
     {
-      id: sharedDummyContext.electionId,
-      title: sharedDummyContext.proposalTitle,
-      organization: sharedDummyContext.organization,
-      summary: sharedDummyContext.summary,
+      id: sharedContext.electionId,
+      title: sharedContext.proposalTitle,
+      organization: sharedContext.organization,
+      summary: sharedContext.summary,
       phase: 'commit',
-      deadlineIso: sharedDummyContext.commitDeadlineIso,
-      totalParticipants: sharedDummyContext.voterEstimate,
+      deadlineIso: sharedContext.commitDeadlineIso,
+      totalParticipants: sharedContext.voterEstimate,
       committedCount: 218,
       revealedCount: 0,
       quorumPercent: 67,
@@ -122,7 +122,7 @@ const voterStoreSeed: VoterStore = {
       voterIdentifier: 'VOTER-SHA-9921-X',
       lastTransactionLabel: 'Belum ada commit dari akun ini.',
       supportCopy: 'Jika pilihan berubah sebelum dikirim, Anda masih bisa kembali dan memilih kandidat lain.',
-      candidates: sharedDummyContext.candidates.map((candidate) => ({
+      candidates: sharedContext.candidates.map((candidate) => ({
         id: candidate.id,
         name: candidate.name,
         faculty: candidate.faculty,
@@ -199,7 +199,7 @@ const voterStoreSeed: VoterStore = {
     {
       id: 'bendahara-ukm-riset-2026',
       title: 'Pemilihan Bendahara UKM Riset 2026',
-      organization: sharedDummyContext.organization,
+      organization: sharedContext.organization,
       summary: 'Pendaftaran kandidat masih dibuka. Voting akan dimulai saat fase commit dibuka oleh admin.',
       phase: 'registration',
       deadlineIso: '2026-07-14T14:00:00+07:00',
@@ -304,15 +304,15 @@ function cloneStore(seed: VoterStore) {
 }
 
 function readStore() {
-  if (typeof window === 'undefined') return cloneStore(voterStoreSeed)
+  if (typeof window === 'undefined') return cloneStore(voterStoreInitial)
 
   const raw = window.localStorage.getItem(STORAGE_KEY)
-  if (!raw) return cloneStore(voterStoreSeed)
+  if (!raw) return cloneStore(voterStoreInitial)
 
   try {
     return JSON.parse(raw) as VoterStore
   } catch {
-    return cloneStore(voterStoreSeed)
+    return cloneStore(voterStoreInitial)
   }
 }
 
@@ -547,7 +547,7 @@ export function useVoterStore() {
 
   const actions = useMemo(() => ({
     reset() {
-      const next = cloneStore(voterStoreSeed)
+      const next = cloneStore(voterStoreInitial)
       clearAllDemoVoteCommitments()
       persistStore(next)
       setStore(next)

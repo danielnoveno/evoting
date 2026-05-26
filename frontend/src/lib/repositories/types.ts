@@ -1,4 +1,4 @@
-export type AppRole = 'voter' | 'platform_admin' | 'super_admin'
+export type AppRole = 'voter' | 'admin' | 'super_admin'
 
 export interface AppProfileRecord {
   id: string

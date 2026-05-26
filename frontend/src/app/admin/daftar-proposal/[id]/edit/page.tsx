@@ -3,7 +3,7 @@
 import { notFound } from 'next/navigation'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { ProposalForm, ProposalFormData } from '@/components/admin/proposal-form'
-import { adminProposalContent } from '@/lib/admin-proposal-dummy-data'
+import { adminProposalContent } from '@/lib/admin-proposal-data'
 import { useProposalDraft } from '@/hooks/use-proposal-draft'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'

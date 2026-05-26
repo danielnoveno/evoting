@@ -1,21 +1,21 @@
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { sharedContext } from '@/lib/shared-context'
 
 export const adminHelpData = {
   header: {
     title: 'Pusat Bantuan Admin',
-    description: `Panduan operasional dan dukungan teknis blockchain untuk ekosistem ${sharedDummyContext.organizationShort}.`
+    description: `Panduan operasional dan dukungan teknis blockchain untuk ekosistem ${sharedContext.organizationShort}.`
   },
   categories: [
     {
       id: 'manajemen-proposal',
       title: 'Manajemen Proposal',
-      description: `Panduan pembuatan, pengeditan, dan verifikasi draf proposal ${sharedDummyContext.proposalTitle} sebelum fase voting.`,
+      description: `Panduan pembuatan, pengeditan, dan verifikasi draf proposal ${sharedContext.proposalTitle} sebelum fase voting.`,
       iconKey: 'file-text'
     },
     {
       id: 'manajemen-space',
       title: 'Manajemen Space',
-      description: `Konfigurasi parameter pemilihan, durasi blok, dan pengaturan partisipasi anggota ${sharedDummyContext.organizationShort}.`,
+      description: `Konfigurasi parameter pemilihan, durasi blok, dan pengaturan partisipasi anggota ${sharedContext.organizationShort}.`,
       iconKey: 'box'
     },
     {
@@ -45,7 +45,7 @@ export const adminHelpData = {
     {
       id: 'faq-3',
       question: 'Cara ekspor data pemilih ke CSV?',
-      answer: `Buka menu Manajemen Pemilihan, pilih ${sharedDummyContext.proposalTitle}, lalu masuk ke tab "Real-time" atau "Whitelist" dan klik tombol "Unduh Laporan" untuk mengekspor data ke format CSV.`
+      answer: `Buka menu Manajemen Pemilihan, pilih ${sharedContext.proposalTitle}, lalu masuk ke tab "Real-time" atau "Whitelist" dan klik tombol "Unduh Laporan" untuk mengekspor data ke format CSV.`
     },
     {
       id: 'faq-4',
@@ -65,7 +65,7 @@ export const adminHelpData = {
     {
       id: 'faq-7',
       question: 'Apakah aplikasi mendukung pendaftaran pemilih secara massal?',
-      answer: `Ya, Anda dapat mengunggah file CSV pada tab "Whitelist" di menu Manajemen Pemilihan ${sharedDummyContext.organizationShort}. Pastikan file berisi daftar wallet address dan nama (opsional) sesuai dengan format yang disediakan oleh platform.`
+      answer: `Ya, Anda dapat mengunggah file CSV pada tab "Whitelist" di menu Manajemen Pemilihan ${sharedContext.organizationShort}. Pastikan file berisi daftar wallet address dan nama (opsional) sesuai dengan format yang disediakan oleh platform.`
     }
   ],
   supportWidget: {

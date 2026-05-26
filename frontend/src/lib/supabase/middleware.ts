@@ -7,7 +7,7 @@ const PROTECTED_PREFIXES = ['/admin', '/superadmin', '/pemilih']
 
 function getRequiredRole(pathname: string) {
   if (pathname.startsWith('/superadmin')) return 'super_admin'
-  if (pathname.startsWith('/admin')) return 'platform_admin'
+  if (pathname.startsWith('/admin')) return 'admin'
   if (pathname.startsWith('/pemilih')) return 'voter'
   return null
 }
@@ -61,7 +61,7 @@ export async function updateSupabaseSession(request: NextRequest) {
         return NextResponse.redirect(new URL('/hubungkan-dompet', request.url))
       }
 
-      if (requiredRole === 'platform_admin' && role !== 'platform_admin' && role !== 'super_admin') {
+      if (requiredRole === 'admin' && role !== 'admin' && role !== 'super_admin') {
         return NextResponse.redirect(new URL('/hubungkan-dompet', request.url))
       }
 

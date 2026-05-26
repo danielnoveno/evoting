@@ -8,8 +8,8 @@ import { useToast } from '@/components/ui/toast-provider'
 import { SuperadminEmptyState, SuperadminInteractiveCard, SuperadminShell } from '@/components/superadmin/superadmin-shell'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
-import { superadminRiskData } from '@/lib/superadmin-dummy-data'
-import { useSuperadminRiskAlertsStore } from '@/lib/superadmin-mock-store'
+import { superadminRiskData } from '@/lib/superadmin-data'
+import { useSuperadminRiskAlertsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 export default function SuperadminRiskActivityPage() {

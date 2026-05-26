@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { type InputHTMLAttributes, ReactNode, type SelectHTMLAttributes } from 'react'
 import { RoleGate } from '@/components/auth/role-gate'
 import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/console-shell'
-import { superadminShellContent } from '@/lib/superadmin-dummy-data'
+import { superadminShellContent } from '@/lib/superadmin-data'
 
 const sidebarItems: ConsoleNavItem[] = [
   { href: '/superadmin', label: 'Beranda', icon: LayoutGrid },

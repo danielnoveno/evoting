@@ -12,8 +12,8 @@ import {
 } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
-import { superadminProposalDetails } from '@/lib/superadmin-dummy-data'
-import { useSuperadminProposalsStore } from '@/lib/superadmin-mock-store'
+import { superadminProposalDetails } from '@/lib/superadmin-data'
+import { useSuperadminProposalsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useRegistryContract } from '@/hooks/use-registry-contract'
 
@@ -97,7 +97,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         tone: 'success',
       })
 
-      // Sync local mock store
+      // Sync local store
       if (decisionType === 'approve') {
         setProposals((current) => current.map((row) => row.id === params.id ? { ...row, status: 'Disetujui' } : row))
       } else if (decisionType === 'deploy') {

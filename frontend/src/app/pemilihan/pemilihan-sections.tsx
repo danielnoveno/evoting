@@ -3,19 +3,19 @@
 import { ArrowRight, Download } from 'lucide-react'
 import Link from 'next/link'
 import { ScrollReveal, ParallaxLayer, FloatingShape, StaggerContainer } from '@/components/public/parallax'
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { sharedContext } from '@/lib/shared-context'
 
 const activeElections = [
   {
     phase: 'Fase Commit',
     deadline: 'Berakhir dalam 12 jam',
-    title: sharedDummyContext.proposalTitle,
-    body: sharedDummyContext.summary,
-    participation: `${sharedDummyContext.voterEstimate} Pemilih`,
+    title: sharedContext.proposalTitle,
+    body: sharedContext.summary,
+    participation: `${sharedContext.voterEstimate} Pemilih`,
     hash: '0x8f2a ... 9c3b',
     primary: 'Mulai Memilih',
     href: '/hubungkan-dompet?redirect=pilih-kandidat',
-    detailHref: `/pemilihan/${sharedDummyContext.electionId}/hasil`,
+    detailHref: `/pemilihan/${sharedContext.electionId}/hasil`,
   },
   {
     phase: 'Fase Reveal',

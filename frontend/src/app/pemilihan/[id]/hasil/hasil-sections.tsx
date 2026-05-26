@@ -1,7 +1,7 @@
 'use client'
 
 import { Download, ExternalLink, LockKeyhole, ShieldCheck } from 'lucide-react'
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { sharedContext } from '@/lib/shared-context'
 import { PublicElectionBackLink } from '@/components/public/site-shell'
 import { ScrollReveal, ParallaxLayer, FloatingShape, StaggerContainer } from '@/components/public/parallax'
 
@@ -12,10 +12,10 @@ const logs = [
 ]
 
 export function HasilSections({ id }: { id: string }) {
-  const isMainElection = id === sharedDummyContext.electionId
-  const pageTitle = isMainElection ? sharedDummyContext.proposalTitle : 'Voting Kebijakan Publikasi Karya UKM Riset'
-  const winnerName = isMainElection ? sharedDummyContext.candidates[0].name : sharedDummyContext.candidates[1].name
-  const winnerFaculty = isMainElection ? sharedDummyContext.candidates[0].faculty : sharedDummyContext.candidates[1].faculty
+  const isMainElection = id === sharedContext.electionId
+  const pageTitle = isMainElection ? sharedContext.proposalTitle : 'Voting Kebijakan Publikasi Karya UKM Riset'
+  const winnerName = isMainElection ? sharedContext.candidates[0].name : sharedContext.candidates[1].name
+  const winnerFaculty = isMainElection ? sharedContext.candidates[0].faculty : sharedContext.candidates[1].faculty
 
   return (
     <section className="public-section relative overflow-hidden">

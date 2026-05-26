@@ -1,4 +1,4 @@
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { sharedContext } from '@/lib/shared-context'
 
 export type AdminModuleKey =
   | 'beranda'
@@ -159,7 +159,7 @@ export const adminShellContent: AdminShellContent = {
   headerLabel: 'Dashboard admin',
   searchPlaceholder: 'Cari data pemilihan...',
   profile: {
-    name: sharedDummyContext.organizationShort,
+    name: sharedContext.organizationShort,
     wallet: '0x71C...4f21',
     editLabel: 'Sunting Profil',
     logoutLabel: 'Keluar Sesi',
@@ -178,7 +178,7 @@ export const adminDashboardContent: AdminDashboardContent = {
     badge: 'Sistem e-voting aman',
     title: 'Kelola Pemilihan dengan Transparansi Blockchain',
     description:
-      `Panel admin VoteChain untuk ${sharedDummyContext.organization}. Pantau fase Registration → Commit → Reveal → Ended, kelola whitelist pemilih, dan siapkan bukti audit Basescan untuk kebutuhan skripsi.`,
+      `Panel admin VoteChain untuk ${sharedContext.organization}. Pantau fase Registration → Commit → Reveal → Ended, kelola whitelist pemilih, dan siapkan bukti audit Basescan untuk kebutuhan skripsi.`,
     primaryCta: 'Buka Ruang Aktif',
     secondaryCta: 'Unduh Ringkasan',
   },
@@ -195,7 +195,7 @@ export const adminDashboardContent: AdminDashboardContent = {
     {
       key: 'proposal',
       title: 'Proposal Saya',
-      description: `Lihat daftar proposal ruang voting yang diajukan untuk pemilihan internal ${sharedDummyContext.organizationShort} dan kepengurusan unitnya.`,
+      description: `Lihat daftar proposal ruang voting yang diajukan untuk pemilihan internal ${sharedContext.organizationShort} dan kepengurusan unitnya.`,
     },
     {
       key: 'fase',
@@ -237,13 +237,13 @@ export const adminDashboardContent: AdminDashboardContent = {
   recentActivities: [
       {
         block: '#48,291,012',
-        text: `0x8f2a...d3e1 mengirim commit untuk ${sharedDummyContext.proposalTitle}.`,
+        text: `0x8f2a...d3e1 mengirim commit untuk ${sharedContext.proposalTitle}.`,
         time: '2 detik lalu',
         status: 'Sukses',
     },
     {
       block: '#48,290,998',
-      text: `${sharedDummyContext.organizationShort} menambahkan 120 wallet ke whitelist pemilih Base Sepolia.`,
+      text: `${sharedContext.organizationShort} menambahkan 120 wallet ke whitelist pemilih Base Sepolia.`,
       time: '12 menit lalu',
       status: 'Sukses',
     },
@@ -251,7 +251,7 @@ export const adminDashboardContent: AdminDashboardContent = {
   metricCard: {
     label: 'Total suara masuk',
     value: '218',
-    change: `+12% dari target minimum partisipasi (${sharedDummyContext.voterEstimate})`,
+    change: `+12% dari target minimum partisipasi (${sharedContext.voterEstimate})`,
     progressLabel: 'Kuorum Tercapai',
     progressValue: '67%',
     progressWidthClassName: 'w-[67%]',
@@ -261,25 +261,25 @@ export const adminDashboardContent: AdminDashboardContent = {
 export const adminElectionManagementContent: AdminElectionManagementContent = {
   header: {
     title: 'Manajemen Pemilihan',
-    description: `Kelola dan pantau seluruh ruang pemilihan ${sharedDummyContext.organizationShort}`,
+    description: `Kelola dan pantau seluruh ruang pemilihan ${sharedContext.organizationShort}`,
     primaryCta: 'Buat Pemilihan Baru',
   },
   filters: ['Semua', 'Aktif', 'Selesai', 'Draft'],
   sortLabel: 'Urutkan: Terbaru',
   elections: [
     {
-      id: sharedDummyContext.electionId,
+      id: sharedContext.electionId,
       iconKey: 'briefcase',
       iconClassName: 'bg-emerald-50 text-emerald-700',
-      title: sharedDummyContext.proposalTitle,
-      meta: `Commit dibuka 12–18 Juni 2026 • ${sharedDummyContext.voterEstimate} pemilih terdaftar`,
+      title: sharedContext.proposalTitle,
+      meta: `Commit dibuka 12–18 Juni 2026 • ${sharedContext.voterEstimate} pemilih terdaftar`,
       badge: 'Fase Aktif: Commit',
       badgeClassName: 'bg-emerald-100 text-emerald-700',
       variant: 'active',
       voters: ['NP', 'RM', 'SW'],
         extraVotersLabel: '+18',
         stats: [
-        { label: 'Total Commit', value: '218', subValue: ` / ${sharedDummyContext.voterEstimate}` },
+        { label: 'Total Commit', value: '218', subValue: ` / ${sharedContext.voterEstimate}` },
         { label: 'Contract', value: '0x71c...a3e4', tone: 'info' },
         { label: 'Reveal Dibuka', value: '19 Juni 2026, 09.00' },
         { label: 'Integritas', value: 'Whitelist Aktif', tone: 'success' },
@@ -327,6 +327,6 @@ export const adminElectionManagementContent: AdminElectionManagementContent = {
   ],
   createCard: {
     title: 'Buat Ruang Pemilihan Baru',
-    description: `Konfigurasi ruang voting baru untuk kebutuhan internal ${sharedDummyContext.organizationShort} dalam hitungan menit.`,
+    description: `Konfigurasi ruang voting baru untuk kebutuhan internal ${sharedContext.organizationShort} dalam hitungan menit.`,
   },
 }

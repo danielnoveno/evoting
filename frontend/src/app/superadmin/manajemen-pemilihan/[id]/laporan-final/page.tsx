@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import { useMemo } from 'react'
 import { SuperadminDetailIntro, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge } from '@/components/superadmin/superadmin-shell'
 import { useToast } from '@/components/ui/toast-provider'
-import { useSuperadminElectionsStore } from '@/lib/superadmin-mock-store'
+import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 type FinalReportDetail = {

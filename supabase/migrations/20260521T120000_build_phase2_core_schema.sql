@@ -6,7 +6,7 @@ create extension if not exists pgcrypto;
 do $$
 begin
   if not exists (select 1 from pg_type where typname = 'app_role') then
-    create type app.app_role as enum ('voter', 'platform_admin', 'super_admin');
+    create type app.app_role as enum ('voter', 'admin', 'super_admin');
   end if;
 
   if not exists (select 1 from pg_type where typname = 'proposal_status') then
@@ -362,7 +362,7 @@ alter table indexer.indexer_sync_status enable row level security;
 create policy "profiles_select_self_or_admin"
 on app.app_profiles
 for select
-using (user_id = auth.uid() or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role]));
+using (user_id = auth.uid() or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role]));
 
 create policy "profiles_insert_self"
 on app.app_profiles
@@ -372,15 +372,15 @@ with check (user_id = auth.uid());
 create policy "profiles_update_self_or_admin"
 on app.app_profiles
 for update
-using (user_id = auth.uid() or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role]))
-with check (user_id = auth.uid() or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role]));
+using (user_id = auth.uid() or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role]))
+with check (user_id = auth.uid() or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role]));
 
 create policy "proposal_drafts_select_owner_or_admin"
 on app.proposal_drafts
 for select
 using (
   created_by = app.current_profile_id()
-  or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+  or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
 
 create policy "proposal_drafts_insert_admin"
@@ -388,7 +388,7 @@ on app.proposal_drafts
 for insert
 with check (
   created_by = app.current_profile_id()
-  and app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+  and app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
 
 create policy "proposal_drafts_update_owner_or_admin"
@@ -396,11 +396,11 @@ on app.proposal_drafts
 for update
 using (
   created_by = app.current_profile_id()
-  or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+  or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 )
 with check (
   created_by = app.current_profile_id()
-  or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+  or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
 
 create policy "proposal_candidates_manage_parent_owner_or_admin"
@@ -413,7 +413,7 @@ using (
     where d.id = proposal_draft_id
       and (
         d.created_by = app.current_profile_id()
-        or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+        or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
       )
   )
 )
@@ -424,7 +424,7 @@ with check (
     where d.id = proposal_draft_id
       and (
         d.created_by = app.current_profile_id()
-        or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+        or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
       )
   )
 );
@@ -439,7 +439,7 @@ using (
     where d.id = proposal_draft_id
       and (
         d.created_by = app.current_profile_id()
-        or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+        or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
       )
   )
 )
@@ -451,7 +451,7 @@ with check (
     where d.id = proposal_draft_id
       and (
         d.created_by = app.current_profile_id()
-        or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+        or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
       )
   )
 );
@@ -466,7 +466,7 @@ using (
     where d.id = proposal_draft_id
       and (
         d.created_by = app.current_profile_id()
-        or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+        or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
       )
   )
 )
@@ -477,7 +477,7 @@ with check (
     where d.id = proposal_draft_id
       and (
         d.created_by = app.current_profile_id()
-        or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+        or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
       )
   )
 );
@@ -492,7 +492,7 @@ using (
     where d.id = proposal_draft_id
       and (
         d.created_by = app.current_profile_id()
-        or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+        or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
       )
   )
 );
@@ -507,7 +507,7 @@ with check (
     where d.id = proposal_draft_id
       and (
         d.created_by = app.current_profile_id()
-        or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+        or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
       )
   )
 );
@@ -522,7 +522,7 @@ using (
     where d.id = proposal_draft_id
       and (
         d.created_by = app.current_profile_id()
-        or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+        or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
       )
   )
 );
@@ -534,7 +534,7 @@ using (
   wallet_address in (
     select wallet_address from app.app_profiles where user_id = auth.uid()
   )
-  or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+  or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
 
 create policy "tx_audit_log_insert_owner_or_admin"
@@ -544,7 +544,7 @@ with check (
   wallet_address in (
     select wallet_address from app.app_profiles where user_id = auth.uid()
   )
-  or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+  or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
 
 create policy "proof_exports_select_owner_or_admin"
@@ -552,7 +552,7 @@ on app.proof_exports
 for select
 using (
   owner_profile_id = app.current_profile_id()
-  or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+  or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
 
 create policy "proof_exports_insert_owner_or_admin"
@@ -560,20 +560,20 @@ on app.proof_exports
 for insert
 with check (
   owner_profile_id = app.current_profile_id()
-  or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+  or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
 
 create policy "ops_audit_log_select_admin_only"
 on app.ops_audit_log
 for select
-using (app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role]));
+using (app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role]));
 
 create policy "notification_jobs_select_target_or_admin"
 on app.notification_jobs
 for select
 using (
   target_profile_id = app.current_profile_id()
-  or app.has_role(array['platform_admin'::app.app_role, 'super_admin'::app.app_role])
+  or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
 
 create policy "indexer_sync_status_select_authenticated"

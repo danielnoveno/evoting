@@ -1,4 +1,4 @@
-import { sharedDummyContext } from '@/lib/dummy-shared-context'
+import { sharedContext } from '@/lib/shared-context'
 
 export type SuperadminStatus = 'Aktif' | 'Menunggu' | 'Nonaktif'
 export type SuperadminProposalStatus = 'Menunggu Review' | 'Disetujui' | 'Perlu Revisi' | 'Berjalan'
@@ -186,7 +186,7 @@ export const superadminDashboardData = {
     {
       id: 'a2',
       title: 'Proposal Ruang Disetujui',
-      description: `Proposal "${sharedDummyContext.proposalTitle}" dari ${sharedDummyContext.organizationShort} telah disetujui.`,
+      description: `Proposal "${sharedContext.proposalTitle}" dari ${sharedContext.organizationShort} telah disetujui.`,
       time: '45 menit yang lalu',
       tone: 'info',
     },
@@ -226,7 +226,7 @@ export const superadminAdmins: SuperadminAdminRecord[] = [
     lastLoginRelative: 'Saat ini aktif di dashboard',
     blockchainIdentity: 'vtn_adm_992_4492_ri_x01',
     spaces: [
-      { id: 's1', title: sharedDummyContext.proposalTitle, subtitle: 'Kepengurusan • 3 Kandidat', role: 'All Access' },
+      { id: 's1', title: sharedContext.proposalTitle, subtitle: 'Kepengurusan • 3 Kandidat', role: 'All Access' },
       { id: 's2', title: 'Pemilihan Sekretaris UKM Riset 2025', subtitle: 'Kepengurusan • 3 Kandidat', role: 'All Access' },
       { id: 's3', title: 'Pemilihan Ketua Divisi Acara UKM Riset 2025', subtitle: 'Divisi • 3 Kandidat', role: 'All Access' },
     ],
@@ -234,7 +234,7 @@ export const superadminAdmins: SuperadminAdminRecord[] = [
       { id: 'r1', action: 'Approved Candidate', meta: 'Kandidat: Nadia Prasetyo (No. 01)', time: '2 jam yang lalu', status: 'Sukses', hash: '0x7a...f92b' },
       { id: 'r2', action: 'Updated Whitelist', meta: 'Menambahkan 120 wallet anggota aktif', time: '5 jam yang lalu', status: 'Sukses', hash: '0x2d...11ac' },
       { id: 'r3', action: 'Login Session', meta: 'Device: MacOS - Chrome', time: '6 jam yang lalu', status: 'Info', hash: '0x1e...c03e' },
-      { id: 'r4', action: 'Created New Election', meta: `"${sharedDummyContext.proposalTitle}"`, time: 'Kemarin, 14:20', status: 'Sukses', hash: '0x9b...44ff' },
+      { id: 'r4', action: 'Created New Election', meta: `"${sharedContext.proposalTitle}"`, time: 'Kemarin, 14:20', status: 'Sukses', hash: '0x9b...44ff' },
     ],
   },
   {
@@ -328,12 +328,12 @@ export const superadminAdmins: SuperadminAdminRecord[] = [
 
 export const superadminElections: SuperadminElectionRecord[] = [
   {
-    id: sharedDummyContext.electionId,
-    code: sharedDummyContext.electionCode,
-    title: sharedDummyContext.proposalTitle,
+    id: sharedContext.electionId,
+    code: sharedContext.electionCode,
+    title: sharedContext.proposalTitle,
     phaseLabel: 'Fase Komitmen',
     status: 'Aktif',
-    totalVoters: String(sharedDummyContext.voterEstimate),
+    totalVoters: String(sharedContext.voterEstimate),
     participation: '67%',
     note: 'Online',
   },
@@ -375,8 +375,8 @@ export const superadminElections: SuperadminElectionRecord[] = [
 
 export const superadminProposals: SuperadminProposalRecord[] = [
   {
-    id: sharedDummyContext.proposalId,
-    organizationName: sharedDummyContext.organizationShort,
+    id: sharedContext.proposalId,
+    organizationName: sharedContext.organizationShort,
     proposalType: 'Pemilihan Koordinator',
     submittedAt: '10 Mar 2026',
     status: 'Disetujui',
@@ -397,14 +397,14 @@ export const superadminProposals: SuperadminProposalRecord[] = [
   },
   {
     id: 'p-sekretaris-ukm-riset-2025',
-    organizationName: sharedDummyContext.organizationShort,
+    organizationName: sharedContext.organizationShort,
     proposalType: 'Pemilihan Sekretaris',
     submittedAt: '15 Apr 2025',
     status: 'Disetujui',
   },
   {
     id: 'p-bendahara-ukm-riset-2026',
-    organizationName: sharedDummyContext.organizationShort,
+    organizationName: sharedContext.organizationShort,
     proposalType: 'Pemilihan Bendahara',
     submittedAt: '02 Mei 2026',
     status: 'Menunggu Review',
@@ -487,16 +487,16 @@ export const superadminPlatformData = {
  * ────────────────────────────────────────────────────────────────────────────*/
 
 export const superadminProposalDetails: Record<string, SuperadminProposalDetail> = {
-  [sharedDummyContext.proposalId]: {
-    id: sharedDummyContext.proposalId,
+  [sharedContext.proposalId]: {
+    id: sharedContext.proposalId,
     badge: 'Disetujui',
-    proposalCode: sharedDummyContext.proposalCode,
-    title: sharedDummyContext.proposalTitle,
-    organizationName: sharedDummyContext.organization,
+    proposalCode: sharedContext.proposalCode,
+    title: sharedContext.proposalTitle,
+    organizationName: sharedContext.organization,
     submittedAt: '10 Mar 2026',
-    summary: [...sharedDummyContext.proposalSummary],
+    summary: [...sharedContext.proposalSummary],
     networkConfig: {
-      contractAddress: `${sharedDummyContext.contractAddress.slice(0, 5)}...${sharedDummyContext.contractAddress.slice(-4)}`,
+      contractAddress: `${sharedContext.contractAddress.slice(0, 5)}...${sharedContext.contractAddress.slice(-4)}`,
       consensus: 'Commit-Reveal + Whitelist',
     },
     objectives: [
@@ -615,7 +615,7 @@ export const superadminAuditLogData = {
       id: 'log-1',
       block: '#12049',
       eventLabel: 'Proposal Executed',
-      title: `Eksekusi: Sinkronisasi ${sharedDummyContext.proposalTitle}`,
+      title: `Eksekusi: Sinkronisasi ${sharedContext.proposalTitle}`,
       timestamp: '2026-05-20 14:32:01 UTC',
       txHash: '0x9a2...4f1d',
       status: 'Integrity Verified',
@@ -626,7 +626,7 @@ export const superadminAuditLogData = {
       id: 'log-2',
       block: '#12048',
       eventLabel: 'New Vote Cast',
-      title: `Suara anonim masuk — ${sharedDummyContext.proposalTitle}`,
+      title: `Suara anonim masuk — ${sharedContext.proposalTitle}`,
       timestamp: '2026-05-20 14:31:45 UTC',
       txHash: '0x3b8...9c2a',
       status: 'Integrity Verified',
@@ -659,7 +659,7 @@ export const superadminAuditLogData = {
       id: 'log-5',
       block: '#12041',
       eventLabel: 'Whitelist Updated',
-      title: `Whitelist pemilih sinkron — ${sharedDummyContext.organizationShort}`,
+      title: `Whitelist pemilih sinkron — ${sharedContext.organizationShort}`,
       timestamp: '2026-05-20 14:20:11 UTC',
       txHash: '0x4a1...88ce',
       status: 'Integrity Verified',

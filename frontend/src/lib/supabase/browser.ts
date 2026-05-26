@@ -1,6 +1,6 @@
 'use client'
 
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/database.types'
 import { getSupabaseBrowserConfig, isSupabaseConfigured } from '@/lib/supabase/config'
@@ -14,7 +14,13 @@ export function getSupabaseBrowserClient(): SupabaseClient<Database> | null {
 
   if (!browserClient) {
     const { url, anonKey } = getSupabaseBrowserConfig()
-    browserClient = createBrowserClient<Database>(url, anonKey)
+    browserClient = createClient<Database>(url, anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    })
   }
 
   return browserClient
