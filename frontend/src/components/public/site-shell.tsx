@@ -6,6 +6,8 @@ import { ReactNode, useState } from 'react'
 import { AppNavbar, AppFooter } from '@/components/ui/app-bar'
 import { useToast } from '@/components/ui/toast-provider'
 import { ConnectWalletButton } from '@/components/wallet/ConnectWalletButton'
+import { AuditShortcutModal } from './audit-shortcut-modal'
+import { NotificationModal } from './notification-modal'
 
 const navItems = [
   { href: '/', label: 'Beranda' },
@@ -15,6 +17,8 @@ const navItems = [
 
 export function PublicNavbar({ activePath, minimal = false }: { activePath: string; minimal?: boolean }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [auditOpen, setAuditOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
   const { showToast } = useToast()
 
   return (
@@ -54,7 +58,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
           <div className="flex items-center gap-2 border-l border-slate-100 pl-3 md:gap-3 md:pl-5">
             <button
               type="button"
-              onClick={() => showToast({ tone: 'info', title: 'Shortcut audit', description: 'Fitur audit shortcut belum tersedia saat ini.' })}
+              onClick={() => setAuditOpen(true)}
               className="hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:inline-flex"
               aria-label="Buka shortcut audit"
             >
@@ -62,7 +66,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
             </button>
             <button
               type="button"
-              onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia saat ini.' })}
+              onClick={() => setNotifOpen(true)}
               className="hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:inline-flex"
               aria-label="Notifikasi"
             >
@@ -80,6 +84,9 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
           </div>
         ) : null}
       </div>
+
+      <AuditShortcutModal open={auditOpen} onClose={() => setAuditOpen(false)} />
+      <NotificationModal open={notifOpen} onClose={() => setNotifOpen(false)} />
 
       {/* Mobile navigation menu */}
       {!minimal && mobileOpen ? (

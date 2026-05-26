@@ -1,9 +1,10 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Key, ShieldCheck, Loader2, CheckCircle2 } from 'lucide-react'
-import { AuthShell, AuthCard, AuthField } from '@/components/auth/auth-shell'
+import { AlertCircle, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react'
+import { AuthCard, AuthField, AuthHeader, AuthShell, AuthTitle } from '@/components/auth/auth-shell'
 import { useUpdatePassword } from '@/hooks/use-auth-session'
 import { useToast } from '@/components/ui/toast-provider'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
@@ -14,7 +15,7 @@ export default function UpdatePasswordPage() {
   const updatePasswordMutation = useUpdatePassword()
   
   const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmOpen] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -24,6 +25,11 @@ export default function UpdatePasswordPage() {
 
     if (password.length < 6) {
       setFormError('Password minimal 6 karakter.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setFormError('Konfirmasi password belum sama.')
       return
     }
 
@@ -41,49 +47,60 @@ export default function UpdatePasswordPage() {
 
   return (
     <AuthShell>
-      <div className="mx-auto max-w-[400px] w-full px-4 pt-20">
-        <AuthCard>
-          <div className="text-center mb-8">
-            <div className="mx-auto h-12 w-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20">
-              <Key className="h-6 w-6 text-white" />
+      <AuthCard>
+        <Link href="/hubungkan-dompet" className="mb-5 inline-flex items-center gap-2 text-[12px] font-semibold text-slate-400 hover:text-slate-900">
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Kembali ke Login
+        </Link>
+
+        <AuthHeader />
+        <AuthTitle title="Buat Password Baru" body="Gunakan password baru yang mudah kamu ingat, tetapi tidak mudah ditebak orang lain." />
+
+        {isSuccess ? (
+          <div className="mt-8 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <CheckCircle2 className="h-7 w-7" />
             </div>
-            <h1 className="text-[24px] font-bold text-slate-900">Perbarui Password</h1>
-            <p className="mt-2 text-slate-500 text-[14px]">Masukkan password baru untuk akun Anda.</p>
+            <h2 className="mt-5 text-[16px] font-semibold text-slate-900">Password Berhasil Diganti</h2>
+            <p className="mt-2 text-[13px] leading-6 text-slate-500">Mengarahkan kamu ke halaman login...</p>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+            <AuthField 
+              label="Password Baru" 
+              type="password" 
+              autoComplete="new-password"
+              value={password} 
+              onChange={(event) => setPassword(event.target.value)} 
+              placeholder="Minimal 6 karakter"
+            />
 
-          {isSuccess ? (
-            <div className="text-center py-6 animate-in zoom-in duration-300">
-               <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
-               <p className="font-bold text-slate-900">Password Berhasil Diganti</p>
-               <p className="text-slate-500 text-[13px] mt-2">Mengarahkan Anda ke halaman login...</p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <AuthField 
-                label="PASSWORD BARU" 
-                type="password" 
-                value={password} 
-                onChange={e => setPassword(e.target.value)} 
-                placeholder="Minimal 6 karakter"
-              />
-              
-              {formError && (
-                <p className="text-red-500 text-[12px] font-bold bg-red-50 p-3 rounded-lg border border-red-100 flex gap-2 items-center">
-                   <ShieldCheck className="h-4 w-4" /> {formError}
-                </p>
-              )}
+            <AuthField 
+              label="Konfirmasi Password" 
+              type="password" 
+              autoComplete="new-password"
+              value={confirmPassword} 
+              onChange={(event) => setConfirmPassword(event.target.value)} 
+              placeholder="Ulangi password baru"
+            />
+            
+            {formError ? (
+              <p className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-[12px] leading-5 text-red-600">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                {formError}
+              </p>
+            ) : null}
 
-              <button 
-                type="submit"
-                disabled={updatePasswordMutation.isPending}
-                className="w-full h-12 bg-black text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all"
-              >
-                {updatePasswordMutation.isPending ? <Loader2 className="animate-spin h-5 w-5" /> : 'Simpan Password Baru'}
-              </button>
-            </form>
-          )}
-        </AuthCard>
-      </div>
+            <button 
+              type="submit"
+              disabled={updatePasswordMutation.isPending}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-medium text-white hover:bg-[#1E293B] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {updatePasswordMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Simpan Password Baru'}
+            </button>
+          </form>
+        )}
+      </AuthCard>
     </AuthShell>
   )
 }
