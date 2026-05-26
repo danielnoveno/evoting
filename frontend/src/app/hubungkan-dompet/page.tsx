@@ -191,9 +191,9 @@ function ConnectWalletContent() {
           className="right-[-60px] top-[60px] h-[260px] w-[260px] rounded-full bg-gradient-to-bl from-slate-100/60 to-blue-50/20 blur-3xl"
         />
 
-        <div className="relative z-10 w-full max-w-[350px] pb-12">
+        <div className="relative z-10 w-full max-w-[350px] pb-4">
           <ScrollReveal variant="fade-up">
-            <AuthCard className="flex max-h-[75vh] max-w-none flex-col overflow-hidden border-slate-200/60 bg-white/90 p-0 shadow-[0_20px_50px_rgba(15,23,42,0.1)] backdrop-blur-md">
+            <AuthCard className="flex max-h-[84vh] max-w-none flex-col overflow-hidden border-slate-200/60 bg-white/90 p-0 shadow-[0_20px_50px_rgba(15,23,42,0.1)] backdrop-blur-md">
                 
                 {/* Header: Fixed within the card */}
                 <div className="flex flex-shrink-0 flex-col items-center px-2 pt-4">
@@ -217,7 +217,7 @@ function ConnectWalletContent() {
                 </div>
 
                 {/* Steps: Scrollable content */}
-                <div className="custom-scrollbar mt-10 flex-1 overflow-y-auto px-2 pb-12">
+                <div className="custom-scrollbar mt-6 flex-1 overflow-y-auto px-2 pb-6">
                   <StaggerContainer stagger={100} className="space-y-10">
                     {/* STEP 1: SMART WALLET CREATION */}
                     <div className="flex flex-col gap-6 border-b border-slate-100 pb-10">
@@ -249,27 +249,25 @@ function ConnectWalletContent() {
                       ) : (
                         <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                           <div className="flex items-center justify-between gap-3 min-w-0 w-full">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (address) {
-                                  navigator.clipboard.writeText(address)
-                                  showToast({ tone: 'success', title: 'Alamat Disalin', description: 'Alamat dompet disalin ke clipboard.' })
-                                }
-                              }}
-                              className="flex items-center gap-4 min-w-0 flex-1 text-left hover:opacity-80 active:scale-[0.99] transition-all"
-                              title="Salin Alamat Dompet"
-                            >
+                            <div className="flex items-center gap-4 min-w-0 flex-1">
                               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white shadow-md">
                                 <WalletIcon className="h-4 w-4" />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-[14px] font-bold text-slate-900">Dompet Terhubung</p>
-                                <p className="mt-0.5 truncate text-[12px] font-mono text-slate-500">
+                                <p 
+                                  className="select-all font-mono text-[12px] font-bold text-slate-900 cursor-pointer hover:text-slate-800 transition-colors"
+                                  onClick={() => {
+                                    if (address) {
+                                      navigator.clipboard.writeText(address)
+                                      showToast({ tone: 'success', title: 'Alamat Disalin', description: 'Alamat dompet disalin ke clipboard.' })
+                                    }
+                                  }}
+                                  title="Klik untuk menyalin alamat lengkap"
+                                >
                                   {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ''}
                                 </p>
                               </div>
-                            </button>
+                            </div>
                             <button 
                               onClick={() => disconnect()} 
                               className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-red-600 shadow-sm hover:bg-red-50 border border-slate-100 transition-colors"
@@ -430,9 +428,9 @@ function ConnectWalletContent() {
                             </div>
                             <h3 className="text-[16px] font-bold">Aktifkan Hak Suara</h3>
                           </div>
-                          <p className="mt-5 text-[14px] leading-7 text-slate-300">
-                            Tautkan dompet blockchain Anda ke akun kampus untuk mengaktifkan fitur voting digital Anda secara permanen.
-                          </p>
+                          {/* <p className="mt-5 text-[14px] leading-7 text-slate-300">
+                            Masuk dashboard dengan aktivasi dengan klik berikut.
+                          </p> */}
                           <button 
                             onClick={handleBind}
                             disabled={bindWalletMutation.isPending}
@@ -459,11 +457,11 @@ function ConnectWalletContent() {
               </AuthCard>
             </ScrollReveal>
 
-            <ScrollReveal variant="fade-up" delay={500} className="mt-8 text-center">
+            {/* <ScrollReveal variant="fade-up" delay={500} className="mt-8 text-center">
               <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-400">
                 Hubungkan Wallet Kamu
               </p>
-            </ScrollReveal>
+            </ScrollReveal> */}
           </div>
         </div>
 
