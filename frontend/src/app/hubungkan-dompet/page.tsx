@@ -181,15 +181,15 @@ function ConnectWalletContent() {
           className="right-[-60px] top-[60px] h-[260px] w-[260px] rounded-full bg-gradient-to-bl from-slate-100/60 to-blue-50/20 blur-3xl"
         />
 
-        <div className="relative z-10 w-full max-w-[1040px] pb-4">
+        <div className="relative z-10 w-full max-w-[1040px] pb-4 px-2 sm:px-0">
           <ScrollReveal variant="fade-up">
             <section className="relative overflow-hidden rounded-xl border border-slate-200 bg-white">
               <Link href="/" aria-label="Tutup dan kembali ke beranda" className="absolute right-4 top-4 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-900">
                 <X className="h-4 w-4" />
               </Link>
 
-              <div className="grid max-h-[84vh] overflow-y-auto lg:grid-cols-[0.44fr_0.56fr]">
-                <aside className="border-b border-slate-100 bg-white p-6 lg:border-b-0 lg:border-r lg:p-8">
+              <div className="grid max-h-[84vh] overflow-y-auto xl:grid-cols-[0.44fr_0.56fr]">
+                <aside className="border-b border-slate-100 bg-white p-6 xl:border-b-0 xl:border-r xl:p-8">
                   <div className="flex items-start justify-between gap-5">
                     <div>
                       <Link href="/" className="mb-5 inline-flex items-center gap-2 text-[11px] font-medium text-slate-400 transition-colors hover:text-slate-900">
@@ -252,12 +252,12 @@ function ConnectWalletContent() {
                   </div>
                 </aside>
 
-                <section className="flex min-h-[520px] flex-col justify-between bg-white p-6 lg:p-8">
+                <section className="flex min-h-[520px] flex-col justify-between bg-white p-6 xl:p-8">
                   <div className="pr-8">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">{currentStepLabel}</p>
 
                     {!isConnected && (
-                      <div className="mt-8 max-w-[420px]">
+                      <div className="mt-8 max-w-full xl:max-w-[420px]">
                         <h2 className="text-[20px] font-semibold text-slate-900">Hubungkan Wallet</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           Gunakan wallet untuk membuka akses Votein. Setelah tersambung, kamu bisa lanjut verifikasi mahasiswa.
@@ -279,7 +279,7 @@ function ConnectWalletContent() {
                     )}
 
                     {isConnected && !authSession && (
-                      <div className="mt-8 max-w-[420px]">
+                      <div className="mt-8 max-w-full xl:max-w-[420px]">
                         <h2 className="text-[20px] font-semibold text-slate-900">Verifikasi Mahasiswa</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           Masuk dengan akun kampus untuk memastikan hanya mahasiswa yang terdaftar yang dapat mengakses pemilihan.
@@ -406,7 +406,7 @@ function ConnectWalletContent() {
                     )}
 
                     {isConnected && authSession && !isWalletBound && (
-                      <div className="mt-8 max-w-[420px]">
+                      <div className="mt-8 max-w-full xl:max-w-[420px]">
                         <h2 className="text-[20px] font-semibold text-slate-900">Aktifkan Hak Suara</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           Wallet dan akun mahasiswa sudah siap. Tautkan keduanya agar akses pemilih aktif.
@@ -429,7 +429,7 @@ function ConnectWalletContent() {
                     )}
 
                     {isConnected && authSession && isWalletBound && (
-                      <div className="mt-16 flex max-w-[420px] flex-col items-center text-center">
+                      <div className="mt-16 flex max-w-full xl:max-w-[420px] flex-col items-center text-center">
                         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                           <CheckCircle2 className="h-8 w-8" />
                         </div>
