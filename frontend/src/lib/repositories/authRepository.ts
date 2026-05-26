@@ -18,7 +18,13 @@ export async function signInWithEmailPassword(email: string, password: string) {
   if (!client) throw new RepositoryError('Backend login belum dikonfigurasi.')
 
   const { data, error } = await client.auth.signInWithPassword({ email, password })
-  if (error) throw new RepositoryError('Email kampus atau password tidak cocok. Coba lagi.')
+  
+  if (error) {
+    if (error.status === 429) {
+      throw new RepositoryError('Terlalu banyak percobaan. Silakan tunggu sebentar.')
+    }
+    throw new RepositoryError('Email kampus atau password tidak cocok. Coba lagi.')
+  }
 
   return data.session
 }

@@ -66,7 +66,35 @@ export function useMicrosoftCampusLogin() {
         provider: 'azure',
         options: {
           scopes: 'openid profile email',
-          redirectTo: `${window.location.origin}/auth/callback${nextPath ? `?next=${nextPath}` : ''}`,
+          redirectTo: `${window.location.origin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`,
+        }
+      })
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      // OAuth redirect happens
+    }
+  })
+}
+
+export function useGoogleLogin() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ nextPath }: { nextPath?: string }) => {
+      const client = getSupabaseBrowserClient()
+      if (!client) throw new Error('Supabase client not available')
+
+      const { data, error } = await client.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+          redirectTo: `${window.location.origin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`,
         }
       })
 

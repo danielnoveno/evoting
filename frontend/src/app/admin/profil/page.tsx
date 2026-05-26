@@ -2,20 +2,53 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
-import { Camera, ShieldCheck, Copy, Lock, Pencil } from 'lucide-react'
+import { Camera, ShieldCheck, Copy, Lock, Pencil, Monitor, Smartphone, Globe, LogOut } from 'lucide-react'
 import { useToast } from '@/components/ui/toast-provider'
-import { ScrollReveal } from '@/components/public/parallax'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useProfileByWallet, useSaveCurrentProfile } from '@/hooks/use-profile'
 import { mapProfileToViewModel } from '@/lib/mappers/profileMapper'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 
+import { useAccount } from 'wagmi'
+
 export default function AdminProfilePage() {
   const { showToast } = useToast()
+  const { address: walletAddress } = useAccount()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const walletAddress = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F'
   const profileQuery = useProfileByWallet(walletAddress)
   const saveProfile = useSaveCurrentProfile()
+
+  // Mock data untuk Sesi Aktif
+  const [activeSessions, setActiveSessions] = useState([
+    {
+      id: '1',
+      device: 'MacBook Pro - Safari',
+      location: 'Jakarta, ID',
+      time: 'Saat ini',
+      status: 'Aktif',
+      isCurrent: true,
+      icon: Monitor
+    },
+    {
+      id: '2',
+      device: 'iPhone 13 - Chrome',
+      location: 'Bandung, ID',
+      time: '2 jam lalu',
+      status: 'Aktif',
+      isCurrent: false,
+      icon: Smartphone
+    }
+  ])
+
+  const handleTerminateSession = (id: string) => {
+    setActiveSessions(prev => prev.filter(s => s.id !== id))
+    showToast({
+      title: 'Sesi Dihentikan',
+      description: 'Perangkat tersebut telah dikeluarkan dari akun Anda.',
+      tone: 'success'
+    })
+  }
 
   const fallbackProfile = mapProfileToViewModel(profileQuery.data ?? null, {
     displayName: 'Budi Santoso',
@@ -36,6 +69,7 @@ export default function AdminProfilePage() {
   }, [fallbackProfile.avatarUrl, fallbackProfile.bio, fallbackProfile.displayName])
 
   const handleCopyWallet = async () => {
+    if (!walletAddress) return
     try {
       await navigator.clipboard.writeText(walletAddress)
       showToast({
@@ -290,6 +324,82 @@ export default function AdminProfilePage() {
                 </button>
             </div>
           </article>
+          </ScrollReveal>
+
+          {/* Active Sessions Section */}
+          <ScrollReveal variant="fade-up" delay={300} duration={800}>
+            <article className="mt-8 rounded-[32px] bg-white border border-slate-100 p-8 md:p-10 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-slate-900">Sesi Aktif & Keamanan</h2>
+                  <p className="mt-1 text-[13px] text-slate-500">Pantau dan kelola perangkat yang terhubung ke akun e-voting Anda.</p>
+                </div>
+                <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400">
+                  <Monitor className="h-5 w-5" />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <StaggerContainer stagger={100}>
+                  {activeSessions.map((session) => (
+                    <div 
+                      key={session.id} 
+                      className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${session.isCurrent ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                    >
+                      <div className="flex items-center gap-5">
+                        <div className={`h-12 w-12 flex items-center justify-center rounded-xl ${session.isCurrent ? 'bg-white text-slate-900 shadow-sm' : 'bg-slate-50 text-slate-400'}`}>
+                          <session.icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-[15px] font-bold text-slate-900">{session.device}</p>
+                            {session.isCurrent && (
+                              <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
+                                Sesi Ini
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1.5 text-[13px] text-slate-500">
+                            <Globe className="h-3.5 w-3.5" />
+                            <span>{session.location}</span>
+                            <span className="text-slate-300">•</span>
+                            <span>{session.time}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {!session.isCurrent && (
+                        <button 
+                          onClick={() => handleTerminateSession(session.id)}
+                          className="h-10 px-4 rounded-xl border border-red-100 text-[13px] font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                        >
+                          <LogOut className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Keluarkan</span>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </StaggerContainer>
+              </div>
+
+              <div className="mt-8 pt-8 border-t border-slate-100">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setActiveSessions(prev => prev.filter(s => s.isCurrent))
+                    showToast({
+                      title: 'Keamanan Diperketat',
+                      description: 'Semua sesi lain telah berhasil dihentikan.',
+                      tone: 'success'
+                    })
+                  }}
+                  className="text-[14px] font-bold text-red-600 hover:text-red-700 transition-colors flex items-center gap-2"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Keluarkan dari Semua Perangkat Lain
+                </button>
+              </div>
+            </article>
           </ScrollReveal>
         </div>
       </div>

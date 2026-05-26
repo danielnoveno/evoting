@@ -7,15 +7,26 @@ import { useMemo, useState } from 'react'
 import { SuperadminEmptyState, SuperadminInteractiveCard, SuperadminShell, SuperadminStatusBadge } from '@/components/superadmin/superadmin-shell'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
-import { useSuperadminProposalsStore } from '@/lib/superadmin-store'
-import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import { useSuperadminProposalDrafts } from '@/hooks/use-proposal-draft'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 
 type SortField = 'tanggal' | 'organisasi' | 'jenis' | 'status'
 
 export default function SuperadminProposalManagementPage() {
   const router = useRouter()
   const [query, setQuery] = useState('')
-  const { proposals: proposalRows } = useSuperadminProposalsStore()
+  const { data: proposalRowsRaw, isLoading, error } = useSuperadminProposalDrafts()
+  
+  const proposalRows = useMemo(() => {
+    if (!proposalRowsRaw) return []
+    return proposalRowsRaw.map(p => ({
+      id: p.id,
+      organizationName: p.organizationName ?? 'Organisasi Tanpa Nama',
+      proposalType: 'Internal Organisasi', // Fallback type
+      submittedAt: new Date(p.createdAt).toLocaleDateString('id-ID'),
+      status: p.status === 'draft' ? 'Draf' : p.status === 'submitted' ? 'Menunggu Review' : p.status === 'approved' ? 'Disetujui' : p.status === 'deployed' ? 'Berjalan' : p.status
+    }))
+  }, [proposalRowsRaw])
   const [sortField, setSortField] = useState<SortField>('tanggal')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
 
@@ -56,6 +67,11 @@ export default function SuperadminProposalManagementPage() {
 
       <ScrollReveal variant="fade-up" delay={150} duration={800}>
         <AppSectionCard className="mt-8">
+          {error && (
+            <div className="mb-4 rounded-xl bg-red-50 p-4 text-[13px] text-red-600">
+              {getRepositoryErrorMessage(error)}
+            </div>
+          )}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <label className="flex h-12 w-full items-center gap-3 rounded-2xl bg-white px-4 lg:max-w-[420px]">
               <Search className="h-5 w-5 text-slate-400" />
@@ -115,7 +131,11 @@ export default function SuperadminProposalManagementPage() {
       </ScrollReveal>
 
       <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 space-y-4">
-        {filteredRows.length > 0 ? filteredRows.map((proposal) => (
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-32 w-full animate-pulse rounded-[24px] bg-slate-100" />
+          ))
+        ) : filteredRows.length > 0 ? filteredRows.map((proposal) => (
           <SuperadminInteractiveCard key={proposal.id} onClick={() => router.push(`/superadmin/manajemen-proposal/${proposal.id}`)} className="bg-slate-100 px-6 py-5 shadow-[0_16px_60px_rgba(15,23,42,0.05)]">
             <div className="grid gap-4 lg:grid-cols-[1.3fr_1.3fr_0.8fr_220px] lg:items-center">
               <div>

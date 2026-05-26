@@ -11,6 +11,9 @@ import { adminElectionData, adminElectionFilters, AdminElectionRecord, AdminElec
 import { useToast } from '@/components/ui/toast-provider'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
+import { useAdminElectionList } from '@/hooks/use-admin-proposal-list'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+
 function getToneClasses(tone: AdminElectionRecord['iconTone']) {
   if (tone === 'emerald') return 'bg-emerald-50 text-emerald-700'
   if (tone === 'orange') return 'bg-orange-50 text-orange-600'
@@ -84,7 +87,7 @@ function ElectionCard({ election }: { election: AdminElectionRecord }) {
 
           <div className="mt-auto flex items-end justify-between gap-3 pt-6">
             <div className="flex flex-wrap items-center gap-3">
-              <Link href={`/admin/manajemen-pemilihan/${election.id}/monitoring`} onClick={(event) => event.stopPropagation()} className="inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-2xl bg-indigo-50 px-4 text-[14px] font-medium text-indigo-600 sm:px-5">
+              <Link href={`/admin/manajemen-pemilihan/${election.id}`} onClick={(event) => event.stopPropagation()} className="inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-2xl bg-indigo-50 px-4 text-[14px] font-medium text-indigo-600 sm:px-5">
                 <ChartNoAxesColumn className="h-4 w-4" />
                 {election.actionLabel}
               </Link>
@@ -131,11 +134,13 @@ export default function AdminElectionManagementPage() {
   const [activeFilter, setActiveFilter] = useState<'semua' | AdminElectionStatus>('semua')
 
   const { showToast } = useToast()
+  const { elections: liveElections, isLoading, error, isUsingFallback } = useAdminElectionList()
 
   const filteredElections = useMemo(() => {
-    if (activeFilter === 'semua') return adminElectionData
-    return adminElectionData.filter((election) => election.status === activeFilter)
-  }, [activeFilter])
+    const data = liveElections.length > 0 ? liveElections : adminElectionData
+    if (activeFilter === 'semua') return data
+    return data.filter((election) => election.status === activeFilter)
+  }, [activeFilter, liveElections])
 
   const electionsWithEmptyCard = useMemo(() => {
     return [...filteredElections, 'create-new'] as const

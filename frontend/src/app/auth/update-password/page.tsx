@@ -41,7 +41,7 @@ export default function UpdatePasswordPage() {
 
   return (
     <AuthShell>
-      <div className="mx-auto max-w-[440px] w-full px-4 pt-20">
+      <div className="mx-auto max-w-[400px] w-full px-4 pt-20">
         <AuthCard>
           <div className="text-center mb-8">
             <div className="mx-auto h-12 w-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20">

@@ -13,7 +13,7 @@ const navItems = [
   { href: '/pemilihan', label: 'Pemilihan' },
 ]
 
-export function PublicNavbar({ activePath }: { activePath: string }) {
+export function PublicNavbar({ activePath, minimal = false }: { activePath: string; minimal?: boolean }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { showToast } = useToast()
 
@@ -29,56 +29,60 @@ export function PublicNavbar({ activePath }: { activePath: string }) {
             />
           </Link>
 
-          <nav className="hidden items-center gap-6 md:flex lg:gap-8">
-            {navItems.map((item) => {
-              const isActive = activePath === item.href
+          {!minimal && (
+            <nav className="hidden items-center gap-6 md:flex lg:gap-8">
+              {navItems.map((item) => {
+                const isActive = activePath === item.href
 
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={isActive
-                    ? 'border-b-2 border-[#0F172A] py-3 text-[13px] font-semibold text-slate-900'
-                    : 'py-3 text-[13px] text-slate-500 hover:text-slate-900'}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-          </nav>
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={isActive
+                      ? 'border-b-2 border-[#0F172A] py-3 text-[13px] font-semibold text-slate-900'
+                      : 'py-3 text-[13px] text-slate-500 hover:text-slate-900'}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
+            </nav>
+          )}
         </div>
 
-        <div className="flex items-center gap-2 border-l border-slate-100 pl-3 md:gap-3 md:pl-5">
-          <button
-            type="button"
-            onClick={() => showToast({ tone: 'info', title: 'Shortcut audit', description: 'Fitur audit shortcut belum tersedia saat ini.' })}
-            className="hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:inline-flex"
-            aria-label="Buka shortcut audit"
-          >
-            <CopyCheck className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia saat ini.' })}
-            className="hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:inline-flex"
-            aria-label="Notifikasi"
-          >
-            <Bell className="h-4 w-4" />
-          </button>
-          <ConnectWalletButton />
-          <button
-            type="button"
-            onClick={() => setMobileOpen((v) => !v)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:hidden"
-            aria-label="Menu navigasi"
-          >
-            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </button>
-        </div>
+        {!minimal ? (
+          <div className="flex items-center gap-2 border-l border-slate-100 pl-3 md:gap-3 md:pl-5">
+            <button
+              type="button"
+              onClick={() => showToast({ tone: 'info', title: 'Shortcut audit', description: 'Fitur audit shortcut belum tersedia saat ini.' })}
+              className="hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:inline-flex"
+              aria-label="Buka shortcut audit"
+            >
+              <CopyCheck className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia saat ini.' })}
+              className="hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:inline-flex"
+              aria-label="Notifikasi"
+            >
+              <Bell className="h-4 w-4" />
+            </button>
+            <ConnectWalletButton />
+            <button
+              type="button"
+              onClick={() => setMobileOpen((v) => !v)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:hidden"
+              aria-label="Menu navigasi"
+            >
+              {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {/* Mobile navigation menu */}
-      {mobileOpen ? (
+      {!minimal && mobileOpen ? (
         <nav className="border-t border-slate-100 bg-white px-4 pb-4 pt-3 md:hidden">
           <div className="flex flex-col gap-1">
             {navItems.map((item) => {
@@ -105,12 +109,12 @@ export function PublicNavbar({ activePath }: { activePath: string }) {
 
 export function PublicFooter() {
   return (
-    <AppFooter className="py-4">
-      <div className="public-container flex flex-col gap-3 text-[11px] uppercase tracking-[0.06em] text-slate-400 md:flex-row md:items-center md:justify-between">
+    <AppFooter className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/60 bg-white/80 py-3 backdrop-blur-md">
+      <div className="public-container flex flex-col gap-3 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500 md:flex-row md:items-center md:justify-between">
         <p>© 2026 Votein · Platform e-voting</p>
-        <div className="flex items-center gap-4">
-          <Link href="/kebijakan-privasi" className="hover:text-slate-800">Kebijakan Privasi</Link>
-          <Link href="/ketentuan-layanan" className="hover:text-slate-800">Ketentuan Layanan</Link>
+        <div className="flex items-center gap-6">
+          <Link href="/kebijakan-privasi" className="transition-colors hover:text-slate-900">Kebijakan Privasi</Link>
+          <Link href="/ketentuan-layanan" className="transition-colors hover:text-slate-900">Ketentuan Layanan</Link>
         </div>
       </div>
     </AppFooter>
@@ -119,7 +123,7 @@ export function PublicFooter() {
 
 export function PublicPage({ activePath, children }: { activePath: string; children: ReactNode }) {
   return (
-    <main className="flex min-h-screen flex-col bg-slate-50">
+    <main className="flex min-h-screen flex-col bg-slate-50 pb-16">
       <PublicNavbar activePath={activePath} />
       <div className="flex-1">{children}</div>
       <PublicFooter />

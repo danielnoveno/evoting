@@ -60,6 +60,13 @@ export function AppSidebar({
 
   const sidebarDesktopWidthClass = collapsed ? 'lg:w-[96px]' : 'lg:w-[264px]'
 
+  const formattedWallet = useMemo(() => {
+    const w = profile.wallet
+    if (!w) return ''
+    if (w.length <= 13) return w
+    return `${w.slice(0, 6)}...${w.slice(-4)}`
+  }, [profile.wallet])
+
   return (
     <>
       {mobileOpen ? (
@@ -147,9 +154,9 @@ export function AppSidebar({
                     </div>
                 )}
                 {!collapsed ? (
-                  <div>
-                    <p className="text-[14px] font-semibold text-slate-900">{profile.name}</p>
-                    <p className="mt-1 text-[12px] text-slate-500">{profile.wallet}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-semibold text-slate-900">{profile.name}</p>
+                    <p className="mt-1 truncate text-[12px] text-slate-500" title={profile.wallet}>{formattedWallet}</p>
                   </div>
                 ) : null}
               </div>

@@ -4,7 +4,7 @@ import { PublicFooter } from '@/components/public/site-shell'
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <main className="flex min-h-screen flex-col bg-slate-50">
+    <main className="flex min-h-screen flex-col bg-slate-50 pb-16">
       <div className="flex flex-1 items-center justify-center px-4 py-4 md:px-5 md:py-5 lg:px-6 lg:py-6">
         {children}
       </div>
@@ -13,9 +13,9 @@ export function AuthShell({ children }: { children: ReactNode }) {
   )
 }
 
-export function AuthCard({ children }: { children: ReactNode }) {
+export function AuthCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <section className="w-full max-w-[432px] rounded-xl border border-slate-200 bg-white px-6 py-6 md:px-8 md:py-8">
+    <section className={`w-full max-w-[432px] rounded-xl border border-slate-200 bg-white px-6 py-6 md:px-8 md:py-8 ${className ?? ''}`}>
       {children}
     </section>
   )

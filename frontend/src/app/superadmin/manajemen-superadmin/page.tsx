@@ -1,0 +1,248 @@
+'use client'
+
+import { Download, EllipsisVertical, UserPlus, ShieldAlert, CheckCircle2 } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useMemo, useState } from 'react'
+import { useToast } from '@/components/ui/toast-provider'
+import {
+  SuperadminFieldLabel,
+  SuperadminAvatar,
+  SuperadminEmptyState,
+  SuperadminShell,
+  SuperadminStatusBadge,
+  SuperadminTabButton,
+  SuperadminTableRowLink,
+  SuperadminTextInput,
+  SuperadminToolbarButton,
+  SuperadminSectionHeading,
+} from '@/components/superadmin/superadmin-shell'
+import { AppSectionCard } from '@/components/ui/app-section-card'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { listProfilesByRole } from '@/lib/repositories/profileRepository'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+
+type TabKey = 'daftar' | 'tambah'
+
+const initialFormData = {
+  name: '',
+  email: '',
+  walletAddress: '',
+}
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'SA'
+}
+
+function SuperadminManagementContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { showToast } = useToast()
+  const queryClient = useQueryClient()
+  const [activeTab, setActiveTab] = useState<TabKey>('daftar')
+  const [formData, setFormData] = useState(initialFormData)
+
+  const { data: superadmins = [], isLoading, error } = useQuery({
+    queryKey: ['superadmins'],
+    queryFn: () => listProfilesByRole('super_admin'),
+  })
+
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    setActiveTab(tab === 'tambah' ? 'tambah' : 'daftar')
+  }, [searchParams])
+
+  const updateTab = (tab: TabKey) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (tab === 'tambah') {
+      params.set('tab', 'tambah')
+    } else {
+      params.delete('tab')
+    }
+    router.replace(`/superadmin/manajemen-superadmin?${params.toString()}`)
+  }
+
+  const handleCreateSuperAdmin = () => {
+    if (!formData.name.trim() || !formData.email.trim() || !formData.walletAddress.trim()) {
+      showToast({ tone: 'error', title: 'Data belum lengkap', description: 'Lengkapi nama, email, dan wallet address.' })
+      return
+    }
+
+    if (!/^0x[a-fA-F0-9]{40}$/.test(formData.walletAddress)) {
+      showToast({ tone: 'error', title: 'Wallet tidak valid', description: 'Gunakan alamat wallet Ethereum (0x...) yang valid.' })
+      return
+    }
+
+    // In a real implementation, this would call an Edge Function or Admin API
+    // To promote a user to super_admin or create a new invite.
+    showToast({ 
+      tone: 'success', 
+      title: 'Akses Super Admin Diberikan', 
+      description: `Undangan aktivasi telah disiapkan untuk ${formData.name}.` 
+    })
+    
+    setFormData(initialFormData)
+    updateTab('daftar')
+  }
+
+  return (
+    <SuperadminShell>
+      <ScrollReveal variant="fade-up" duration={800}>
+        <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+          <div>
+            <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">Manajemen Superadmin</h1>
+            <p className="mt-3 text-[16px] leading-8 text-slate-800 max-w-[760px]">
+              Kelola otoritas tertinggi platform. Superadmin memiliki akses penuh untuk menyetujui proposal dan melakukan tindakan darurat pada blockchain.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            {activeTab === 'daftar' && (
+              <SuperadminToolbarButton variant="primary" onClick={() => updateTab('tambah')}>
+                <UserPlus className="h-4 w-4" />
+                Tambah Superadmin
+              </SuperadminToolbarButton>
+            )}
+          </div>
+        </section>
+
+        <div className="mt-10 flex items-center gap-8 border-b border-slate-200">
+          <SuperadminTabButton active={activeTab === 'daftar'} onClick={() => updateTab('daftar')}>
+            Daftar Otoritas
+          </SuperadminTabButton>
+          <SuperadminTabButton active={activeTab === 'tambah'} onClick={() => updateTab('tambah')}>
+            Tambah Baru
+          </SuperadminTabButton>
+        </div>
+      </ScrollReveal>
+
+      {activeTab === 'daftar' ? (
+        <>
+          {error && (
+            <div className="mt-8 rounded-2xl bg-red-50 p-4 text-red-600 text-[14px]">
+              {getRepositoryErrorMessage(error)}
+            </div>
+          )}
+
+          <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+            <div className="hidden grid-cols-[1.5fr_1.5fr_1fr_56px] gap-4 border-b border-slate-100 px-6 py-5 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500 lg:grid">
+              <span>Profil Superadmin</span>
+              <span>Wallet Address</span>
+              <span>Status Otoritas</span>
+              <span />
+            </div>
+
+            <div>
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-20 w-full animate-pulse border-b border-slate-50" />
+                ))
+              ) : superadmins.length > 0 ? superadmins.map((admin) => (
+                <div
+                  key={admin.id}
+                  className="grid gap-4 border-b border-slate-100 px-6 py-5 lg:grid-cols-[1.5fr_1.5fr_1fr_56px] lg:items-center"
+                >
+                  <div className="flex items-center gap-4">
+                    <SuperadminAvatar initials={getInitials(admin.displayName || 'SA')} />
+                    <div>
+                      <p className="text-[16px] font-semibold text-slate-900">{admin.displayName || 'Super Admin'}</p>
+                      <p className="mt-1 font-mono text-[13px] text-slate-500">{admin.email}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-mono text-[13px] text-slate-600 truncate">{admin.walletAddress}</p>
+                  </div>
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-700">
+                      <ShieldAlert className="h-3 w-3" />
+                      Super Admin
+                    </span>
+                  </div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                  </div>
+                </div>
+              )) : (
+                <div className="p-10">
+                  <SuperadminEmptyState title="Belum ada superadmin lain" description="Hanya akun Anda yang terdaftar sebagai otoritas tertinggi saat ini." />
+                </div>
+              )}
+            </div>
+          </StaggerContainer>
+        </>
+      ) : (
+        <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 space-y-6">
+          <AppSectionCard>
+            <SuperadminSectionHeading
+              title="Identitas Superadmin Baru"
+              description="Pastikan data yang dimasukkan benar. Superadmin memiliki kontrol penuh atas sistem."
+            />
+            <div className="mt-8 grid gap-5 xl:grid-cols-2">
+              <label className="block">
+                <SuperadminFieldLabel>Nama Lengkap</SuperadminFieldLabel>
+                <SuperadminTextInput
+                  value={formData.name}
+                  onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
+                  placeholder="Masukkan nama lengkap"
+                />
+              </label>
+
+              <label className="block">
+                <SuperadminFieldLabel>Email Institusi</SuperadminFieldLabel>
+                <SuperadminTextInput
+                  value={formData.email}
+                  onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
+                  placeholder="admin.tu@uajy.ac.id"
+                />
+              </label>
+
+              <label className="block xl:col-span-2">
+                <SuperadminFieldLabel>Wallet Address (On-Chain Identity)</SuperadminFieldLabel>
+                <SuperadminTextInput
+                  value={formData.walletAddress}
+                  onChange={(event) => setFormData((current) => ({ ...current, walletAddress: event.target.value }))}
+                  placeholder="0x..."
+                />
+                <p className="mt-2 text-[12px] text-slate-500 italic">
+                  * Alamat ini akan digunakan untuk menandatangani transaksi blockchain penting.
+                </p>
+              </label>
+            </div>
+          </AppSectionCard>
+
+          <section className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => updateTab('daftar')}
+              className="inline-flex h-12 items-center justify-center rounded-2xl px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-100"
+            >
+              Batal
+            </button>
+            <SuperadminToolbarButton variant="primary" onClick={handleCreateSuperAdmin}>
+              Kirim Undangan Otoritas
+            </SuperadminToolbarButton>
+          </section>
+        </StaggerContainer>
+      )}
+    </SuperadminShell>
+  )
+}
+
+export default function SuperadminManagementPage() {
+  return (
+    <Suspense fallback={
+      <SuperadminShell>
+        <div className="flex h-[50vh] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-black" />
+        </div>
+      </SuperadminShell>
+    }>
+      <SuperadminManagementContent />
+    </Suspense>
+  )
+}

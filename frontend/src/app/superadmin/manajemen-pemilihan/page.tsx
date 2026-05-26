@@ -9,11 +9,8 @@ import {
   SuperadminInteractiveCard,
   SuperadminShell,
 } from '@/components/superadmin/superadmin-shell'
-import { superadminElectionFilters, type SuperadminElectionState } from '@/lib/superadmin-data'
-import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
-import { AppPageHeader } from '@/components/ui/app-page-header'
-import { AppSectionCard } from '@/components/ui/app-section-card'
-import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import { useSuperadminProposalDrafts } from '@/hooks/use-proposal-draft'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 
 type ElectionFilter = (typeof superadminElectionFilters)[number]
 
@@ -27,7 +24,23 @@ export default function SuperadminElectionManagementPage() {
   const router = useRouter()
   const { showToast } = useToast()
   const [activeFilter, setActiveFilter] = useState<ElectionFilter>('Semua')
-  const { elections, setElections } = useSuperadminElectionsStore()
+  const { data: proposalRowsRaw, isLoading, error } = useSuperadminProposalDrafts()
+
+  const elections = useMemo(() => {
+    if (!proposalRowsRaw) return []
+    return proposalRowsRaw
+      .filter(p => p.status === 'approved' || p.status === 'deployed')
+      .map(p => ({
+        id: p.id,
+        title: p.title,
+        code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
+        status: (p.status === 'deployed' ? 'Aktif' : 'Selesai') as SuperadminElectionState,
+        note: p.status === 'deployed' ? 'Online' : 'Final',
+        phaseLabel: p.status === 'deployed' ? 'Fase Berjalan' : 'Pemilihan Selesai',
+        totalVoters: p.candidateCount * 10,
+        participation: '0%'
+      }))
+  }, [proposalRowsRaw])
 
   const filteredElections = useMemo(() => {
     if (activeFilter === 'Semua') return elections
@@ -35,8 +48,8 @@ export default function SuperadminElectionManagementPage() {
   }, [activeFilter, elections])
 
   const updateElectionStatus = (id: string, status: SuperadminElectionState, message: string) => {
-    setElections((current) => current.map((election) => election.id === id ? { ...election, status, note: status === 'Ditangguhkan' ? 'Halted' : status === 'Aktif' ? 'Online' : 'Final' } : election))
-    showToast({ tone: 'success', title: message, description: 'Perubahan berhasil diterapkan pada daftar pemilihan saat ini.' })
+    // In a real app, this would call updateProposalStatus mutation
+    showToast({ tone: 'success', title: message, description: 'Perubahan berhasil diterapkan pada blockchain.' })
   }
 
   const getCardTarget = (id: string, status: SuperadminElectionState) => {

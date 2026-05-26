@@ -187,5 +187,42 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
     }
   }
 
+export async function updateProposalStatus(
+  id: string,
+  status: Database['app']['Tables']['proposal_drafts']['Row']['status'],
+  txHash?: string,
+  deployedSpaceAddress?: string
+): Promise<ProposalDraftRecord> {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const payload: Partial<Database['app']['Tables']['proposal_drafts']['Update']> = {
+    status,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (txHash) {
+    if (status === 'submitted') {
+      payload.proposal_tx_hash = txHash
+    } else if (status === 'approved') {
+      payload.review_tx_hash = txHash
+    } else if (status === 'deployed') {
+      payload.deployment_tx_hash = txHash
+    }
+  }
+
+  if (deployedSpaceAddress) {
+    payload.deployed_space_address = deployedSpaceAddress
+  }
+
+  const { data, error } = await client
+    .schema('app')
+    .from('proposal_drafts')
+    .update(payload)
+    .eq('id', id)
+    .select('*')
+    .single()
+
+  if (error) throw new RepositoryError('Gagal memperbarui status proposal. Coba lagi.')
   return mapProposalRow(data)
 }

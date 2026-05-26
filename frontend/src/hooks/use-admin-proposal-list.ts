@@ -46,3 +46,44 @@ export function useAdminProposalList() {
     isUsingFallback: !query.data || query.data.length === 0,
   }
 }
+
+export function useAdminElectionList() {
+  const query = useQuery({
+    queryKey: ['admin', 'elections'],
+    queryFn: listProposalDrafts,
+    retry: false,
+  })
+
+  const elections = useMemo(() => {
+    if (!query.data || query.data.length === 0) return []
+    
+    return query.data
+      .filter(p => p.status === 'approved' || p.status === 'deployed')
+      .map(p => ({
+        id: p.id,
+        title: p.title,
+        code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
+        status: (p.status === 'deployed' ? 'aktif' : 'selesai') as any,
+        badge: p.status === 'deployed' ? 'Active' : 'Approved',
+        meta: p.description ?? 'Ruang pemilihan blockchain.',
+        iconTone: (p.status === 'deployed' ? 'emerald' : 'blue') as any,
+        actionLabel: p.status === 'deployed' ? 'Monitoring' : 'Review Draft',
+        secondaryActionLabel: 'Statistik',
+        actionTone: 'blue' as any,
+        periodLabel: 'Mei - Juni 2026',
+        commits: p.status === 'deployed' ? {
+          total: 0,
+          target: p.candidateCount * 10, // Mock target
+          hash: p.deploymentTxHash?.slice(0, 10) ?? '0x...',
+          revealStart: p.revealStartAt ? new Date(p.revealStartAt).toLocaleDateString() : '-',
+          integrity: 'Verified'
+        } : undefined
+      }))
+  }, [query.data])
+
+  return {
+    ...query,
+    elections,
+    isUsingFallback: !query.data || query.data.length === 0
+  }
+}

@@ -147,3 +147,18 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
   if (error) throw new RepositoryError('Gagal menautkan wallet ke akun kampus. Coba lagi.')
   return mapProfileRow(data)
 }
+
+export async function listProfilesByRole(role: AppProfileRecord['role']): Promise<AppProfileRecord[]> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return []
+
+  const { data, error } = await client
+    .schema('app')
+    .from('app_profiles')
+    .select('*')
+    .eq('role', role)
+    .order('created_at', { ascending: false })
+
+  if (error) throw new RepositoryError('Gagal memuat daftar profil. Coba lagi.')
+  return data.map(mapProfileRow)
+}

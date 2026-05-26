@@ -5,7 +5,7 @@ import { AdminShell } from '@/components/admin/admin-shell'
 import { ProposalForm, ProposalFormData } from '@/components/admin/proposal-form'
 import { adminProposalContent } from '@/lib/admin-proposal-data'
 import { sharedContext } from '@/lib/shared-context'
-import { useProposalDraft } from '@/hooks/use-proposal-draft'
+import { useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { useRegistryContract } from '@/hooks/use-registry-contract'
@@ -27,6 +27,7 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
   const proposalQuery = useProposalDraft(params.id)
   const candidateQuery = useProposalCandidates(params.id)
   const whitelistQuery = useProposalWhitelistEntries(params.id)
+  const updateStatus = useUpdateProposalStatus()
   
   const { 
     submitProposal, 
@@ -38,12 +39,19 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
   } = useRegistryContract()
 
   useEffect(() => {
-    if (isConfirmed) {
-      showToast({ title: 'Berhasil Terkirim', description: 'Proposal telah didaftarkan ke blockchain.', tone: 'success' })
-      resetWrite()
-      router.push('/admin/daftar-proposal')
+    if (isConfirmed && hash) {
+      updateStatus.mutate({ id: params.id, status: 'submitted', txHash: hash }, {
+        onSuccess: () => {
+          showToast({ title: 'Berhasil Terkirim', description: 'Proposal telah didaftarkan ke blockchain dan status diperbarui.', tone: 'success' })
+          resetWrite()
+          router.push('/admin/daftar-proposal')
+        },
+        onError: () => {
+          showToast({ title: 'Terjadi Kesalahan', description: 'Proposal terkirim ke blockchain tetapi gagal memperbarui status lokal.', tone: 'warning' })
+        }
+      })
     }
-  }, [isConfirmed, resetWrite, router, showToast])
+  }, [isConfirmed, hash, params.id, resetWrite, router, showToast, updateStatus])
 
   const liveProposal = proposalQuery.data
   if (!liveProposal && !proposalQuery.isLoading) notFound()

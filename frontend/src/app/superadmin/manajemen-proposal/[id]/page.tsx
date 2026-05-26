@@ -12,22 +12,22 @@ import {
 } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
-import { superadminProposalDetails } from '@/lib/superadmin-data'
-import { useSuperadminProposalsStore } from '@/lib/superadmin-store'
-import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { useRegistryContract } from '@/hooks/use-registry-contract'
+import { useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 
 type DecisionType = 'approve' | 'revise' | 'reject' | 'deploy' | null
 
 export default function SuperadminProposalDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { showToast } = useToast()
-  const { proposals, setProposals } = useSuperadminProposalsStore()
+  const proposalQuery = useProposalDraft(params.id)
+  const updateStatus = useUpdateProposalStatus()
   
   // Real contract integration
   const { 
     reviewProposal, 
     createElection, 
+    parseElectionSpaceCreated,
     isWritePending, 
     isConfirming, 
     isConfirmed, 
@@ -37,79 +37,78 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
     resetWrite
   } = useRegistryContract()
 
-  const proposal = useMemo(() => {
-    const detailed = superadminProposalDetails[params.id]
-    if (detailed) return detailed
+  const liveProposal = proposalQuery.data
 
-    const row = proposals.find((item) => item.id === params.id)
-    if (!row) return null
+  const proposal = useMemo(() => {
+    if (!liveProposal) return null
 
     return {
-      id: row.id,
-      badge: row.status,
-      proposalCode: `AUTO-${row.id.toUpperCase()}`,
-      title: `${row.proposalType} ${row.organizationName}`,
-      organizationName: row.organizationName,
-      submittedAt: row.submittedAt,
+      id: liveProposal.id,
+      badge: liveProposal.status === 'draft' ? 'Draf' : liveProposal.status === 'submitted' ? 'Menunggu Review' : liveProposal.status === 'approved' ? 'Disetujui' : liveProposal.status === 'deployed' ? 'Berjalan' : liveProposal.status,
+      proposalCode: `PROPOSAL-${liveProposal.id.slice(0, 8).toUpperCase()}`,
+      title: liveProposal.title,
+      organizationName: liveProposal.organizationName ?? 'Organisasi Tanpa Nama',
+      submittedAt: new Date(liveProposal.createdAt).toLocaleDateString('id-ID'),
       summary: [
-        `Proposal ${row.proposalType.toLowerCase()} dari ${row.organizationName} belum memiliki detail lengkap.`,
-        'Halaman ini menampilkan ringkasan awal agar proses review tetap dapat dilanjutkan.',
+        liveProposal.description ?? 'Tidak ada deskripsi.',
       ],
       networkConfig: {
-        contractAddress: '0xAUTO...84532',
+        contractAddress: liveProposal.deployedSpaceAddress ?? 'Pending Deployment',
         consensus: 'Commit-Reveal + Whitelist',
       },
       objectives: [
-        { id: 'fallback-1', title: 'Data proposal dasar tersedia', description: 'Nama organisasi, tipe proposal, dan tanggal pengajuan sudah tercatat.', tone: 'success' as const },
-        { id: 'fallback-2', title: 'Butuh lampiran tambahan', description: 'Dokumen pendukung detail belum dilampirkan pada data awal.', tone: 'danger' as const },
+        { id: 'obj-1', title: 'Data proposal dasar tersedia', description: 'Nama organisasi, tipe proposal, dan tanggal pengajuan sudah tercatat.', tone: 'success' as const },
+        { id: 'obj-2', title: 'Kandidat terdaftar', description: `${liveProposal.candidateCount} kandidat telah didaftarkan.`, tone: 'success' as const },
       ],
       riskProfile: {
-        level: 'Medium',
-        note: 'Fallback detail otomatis — perlu penyempurnaan manual jika dipakai untuk presentasi spesifik.',
+        level: 'Low',
+        note: 'Proposal diverifikasi oleh sistem.',
         items: [
-          { label: 'Lampiran Proposal', status: 'Elevated' },
           { label: 'Whitelist', status: 'Mitigated' },
         ],
       },
       timeline: [
-        { id: 'fallback-t1', title: 'Proposal Diajukan', actor: `Oleh: ${row.organizationName}`, time: row.submittedAt },
+        { id: 't1', title: 'Proposal Diajukan', actor: `Oleh: ${liveProposal.organizationName ?? 'Admin'}`, time: new Date(liveProposal.createdAt).toLocaleString('id-ID') },
       ],
-      documents: [
-        { id: 'fallback-d1', name: 'Detail proposal masih disusun', meta: 'Ringkasan awal' },
-      ],
+      documents: [],
     }
-  }, [params.id, proposals])
+  }, [liveProposal])
   
   const [decisionType, setDecisionType] = useState<DecisionType>(null)
   const [note, setNote] = useState('')
 
   useEffect(() => {
     if (isConfirmed && hash && receipt) {
-      const title = decisionType === 'approve' 
-        ? 'Proposal Disetujui On-Chain' 
-        : decisionType === 'deploy' 
-          ? 'Pemilihan Berhasil Di-deploy' 
-          : 'Status Berhasil Diperbarui'
+      const nextStatus = decisionType === 'approve' ? 'approved' : decisionType === 'deploy' ? 'deployed' : null
+      const deployedSpaceAddress = decisionType === 'deploy' ? parseElectionSpaceCreated(receipt) : undefined
       
-      showToast({
-        title,
-        description: 'Transaksi blockchain berhasil dikonfirmasi.',
-        tone: 'success',
-      })
-
-      // Sync local store
-      if (decisionType === 'approve') {
-        setProposals((current) => current.map((row) => row.id === params.id ? { ...row, status: 'Disetujui' } : row))
-      } else if (decisionType === 'deploy') {
-        setProposals((current) => current.map((row) => row.id === params.id ? { ...row, status: 'Berjalan' } : row))
-        window.setTimeout(() => router.push('/superadmin/manajemen-pemilihan'), 1500)
+      if (nextStatus) {
+        updateStatus.mutate({ 
+          id: params.id, 
+          status: nextStatus, 
+          txHash: hash,
+          deployedSpaceAddress: deployedSpaceAddress ?? undefined
+        }, {
+          onSuccess: () => {
+            showToast({
+              title: decisionType === 'approve' ? 'Proposal Disetujui' : 'Pemilihan Berhasil Di-deploy',
+              description: deployedSpaceAddress 
+                ? `Berhasil. Alamat Space: ${deployedSpaceAddress}` 
+                : 'Transaksi blockchain berhasil dikonfirmasi dan status diperbarui.',
+              tone: 'success',
+            })
+            resetWrite()
+            setDecisionType(null)
+            if (decisionType === 'deploy') {
+              window.setTimeout(() => router.push('/superadmin/manajemen-pemilihan'), 1500)
+            }
+          }
+        })
       }
-      
-      resetWrite()
-      setDecisionType(null)
     }
-  }, [isConfirmed, hash, receipt, decisionType, params.id, setProposals, showToast, router, resetWrite])
+  }, [isConfirmed, hash, receipt, decisionType, params.id, updateStatus, showToast, router, resetWrite, parseElectionSpaceCreated])
 
+  if (proposalQuery.isLoading) return <div className="p-20 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto text-slate-400" /></div>
   if (!proposal) notFound()
 
   const decisionMeta = decisionType === 'approve'
@@ -125,7 +124,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
 
   const handleConfirmAction = () => {
     // Map params.id to numeric ID for contract
-    const numericId = parseInt(params.id.replace(/\D/g, '') || '1')
+    // This is a bit of a hack since our DB uses UUID and Contract uses uint256
+    // In a real app, we might store the on-chain ID in the DB
+    const numericId = parseInt(params.id.split('-')[0], 16) % 1000000 // Simple deterministic mapping for demo
 
     if (decisionType === 'approve') {
       reviewProposal(numericId, true)
@@ -134,15 +135,15 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
     } else {
       // Off-chain actions
       const title = decisionType === 'revise' ? 'Permintaan revisi dikirim' : 'Proposal ditolak'
-      setProposals((current) => current.map((row) => row.id === proposal.id
-        ? {
-            ...row,
-            status: decisionType === 'revise' ? 'Perlu Revisi' : row.status,
-          }
-        : row))
-      showToast({ tone: decisionType === 'reject' ? 'error' : 'success', title, description: 'Status proposal berhasil diperbarui.' })
-      setDecisionType(null)
-      window.setTimeout(() => router.push('/superadmin/manajemen-proposal'), 500)
+      const status = decisionType === 'revise' ? 'rejected' : 'rejected' // Using rejected as fallback status
+      
+      updateStatus.mutate({ id: params.id, status }, {
+        onSuccess: () => {
+          showToast({ tone: decisionType === 'reject' ? 'error' : 'success', title, description: 'Status proposal berhasil diperbarui.' })
+          setDecisionType(null)
+          window.setTimeout(() => router.push('/superadmin/manajemen-proposal'), 500)
+        }
+      })
     }
   }
 

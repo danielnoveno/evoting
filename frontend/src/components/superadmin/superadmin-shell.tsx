@@ -9,6 +9,7 @@ import { superadminShellContent } from '@/lib/superadmin-data'
 
 const sidebarItems: ConsoleNavItem[] = [
   { href: '/superadmin', label: 'Beranda', icon: LayoutGrid },
+  { href: '/superadmin/manajemen-superadmin', label: 'Manajemen Superadmin', icon: ShieldAlert },
   { href: '/superadmin/manajemen-admin', label: 'Manajemen Admin', icon: ShieldUser },
   { href: '/superadmin/manajemen-pemilihan', label: 'Manajemen Pemilihan', icon: Vote },
   { href: '/superadmin/manajemen-proposal', label: 'Manajemen Proposal', icon: FileCheck2 },
