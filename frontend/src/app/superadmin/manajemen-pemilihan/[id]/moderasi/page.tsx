@@ -6,7 +6,6 @@ import { useMemo, useState } from 'react'
 import { SuperadminDetailIntro, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
-import { sharedContext } from '@/lib/shared-context'
 import { type SuperadminElectionState } from '@/lib/superadmin-data'
 import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -55,44 +54,7 @@ type ModerationDetail = {
   }>
 }
 
-const moderationDetails: Record<string, ModerationDetail> = {
-  [sharedContext.electionId]: {
-    network: 'Base Sepolia Testnet Secured',
-    electionCode: 'ID: UKM-RI-UAJY-2026-01',
-    endLabel: 'Berakhir dalam 2 hari, 14 jam',
-    totalVotes: '218',
-    totalVotesDelta: '+6.4%',
-    verificationNote: 'Verifikasi on-chain: 100%',
-    participationValue: '67.3%',
-    participationTarget: '80%',
-    participationNote: 'Target partisipasi UKM hampir tercapai',
-    phaseTitle: 'Fase Commit',
-    nextPhase: 'Reveal & Tally',
-    blockNumber: '#19,482,102',
-    blockSyncLabel: 'Terakhir sinkron 2 detik lalu',
-    contractAddress: '0x42f1...91ec',
-    contractUrl: 'https://sepolia.basescan.org/address/0x42f100000000000000000000000000000091ec',
-    suspensionNote: 'Penangguhan akan menghentikan sementara commit baru sampai admin membuka kembali ruang pemilihan ini.',
-    candidateSectionTitle: 'Monitoring Kandidat',
-    candidateSectionDescription: 'Status suara bersifat tersembunyi (commitment-based) hingga fase Reveal.',
-    encryptedLabel: 'Suara Dienkripsi',
-    candidates: [
-      { id: sharedContext.candidates[0].id, ballotNumber: 'KANDIDAT 01', name: sharedContext.candidates[0].name, vision: `Visi: ${sharedContext.candidates[0].vision}`, commitmentCount: '96', initials: 'NP' },
-      { id: sharedContext.candidates[1].id, ballotNumber: 'KANDIDAT 02', name: sharedContext.candidates[1].name, vision: `Visi: ${sharedContext.candidates[1].vision}`, commitmentCount: '72', initials: 'RM' },
-      { id: sharedContext.candidates[2].id, ballotNumber: 'KANDIDAT 03', name: sharedContext.candidates[2].name, vision: `Visi: ${sharedContext.candidates[2].vision}`, commitmentCount: '50', initials: 'SW' },
-    ],
-    supportCards: [
-      { id: 's1', title: 'Commit-Reveal Verification', description: 'Setiap suara diverifikasi menggunakan skema komitmen kriptografi.', icon: 'shield' },
-      { id: 's2', title: 'Cadangan Bukti Panitia', description: 'Ringkasan bukti pemilihan disiapkan untuk kebutuhan audit internal UKM dan pembina.', icon: 'activity' },
-    ],
-    feed: [
-      { id: 'f1', title: 'Commit Baru Tercatat', description: 'Suara baru dari anggota UKM berhasil didaftarkan pada kontrak pemilihan.', hash: '0x9a2b...4f8c', time: '2 detik yang lalu', tone: 'info' },
-      { id: 'f2', title: 'Batch Whitelist Diperbarui', description: 'Panitia memperbarui daftar pemilih aktif semester berjalan.', hash: '0x11e4...8a22', time: '1 menit yang lalu', tone: 'teal' },
-      { id: 'f3', title: 'Commit Baru Tercatat', description: 'Satu anggota lain menyelesaikan tahap commit dari dashboard pemilih.', hash: '0x77d1...f2e0', time: '3 menit yang lalu', tone: 'info' },
-      { id: 'f4', title: 'Konfigurasi Panitia Diperbarui', description: 'Admin menyesuaikan catatan moderasi untuk audit pemilihan UKM.', hash: '0xbb34...cc11', time: '12 menit yang lalu', tone: 'slate' },
-    ],
-  },
-}
+const moderationDetails: Record<string, ModerationDetail> = {}
 
 function getFallbackDetail(title: string, code: string): ModerationDetail {
   return {

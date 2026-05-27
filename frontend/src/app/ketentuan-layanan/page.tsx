@@ -7,7 +7,7 @@ export default function KetentuanLayananPage() {
         <div className="public-container">
           <SectionTitle
             title="Ketentuan Layanan"
-            body="Seluruh fitur pada demo Votein digunakan untuk simulasi skripsi e-voting kampus. Tidak ada transaksi blockchain nyata atau keputusan organisasi yang diproses secara resmi pada mode ini."
+            body="Seluruh fitur Votein pada environment pengembangan digunakan untuk simulasi skripsi e-voting kampus. Keputusan organisasi hanya sah jika memakai data dan transaksi yang telah diverifikasi."
           />
         </div>
       </section>

@@ -1,8 +1,15 @@
 import { createConfig } from "@ponder/core";
 import { http } from "viem";
+import type { AbiEvent } from "viem";
 
 import { VoteChainRegistryAbi } from "./abis/VoteChainRegistryAbi";
 import { ElectionSpaceAbi } from "./abis/ElectionSpaceAbi";
+
+const registryAddress = (process.env.NEXT_PUBLIC_REGISTRY_ADDRESS ??
+  "0xa91568d64d24d42Ec1Cd10C20B2F9D8d341250D0") as `0x${string}`;
+const electionSpaceCreatedEvent = VoteChainRegistryAbi.find(
+  (item) => item.type === "event" && item.name === "ElectionSpaceCreated",
+) as AbiEvent;
 
 export default createConfig({
   networks: {
@@ -15,16 +22,16 @@ export default createConfig({
     VoteChainRegistry: {
       network: "baseSepolia",
       abi: VoteChainRegistryAbi,
-      address: process.env.NEXT_PUBLIC_REGISTRY_ADDRESS as `0x${string}`,
-      startBlock: 19480000, // Example start block
+      address: registryAddress,
+      startBlock: 19480000,
     },
     ElectionSpace: {
       network: "baseSepolia",
       abi: ElectionSpaceAbi,
       factory: {
-        address: process.env.NEXT_PUBLIC_REGISTRY_ADDRESS as `0x${string}`,
-        event: VoteChainRegistryAbi.find((x) => x.name === "ElectionSpaceCreated"),
-        parameter: "spaceAddress",
+        address: registryAddress,
+        event: electionSpaceCreatedEvent,
+        parameter: "space",
       },
       startBlock: 19480000,
     },

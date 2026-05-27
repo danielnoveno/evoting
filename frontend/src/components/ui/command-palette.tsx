@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, User, FileText, Vote, HelpCircle, ShieldCheck, Users, AlertTriangle } from 'lucide-react'
-import { sharedContext } from '@/lib/shared-context'
 
 export type CommandPaletteRole = 'admin' | 'voter' | 'superadmin'
 
@@ -23,25 +22,20 @@ interface SearchItem {
 }
 
 const adminData: SearchItem[] = [
-  { id: 'a1', title: sharedContext.candidates[0].name, description: 'Kandidat #1 - Pemilihan Koordinator', category: 'Kandidat', icon: User, href: `/admin/manajemen-pemilihan/${sharedContext.electionId}` },
-  { id: 'a2', title: sharedContext.proposalTitle, description: 'Fase: Commit', category: 'Pemilihan', icon: Vote, href: `/admin/manajemen-pemilihan/${sharedContext.electionId}` },
-  { id: 'a3', title: '0x8f2a...d3e1', description: 'Pemilih Terdaftar', category: 'Voters', icon: User, href: '/admin' },
-  { id: 'a4', title: sharedContext.proposalTitle, description: 'Proposal utama UKM Riset', category: 'Proposal', icon: FileText, href: `/admin/daftar-proposal/${sharedContext.proposalId}` },
+  { id: 'a1', title: 'Manajemen Pemilihan', description: 'Data ruang dari Supabase', category: 'Pemilihan', icon: Vote, href: '/admin/manajemen-pemilihan' },
+  { id: 'a2', title: 'Daftar Proposal', description: 'Proposal dari Supabase', category: 'Proposal', icon: FileText, href: '/admin/daftar-proposal' },
 ]
 
 const voterData: SearchItem[] = [
-  { id: 'v1', title: sharedContext.proposalTitle, description: 'Sedang Berlangsung', category: 'Pemilihan', icon: Vote, href: `/pemilih/pemilihan/${sharedContext.electionId}/pilih-kandidat` },
-  { id: 'v2', title: sharedContext.candidates[0].name, description: 'Kandidat Koordinator', category: 'Kandidat', icon: User, href: `/pemilih/pemilihan/${sharedContext.electionId}/pilih-kandidat` },
-  { id: 'v3', title: 'Cara Menghubungkan Dompet', description: 'Panduan Pengguna', category: 'Bantuan', icon: HelpCircle, href: '/pemilih/bantuan' },
-  { id: 'v4', title: 'Kenapa Gas Fee Gagal?', description: 'Panduan Pengguna', category: 'Bantuan', icon: HelpCircle, href: '/pemilih/bantuan' },
+  { id: 'v1', title: 'Ruang Voting Saya', description: 'Pemilihan dari Supabase', category: 'Pemilihan', icon: Vote, href: '/pemilih' },
+  { id: 'v2', title: 'Bantuan Pemilih', description: 'Panduan Pengguna', category: 'Bantuan', icon: HelpCircle, href: '/pemilih/bantuan' },
 ]
 
 const superadminData: SearchItem[] = [
-  { id: 's1', title: 'Dian Sastrowardoyo', description: 'Admin aktif dengan akses global', category: 'Admin', icon: Users, href: '/superadmin/manajemen-admin' },
-  { id: 's2', title: sharedContext.proposalTitle, description: 'Ruang aktif UKM Riset dan Inovasi', category: 'Pemilihan', icon: Vote, href: `/superadmin/manajemen-pemilihan/${sharedContext.electionId}/moderasi` },
-  { id: 's3', title: sharedContext.proposalTitle, description: 'Proposal utama untuk review superadmin', category: 'Proposal', icon: FileText, href: `/superadmin/manajemen-proposal/${sharedContext.proposalId}` },
-  { id: 's4', title: 'Aktivitas mencurigakan', description: 'Deteksi anomali pada ruang voting', category: 'Keamanan', icon: AlertTriangle, href: '/superadmin/risk-activity' },
-  { id: 's5', title: 'Audit log jaringan', description: 'Riwayat event tervalidasi secara global', category: 'Audit', icon: ShieldCheck, href: '/superadmin/audit-log' },
+  { id: 's1', title: 'Manajemen Admin', description: 'Admin dari backend', category: 'Admin', icon: Users, href: '/superadmin/manajemen-admin' },
+  { id: 's2', title: 'Manajemen Pemilihan', description: 'Ruang dari backend', category: 'Pemilihan', icon: Vote, href: '/superadmin/manajemen-pemilihan' },
+  { id: 's3', title: 'Risk Activity', description: 'Alert dari backend', category: 'Keamanan', icon: AlertTriangle, href: '/superadmin/risk-activity' },
+  { id: 's4', title: 'Audit Log', description: 'Riwayat event backend', category: 'Audit', icon: ShieldCheck, href: '/superadmin/audit-log' },
 ]
 
 export function CommandPalette({ open, onOpenChange, role }: CommandPaletteProps) {

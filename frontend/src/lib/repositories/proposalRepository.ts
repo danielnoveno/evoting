@@ -20,6 +20,7 @@ function mapProposalRow(row: ProposalRow): ProposalDraftRecord {
     proposalTxHash: row.proposal_tx_hash,
     reviewTxHash: row.review_tx_hash,
     deploymentTxHash: row.deployment_tx_hash,
+    deployedSpaceId: row.deployed_space_id,
     deployedSpaceAddress: row.deployed_space_address,
     commitStartAt: row.commit_start_at,
     revealStartAt: row.reveal_start_at,

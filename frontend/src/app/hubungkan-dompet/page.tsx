@@ -22,7 +22,6 @@ import { AuthField } from '@/components/auth/auth-shell'
 import { useToast } from '@/components/ui/toast-provider'
 import { useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useEmailPasswordLogin, useEmailPasswordSignUp } from '@/hooks/use-auth-session'
 import { useBindCurrentWallet, useCurrentProfile } from '@/hooks/use-profile'
-import { sharedContext } from '@/lib/shared-context'
 import { ScrollReveal, FloatingShape } from '@/components/public/parallax'
 import { AsciiBackground } from '@/components/public/ascii-background'
 import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
@@ -32,9 +31,6 @@ import { WalletAddress } from '@/components/ui/wallet-address'
 
 function resolveRedirectTarget(redirectParam: string | null) {
   if (redirectParam?.startsWith('/')) return redirectParam
-  if (redirectParam === 'pilih-kandidat') {
-    return `/pemilih/pemilihan/${sharedContext.electionId}/pilih-kandidat`
-  }
   return '/pemilih'
 }
 

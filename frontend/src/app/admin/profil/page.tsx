@@ -19,27 +19,7 @@ export default function AdminProfilePage() {
   const profileQuery = useProfileByWallet(walletAddress)
   const saveProfile = useSaveCurrentProfile()
 
-  // Mock data untuk Sesi Aktif
-  const [activeSessions, setActiveSessions] = useState([
-    {
-      id: '1',
-      device: 'MacBook Pro - Safari',
-      location: 'Jakarta, ID',
-      time: 'Saat ini',
-      status: 'Aktif',
-      isCurrent: true,
-      icon: Monitor
-    },
-    {
-      id: '2',
-      device: 'iPhone 13 - Chrome',
-      location: 'Bandung, ID',
-      time: '2 jam lalu',
-      status: 'Aktif',
-      isCurrent: false,
-      icon: Smartphone
-    }
-  ])
+  const [activeSessions, setActiveSessions] = useState<Array<{ id: string; device: string; location: string; time: string; status: string; isCurrent: boolean; icon: typeof Monitor }>>([])
 
   const handleTerminateSession = (id: string) => {
     setActiveSessions(prev => prev.filter(s => s.id !== id))
@@ -51,21 +31,21 @@ export default function AdminProfilePage() {
   }
 
   const fallbackProfile = mapProfileToViewModel(profileQuery.data ?? null, {
-    displayName: 'Budi Santoso',
-    email: 'budi.santoso@email.com',
+    displayName: 'Admin',
+    email: '',
     walletAddress: walletAddress ?? 'Wallet belum terhubung',
-    bio: 'Warga negara yang aktif dalam partisipasi demokrasi digital.',
-    avatarUrl: 'https://i.pravatar.cc/300?img=11',
+    bio: '',
+    avatarUrl: '',
   })
 
   const [displayName, setDisplayName] = useState(fallbackProfile.displayName)
   const [bio, setBio] = useState(fallbackProfile.bio)
-  const [photoUrl, setPhotoUrl] = useState(fallbackProfile.avatarUrl ?? 'https://i.pravatar.cc/300?img=11')
+  const [photoUrl, setPhotoUrl] = useState(fallbackProfile.avatarUrl ?? '')
 
   useEffect(() => {
     setDisplayName(fallbackProfile.displayName)
     setBio(fallbackProfile.bio)
-    setPhotoUrl(fallbackProfile.avatarUrl ?? 'https://i.pravatar.cc/300?img=11')
+    setPhotoUrl(fallbackProfile.avatarUrl ?? '')
   }, [fallbackProfile.avatarUrl, fallbackProfile.bio, fallbackProfile.displayName])
 
   const handleCopyWallet = async () => {
@@ -300,7 +280,7 @@ export default function AdminProfilePage() {
                     onClick={handleCopyWallet}
                     className="h-full px-5 text-slate-400 hover:text-slate-900 transition-colors focus:ring-2 focus:ring-[#0B1120] focus:outline-none"
                     title="Salin Address"
-                    aria-label="Salin alamat wallet admin Budi Santoso"
+                    aria-label="Salin alamat wallet admin"
                   >
                     <Copy className="h-5 w-5" />
                   </button>

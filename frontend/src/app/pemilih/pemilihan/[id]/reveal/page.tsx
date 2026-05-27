@@ -7,7 +7,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { findElection, useVoterStore } from '@/lib/voter-store'
-import { clearVoteCommitment, loadVoteCommitment } from '@/lib/vote-commitment-demo'
+import { clearVoteCommitment, loadVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
 
@@ -17,10 +17,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
 
   const election = findElection(store, params.id)
   
-  // Real contract integration
-  const contractAddress = election?.id === 'ukm-riset-koordinator-2026' 
-    ? '0x71C7656EC7ab88b098defB751B7401B5f6d8976F' 
-    : undefined
+  const contractAddress = election?.deployedSpaceAddress ?? undefined
 
   const { 
     revealVote, 
@@ -45,8 +42,13 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         description: 'Pilihan Anda telah divalidasi dan dihitung.',
         tone: 'success',
       })
-      // Sync store
-      actions.revealVote(params.id)
+      actions.revealVote(params.id, {
+        txHash: hash,
+        blockNumber: Number(receipt.blockNumber),
+        gasUsed: Number(receipt.gasUsed),
+        createdAt: new Date().toISOString(),
+        statusLabel: 'Reveal tervalidasi',
+      })
       // Clear commitment since it's used
       clearVoteCommitment(params.id)
     }
@@ -156,6 +158,12 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
           </section>
         )}
 
+        {!contractAddress ? (
+          <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-[13px] leading-7 text-amber-900">
+            Smart contract untuk pemilihan ini belum tersedia di Supabase. Tombol reveal dinonaktifkan agar website tidak membuat bukti palsu.
+          </section>
+        ) : null}
+
         <div className="mt-10">
           <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 mb-2">
             Kode Rahasia (On-Device)
@@ -181,7 +189,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
           <button
             type="button"
-            disabled={!savedCommitment || isWritePending || isConfirming || !!election.revealProof || !!(hasRevealedOnChain as boolean | undefined)}
+            disabled={!contractAddress || !savedCommitment || isWritePending || isConfirming || !!election.revealProof || !!(hasRevealedOnChain as boolean | undefined)}
             onClick={() => setConfirmOpen(true)}
             className="inline-flex h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-[#0F172A] px-6 text-[13px] font-bold text-white transition-all hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-w-[220px]"
           >

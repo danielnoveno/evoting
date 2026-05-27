@@ -7,17 +7,9 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { basescanTxUrl, findElection, formatDateTime, formatNumber, useVoterStore } from '@/lib/voter-store'
-import { loadVoteCommitment, saveVoteCommitment } from '@/lib/vote-commitment-demo'
+import { loadVoteCommitment, saveVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
-
-const headshots: Record<string, string> = {
-  c1: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop',
-  c2: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop',
-  c3: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop',
-}
-
-const defaultHeadshot = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop'
 
 function DetailRow({
   icon: Icon,
@@ -45,13 +37,8 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const { store, loading: storeLoading, actions } = useVoterStore()
   const { showToast } = useToast()
   
-  // Real contract integration
-  // For MVP, we use the contractAddress from sharedContext if it matches the electionId
-  // In real production, this would be fetched from Supabase based on params.id
   const election = findElection(store, params.id)
-  const contractAddress = election?.id === 'ukm-riset-koordinator-2026' 
-    ? '0x71C7656EC7ab88b098defB751B7401B5f6d8976F' // Placeholder dari sharedContext
-    : undefined
+  const contractAddress = election?.deployedSpaceAddress ?? undefined
 
   const { 
     commitVote, 
@@ -75,8 +62,13 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         description: 'Suara Anda telah dicatat di blockchain.',
         tone: 'success',
       })
-      // Sync store with real TX data
-      actions.commitVote(params.id, savedCommitment?.commitment)
+      actions.commitVote(params.id, savedCommitment?.commitment, {
+        txHash: hash,
+        blockNumber: Number(receipt.blockNumber),
+        gasUsed: Number(receipt.gasUsed),
+        createdAt: new Date().toISOString(),
+        statusLabel: 'Commit tersimpan',
+      })
     }
   }, [isConfirmed, hash, receipt, params.id, actions, showToast, savedCommitment?.commitment])
 
@@ -174,11 +166,9 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
             <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat terpilih</p>
               <div className="mt-4 flex items-center gap-4">
-                <img
-                  src={headshots[selectedCandidate.id] || defaultHeadshot}
-                  alt={selectedCandidate.name}
-                  className="h-16 w-16 rounded-2xl object-cover grayscale"
-                />
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-200 text-[18px] font-semibold text-slate-600">
+                  {selectedCandidate.name.slice(0, 2).toUpperCase()}
+                </div>
                 <div>
                   <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate.name}</h2>
                   <p className="mt-1 text-[14px] text-slate-600">{selectedCandidate.vision}</p>
@@ -252,6 +242,12 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         </section>
       )}
 
+      {!contractAddress ? (
+        <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-[13px] leading-7 text-amber-900">
+          Smart contract untuk pemilihan ini belum tersedia di Supabase. Tombol commit dinonaktifkan agar website tidak membuat bukti palsu.
+        </section>
+      ) : null}
+
       <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(340px,0.85fr)]">
         <article className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
           <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
@@ -260,11 +256,9 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
               <h2 className="mt-4 text-[24px] font-semibold text-slate-900">{selectedCandidate.name}</h2>
               <p className="mt-2 text-[18px] text-slate-700">{selectedCandidate.vision}</p>
             </div>
-            <img
-              src={headshots[selectedCandidate.id] || defaultHeadshot}
-              alt={selectedCandidate.name}
-              className="h-[96px] w-[96px] rounded-3xl object-cover grayscale"
-            />
+            <div className="flex h-[96px] w-[96px] items-center justify-center rounded-3xl bg-slate-200 text-[24px] font-semibold text-slate-600">
+              {selectedCandidate.name.slice(0, 2).toUpperCase()}
+            </div>
           </div>
 
           <div className="mt-8 grid gap-4">
@@ -322,7 +316,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         </Link>
         <button
           type="button"
-          disabled={isWritePending || isConfirming}
+          disabled={!contractAddress || isWritePending || isConfirming}
           onClick={() => setConfirmOpen(true)}
           className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F172A] px-6 text-[13px] font-semibold text-white hover:bg-[#1E293B] disabled:cursor-not-allowed disabled:opacity-40 min-w-[200px]"
         >

@@ -2,45 +2,45 @@
 
 import { ArrowRight, Download } from 'lucide-react'
 import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
 import { ScrollReveal, ParallaxLayer, FloatingShape, StaggerContainer } from '@/components/public/parallax'
-import { sharedContext } from '@/lib/shared-context'
+import { listPublicElections } from '@/lib/repositories/electionRepository'
+import type { PublicElectionRecord } from '@/lib/repositories/types'
 
-const activeElections = [
-  {
-    phase: 'Fase Commit',
-    deadline: 'Berakhir dalam 12 jam',
-    title: sharedContext.proposalTitle,
-    body: sharedContext.summary,
-    participation: `${sharedContext.voterEstimate} Pemilih`,
-    hash: '0x8f2a ... 9c3b',
-    primary: 'Mulai Memilih',
-    href: '/hubungkan-dompet?redirect=pilih-kandidat',
-    detailHref: `/pemilihan/${sharedContext.electionId}/hasil`,
-  },
-  {
-    phase: 'Fase Reveal',
-    deadline: 'Berakhir dalam 2 hari',
-    title: 'Pemilihan Ketua Kelompok Praktikum Basis Data FTI 2026',
-    body: 'Pemungutan suara internal mahasiswa praktikum untuk menentukan ketua kelompok yang akan mengoordinasikan jadwal, pembagian tugas, dan komunikasi dengan asisten.',
-    participation: '36 Pemilih',
-    hash: '0x1d9f ... 4a2e',
-    primary: 'Lihat Statistik',
-    href: '/pemilih/pemilihan/ketua-kelompok-praktikum-bd-2026/reveal',
-    detailHref: '/pemilihan/ketua-kelompok-praktikum-bd-2026/hasil',
-  },
-]
+function shortenHash(hash: string | null) {
+  if (!hash) return 'Belum tersedia'
+  return `${hash.slice(0, 6)} ... ${hash.slice(-4)}`
+}
 
-const upcoming = [
-  { title: 'Pemilihan Sekretaris UKM Riset 2026', href: '/pemilih' },
-  { title: 'Pemilihan Koordinator Divisi PSDM HIMAFORKA 2026', href: '/admin/daftar-proposal/p-himaforka-psdm-2026' },
-]
+function formatFinishedDate(value: string | null) {
+  if (!value) return 'Tanggal selesai belum diatur'
+  return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(value))
+}
 
-const finished = [
-  { month: 'Agustus 2025', title: 'Pemilihan Koordinator Divisi PSDM HIMAFORKA 2025', total: '284' },
-  { month: 'Juli 2025', title: 'Pemilihan Sekretaris UKM Riset 2025', total: '301' },
-]
+function EmptyElectionCard({ message }: { message: string }) {
+  return (
+    <article className="rounded-[28px] border border-dashed border-slate-300 bg-white p-7 text-[14px] leading-7 text-slate-500">
+      {message}
+    </article>
+  )
+}
+
+function ElectionDescription({ election }: { election: PublicElectionRecord }) {
+  return <>{election.description ?? `Pemilihan ${election.organizationName ?? 'organisasi'} yang datanya dimuat dari Supabase.`}</>
+}
 
 export function PemilihanSections() {
+  const electionsQuery = useQuery({
+    queryKey: ['public', 'elections'],
+    queryFn: listPublicElections,
+    retry: false,
+  })
+
+  const elections = electionsQuery.data ?? []
+  const activeElections = elections.filter((item) => item.phase === 'commit' || item.phase === 'reveal')
+  const upcoming = elections.filter((item) => item.phase === 'registration')
+  const finished = elections.filter((item) => item.phase === 'ended')
+
   return (
     <section className="public-section relative overflow-hidden">
       {/* Floating decorative shapes */}
@@ -76,43 +76,49 @@ export function PemilihanSections() {
             <div className="flex items-center gap-4">
               <div className="h-6 w-1 rounded-full bg-slate-900" />
               <h2 className="text-[24px] font-semibold text-slate-900">Sedang Berlangsung</h2>
-              <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">2 Aktif</span>
+              <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">{activeElections.length} Aktif</span>
             </div>
           </ScrollReveal>
 
           <div className="mt-8 grid gap-6 xl:grid-cols-2">
+            {electionsQuery.isLoading ? (
+              <EmptyElectionCard message="Memuat data pemilihan dari Supabase..." />
+            ) : null}
+            {!electionsQuery.isLoading && activeElections.length === 0 ? (
+              <EmptyElectionCard message="Belum ada pemilihan aktif yang tersedia dari Supabase." />
+            ) : null}
             {activeElections.map((item, index) => (
               <ScrollReveal
-                key={item.title}
+                key={item.id}
                 variant="fade-up"
                 delay={index * 180}
                 duration={750}
               >
                 <article className="public-card flex h-full flex-col overflow-hidden p-7 transition-all duration-200 hover:-translate-y-1 hover:border-slate-300">
                   <div className="flex items-start justify-between gap-4">
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">{item.phase}</span>
-                    <span className="text-[11px] uppercase tracking-[0.06em] text-slate-500">{item.deadline}</span>
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">{item.phaseLabel}</span>
+                    <span className="text-[11px] uppercase tracking-[0.06em] text-slate-500">{item.deadlineLabel}</span>
                   </div>
                   <h3 className="mt-8 max-w-[560px] text-[24px] font-semibold leading-tight text-slate-900">{item.title}</h3>
-                  <p className="mt-4 max-w-[560px] text-[16px] leading-8 text-slate-800">{item.body}</p>
+                  <p className="mt-4 max-w-[560px] text-[16px] leading-8 text-slate-800"><ElectionDescription election={item} /></p>
 
                   <div className="mt-8 grid gap-4 md:grid-cols-2">
                     <div className="rounded-xl bg-slate-100 px-4 py-4">
                       <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Partisipasi</p>
-                      <p className="mt-2 text-[18px] font-semibold text-slate-900">{item.participation}</p>
+                      <p className="mt-2 text-[18px] font-semibold text-slate-900">{item.participantCount} Pemilih</p>
                     </div>
                     <div className="rounded-xl bg-slate-100 px-4 py-4">
-                      <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">{index === 0 ? 'Hash Terbaru' : 'Smart Contract'}</p>
-                      <p className="mt-2 font-mono text-[13px] text-slate-700">{item.hash}</p>
+                      <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Smart Contract</p>
+                      <p className="mt-2 font-mono text-[13px] text-slate-700">{shortenHash(item.deployedSpaceAddress ?? item.deploymentTxHash)}</p>
                     </div>
                   </div>
 
                   <div className="mt-auto flex gap-3 pt-8">
-                    <Link href={item.href} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-5 text-[14px] font-medium text-white hover:bg-[#1E293B]">
-                      {item.primary}
+                    <Link href={`/pemilih/pemilihan/${item.id}/pilih-kandidat`} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-5 text-[14px] font-medium text-white hover:bg-[#1E293B]">
+                      {item.phase === 'commit' ? 'Mulai Memilih' : 'Lihat Tahap Reveal'}
                       <ArrowRight className="h-4 w-4" />
                     </Link>
-                    <Link href={item.detailHref} className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
+                    <Link href={`/pemilihan/${item.id}/hasil`} className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
                       Detail
                     </Link>
                   </div>
@@ -132,9 +138,12 @@ export function PemilihanSections() {
           </ScrollReveal>
 
           <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-[repeat(2,minmax(0,490px))]">
+            {!electionsQuery.isLoading && upcoming.length === 0 ? (
+              <EmptyElectionCard message="Belum ada jadwal pemilihan mendatang dari Supabase." />
+            ) : null}
             {upcoming.map((item, index) => (
               <ScrollReveal
-                key={item.title}
+                key={item.id}
                 variant={index === 0 ? 'fade-left' : 'fade-right'}
                 delay={index * 150}
                 duration={700}
@@ -142,9 +151,9 @@ export function PemilihanSections() {
                 <article className="public-card flex h-full flex-col p-7">
                   <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-amber-700 self-start">Menunggu</span>
                   <h3 className="mt-8 max-w-[20ch] text-[24px] font-semibold leading-tight text-slate-900">{item.title}</h3>
-                  <p className="mt-4 text-[16px] text-slate-500">Jadwal: 15 Okt 2024 - 17 Okt 2024</p>
+                  <p className="mt-4 text-[16px] text-slate-500">{item.deadlineLabel}</p>
                   <div className="mt-auto pt-8">
-                    <Link href={item.href} className="inline-flex items-center gap-2 text-[14px] font-semibold text-slate-900">
+                    <Link href={`/pemilihan/${item.id}/hasil`} className="inline-flex items-center gap-2 text-[14px] font-semibold text-slate-900">
                       Lihat Detail
                       <ArrowRight className="h-4 w-4" />
                     </Link>
@@ -165,9 +174,12 @@ export function PemilihanSections() {
           </ScrollReveal>
 
           <div className="mt-8 space-y-4">
+            {!electionsQuery.isLoading && finished.length === 0 ? (
+              <EmptyElectionCard message="Belum ada pemilihan selesai yang tersedia dari Supabase." />
+            ) : null}
             {finished.map((item, index) => (
               <ScrollReveal
-                key={item.title}
+                key={item.id}
                 variant="fade-up"
                 delay={index * 120}
                 duration={700}
@@ -176,18 +188,18 @@ export function PemilihanSections() {
                   <div>
                     <div className="flex items-center gap-3">
                       <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-emerald-700">Selesai</span>
-                      <span className="text-[11px] uppercase tracking-[0.06em] text-slate-400">{item.month}</span>
+                      <span className="text-[11px] uppercase tracking-[0.06em] text-slate-400">{formatFinishedDate(item.endedAt)}</span>
                     </div>
                     <h3 className="mt-5 text-[24px] font-semibold text-slate-900">{item.title}</h3>
                   </div>
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Total suara</p>
-                      <p className="mt-2 text-[18px] font-semibold text-slate-900">{item.total}</p>
+                      <p className="mt-2 text-[18px] font-semibold text-slate-900">Menunggu indexer</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Link href="/pemilihan/koordinator-psdm-himaforka-2025/hasil" className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-50">Detail Hasil</Link>
-                      <a href="https://sepolia.basescan.org" target="_blank" rel="noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-900 hover:bg-slate-50">
+                      <Link href={`/pemilihan/${item.id}/hasil`} className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-50">Detail Hasil</Link>
+                      <a href={item.deploymentTxHash ? `https://sepolia.basescan.org/tx/${item.deploymentTxHash}` : 'https://sepolia.basescan.org'} target="_blank" rel="noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white text-slate-900 hover:bg-slate-50">
                         <Download className="h-4 w-4" />
                       </a>
                     </div>

@@ -1,8 +1,12 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = 'https://cuxoheyjxjeeqpxtfssb.supabase.co';
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1eG9oZXlqeGplZXFweHRmc3NiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDg3NTMsImV4cCI6MjA5NDkyNDc1M30.bezV_0XuAk81t0ETaeaIFqTV4bnxmR8LV1HPGMkNiVc';
-const targetEmail = '220711663@students.uajy.ac.id';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const targetEmail = process.env.DEV_USER_EMAIL;
+
+if (!supabaseUrl || !supabaseServiceKey || !targetEmail) {
+  throw new Error('Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, dan DEV_USER_EMAIL sebelum menjalankan script.');
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { autoRefreshToken: false, persistSession: false }

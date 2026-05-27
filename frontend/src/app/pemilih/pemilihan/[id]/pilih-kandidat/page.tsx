@@ -8,14 +8,7 @@ import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { findElection, formatDateTime, useVoterStore } from '@/lib/voter-store'
-import { generateCommitment, generateSalt, saveVoteCommitment } from '@/lib/vote-commitment-demo'
-
-const headshots: Record<string, string> = {
-  c1: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop',
-  c2: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop',
-  c3: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop',
-}
-const defaultHeadshot = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=300&auto=format&fit=crop'
+import { generateCommitment, generateSalt, saveVoteCommitment } from '@/lib/vote-commitment-storage'
 
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -179,11 +172,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             >
               <div>
                 <div className="relative overflow-hidden bg-slate-50 border-b border-slate-100">
-                  <img
-                    src={headshots[candidate.id] || defaultHeadshot}
-                    alt={candidate.name}
-                   className="h-[250px] w-full object-cover grayscale contrast-[1.12] brightness-[0.93] transition-transform duration-500 group-hover:scale-105"
-                  />
+                  <div className="flex h-[250px] w-full items-center justify-center bg-slate-200 text-[36px] font-semibold text-slate-600 transition-transform duration-500 group-hover:scale-105">
+                    {candidate.name.slice(0, 2).toUpperCase()}
+                  </div>
                    <div className="absolute top-3 left-3 rounded border border-white/10 bg-black/85 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white">
                     K0{index + 1}
                   </div>

@@ -58,7 +58,7 @@ export default function AdminProposalPage() {
   const { header, banner } = adminProposalContent
   const { showToast } = useToast()
   const router = useRouter()
-  const { rows: proposals, stats, error, isLoading, isUsingFallback } = useAdminProposalList()
+  const { rows: proposals, stats, error, isLoading } = useAdminProposalList()
 
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 4
@@ -105,12 +105,6 @@ export default function AdminProposalPage() {
       {error ? (
         <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700" role="alert">
           {getRepositoryErrorMessage(error, 'Gagal memuat daftar proposal. Coba lagi.')}
-        </div>
-      ) : null}
-
-      {isUsingFallback ? (
-        <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
-          Data proposal masih menggunakan mode transisi. Hubungkan backend Supabase dan sesi pengguna untuk memuat data live.
         </div>
       ) : null}
 
@@ -202,6 +196,13 @@ export default function AdminProposalPage() {
                     </td>
                   </tr>
                 ))}
+                {!isLoading && paginatedRows.length === 0 ? (
+                  <tr>
+                    <td className="px-6 py-10 text-center text-[14px] leading-7 text-slate-500" colSpan={6}>
+                      Belum ada proposal dari Supabase. Buat proposal baru atau jalankan query seed yang disiapkan.
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>

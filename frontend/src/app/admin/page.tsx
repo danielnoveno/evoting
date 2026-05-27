@@ -7,7 +7,6 @@ import { AdminMetricCard, AdminModuleCard, AdminShell } from '@/components/admin
 import { adminDashboardContent, type AdminModuleKey } from '@/lib/admin-content'
 import { useToast } from '@/components/ui/toast-provider'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { sharedContext } from '@/lib/shared-context'
 
 const moduleIcons: Record<AdminModuleKey, ReactNode> = {
   beranda: <LayoutGrid className="h-5 w-5" />,
@@ -23,11 +22,11 @@ const moduleIcons: Record<AdminModuleKey, ReactNode> = {
 const moduleHrefs: Record<AdminModuleKey, string> = {
   beranda: '/admin',
   proposal: '/admin/daftar-proposal',
-  fase: `/admin/manajemen-pemilihan/${sharedContext.electionId}?tab=parameter`,
-  kandidat: `/admin/manajemen-pemilihan/${sharedContext.electionId}?tab=kandidat`,
-  whitelist: `/admin/manajemen-pemilihan/${sharedContext.electionId}?tab=whitelist`,
-  monitoring: `/admin/manajemen-pemilihan/${sharedContext.electionId}/monitoring`,
-  hasil: `/admin/manajemen-pemilihan/${sharedContext.electionId}?tab=realtime`,
+  fase: '/admin/manajemen-pemilihan',
+  kandidat: '/admin/manajemen-pemilihan',
+  whitelist: '/admin/manajemen-pemilihan',
+  monitoring: '/admin/manajemen-pemilihan',
+  hasil: '/admin/manajemen-pemilihan',
   tambah: '/admin/manajemen-pemilihan',
 }
 

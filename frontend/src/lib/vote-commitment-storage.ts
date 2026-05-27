@@ -9,8 +9,6 @@ export interface VoteCommitmentRecord {
   timestamp: string
 }
 
-export type DemoVoteCommitmentData = VoteCommitmentRecord
-
 function storageKey(electionId: string) {
   return `votein-commitment:${electionId}`
 }
@@ -24,10 +22,7 @@ export function generateSalt(): `0x${string}` {
     .join('')}` as `0x${string}`
 }
 
-export function generateCommitment(
-  candidateId: number,
-  salt: `0x${string}`,
-): `0x${string}` {
+export function generateCommitment(candidateId: number, salt: `0x${string}`): `0x${string}` {
   return keccak256(encodePacked(['uint256', 'bytes32'], [BigInt(candidateId), salt]))
 }
 
@@ -38,7 +33,6 @@ export function saveVoteCommitment(electionId: string, data: VoteCommitmentRecor
 export function loadVoteCommitment(electionId: string): VoteCommitmentRecord | null {
   const raw = window.localStorage.getItem(storageKey(electionId))
   if (!raw) return null
-
   try {
     return JSON.parse(raw) as VoteCommitmentRecord
   } catch {
@@ -52,18 +46,9 @@ export function clearVoteCommitment(electionId: string) {
 
 export function clearAllVoteCommitments() {
   const keysToRemove: string[] = []
-
   for (let index = 0; index < window.localStorage.length; index += 1) {
     const key = window.localStorage.key(index)
-    if (key?.startsWith(STORAGE_PREFIX)) {
-      keysToRemove.push(key)
-    }
+    if (key?.startsWith(STORAGE_PREFIX)) keysToRemove.push(key)
   }
-
   keysToRemove.forEach((key) => window.localStorage.removeItem(key))
 }
-
-export const saveDemoVoteCommitment = saveVoteCommitment
-export const loadDemoVoteCommitment = loadVoteCommitment
-export const clearDemoVoteCommitment = clearVoteCommitment
-export const clearAllDemoVoteCommitments = clearAllVoteCommitments

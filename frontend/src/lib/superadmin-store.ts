@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import {
-  superadminAuditLogData,
-  superadminAdmins,
-  superadminElections,
   superadminPlatformData,
-  superadminProposals,
-  superadminRiskData,
   type SuperadminAdminRecord,
   type SuperadminAuditLogItem,
   type SuperadminElectionRecord,
@@ -17,13 +12,13 @@ import {
 } from '@/lib/superadmin-data'
 
 const STORAGE_KEYS = {
-  admins: 'votein_superadmin_admins_v2',
-  elections: 'votein_superadmin_elections_v2',
-  proposals: 'votein_superadmin_proposals_v2',
-  platform: 'votein_superadmin_platform_v2',
-  alerts: 'votein_superadmin_risk_alerts_v2',
-  auditLogs: 'votein_superadmin_audit_logs_v2',
-  masterVoters: 'votein_superadmin_master_voters_v2',
+  admins: 'votein_superadmin_admins_v3_live',
+  elections: 'votein_superadmin_elections_v3_live',
+  proposals: 'votein_superadmin_proposals_v3_live',
+  platform: 'votein_superadmin_platform_v3_live',
+  alerts: 'votein_superadmin_risk_alerts_v3_live',
+  auditLogs: 'votein_superadmin_audit_logs_v3_live',
+  masterVoters: 'votein_superadmin_master_voters_v3_live',
 } as const
 
 type PlatformSettingsState = {
@@ -52,10 +47,10 @@ function writeStore<T>(key: string, value: T) {
 }
 
 export function useSuperadminAdminsStore() {
-  const [admins, setAdminsState] = useState<SuperadminAdminRecord[]>(superadminAdmins)
+  const [admins, setAdminsState] = useState<SuperadminAdminRecord[]>([])
 
   useEffect(() => {
-    setAdminsState(readStore(STORAGE_KEYS.admins, superadminAdmins))
+    setAdminsState(readStore(STORAGE_KEYS.admins, []))
   }, [])
 
   const setAdmins = (value: SuperadminAdminRecord[] | ((current: SuperadminAdminRecord[]) => SuperadminAdminRecord[])) => {
@@ -70,10 +65,10 @@ export function useSuperadminAdminsStore() {
 }
 
 export function useSuperadminElectionsStore() {
-  const [elections, setElectionsState] = useState<SuperadminElectionRecord[]>(superadminElections)
+  const [elections, setElectionsState] = useState<SuperadminElectionRecord[]>([])
 
   useEffect(() => {
-    setElectionsState(readStore(STORAGE_KEYS.elections, superadminElections))
+    setElectionsState(readStore(STORAGE_KEYS.elections, []))
   }, [])
 
   const setElections = (value: SuperadminElectionRecord[] | ((current: SuperadminElectionRecord[]) => SuperadminElectionRecord[])) => {
@@ -88,10 +83,10 @@ export function useSuperadminElectionsStore() {
 }
 
 export function useSuperadminProposalsStore() {
-  const [proposals, setProposalsState] = useState<SuperadminProposalRecord[]>(superadminProposals)
+  const [proposals, setProposalsState] = useState<SuperadminProposalRecord[]>([])
 
   useEffect(() => {
-    setProposalsState(readStore(STORAGE_KEYS.proposals, superadminProposals))
+    setProposalsState(readStore(STORAGE_KEYS.proposals, []))
   }, [])
 
   const setProposals = (value: SuperadminProposalRecord[] | ((current: SuperadminProposalRecord[]) => SuperadminProposalRecord[])) => {
@@ -109,8 +104,8 @@ export function useSuperadminPlatformStore() {
   const fallbackState: PlatformSettingsState = {
     platformName: superadminPlatformData.system.platformName,
     defaultLanguage: superadminPlatformData.system.defaultLanguage,
-    sessions: superadminPlatformData.sessions,
-    twoFactorEnabled: true,
+    sessions: [],
+    twoFactorEnabled: false,
   }
 
   const [platform, setPlatformState] = useState<PlatformSettingsState>(fallbackState)
@@ -131,10 +126,10 @@ export function useSuperadminPlatformStore() {
 }
 
 export function useSuperadminRiskAlertsStore() {
-  const [alerts, setAlertsState] = useState<SuperadminRiskAlert[]>(superadminRiskData.alerts)
+  const [alerts, setAlertsState] = useState<SuperadminRiskAlert[]>([])
 
   useEffect(() => {
-    setAlertsState(readStore(STORAGE_KEYS.alerts, superadminRiskData.alerts))
+    setAlertsState(readStore(STORAGE_KEYS.alerts, []))
   }, [])
 
   const setAlerts = (value: SuperadminRiskAlert[] | ((current: SuperadminRiskAlert[]) => SuperadminRiskAlert[])) => {
@@ -149,10 +144,10 @@ export function useSuperadminRiskAlertsStore() {
 }
 
 export function useSuperadminAuditLogsStore() {
-  const [logs, setLogsState] = useState<SuperadminAuditLogItem[]>(superadminAuditLogData.logs)
+  const [logs, setLogsState] = useState<SuperadminAuditLogItem[]>([])
 
   useEffect(() => {
-    setLogsState(readStore(STORAGE_KEYS.auditLogs, superadminAuditLogData.logs))
+    setLogsState(readStore(STORAGE_KEYS.auditLogs, []))
   }, [])
 
   const setLogs = (value: SuperadminAuditLogItem[] | ((current: SuperadminAuditLogItem[]) => SuperadminAuditLogItem[])) => {
@@ -174,11 +169,7 @@ export type SuperadminMasterVoter = {
   syncStatus: 'Tersinkronisasi' | 'Belum Sinkron'
 }
 
-const initialMasterVoters: SuperadminMasterVoter[] = [
-  { nim: '220711663', name: 'Daniel Noveno', email: 'daniel.noveno@students.uajy.ac.id', faculty: 'Informatika', syncStatus: 'Tersinkronisasi' },
-  { nim: '220711849', name: 'Arya Damar', email: 'arya.damar@students.uajy.ac.id', faculty: 'Informatika', syncStatus: 'Tersinkronisasi' },
-  { nim: '220712001', name: 'Citra Wijaya', email: 'citra.wijaya@students.uajy.ac.id', faculty: 'Teknik Industri', syncStatus: 'Tersinkronisasi' },
-]
+const initialMasterVoters: SuperadminMasterVoter[] = []
 
 export function useSuperadminMasterVotersStore() {
   const [voters, setVotersState] = useState<SuperadminMasterVoter[]>(initialMasterVoters)

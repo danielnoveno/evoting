@@ -1,42 +1,18 @@
 'use client'
 
 import { Bell, Clock, Info, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { ModalShell } from '@/components/ui/modal-shell'
-import { sharedContext } from '@/lib/shared-context'
+import { listPublicNotifications } from '@/lib/repositories/electionRepository'
 
 export interface NotificationItem {
   id: string
   title: string
   description: string
-  time: string
+  timeLabel: string
   type: 'info' | 'success' | 'warning'
   link?: string
 }
-
-const mockNotifications: NotificationItem[] = [
-  {
-    id: 'n1',
-    title: 'Fase Reveal Dimulai',
-    description: `Fase reveal untuk ${sharedContext.proposalTitle} telah dibuka. Masukkan Salt Anda sekarang.`,
-    time: '2 jam yang lalu',
-    type: 'info',
-    link: `/pemilihan/${sharedContext.electionId}/hasil`,
-  },
-  {
-    id: 'n2',
-    title: 'Pemilihan Baru Tersedia',
-    description: 'Proposal pemilihan pengurus inti UKM Riset telah disetujui dan akan dimulai besok.',
-    time: '5 jam yang lalu',
-    type: 'success',
-  },
-  {
-    id: 'n3',
-    title: 'Peringatan Keamanan',
-    description: 'Pastikan Anda hanya mengakses Votein melalui domain resmi uajy.ac.id.',
-    time: '1 hari yang lalu',
-    type: 'warning',
-  },
-]
 
 export function NotificationModal({
   open,
@@ -45,6 +21,14 @@ export function NotificationModal({
   open: boolean
   onClose: () => void
 }) {
+  const notificationQuery = useQuery({
+    queryKey: ['public', 'notifications'],
+    queryFn: listPublicNotifications,
+    enabled: open,
+    retry: false,
+  })
+  const notifications = notificationQuery.data ?? []
+
   return (
     <ModalShell
       open={open}
@@ -54,7 +38,7 @@ export function NotificationModal({
     >
       <div className="max-h-[400px] overflow-y-auto pr-2">
         <div className="space-y-4">
-          {mockNotifications.map((item) => (
+          {notifications.map((item) => (
             <div
               key={item.id}
               className="group relative flex gap-4 rounded-2xl border border-slate-100 bg-white p-4 transition-all hover:border-slate-200 hover:shadow-sm"
@@ -73,7 +57,7 @@ export function NotificationModal({
                   <h3 className="text-[14px] font-semibold text-slate-900 truncate">{item.title}</h3>
                   <span className="flex items-center gap-1 text-[11px] text-slate-400 whitespace-nowrap">
                     <Clock className="h-3 w-3" />
-                    {item.time}
+                    {item.timeLabel}
                   </span>
                 </div>
                 <p className="mt-1 text-[13px] leading-6 text-slate-600">
@@ -93,12 +77,15 @@ export function NotificationModal({
           ))}
         </div>
 
-        {mockNotifications.length === 0 && (
+        {!notificationQuery.isLoading && notifications.length === 0 && (
           <div className="py-12 text-center">
             <Bell className="mx-auto h-12 w-12 text-slate-200" />
             <p className="mt-4 text-[14px] text-slate-500">Tidak ada notifikasi saat ini.</p>
           </div>
         )}
+        {notificationQuery.isLoading ? (
+          <div className="py-12 text-center text-[14px] text-slate-500">Memuat notifikasi dari Supabase...</div>
+        ) : null}
       </div>
 
       <div className="mt-6 border-t border-slate-100 pt-5">

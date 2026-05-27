@@ -3,8 +3,6 @@
 import { notFound, useRouter } from 'next/navigation'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { ProposalForm, ProposalFormData } from '@/components/admin/proposal-form'
-import { adminProposalContent } from '@/lib/admin-proposal-data'
-import { sharedContext } from '@/lib/shared-context'
 import { useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
@@ -77,24 +75,11 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
 
   const handleSubmitToBlockchain = () => {
     if (!liveProposal) return
-
-    const commitStart = new Date(liveProposal.commitStartAt!).getTime()
-    const revealStart = new Date(liveProposal.revealStartAt!).getTime()
-    const endedAt = new Date(liveProposal.endedAt!).getTime()
-
-    const commitDuration = Math.floor((revealStart - commitStart) / 1000)
-    const revealDuration = Math.floor((endedAt - revealStart) / 1000)
-
-    // Using a fake metadata URI for now, ideally this would be an IPFS CID
-    const metadataURI = `ipfs://QmFakeMetadataForProposal-${params.id}`
-
-    submitProposal(
-      liveProposal.title,
-      metadataURI,
-      liveProposal.candidateCount,
-      commitDuration,
-      revealDuration
-    )
+    showToast({
+      title: 'Metadata belum tersedia',
+      description: 'Unggah metadata final terlebih dahulu. Sistem tidak lagi mengirim URI metadata palsu ke blockchain.',
+      tone: 'info',
+    })
   }
 
   return (

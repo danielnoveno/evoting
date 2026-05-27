@@ -26,6 +26,7 @@ export interface ProposalDraftRecord {
   proposalTxHash: string | null
   reviewTxHash: string | null
   deploymentTxHash: string | null
+  deployedSpaceId: number | null
   deployedSpaceAddress: string | null
   commitStartAt: string | null
   revealStartAt: string | null
@@ -33,6 +34,79 @@ export interface ProposalDraftRecord {
   createdAt: string
   updatedAt: string
   createdBy: string
+}
+
+export type PublicElectionPhase = 'registration' | 'commit' | 'reveal' | 'ended'
+
+export interface PublicElectionCandidateRecord {
+  id: string
+  candidateLocalId: string
+  fullName: string
+  studentId: string | null
+  faculty: string | null
+  bio: string | null
+  vision: string | null
+  mission: string[]
+  avatarPath: string | null
+  sortOrder: number
+}
+
+export interface PublicElectionRecord {
+  id: string
+  title: string
+  description: string | null
+  organizationName: string | null
+  status: ProposalDraftStatus
+  phase: PublicElectionPhase
+  phaseLabel: string
+  deadlineLabel: string
+  commitStartAt: string | null
+  revealStartAt: string | null
+  endedAt: string | null
+  candidateCount: number
+  participantCount: number
+  deployedSpaceId: number | null
+  deployedSpaceAddress: string | null
+  deploymentTxHash: string | null
+  candidates: PublicElectionCandidateRecord[]
+}
+
+export interface PublicElectionCandidateResultRecord {
+  candidateId: number
+  voteCount: number
+  lastRevealTx: string | null
+  lastUpdatedBlock: number | null
+}
+
+export interface PublicElectionResultRecord {
+  spaceAddress: string
+  totalCommitted: number
+  totalRevealed: number
+  lastUpdatedBlock: number | null
+  candidateResults: PublicElectionCandidateResultRecord[]
+}
+
+export interface TxAuditLogRecord {
+  id: string
+  spaceId: number | null
+  proposalDraftId: string | null
+  walletAddress: string
+  actionType: string
+  txHash: string
+  blockNumber: number | null
+  status: string
+  source: string
+  metadata: Record<string, unknown>
+  createdAt: string
+}
+
+export interface NotificationJobRecord {
+  id: string
+  title: string
+  description: string
+  timeLabel: string
+  type: 'info' | 'success' | 'warning'
+  link?: string
 }
 
 export interface ProposalListItem {

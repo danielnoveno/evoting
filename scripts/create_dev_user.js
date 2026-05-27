@@ -1,9 +1,14 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = 'https://cuxoheyjxjeeqpxtfssb.supabase.co';
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1eG9oZXlqeGplZXFweHRmc3NiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDg3NTMsImV4cCI6MjA5NDkyNDc1M30.bezV_0XuAk81t0ETaeaIFqTV4bnxmR8LV1HPGMkNiVc';
-const targetEmail = '220711663@students.uajy.ac.id';
-const targetPassword = 'PasswordBaru123!';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const targetEmail = process.env.DEV_USER_EMAIL;
+const targetPassword = process.env.DEV_USER_PASSWORD;
+const targetWallet = process.env.DEV_USER_WALLET;
+
+if (!supabaseUrl || !supabaseServiceKey || !targetEmail || !targetPassword || !targetWallet) {
+  throw new Error('Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, DEV_USER_EMAIL, DEV_USER_PASSWORD, dan DEV_USER_WALLET sebelum menjalankan script.');
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { autoRefreshToken: false, persistSession: false }
@@ -26,7 +31,7 @@ async function createDevUser() {
     email: targetEmail,
     password: targetPassword,
     email_confirm: true,
-    user_metadata: { full_name: 'Developer Admin' }
+    user_metadata: { full_name: process.env.DEV_USER_DISPLAY_NAME ?? 'Development User' }
   });
 
   if (createError) {
@@ -44,9 +49,10 @@ async function createDevUser() {
     .insert({
       user_id: user.id,
       email: targetEmail,
-      display_name: 'Dev Super Admin',
-      role: 'super_admin',
-      role_hint: 'Developer God Mode'
+      wallet_address: targetWallet,
+      display_name: process.env.DEV_USER_DISPLAY_NAME ?? 'Development User',
+      role: process.env.DEV_USER_ROLE ?? 'super_admin',
+      role_hint: 'Development environment'
     });
 
   if (profileError) {
@@ -57,7 +63,6 @@ async function createDevUser() {
 
   console.log('--- ALL DONE ---');
   console.log('Email:', targetEmail);
-  console.log('Password:', targetPassword);
 }
 
 createDevUser();

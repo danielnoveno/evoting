@@ -77,7 +77,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
           items={[...sidebarItems]}
           profile={{
             name: profile?.name ?? 'Pemilih',
-            wallet: profile ? formatWallet(profile.wallet) : '0x71C...4f21',
+            wallet: profile ? formatWallet(profile.wallet) : 'Belum terhubung',
             avatarUrl: profile?.avatarUrl,
             editLabel: 'Sunting Profil',
             editHref: '/pemilih/profil',
@@ -110,7 +110,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
                 </button>
                 <div className="hidden items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 sm:flex md:text-[13px]">
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                  {profile ? formatWallet(profile.wallet) : '0x71C...4f21'}
+                  {profile ? formatWallet(profile.wallet) : 'Belum terhubung'}
                 </div>
                 <button type="button" onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia saat ini.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2" aria-label="Notifikasi pemilih">
                   <Bell className="h-4 w-4" />

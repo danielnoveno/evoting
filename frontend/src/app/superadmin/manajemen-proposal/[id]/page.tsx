@@ -128,7 +128,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
     // Map params.id to numeric ID for contract
     // This is a bit of a hack since our DB uses UUID and Contract uses uint256
     // In a real app, we might store the on-chain ID in the DB
-    const numericId = parseInt(params.id.split('-')[0], 16) % 1000000 // Simple deterministic mapping for demo
+    const numericId = parseInt(params.id.split('-')[0], 16) % 1000000
 
     if (decisionType === 'approve') {
       reviewProposal(numericId, true)

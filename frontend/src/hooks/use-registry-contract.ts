@@ -60,7 +60,7 @@ export function useRegistryContract() {
   const parseElectionSpaceCreated = (receipt: any) => {
     if (!receipt || !receipt.logs) return null
     // The event is ElectionSpaceCreated(uint256 spaceId, address space, ...)
-    // Usually it's one of the logs. For simplicity in this demo environment:
+    // Usually it's one of the logs. Keep this bounded until event parsing is implemented.
     try {
       // Find the log from the Registry contract
       const log = receipt.logs.find((l: any) => l.address.toLowerCase() === REGISTRY_ADDRESS.toLowerCase())

@@ -245,6 +245,132 @@ export type Database = {
           updated_at?: string
         }
       }
+      space_registry_map: {
+        Row: {
+          id: string
+          proposal_draft_id: string | null
+          chain_id: number
+          onchain_proposal_id: number | null
+          space_id: number | null
+          registry_address: string
+          space_address: string | null
+          owner_wallet: string
+          deployment_tx_hash: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          proposal_draft_id?: string | null
+          chain_id?: number
+          onchain_proposal_id?: number | null
+          space_id?: number | null
+          registry_address: string
+          space_address?: string | null
+          owner_wallet: string
+          deployment_tx_hash?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          proposal_draft_id?: string | null
+          chain_id?: number
+          onchain_proposal_id?: number | null
+          space_id?: number | null
+          registry_address?: string
+          space_address?: string | null
+          owner_wallet?: string
+          deployment_tx_hash?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      tx_audit_log: {
+        Row: {
+          id: string
+          space_id: number | null
+          proposal_draft_id: string | null
+          wallet_address: string
+          action_type: 'submit_proposal' | 'review_proposal' | 'deploy_space' | 'register_voter' | 'unregister_voter' | 'phase_transition' | 'commit_vote' | 'reveal_vote' | 'suspend_space' | 'unsuspend_space' | 'terminate_space'
+          tx_hash: string
+          block_number: number | null
+          status: string
+          source: string
+          metadata: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          space_id?: number | null
+          proposal_draft_id?: string | null
+          wallet_address: string
+          action_type: 'submit_proposal' | 'review_proposal' | 'deploy_space' | 'register_voter' | 'unregister_voter' | 'phase_transition' | 'commit_vote' | 'reveal_vote' | 'suspend_space' | 'unsuspend_space' | 'terminate_space'
+          tx_hash: string
+          block_number?: number | null
+          status?: string
+          source?: string
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          space_id?: number | null
+          proposal_draft_id?: string | null
+          wallet_address?: string
+          action_type?: 'submit_proposal' | 'review_proposal' | 'deploy_space' | 'register_voter' | 'unregister_voter' | 'phase_transition' | 'commit_vote' | 'reveal_vote' | 'suspend_space' | 'unsuspend_space' | 'terminate_space'
+          tx_hash?: string
+          block_number?: number | null
+          status?: string
+          source?: string
+          metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      notification_jobs: {
+        Row: {
+          id: string
+          space_id: number | null
+          target_profile_id: string | null
+          target_wallet: string | null
+          channel: 'in_app' | 'email' | 'webhook'
+          template_key: string
+          status: 'queued' | 'sent' | 'failed' | 'cancelled'
+          payload: Json
+          sent_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          space_id?: number | null
+          target_profile_id?: string | null
+          target_wallet?: string | null
+          channel: 'in_app' | 'email' | 'webhook'
+          template_key: string
+          status?: 'queued' | 'sent' | 'failed' | 'cancelled'
+          payload?: Json
+          sent_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          space_id?: number | null
+          target_profile_id?: string | null
+          target_wallet?: string | null
+          channel?: 'in_app' | 'email' | 'webhook'
+          template_key?: string
+          status?: 'queued' | 'sent' | 'failed' | 'cancelled'
+          payload?: Json
+          sent_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

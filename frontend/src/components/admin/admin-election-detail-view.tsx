@@ -4,7 +4,6 @@ import { ArrowLeft, CalendarDays, CirclePlus, Download, FileText, Link2, ListChe
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
-import { deleteStoredCandidate, loadStoredCandidates } from '@/lib/admin-candidate-store'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ModalShell } from '@/components/ui/modal-shell'
 import { useToast } from '@/components/ui/toast-provider'
@@ -15,6 +14,7 @@ import { useWhitelistImportJobs } from '@/hooks/use-whitelist-import-jobs'
 import { useWhitelistImportSignedUrl } from '@/hooks/use-whitelist-import-file'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { countInvalidWhitelistCsvRows, parseWhitelistCsv } from '@/lib/whitelist-csv'
+import { useProposalCandidates } from '@/hooks/use-proposal-relations'
 
 function QuickActionIcon({ icon }: { icon: 'download' | 'share' | 'audit' | 'report' }) {
   if (icon === 'download') return <Download className="h-5 w-5" />
@@ -63,20 +63,10 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const createWhitelistEntriesBulk = useCreateWhitelistEntriesBulk(election.id)
   const whitelistImportJobsQuery = useWhitelistImportJobs(election.id)
   const whitelistImportSignedUrl = useWhitelistImportSignedUrl()
+  const candidatesQuery = useProposalCandidates(election.id)
 
   const whitelistRecords = useMemo(() => {
-    if (!whitelistQuery.data || whitelistQuery.data.length === 0) {
-      return election.detail.whitelist.records.map((record) => ({
-        id: record.wallet,
-        wallet: record.wallet,
-        name: record.name,
-        status: record.status,
-        addedAt: record.addedAt,
-        isFallback: true,
-      }))
-    }
-
-    return whitelistQuery.data.map((record) => ({
+    return (whitelistQuery.data ?? []).map((record) => ({
       id: record.id,
       wallet: record.walletAddress,
       name: record.voterName ?? 'Nama belum diisi',
@@ -88,14 +78,22 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       }).format(new Date(record.createdAt)),
       isFallback: false,
     }))
-  }, [election.detail.whitelist.records, whitelistQuery.data])
+  }, [whitelistQuery.data])
 
   useEffect(() => {
-    const stored = loadStoredCandidates(election.id)
-    if (stored.length > 0) {
-      setCandidates(stored)
-    }
-  }, [election.id])
+    setCandidates((candidatesQuery.data ?? []).map((candidate, index) => ({
+      id: candidate.id,
+      number: `K${String(index + 1).padStart(2, '0')}`,
+      name: candidate.fullName,
+      faculty: candidate.faculty ?? candidate.studentId ?? 'Data fakultas belum diisi',
+      summary: candidate.vision ?? candidate.bio ?? 'Ringkasan kandidat belum diisi.',
+      imageTone: index % 2 === 0 ? 'dark' : 'neutral',
+      identityNumber: candidate.studentId ?? '-',
+      bio: candidate.bio ?? '-',
+      vision: candidate.vision ?? '-',
+      mission: '-',
+    })))
+  }, [candidatesQuery.data])
 
   const filteredWhitelistRecords = useMemo(() => {
     const keyword = whitelistSearch.trim().toLowerCase()
@@ -107,7 +105,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
   const handleDeleteCandidate = () => {
     if (!candidateToDelete) return
-    deleteStoredCandidate(election.id, candidateToDelete.id)
     setCandidates((items) => items.filter((candidate) => candidate.id !== candidateToDelete.id))
     setCandidateToDelete(null)
     showToast({
@@ -451,12 +448,12 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           </div>
           {whitelistQuery.error ? (
             <div className="border-b border-amber-200 bg-amber-50 px-6 py-3 text-[13px] text-amber-800" role="status">
-              {getRepositoryErrorMessage(whitelistQuery.error, 'Daftar pemilih live belum tersedia. Menampilkan data transisi lokal.')}
+              {getRepositoryErrorMessage(whitelistQuery.error, 'Daftar pemilih live belum tersedia dari Supabase.')}
             </div>
           ) : null}
-          {!whitelistQuery.data || whitelistQuery.data.length === 0 ? (
+          {!whitelistQuery.isLoading && whitelistRecords.length === 0 ? (
             <div className="border-b border-slate-100 bg-slate-50 px-6 py-3 text-[13px] text-slate-600">
-              Mode transisi aktif. Data whitelist masih memakai fallback lokal sampai proposal live tersedia.
+              Belum ada whitelist di Supabase untuk proposal ini. Tambahkan manual atau unggah CSV.
             </div>
           ) : null}
           <div className="overflow-x-auto">
@@ -499,6 +496,11 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                     </td>
                   </tr>
                 ))}
+                {!whitelistQuery.isLoading && filteredWhitelistRecords.length === 0 ? (
+                  <tr>
+                    <td className="px-6 py-8 text-center text-[14px] text-slate-500" colSpan={5}>Tidak ada data whitelist yang ditampilkan.</td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>

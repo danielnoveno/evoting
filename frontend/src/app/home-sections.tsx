@@ -2,9 +2,10 @@
 
 import { ArrowRight, FileCheck2, Globe, LockKeyhole, ShieldCheck, SquarePen, Users, Zap } from 'lucide-react'
 import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
 import { ScrollReveal, ParallaxLayer, FloatingShape, StaggerContainer } from '@/components/public/parallax'
 import { AsciiBackground } from '@/components/public/ascii-background'
-import { sharedContext } from '@/lib/shared-context'
+import { listLatestAuditLogs } from '@/lib/repositories/electionRepository'
 
 /* ─────────────────────────────────────────────
    Hero Section
@@ -49,7 +50,7 @@ export function HeroSection() {
               <p className="mt-8 max-w-[720px] text-[18px] leading-9 text-slate-800">
                 Keamanan kelas institusi bertemu dengan transparansi yang dapat diaudit. Platform e-voting ini
                 mengubah kepercayaan abstrak menjadi jejak kriptografis yang tercatat permanen untuk konteks
-                organisasi mahasiswa seperti {sharedContext.organizationShort}.
+                organisasi mahasiswa.
               </p>
             </ScrollReveal>
 
@@ -109,13 +110,35 @@ export function HeroSection() {
 /* ─────────────────────────────────────────────
    Infrastructure Section
    ───────────────────────────────────────────── */
-interface AuditItem {
-  hash: string
-  label: string
-  time: string
+function shortenHash(hash: string) {
+  return `${hash.slice(0, 6)}...${hash.slice(-4)}`
 }
 
-export function InfrastructureSection({ auditItems }: { auditItems: AuditItem[] }) {
+function auditActionLabel(actionType: string) {
+  if (actionType === 'commit_vote') return 'Commit suara'
+  if (actionType === 'reveal_vote') return 'Reveal suara'
+  if (actionType === 'deploy_space') return 'Deploy ruang pemilihan'
+  if (actionType === 'phase_transition') return 'Perubahan fase'
+  return 'Transaksi pemilihan'
+}
+
+function relativeTime(value: string) {
+  const diff = Date.now() - new Date(value).getTime()
+  if (!Number.isFinite(diff) || diff < 60_000) return 'Baru saja'
+  const minutes = Math.floor(diff / 60_000)
+  if (minutes < 60) return `${minutes}m lalu`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}j lalu`
+  return `${Math.floor(hours / 24)}h lalu`
+}
+
+export function InfrastructureSection() {
+  const auditQuery = useQuery({
+    queryKey: ['public', 'latest-audit-logs'],
+    queryFn: () => listLatestAuditLogs(undefined, 4),
+    retry: false,
+  })
+  const auditItems = auditQuery.data ?? []
   return (
     <section className="relative overflow-hidden border-t border-slate-200 py-12 md:py-16 lg:py-20">
       {/* Decorative parallax shape */}
@@ -174,24 +197,29 @@ export function InfrastructureSection({ auditItems }: { auditItems: AuditItem[] 
 
               <div className="mt-8 space-y-3">
                 {auditItems.map((item, i) => (
-                  <ScrollReveal key={item.hash} variant="fade-left" delay={450 + i * 150} duration={600}>
+                  <ScrollReveal key={item.id} variant="fade-left" delay={450 + i * 150} duration={600}>
                     <div className="rounded-xl bg-white px-4 py-3">
                       <div className="flex items-start justify-between gap-3 text-[12px]">
                         <div className="min-w-0">
-                          <p className="font-mono text-slate-800">{item.hash}</p>
-                          <p className="mt-1 text-slate-500">{item.label}</p>
+                          <p className="font-mono text-slate-800">{shortenHash(item.txHash)}</p>
+                          <p className="mt-1 text-slate-500">{auditActionLabel(item.actionType)}</p>
                         </div>
-                        <span className="text-slate-400">{item.time}</span>
+                        <span className="text-slate-400">{relativeTime(item.createdAt)}</span>
                       </div>
                     </div>
                   </ScrollReveal>
                 ))}
+                {!auditQuery.isLoading && auditItems.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-6 text-[13px] leading-6 text-slate-500">
+                    Belum ada transaksi live dari Supabase. Isi tabel audit untuk menampilkan jejak transaksi publik.
+                  </div>
+                ) : null}
               </div>
 
               <div className="mt-24 border-t border-slate-100 pt-6">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Total suara</p>
-                  <p className="mt-1 text-[40px] font-semibold tracking-[-0.03em] text-slate-900">142,893</p>
+                  <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Transaksi termuat</p>
+                  <p className="mt-1 text-[40px] font-semibold tracking-[-0.03em] text-slate-900">{auditItems.length}</p>
                 </div>
               </div>
             </article>

@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { VoterPageSkeleton, VoterShell } from '@/components/voter/voter-shell'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
-import { sharedContext } from '@/lib/shared-context'
 import {
   getElectionViewState,
   formatNumber,
@@ -43,8 +42,22 @@ export default function VoterDashboardPage() {
   }
 
   const elections = sortDashboardElections(store.elections)
-  const featuredElection = elections.find((election) => election.id === sharedContext.electionId)
-    ?? elections.find((election) => election.phase === 'commit' && !election.commitProof)
+  if (elections.length === 0) {
+    return (
+      <VoterShell>
+        <section className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
+          <h1 className="text-[24px] font-semibold text-slate-900">Belum ada ruang voting</h1>
+          <p className="mx-auto mt-3 max-w-xl text-[14px] leading-7 text-slate-600">
+            Tidak ada pemilihan dari Supabase yang dapat ditampilkan untuk portal pemilih. Jalankan query seed atau deploy space terlebih dahulu.
+          </p>
+          <Link href="/pemilihan" className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B]">
+            Lihat Daftar Publik
+          </Link>
+        </section>
+      </VoterShell>
+    )
+  }
+  const featuredElection = elections.find((election) => election.phase === 'commit' && !election.commitProof)
     ?? elections.find((election) => election.phase === 'reveal' && !election.revealProof)
     ?? elections[0]
   const secondaryElection = elections.find((election) => election.id !== featuredElection.id) ?? featuredElection

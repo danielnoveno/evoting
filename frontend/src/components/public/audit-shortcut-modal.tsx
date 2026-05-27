@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, ShieldCheck, ExternalLink, LockKeyhole, ClipboardCheck, History, Info } from 'lucide-react'
 import { ModalShell } from '@/components/ui/modal-shell'
-import { loadVoteCommitment, type VoteCommitmentRecord } from '@/lib/vote-commitment-demo'
-import { sharedContext } from '@/lib/shared-context'
+import type { VoteCommitmentRecord } from '@/lib/vote-commitment-storage'
 import { useToast } from '@/components/ui/toast-provider'
 
 export function AuditShortcutModal({
@@ -19,11 +18,7 @@ export function AuditShortcutModal({
   const { showToast } = useToast()
 
   useEffect(() => {
-    if (open) {
-      // Try to load commitment for the main election
-      const saved = loadVoteCommitment(sharedContext.electionId)
-      setMyCommitment(saved)
-    }
+    if (open) setMyCommitment(null)
   }, [open])
 
   const handleSearchTx = (e: React.FormEvent) => {
@@ -47,7 +42,7 @@ export function AuditShortcutModal({
     <ModalShell
       open={open}
       title="Shortcut Audit"
-      description="Verifikasi transparansi dan integritas suara Anda langsung melalui blockchain."
+      description="Cari transaksi langsung di Basescan atau unduh bukti jika transaksi nyata sudah tersedia."
       onClose={onClose}
     >
       <div className="space-y-6">
@@ -89,7 +84,7 @@ export function AuditShortcutModal({
                   <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-semibold text-slate-900">Suara Terkomit di Blockchain</p>
+                  <p className="text-[14px] font-semibold text-slate-900">Komitmen tersimpan di browser</p>
                   <p className="mt-1 text-[13px] text-slate-600">Terdaftar pada: {myCommitment.timestamp}</p>
                   
                   <div className="mt-4 space-y-3">
@@ -129,7 +124,7 @@ export function AuditShortcutModal({
             <div className="mt-3 rounded-2xl border border-dashed border-slate-200 p-6 text-center">
               <LockKeyhole className="mx-auto h-8 w-8 text-slate-300" />
               <p className="mt-3 text-[14px] text-slate-500">
-                Anda belum melakukan voting atau data audit tidak ditemukan di browser ini.
+                Belum ada bukti transaksi nyata yang tersimpan untuk ditampilkan di shortcut ini.
               </p>
             </div>
           )}
