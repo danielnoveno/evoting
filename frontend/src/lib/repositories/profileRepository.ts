@@ -147,7 +147,7 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
   if (currentProfileError) throw new RepositoryError('Gagal memuat profil akun kampus. Coba lagi.')
 
   if (currentProfile && !sameWalletAddress(currentProfile.wallet_address, normalizedWallet)) {
-    throw new RepositoryError(`Akun kampus ini sudah tertaut ke wallet ${currentProfile.wallet_address}. Sambungkan wallet tersebut atau hubungi admin bila perlu mengganti wallet.`)
+    throw new RepositoryError('Akun kampus ini sudah tertaut ke wallet lain. Putuskan dompet tersambung, lalu sambungkan wallet yang sesuai.')
   }
 
   const { data: existingWalletOwner, error: ownerError } = await client
@@ -162,7 +162,7 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
 
   if (existingWalletOwner && existingWalletOwner.user_id !== user.id) {
     const ownerEmail = existingWalletOwner.email ? ` (${existingWalletOwner.email})` : ''
-    throw new RepositoryError(`Wallet ini sudah ditautkan ke akun kampus lain${ownerEmail}. Sambungkan wallet yang sesuai dengan akun kamu.`)
+    throw new RepositoryError(`Wallet ini sudah ditautkan ke akun kampus lain${ownerEmail}. Putuskan dompet tersambung, lalu sambungkan wallet yang sesuai.`)
   }
 
   const payload: Database['app']['Tables']['app_profiles']['Insert'] = {

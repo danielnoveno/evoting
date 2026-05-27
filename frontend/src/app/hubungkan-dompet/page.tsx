@@ -104,9 +104,9 @@ function ConnectWalletContent() {
   )
   const bindingBlocked = accountHasDifferentWallet || connectedWalletOwnedByOther
   const bindingBlockMessage = accountHasDifferentWallet
-    ? `Akun ${authSession?.user?.email ?? 'ini'} sudah tertaut ke wallet ${currentProfile?.walletAddress}. Sambungkan wallet tersebut untuk melanjutkan.`
+    ? `Akun ${authSession?.user?.email ?? 'ini'} sudah tertaut ke wallet lain. Putuskan dompet tersambung, lalu sambungkan wallet yang sesuai untuk melanjutkan.`
     : connectedWalletOwnedByOther
-      ? `Wallet tersambung sudah tertaut ke akun ${connectedWalletProfile?.email ?? 'kampus lain'}. Ganti wallet atau masuk dengan akun yang sesuai.`
+      ? `Wallet tersambung sudah tertaut ke akun ${connectedWalletProfile?.email ?? 'kampus lain'}. Putuskan dompet tersambung, lalu pilih wallet yang sesuai.`
       : ''
   const completedSteps = (isConnected ? 1 : 0) + (authSession ? 1 : 0) + (isWalletBound ? 1 : 0)
   const currentStepLabel = !isConnected
@@ -465,6 +465,13 @@ function ConnectWalletContent() {
                             <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                               <p className="text-[12px] font-semibold text-red-700">Dompet dan akun tidak cocok</p>
                               <p className="mt-2 text-[12px] leading-5 text-red-600">{bindingBlockMessage}</p>
+                              <button
+                                type="button"
+                                onClick={() => disconnect()}
+                                className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-white px-3 text-[12px] font-semibold text-red-700 transition-colors hover:bg-red-50"
+                              >
+                                Putuskan & Ganti Dompet
+                              </button>
                             </div>
                           )}
 
@@ -479,16 +486,6 @@ function ConnectWalletContent() {
                             <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Akun Mahasiswa</p>
                             <p className="mt-1 truncate text-[13px] font-semibold text-slate-900" title={authSession.user?.email}>{authSession.user?.email}</p>
                           </div>
-
-                          {currentProfile?.walletAddress && !isWalletBound && (
-                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-amber-700">Wallet terdaftar untuk akun ini</p>
-                              <WalletAddress
-                                address={currentProfile.walletAddress}
-                                className="mt-1 block font-mono text-[12px] font-semibold text-amber-900"
-                              />
-                            </div>
-                          )}
 
                           {bindError && (
                             <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-[12px] leading-5 text-red-600">
