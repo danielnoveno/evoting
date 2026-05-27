@@ -15,6 +15,10 @@ function actionLabel(actionType: string) {
   if (actionType === 'commit_vote') return 'Commit Suara'
   if (actionType === 'deploy_space') return 'Deploy Space'
   if (actionType === 'phase_transition') return 'Perubahan Fase'
+  if (actionType === 'whitelist_updated') return 'Update Whitelist'
+  if (actionType === 'proposal_submitted') return 'Pengajuan Pemilihan'
+  if (actionType === 'proposal_reviewed') return 'Review Pemilihan'
+  if (actionType === 'election_status_changed') return 'Status Pemilihan'
   return 'Transaksi'
 }
 
@@ -55,12 +59,13 @@ export function HasilSections({ id }: { id: string }) {
     queryFn: () => getPublicElectionById(id),
     retry: false,
   })
+  const election = electionQuery.data
   const auditQuery = useQuery({
-    queryKey: ['public', 'election-audit', id],
-    queryFn: () => listLatestAuditLogs(id, 8),
+    queryKey: ['public', 'election-audit', id, election?.deployedSpaceAddress],
+    queryFn: () => listLatestAuditLogs(id, 8, election?.deployedSpaceAddress),
+    enabled: !electionQuery.isLoading,
     retry: false,
   })
-  const election = electionQuery.data
   const resultQuery = useQuery({
     queryKey: ['public', 'election-results', election?.deployedSpaceAddress],
     queryFn: () => getPublicElectionResults(election?.deployedSpaceAddress),
@@ -116,7 +121,7 @@ export function HasilSections({ id }: { id: string }) {
                 </div>
                 <h1 className="mt-6 text-[44px] font-semibold leading-[1.08] tracking-[-0.03em] text-slate-900 md:text-[64px]">{election?.title ?? 'Data pemilihan tidak tersedia'}</h1>
                 <p className="mt-5 max-w-[760px] text-[18px] leading-9 text-slate-800">
-                  {election ? 'Halaman ini menampilkan data dari Supabase, jejak audit transaksi, dan agregasi reveal dari indexer jika tersedia.' : 'Belum ada data Supabase untuk ID pemilihan ini.'}
+                  {election ? 'Halaman ini menampilkan data pemilihan dari Supabase, hasil reveal dari indexer Ponder jika tersedia, dan bukti transaksi Base Sepolia.' : 'Belum ada data Supabase untuk ID pemilihan ini.'}
                 </p>
               </div>
               <button type="button" className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
@@ -212,7 +217,7 @@ export function HasilSections({ id }: { id: string }) {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-[32px] font-semibold text-slate-900">Jejak Audit Blockchain</h2>
-                <p className="mt-3 text-[16px] leading-8 text-slate-800">Transaksi yang tampil di sini berasal dari tabel audit Supabase dan link Basescan spesifik.</p>
+                <p className="mt-3 text-[16px] leading-8 text-slate-800">Transaksi ditampilkan dari indexer Ponder jika tersedia; jika endpoint belum aktif, sistem memakai tabel audit Supabase sebagai cadangan.</p>
               </div>
               <a href="https://sepolia.basescan.org" target="_blank" rel="noreferrer" className="hidden items-center gap-2 text-[14px] font-medium text-slate-900 md:inline-flex">
                 Lihat Semua
@@ -232,7 +237,7 @@ export function HasilSections({ id }: { id: string }) {
                         <p className="text-[18px] font-semibold text-slate-900">{actionLabel(log.actionType)}</p>
                         <span className="rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-emerald-700">Sukses</span>
                       </div>
-                      <p className="mt-1 font-mono text-[13px] text-slate-800">Tx : {shortenHash(log.txHash)}</p>
+                      <p className="mt-1 font-mono text-[13px] text-slate-800">Tx : {shortenHash(log.txHash)} · {log.source === 'ponder' ? 'Ponder' : 'Supabase'}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-6 md:justify-end">

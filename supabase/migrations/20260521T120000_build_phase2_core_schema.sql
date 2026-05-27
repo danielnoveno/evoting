@@ -573,6 +573,7 @@ on app.notification_jobs
 for select
 using (
   target_profile_id = app.current_profile_id()
+  or target_wallet in (select wallet_address from app.app_profiles where user_id = auth.uid())
   or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
 

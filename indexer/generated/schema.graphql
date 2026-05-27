@@ -19,6 +19,8 @@ type Meta {
 type Query {
   proposal(id: BigInt!): proposal
   proposals(where: proposalFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int): proposalPage!
+  chainEvent(id: String!): chainEvent
+  chainEvents(where: chainEventFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int): chainEventPage!
   election(id: String!): election
   elections(where: electionFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int): electionPage!
   voteCommit(id: String!): voteCommit
@@ -131,6 +133,131 @@ input proposalFilter {
   updatedAtTx_not_ends_with: String
 }
 
+type chainEvent {
+  id: String!
+  actionType: String!
+  txHash: String!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  spaceAddress: String
+  spaceId: BigInt
+  proposalId: BigInt
+  actor: String
+  candidateId: BigInt
+  metadata: String!
+}
+
+type chainEventPage {
+  items: [chainEvent!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input chainEventFilter {
+  AND: [chainEventFilter]
+  OR: [chainEventFilter]
+  id: String
+  id_not: String
+  id_in: [String]
+  id_not_in: [String]
+  id_contains: String
+  id_not_contains: String
+  id_starts_with: String
+  id_ends_with: String
+  id_not_starts_with: String
+  id_not_ends_with: String
+  actionType: String
+  actionType_not: String
+  actionType_in: [String]
+  actionType_not_in: [String]
+  actionType_contains: String
+  actionType_not_contains: String
+  actionType_starts_with: String
+  actionType_ends_with: String
+  actionType_not_starts_with: String
+  actionType_not_ends_with: String
+  txHash: String
+  txHash_not: String
+  txHash_in: [String]
+  txHash_not_in: [String]
+  txHash_contains: String
+  txHash_not_contains: String
+  txHash_starts_with: String
+  txHash_ends_with: String
+  txHash_not_starts_with: String
+  txHash_not_ends_with: String
+  blockNumber: BigInt
+  blockNumber_not: BigInt
+  blockNumber_in: [BigInt]
+  blockNumber_not_in: [BigInt]
+  blockNumber_gt: BigInt
+  blockNumber_lt: BigInt
+  blockNumber_gte: BigInt
+  blockNumber_lte: BigInt
+  timestamp: BigInt
+  timestamp_not: BigInt
+  timestamp_in: [BigInt]
+  timestamp_not_in: [BigInt]
+  timestamp_gt: BigInt
+  timestamp_lt: BigInt
+  timestamp_gte: BigInt
+  timestamp_lte: BigInt
+  spaceAddress: String
+  spaceAddress_not: String
+  spaceAddress_in: [String]
+  spaceAddress_not_in: [String]
+  spaceAddress_contains: String
+  spaceAddress_not_contains: String
+  spaceAddress_starts_with: String
+  spaceAddress_ends_with: String
+  spaceAddress_not_starts_with: String
+  spaceAddress_not_ends_with: String
+  spaceId: BigInt
+  spaceId_not: BigInt
+  spaceId_in: [BigInt]
+  spaceId_not_in: [BigInt]
+  spaceId_gt: BigInt
+  spaceId_lt: BigInt
+  spaceId_gte: BigInt
+  spaceId_lte: BigInt
+  proposalId: BigInt
+  proposalId_not: BigInt
+  proposalId_in: [BigInt]
+  proposalId_not_in: [BigInt]
+  proposalId_gt: BigInt
+  proposalId_lt: BigInt
+  proposalId_gte: BigInt
+  proposalId_lte: BigInt
+  actor: String
+  actor_not: String
+  actor_in: [String]
+  actor_not_in: [String]
+  actor_contains: String
+  actor_not_contains: String
+  actor_starts_with: String
+  actor_ends_with: String
+  actor_not_starts_with: String
+  actor_not_ends_with: String
+  candidateId: BigInt
+  candidateId_not: BigInt
+  candidateId_in: [BigInt]
+  candidateId_not_in: [BigInt]
+  candidateId_gt: BigInt
+  candidateId_lt: BigInt
+  candidateId_gte: BigInt
+  candidateId_lte: BigInt
+  metadata: String
+  metadata_not: String
+  metadata_in: [String]
+  metadata_not_in: [String]
+  metadata_contains: String
+  metadata_not_contains: String
+  metadata_starts_with: String
+  metadata_ends_with: String
+  metadata_not_starts_with: String
+  metadata_not_ends_with: String
+}
+
 type election {
   id: String!
   spaceId: BigInt!
@@ -143,6 +270,8 @@ type election {
   totalCommitted: Int!
   totalRevealed: Int!
   createdAt: BigInt!
+  createdBlock: BigInt!
+  createdTx: String!
   lastUpdatedAt: BigInt!
   lastUpdatedBlock: BigInt!
   lastUpdatedTx: String!
@@ -249,6 +378,24 @@ input electionFilter {
   createdAt_lt: BigInt
   createdAt_gte: BigInt
   createdAt_lte: BigInt
+  createdBlock: BigInt
+  createdBlock_not: BigInt
+  createdBlock_in: [BigInt]
+  createdBlock_not_in: [BigInt]
+  createdBlock_gt: BigInt
+  createdBlock_lt: BigInt
+  createdBlock_gte: BigInt
+  createdBlock_lte: BigInt
+  createdTx: String
+  createdTx_not: String
+  createdTx_in: [String]
+  createdTx_not_in: [String]
+  createdTx_contains: String
+  createdTx_not_contains: String
+  createdTx_starts_with: String
+  createdTx_ends_with: String
+  createdTx_not_starts_with: String
+  createdTx_not_ends_with: String
   lastUpdatedAt: BigInt
   lastUpdatedAt_not: BigInt
   lastUpdatedAt_in: [BigInt]

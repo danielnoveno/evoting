@@ -119,6 +119,10 @@ function auditActionLabel(actionType: string) {
   if (actionType === 'reveal_vote') return 'Reveal suara'
   if (actionType === 'deploy_space') return 'Deploy ruang pemilihan'
   if (actionType === 'phase_transition') return 'Perubahan fase'
+  if (actionType === 'whitelist_updated') return 'Update whitelist'
+  if (actionType === 'proposal_submitted') return 'Pengajuan pemilihan'
+  if (actionType === 'proposal_reviewed') return 'Review pemilihan'
+  if (actionType === 'election_status_changed') return 'Status pemilihan berubah'
   return 'Transaksi pemilihan'
 }
 
@@ -139,6 +143,7 @@ export function InfrastructureSection() {
     retry: false,
   })
   const auditItems = auditQuery.data ?? []
+  const isPonderAudit = auditItems.some((item) => item.source === 'ponder')
   return (
     <section className="relative overflow-hidden border-t border-slate-200 py-12 md:py-16 lg:py-20">
       {/* Decorative parallax shape */}
@@ -191,7 +196,7 @@ export function InfrastructureSection() {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Live audit log</p>
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-                  Sinkron
+                  {isPonderAudit ? 'Ponder' : 'Cadangan'}
                 </span>
               </div>
 
@@ -202,7 +207,7 @@ export function InfrastructureSection() {
                       <div className="flex items-start justify-between gap-3 text-[12px]">
                         <div className="min-w-0">
                           <p className="font-mono text-slate-800">{shortenHash(item.txHash)}</p>
-                          <p className="mt-1 text-slate-500">{auditActionLabel(item.actionType)}</p>
+                          <p className="mt-1 text-slate-500">{auditActionLabel(item.actionType)} · {item.source === 'ponder' ? 'Indexer' : 'Supabase'}</p>
                         </div>
                         <span className="text-slate-400">{relativeTime(item.createdAt)}</span>
                       </div>

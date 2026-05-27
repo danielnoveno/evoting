@@ -14,6 +14,20 @@ export const proposal = schema.table("proposals", (t) => ({
   updatedAtTx: t.hex().notNull(),
 }));
 
+export const chainEvent = schema.table("chain_events", (t) => ({
+  id: t.text().primaryKey(), // log id; stable identifier for every indexed event.
+  actionType: t.text().notNull(),
+  txHash: t.hex().notNull(),
+  blockNumber: t.bigint().notNull(),
+  timestamp: t.bigint().notNull(),
+  spaceAddress: t.hex(),
+  spaceId: t.bigint(),
+  proposalId: t.bigint(),
+  actor: t.hex(),
+  candidateId: t.bigint(),
+  metadata: t.text().notNull(), // JSON string with only non-sensitive public event data.
+}));
+
 export const election = schema.table("elections", (t) => ({
   id: t.hex().primaryKey(), // ElectionSpace contract address.
   spaceId: t.bigint().notNull(),
@@ -26,6 +40,8 @@ export const election = schema.table("elections", (t) => ({
   totalCommitted: t.integer().notNull(),
   totalRevealed: t.integer().notNull(),
   createdAt: t.bigint().notNull(),
+  createdBlock: t.bigint().notNull(),
+  createdTx: t.hex().notNull(),
   lastUpdatedAt: t.bigint().notNull(),
   lastUpdatedBlock: t.bigint().notNull(),
   lastUpdatedTx: t.hex().notNull(),

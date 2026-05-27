@@ -11,6 +11,7 @@ import type {
   PublicElectionRecord,
   PublicElectionResultRecord,
   TxAuditLogRecord,
+  VoterOnchainProofRecord,
 } from '@/lib/repositories/types'
 
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
@@ -120,6 +121,49 @@ interface PonderElectionResultsResponse {
   errors?: Array<{ message?: string }>
 }
 
+interface PonderChainEventItem {
+  id: string
+  actionType: string
+  txHash: string
+  blockNumber: string
+  timestamp: string
+  spaceAddress?: string | null
+  spaceId?: string | null
+  actor?: string | null
+  metadata?: string | null
+}
+
+interface PonderAuditResponse {
+  data?: {
+    chainEvents?: { items?: PonderChainEventItem[] }
+  }
+  errors?: Array<{ message?: string }>
+}
+
+interface PonderVoteCommitItem {
+  txHash: string
+  spaceAddress: string
+  commitment: string
+  blockNumber: string
+  timestamp: string
+}
+
+interface PonderVoteRevealItem {
+  txHash: string
+  spaceAddress: string
+  candidateId: string
+  blockNumber: string
+  timestamp: string
+}
+
+interface PonderVoterProofResponse {
+  data?: {
+    voteCommits?: { items?: PonderVoteCommitItem[] }
+    voteReveals?: { items?: PonderVoteRevealItem[] }
+  }
+  errors?: Array<{ message?: string }>
+}
+
 function isPonderElectionResultsResponse(value: unknown): value is PonderElectionResultsResponse {
   return value !== null && typeof value === 'object'
 }
@@ -131,6 +175,46 @@ function mapPonderCandidateResult(item: PonderResultItem): PublicElectionCandida
     lastRevealTx: item.lastRevealTx || null,
     lastUpdatedBlock: asFiniteNumber(item.lastUpdatedBlock) || null,
   }
+}
+
+function timestampToIso(value: unknown): string {
+  const numeric = asFiniteNumber(value)
+  if (numeric <= 0) return new Date().toISOString()
+  return new Date(numeric * 1000).toISOString()
+}
+
+function mapPonderAuditEvent(item: PonderChainEventItem): TxAuditLogRecord {
+  return {
+    id: item.id,
+    spaceId: asFiniteNumber(item.spaceId) || null,
+    proposalDraftId: null,
+    walletAddress: item.actor ?? '0x0000000000000000000000000000000000000000',
+    actionType: item.actionType,
+    txHash: item.txHash,
+    blockNumber: asFiniteNumber(item.blockNumber) || null,
+    status: 'success',
+    source: 'ponder',
+    metadata: parseMetadata(item.metadata),
+    createdAt: timestampToIso(item.timestamp),
+  }
+}
+
+function parseMetadata(value?: string | null): Record<string, unknown> {
+  if (!value) return {}
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {}
+  } catch {
+    return {}
+  }
+}
+
+function isPonderAuditResponse(value: unknown): value is PonderAuditResponse {
+  return value !== null && typeof value === 'object'
+}
+
+function isPonderVoterProofResponse(value: unknown): value is PonderVoterProofResponse {
+  return value !== null && typeof value === 'object'
 }
 
 function mapElection(row: ProposalRow, candidates: CandidateRow[], whitelistRows: WhitelistRow[]): PublicElectionRecord {
@@ -253,7 +337,132 @@ export async function getPublicElectionResults(spaceAddress?: string | null): Pr
   }
 }
 
-export async function listLatestAuditLogs(proposalDraftId?: string, limit = 6): Promise<TxAuditLogRecord[]> {
+async function listPonderAuditLogs(spaceAddress?: string | null, limit = 6): Promise<TxAuditLogRecord[] | null> {
+  const graphqlUrl = getPonderGraphqlUrl()
+  if (!graphqlUrl) return null
+
+  const addressVariants = spaceAddress ? Array.from(new Set([spaceAddress, spaceAddress.toLowerCase()])) : null
+  const response = await fetch(graphqlUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query: addressVariants ? `
+        query PonderAuditLogs($addresses: [String], $limit: Int) {
+          chainEvents(where: { spaceAddress_in: $addresses }, orderBy: "timestamp", orderDirection: "desc", limit: $limit) {
+            items { id actionType txHash blockNumber timestamp spaceAddress spaceId actor metadata }
+          }
+        }
+      ` : `
+        query PonderAuditLogs($limit: Int) {
+          chainEvents(orderBy: "timestamp", orderDirection: "desc", limit: $limit) {
+            items { id actionType txHash blockNumber timestamp spaceAddress spaceId actor metadata }
+          }
+        }
+      `,
+      variables: addressVariants ? { addresses: addressVariants, limit } : { limit },
+    }),
+  })
+
+  if (!response.ok) throw new RepositoryError('Gagal memuat jejak audit dari indexer Ponder.')
+
+  const payload: unknown = await response.json()
+  if (!isPonderAuditResponse(payload)) throw new RepositoryError('Format audit indexer tidak dikenali.')
+  if (payload.errors && payload.errors.length > 0) throw new RepositoryError('Indexer belum siap menyajikan audit log.')
+
+  return (payload.data?.chainEvents?.items ?? []).map(mapPonderAuditEvent)
+}
+
+export async function listVoterOnchainProofs(walletAddress?: string | null, spaceAddresses: string[] = []): Promise<VoterOnchainProofRecord[]> {
+  const graphqlUrl = getPonderGraphqlUrl()
+  const wallet = walletAddress?.trim()
+  if (!graphqlUrl || !wallet) return []
+
+  const addressVariants = Array.from(new Set(spaceAddresses.flatMap((address) => [address, address.toLowerCase()])))
+  const voterVariants = Array.from(new Set([wallet, wallet.toLowerCase()]))
+  const variables = addressVariants.length > 0
+    ? { voterVariants, addresses: addressVariants }
+    : { voterVariants }
+
+  const response = await fetch(graphqlUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      query: addressVariants.length > 0 ? `
+        query VoterOnchainProofs($voterVariants: [String], $addresses: [String]) {
+          voteCommits(where: { voter_in: $voterVariants, spaceAddress_in: $addresses }, orderBy: "timestamp", orderDirection: "desc", limit: 100) {
+            items { txHash spaceAddress commitment blockNumber timestamp }
+          }
+          voteReveals(where: { voter_in: $voterVariants, spaceAddress_in: $addresses }, orderBy: "timestamp", orderDirection: "desc", limit: 100) {
+            items { txHash spaceAddress candidateId blockNumber timestamp }
+          }
+        }
+      ` : `
+        query VoterOnchainProofs($voterVariants: [String]) {
+          voteCommits(where: { voter_in: $voterVariants }, orderBy: "timestamp", orderDirection: "desc", limit: 100) {
+            items { txHash spaceAddress commitment blockNumber timestamp }
+          }
+          voteReveals(where: { voter_in: $voterVariants }, orderBy: "timestamp", orderDirection: "desc", limit: 100) {
+            items { txHash spaceAddress candidateId blockNumber timestamp }
+          }
+        }
+      `,
+      variables,
+    }),
+  })
+
+  if (!response.ok) throw new RepositoryError('Gagal memuat bukti pemilih dari indexer Ponder.')
+
+  const payload: unknown = await response.json()
+  if (!isPonderVoterProofResponse(payload)) throw new RepositoryError('Format bukti pemilih indexer tidak dikenali.')
+  if (payload.errors && payload.errors.length > 0) throw new RepositoryError('Indexer belum siap menyajikan bukti pemilih.')
+
+  const bySpace = new Map<string, VoterOnchainProofRecord>()
+  const ensureRecord = (spaceAddress: string) => {
+    const key = spaceAddress.toLowerCase()
+    const existing = bySpace.get(key)
+    if (existing) return existing
+    const next: VoterOnchainProofRecord = { spaceAddress, commitProof: null, revealProof: null }
+    bySpace.set(key, next)
+    return next
+  }
+
+  for (const item of payload.data?.voteCommits?.items ?? []) {
+    const record = ensureRecord(item.spaceAddress)
+    if (!record.commitProof) {
+      record.commitProof = {
+        txHash: item.txHash,
+        blockNumber: asFiniteNumber(item.blockNumber),
+        createdAt: timestampToIso(item.timestamp),
+        commitment: item.commitment,
+      }
+    }
+  }
+
+  for (const item of payload.data?.voteReveals?.items ?? []) {
+    const record = ensureRecord(item.spaceAddress)
+    if (!record.revealProof) {
+      record.revealProof = {
+        txHash: item.txHash,
+        blockNumber: asFiniteNumber(item.blockNumber),
+        createdAt: timestampToIso(item.timestamp),
+        candidateId: asFiniteNumber(item.candidateId),
+      }
+    }
+  }
+
+  return Array.from(bySpace.values())
+}
+
+export async function listLatestAuditLogs(proposalDraftId?: string, limit = 6, spaceAddress?: string | null): Promise<TxAuditLogRecord[]> {
+  if (spaceAddress || !proposalDraftId) {
+    try {
+      const ponderLogs = await listPonderAuditLogs(spaceAddress, limit)
+      if (ponderLogs) return ponderLogs
+    } catch {
+      // Fall back to Supabase audit rows when the optional Ponder endpoint is unavailable.
+    }
+  }
+
   const client = getSupabaseBrowserClient()
   if (!client) return []
 
@@ -318,6 +527,32 @@ export async function listPublicNotifications(): Promise<NotificationJobRecord[]
     .limit(10)
 
   if (error) throw new RepositoryError('Gagal memuat notifikasi dari Supabase.')
+
+  return (data ?? []).map(mapNotificationRow)
+}
+
+export async function listUserNotifications(profileId?: string, walletAddress?: string): Promise<NotificationJobRecord[]> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return []
+
+  let query = client
+    .schema('app')
+    .from('notification_jobs')
+    .select('*')
+    .eq('channel', 'in_app')
+    .in('status', ['queued', 'sent'])
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  const filters: string[] = []
+  if (profileId) filters.push(`target_profile_id.eq.${profileId}`)
+  if (walletAddress) filters.push(`target_wallet.eq.${walletAddress}`)
+  filters.push('and(target_profile_id.is.null,target_wallet.is.null)')
+
+  query = query.or(filters.join(','))
+
+  const { data, error } = await query
+  if (error) throw new RepositoryError('Gagal memuat notifikasi personal dari Supabase.')
 
   return (data ?? []).map(mapNotificationRow)
 }

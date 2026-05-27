@@ -3,7 +3,7 @@
 import { Bell, Clock, Info, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { ModalShell } from '@/components/ui/modal-shell'
-import { listPublicNotifications } from '@/lib/repositories/electionRepository'
+import { listPublicNotifications, listUserNotifications } from '@/lib/repositories/electionRepository'
 
 export interface NotificationItem {
   id: string
@@ -17,13 +17,20 @@ export interface NotificationItem {
 export function NotificationModal({
   open,
   onClose,
+  profileId,
+  walletAddress,
 }: {
   open: boolean
   onClose: () => void
+  profileId?: string
+  walletAddress?: string
 }) {
+  const isPersonal = !!(profileId || walletAddress)
   const notificationQuery = useQuery({
-    queryKey: ['public', 'notifications'],
-    queryFn: listPublicNotifications,
+    queryKey: isPersonal ? ['user', 'notifications', profileId, walletAddress] : ['public', 'notifications'],
+    queryFn: () => isPersonal 
+      ? listUserNotifications(profileId, walletAddress)
+      : listPublicNotifications(),
     enabled: open,
     retry: false,
   })
@@ -32,8 +39,10 @@ export function NotificationModal({
   return (
     <ModalShell
       open={open}
-      title="Notifikasi Publik"
-      description="Update terbaru mengenai fase pemilihan dan aktivitas sistem Votein."
+      title={isPersonal ? 'Notifikasi Anda' : 'Notifikasi Publik'}
+      description={isPersonal 
+        ? 'Update aktivitas, hasil voting, dan pengumuman untuk akun Anda.' 
+        : 'Update terbaru mengenai fase pemilihan dan aktivitas sistem Votein.'}
       onClose={onClose}
     >
       <div className="max-h-[400px] overflow-y-auto pr-2">

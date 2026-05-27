@@ -191,7 +191,7 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
                 {[
                   ['Tx Hash', election.revealProof.txHash],
                   ['Nomor Block', formatNumber(election.revealProof.blockNumber)],
-                  ['Gas Terpakai', formatNumber(election.revealProof.gasUsed)],
+                  ['Gas Terpakai', election.revealProof.gasUsed == null ? 'Tidak disimpan indexer' : formatNumber(election.revealProof.gasUsed)],
                   ['Waktu Sinkron', formatDateTime(election.revealProof.createdAt)],
                 ].map(([label, value], index, rows) => (
                   <div 

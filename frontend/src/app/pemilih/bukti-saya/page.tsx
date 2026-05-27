@@ -110,7 +110,11 @@ export default function VoterProofPage() {
                 </div>
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Gas Terpakai</p>
-                  <p className="mt-2 text-[24px] font-semibold text-slate-900">{formatNumber(selectedElection.revealProof?.gasUsed ?? selectedElection.commitProof?.gasUsed ?? 0)}</p>
+                  <p className="mt-2 text-[18px] font-semibold text-slate-900">
+                    {(selectedElection.revealProof?.gasUsed ?? selectedElection.commitProof?.gasUsed) == null
+                      ? 'Tidak disimpan indexer'
+                      : formatNumber(selectedElection.revealProof?.gasUsed ?? selectedElection.commitProof?.gasUsed ?? 0)}
+                  </p>
                 </div>
               </div>
             </div>

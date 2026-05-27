@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { clearAllVoteCommitments } from '@/lib/vote-commitment-storage'
-import { listPublicElections } from '@/lib/repositories/electionRepository'
+import { getPublicElectionResults, listPublicElections, listVoterOnchainProofs } from '@/lib/repositories/electionRepository'
 import { getCurrentProfile } from '@/lib/repositories/profileRepository'
-import type { PublicElectionRecord } from '@/lib/repositories/types'
+import type { PublicElectionRecord, PublicElectionResultRecord, VoterOnchainProofRecord } from '@/lib/repositories/types'
 
 export type VoterElectionPhase = 'registration' | 'commit' | 'reveal' | 'ended'
 
@@ -21,7 +21,7 @@ export interface VoterCandidate {
 export interface VoterProof {
   txHash: string
   blockNumber: number
-  gasUsed: number
+  gasUsed?: number | null
   createdAt: string
   statusLabel: string
 }
@@ -180,16 +180,76 @@ function mapElectionFromSupabase(election: PublicElectionRecord): VoterElection 
   }
 }
 
+function resolveCandidateNumber(candidateLocalId: string, fallbackIndex: number) {
+  const match = candidateLocalId.match(/(\d+)$/)
+  if (!match) return fallbackIndex + 1
+  const parsed = Number(match[1])
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackIndex + 1
+}
+
+function mergePonderResult(election: VoterElection, result?: PublicElectionResultRecord | null): VoterElection {
+  if (!result) return election
+  const votesByCandidate = new Map(result.candidateResults.map((item) => [item.candidateId, item.voteCount]))
+  const candidates = election.candidates.map((candidate, index) => ({
+    ...candidate,
+    votes: votesByCandidate.get(resolveCandidateNumber(candidate.id, index)) ?? candidate.votes,
+  }))
+  const quorumPercent = election.totalParticipants > 0
+    ? Math.min(100, Math.round((result.totalRevealed / election.totalParticipants) * 100))
+    : 0
+
+  return {
+    ...election,
+    candidates,
+    committedCount: result.totalCommitted,
+    revealedCount: result.totalRevealed,
+    quorumPercent,
+    lastTransactionLabel: result.lastUpdatedBlock ? `Terindeks sampai block #${formatNumber(result.lastUpdatedBlock)}.` : election.lastTransactionLabel,
+  }
+}
+
+function mergeVoterProof(election: VoterElection, proof?: VoterOnchainProofRecord): VoterElection {
+  if (!proof) return election
+  const revealCandidate = proof.revealProof
+    ? election.candidates[proof.revealProof.candidateId - 1]
+    : null
+
+  return {
+    ...election,
+    committedCandidateId: election.committedCandidateId ?? revealCandidate?.id ?? null,
+    commitmentHash: proof.commitProof?.commitment ?? election.commitmentHash,
+    commitProof: proof.commitProof ? {
+      txHash: proof.commitProof.txHash,
+      blockNumber: proof.commitProof.blockNumber,
+      gasUsed: null,
+      createdAt: proof.commitProof.createdAt,
+      statusLabel: 'Commit terindeks',
+    } : election.commitProof,
+    revealProof: proof.revealProof ? {
+      txHash: proof.revealProof.txHash,
+      blockNumber: proof.revealProof.blockNumber,
+      gasUsed: null,
+      createdAt: proof.revealProof.createdAt,
+      statusLabel: 'Reveal terindeks',
+    } : election.revealProof,
+    lastTransactionLabel: proof.revealProof
+      ? 'Reveal sudah terindeks oleh Ponder.'
+      : proof.commitProof
+        ? 'Commit sudah terindeks oleh Ponder.'
+        : election.lastTransactionLabel,
+  }
+}
+
 function mergeLocalElectionState(live: VoterElection, local?: VoterElection): VoterElection {
   if (!local) return live
   return {
     ...live,
     selectedCandidateId: local.selectedCandidateId,
-    committedCandidateId: local.committedCandidateId,
-    commitProof: local.commitProof,
-    revealProof: local.revealProof,
-    commitmentHash: local.commitmentHash,
-    lastTransactionLabel: local.lastTransactionLabel || live.lastTransactionLabel,
+    committedCandidateId: local.committedCandidateId ?? live.committedCandidateId,
+    commitProof: local.commitProof ?? live.commitProof,
+    revealProof: local.revealProof ?? live.revealProof,
+    commitmentHash: local.commitmentHash ?? live.commitmentHash,
+    lastTransactionLabel: (local.commitProof || local.revealProof) ? local.lastTransactionLabel : live.lastTransactionLabel,
   }
 }
 
@@ -200,9 +260,21 @@ async function buildLiveStore(): Promise<VoterStore> {
     listPublicElections().catch(() => []),
   ])
 
+  const resultEntries = await Promise.all(elections.map(async (item) => ({
+    id: item.id,
+    result: await getPublicElectionResults(item.deployedSpaceAddress).catch(() => null),
+  })))
+  const resultByElection = new Map(resultEntries.map((entry) => [entry.id, entry.result]))
+  const proofEntries = await listVoterOnchainProofs(
+    profile?.walletAddress ?? local.profile.wallet,
+    elections.map((item) => item.deployedSpaceAddress).filter((address): address is string => Boolean(address)),
+  ).catch(() => [])
+  const proofByAddress = new Map(proofEntries.map((entry) => [entry.spaceAddress.toLowerCase(), entry]))
+
   const liveElections = elections.map((item) => {
-    const mapped = mapElectionFromSupabase(item)
-    return mergeLocalElectionState(mapped, local.elections.find((election) => election.id === mapped.id))
+    const mapped = mergePonderResult(mapElectionFromSupabase(item), resultByElection.get(item.id))
+    const withProof = mergeVoterProof(mapped, item.deployedSpaceAddress ? proofByAddress.get(item.deployedSpaceAddress.toLowerCase()) : undefined)
+    return mergeLocalElectionState(withProof, local.elections.find((election) => election.id === mapped.id))
   })
 
   return {

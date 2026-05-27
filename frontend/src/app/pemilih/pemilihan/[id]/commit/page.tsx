@@ -120,7 +120,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         { label: 'result' },
       ]
 
-  if (!selectedCandidate || !savedCommitment) {
+  if ((!selectedCandidate || !savedCommitment) && !commitProof && !hasCommittedOnChain) {
     return (
       <VoterShell>
         <VoterStepper steps={stepState} />
@@ -141,6 +141,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   }
 
   const handleCommit = () => {
+    if (!savedCommitment) return
     setConfirmOpen(false)
     commitVote(savedCommitment.commitment)
   }
@@ -167,18 +168,18 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat terpilih</p>
               <div className="mt-4 flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-200 text-[18px] font-semibold text-slate-600">
-                  {selectedCandidate.name.slice(0, 2).toUpperCase()}
+                  {selectedCandidate ? selectedCandidate.name.slice(0, 2).toUpperCase() : 'VC'}
                 </div>
                 <div>
-                  <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate.name}</h2>
-                  <p className="mt-1 text-[14px] text-slate-600">{selectedCandidate.vision}</p>
+                  <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate?.name ?? 'Commit terdeteksi di indexer'}</h2>
+                  <p className="mt-1 text-[14px] text-slate-600">{selectedCandidate?.vision ?? 'Detail kandidat asli tetap mengikuti data lokal browser dan baru dibuka saat reveal.'}</p>
                 </div>
               </div>
             </article>
 
             <article className="rounded-2xl bg-[#0F172A] p-5 text-white">
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Hash komitmen (On-Chain)</p>
-              <p className="mt-4 break-all font-mono text-[12px] leading-6 text-slate-200">{election.commitmentHash ?? savedCommitment.commitment}</p>
+              <p className="mt-4 break-all font-mono text-[12px] leading-6 text-slate-200">{election.commitmentHash ?? savedCommitment?.commitment ?? 'Hash commit terdeteksi oleh indexer.'}</p>
               <p className="mt-4 text-[13px] leading-6 text-slate-300">Bukti ini tersimpan secara permanen di Base Sepolia.</p>
             </article>
           </div>
@@ -201,13 +202,39 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
                 <ExternalLink className="h-4 w-4" />
               </a>
             )}
-            <Link
-              href={`/pemilih/pemilihan/${election.id}/reveal`}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#0F172A] px-5 text-[13px] font-semibold text-white hover:bg-[#1E293B]"
-            >
-               Lanjut ke Konfirmasi
-             </Link>
+            {selectedCandidate && savedCommitment ? (
+              <Link
+                href={`/pemilih/pemilihan/${election.id}/reveal`}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-[#0F172A] px-5 text-[13px] font-semibold text-white hover:bg-[#1E293B]"
+              >
+                Lanjut ke Konfirmasi
+              </Link>
+            ) : (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] leading-6 text-amber-900">
+                Commit sudah terdeteksi, tetapi kode rahasia/kandidat lokal tidak tersedia. Reveal tetap membutuhkan browser yang menyimpan data commit.
+              </div>
+            )}
           </div>
+        </section>
+      </VoterShell>
+    )
+  }
+
+  if (!selectedCandidate || !savedCommitment) {
+    return (
+      <VoterShell>
+        <VoterStepper steps={stepState} />
+        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h1 className="text-[20px] font-semibold text-slate-900">Data pilihan belum siap</h1>
+          <p className="mt-2 text-[14px] leading-7 text-slate-800">
+            Pilih kandidat terlebih dahulu dari halaman pilih kandidat sebelum masuk ke tahap commit.
+          </p>
+          <Link
+            href={`/pemilih/pemilihan/${params.id}/pilih-kandidat`}
+            className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B]"
+          >
+            Ke Halaman Pilih Kandidat
+          </Link>
         </section>
       </VoterShell>
     )

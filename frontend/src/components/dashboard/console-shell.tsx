@@ -11,6 +11,7 @@ import { AppSidebar, useSidebarLayout, type SidebarNavItem } from '@/components/
 import { useToast } from '@/components/ui/toast-provider'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { useLogoutSession } from '@/hooks/use-auth-session'
+import { NotificationModal } from '@/components/public/notification-modal'
 
 export type { SidebarNavItem as ConsoleNavItem }
 
@@ -60,6 +61,7 @@ export function ConsoleShell({
   const [collapsed, setCollapsed] = useState(false)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const { showToast } = useToast()
@@ -133,7 +135,7 @@ export function ConsoleShell({
                     <span className="text-[12px]">⌘</span>K
                   </kbd>
                 </button>
-                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia saat ini.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-800 hover:bg-slate-100">
+                <button type="button" onClick={() => setNotifOpen(true)} className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-800 hover:bg-slate-100" aria-label="Notifikasi">
                   <Bell className="h-4 w-4" />
                 </button>
                 <Link
@@ -173,6 +175,13 @@ export function ConsoleShell({
         confirmLabel={logoutConfig.confirmLabel}
         onCancel={() => setLogoutConfirmOpen(false)}
         onConfirm={handleConfirmLogout}
+      />
+
+      <NotificationModal 
+        open={notifOpen} 
+        onClose={() => setNotifOpen(false)} 
+        profileId={currentProfile?.id}
+        walletAddress={currentProfile?.walletAddress}
       />
 
       <CommandPalette role={role} open={searchOpen} onOpenChange={setSearchOpen} />

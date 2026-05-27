@@ -100,6 +100,22 @@ export interface TxAuditLogRecord {
   createdAt: string
 }
 
+export interface VoterOnchainProofRecord {
+  spaceAddress: string
+  commitProof: {
+    txHash: string
+    blockNumber: number
+    createdAt: string
+    commitment: string
+  } | null
+  revealProof: {
+    txHash: string
+    blockNumber: number
+    createdAt: string
+    candidateId: number
+  } | null
+}
+
 export interface NotificationJobRecord {
   id: string
   title: string

@@ -13,6 +13,7 @@ import { CommandPalette } from '@/components/ui/command-palette'
 import { formatWallet, useVoterStore } from '@/lib/voter-store'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { useLogoutSession } from '@/hooks/use-auth-session'
+import { NotificationModal } from '@/components/public/notification-modal'
 
 const sidebarItems = [
   { href: '/pemilih', label: 'Beranda', icon: Home },
@@ -25,6 +26,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const { showToast } = useToast()
@@ -112,7 +114,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
                   {profile ? formatWallet(profile.wallet) : 'Belum terhubung'}
                 </div>
-                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Notifikasi', description: 'Notifikasi belum tersedia saat ini.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2" aria-label="Notifikasi pemilih">
+                <button type="button" onClick={() => setNotifOpen(true)} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2" aria-label="Notifikasi pemilih">
                   <Bell className="h-4 w-4" />
                 </button>
                 <Link
@@ -155,6 +157,13 @@ export function VoterShell({ children }: { children: ReactNode }) {
         confirmLabel="Keluar Sesi"
         onCancel={() => setLogoutConfirmOpen(false)}
         onConfirm={handleConfirmLogout}
+      />
+
+      <NotificationModal 
+        open={notifOpen} 
+        onClose={() => setNotifOpen(false)} 
+        profileId={currentProfile?.id}
+        walletAddress={currentProfile?.walletAddress}
       />
 
       <CommandPalette role="voter" open={searchOpen} onOpenChange={setSearchOpen} />
