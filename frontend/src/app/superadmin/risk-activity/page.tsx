@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, BarChart3, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, BarChart3 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -107,24 +107,6 @@ export default function SuperadminRiskActivityPage() {
             </AppSectionCard>
           </div>
 
-          <div>
-            <h2 className="text-[20px] font-semibold text-slate-900">Regional Risk Profile</h2>
-            <AppSectionCard className="mt-4 shadow-[0_16px_60px_rgba(15,23,42,0.08)] p-0 md:p-0">
-              <div className="relative h-[240px] bg-[radial-gradient(circle_at_center,#7c7c7c_0%,#4b4b4b_45%,#2e2e2e_100%)]">
-                <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(#ffffff_1px,transparent_1px)] [background-size:14px_14px]" />
-                <span className="absolute left-[34%] top-[22%] h-4 w-7 rounded-full bg-red-600" />
-                <span className="absolute left-[72%] top-[62%] h-3 w-5 rounded-full bg-amber-400" />
-                <span className="absolute left-[58%] top-[84%] h-2.5 w-8 rounded-full bg-white/40 blur-sm" />
-              </div>
-              <div className="p-5">
-                <div className="flex items-center gap-3 text-[18px] font-semibold text-slate-900">
-                  <span className="h-3 w-3 rounded-full bg-red-600" />
-                  {superadminRiskData.regionProfile.region}
-                </div>
-                <p className="mt-4 text-[15px] leading-7 text-slate-800">{superadminRiskData.regionProfile.description}</p>
-              </div>
-            </AppSectionCard>
-          </div>
         </div>
         </section>
       </ScrollReveal>

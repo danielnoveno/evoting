@@ -4,7 +4,7 @@ import { ArrowUpDown, Copy, Download, ExternalLink, FileText, Filter, RefreshCcw
 import { useMemo, useState } from 'react'
 import { ModalShell } from '@/components/ui/modal-shell'
 import { useToast } from '@/components/ui/toast-provider'
-import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
+import { SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { superadminAuditLogData, type SuperadminAuditLogItem } from '@/lib/superadmin-data'
 import { useSuperadminAuditLogsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -134,7 +134,7 @@ export default function SuperadminAuditLogPage() {
       </section>
       </ScrollReveal>
 
-      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-10 grid gap-6 xl:grid-cols-[520px_minmax(0,1fr)]">
+      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-10">
         <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
           <div className="h-1.5 w-full bg-emerald-500" />
           <div className="p-8">
@@ -159,38 +159,6 @@ export default function SuperadminAuditLogPage() {
             </div>
           </div>
         </section>
-
-        <SuperadminSectionCard>
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-800">Distribusi Node Global</p>
-            <span className="rounded-[4px] bg-slate-200 px-3 py-1.5 font-mono text-[13px] text-slate-700">{superadminAuditLogData.summary.activeNodes}</span>
-          </div>
-
-          <div className="relative mt-8 h-[200px] overflow-hidden rounded-[24px] bg-white">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(15,23,42,0.02),transparent_20%),radial-gradient(circle_at_70%_60%,rgba(15,23,42,0.03),transparent_22%),linear-gradient(to_right,transparent_0%,rgba(15,23,42,0.02)_50%,transparent_100%)]" />
-            <div className="absolute inset-x-10 top-1/2 h-px -translate-y-1/2 bg-slate-100" />
-            <div className="absolute left-[23%] top-[36%] h-5 w-8 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(16,185,129,0.55)]" />
-            <div className="absolute left-[33%] top-[58%] h-4 w-6 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(16,185,129,0.55)]" />
-            <div className="absolute left-[52%] top-[48%] flex h-6 w-6 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-500 shadow-[0_0_18px_rgba(16,185,129,0.35)]"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /></div>
-            <div className="absolute left-[71%] top-[30%] h-4 w-5 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(16,185,129,0.55)]" />
-            <div className="absolute left-[81%] top-[64%] h-5 w-8 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(16,185,129,0.55)]" />
-            <div className="absolute left-[18%] top-[42%] h-[2px] w-[16%] bg-emerald-100" />
-            <div className="absolute left-[37%] top-[54%] h-[2px] w-[14%] bg-emerald-100" />
-            <div className="absolute left-[56%] top-[44%] h-[2px] w-[14%] bg-emerald-100" />
-            <div className="absolute left-[74%] top-[57%] h-[2px] w-[10%] bg-emerald-100" />
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <div className="rounded-[18px] bg-white px-4 py-4">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Latency Rata-Rata</p>
-              <p className="mt-3 text-[36px] font-semibold tracking-[-0.04em] text-slate-900">{superadminAuditLogData.summary.averageLatency}</p>
-            </div>
-            <div className="rounded-[18px] bg-white px-4 py-4">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Block Time</p>
-              <p className="mt-3 text-[36px] font-semibold tracking-[-0.04em] text-slate-900">{superadminAuditLogData.summary.blockTime}</p>
-            </div>
-          </div>
-        </SuperadminSectionCard>
       </StaggerContainer>
 
       <ScrollReveal variant="fade-up" delay={200} duration={800}>

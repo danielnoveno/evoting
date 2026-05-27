@@ -79,9 +79,6 @@ export const superadminAdminStatuses = ['Semua Status', 'Aktif', 'Menunggu', 'No
 export const superadminAdminTabs = [
   { key: 'daftar', label: 'Daftar Admin' },
   { key: 'tambah', label: 'Tambah Admin' },
-  { key: 'semua', label: 'Semua' },
-  { key: 'aktif', label: 'Aktif' },
-  { key: 'menunggu', label: 'Menunggu' },
 ] as const
 export const superadminElectionFilters = ['Semua', 'Aktif', 'Selesai', 'Ditangguhkan'] as const
 

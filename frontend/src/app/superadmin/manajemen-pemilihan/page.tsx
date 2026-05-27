@@ -8,6 +8,7 @@ import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import {
+  SuperadminEmptyState,
   SuperadminFilterChip,
   SuperadminInteractiveCard,
   SuperadminShell,
@@ -80,115 +81,131 @@ export default function SuperadminElectionManagementPage() {
       </ScrollReveal>
 
       <AppSectionCard className="mt-8 bg-transparent border-0 shadow-none p-0 md:p-0">
-        <StaggerContainer stagger={100} variant="fade-up" duration={600} className="grid gap-6 xl:grid-cols-2 2xl:grid-cols-4">
-          {filteredElections.map((election) => (
-            <SuperadminInteractiveCard
-              key={election.id}
-              onClick={() => router.push(getCardTarget(election.id, election.status))}
-              className="p-6 flex flex-col h-full"
-            >
-              <div className="flex-1">
-                <div className="flex items-start justify-between gap-4">
-                  <span className="rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-[12px] text-slate-500">{election.code}</span>
-                  <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${getElectionTone(election.status)}`}>
-                    {election.status === 'Ditangguhkan' ? <AlertTriangle className="h-3.5 w-3.5" /> : <span className="h-2 w-2 rounded-full bg-current" />}
-                    {election.note}
-                  </span>
+        {isLoading ? (
+          <div className="rounded-[24px] border border-slate-200 bg-white px-6 py-10 text-center">
+            <p className="text-[16px] font-semibold text-slate-900">Memuat data pemilihan</p>
+            <p className="mx-auto mt-3 max-w-[520px] text-[15px] leading-7 text-slate-500">Mohon tunggu, sistem sedang mengambil data dari backend.</p>
+          </div>
+        ) : error ? (
+          <SuperadminEmptyState title="Data pemilihan belum dapat dimuat" description="Terjadi kendala saat mengambil data. Coba muat ulang halaman atau periksa koneksi backend." />
+        ) : filteredElections.length === 0 ? (
+          <SuperadminEmptyState
+            title={elections.length === 0 ? 'Belum ada data pemilihan' : 'Tidak ada pemilihan pada filter ini'}
+            description={elections.length === 0
+              ? 'Ruang pemilihan akan tampil di sini setelah proposal disetujui atau berhasil dideploy.'
+              : 'Coba pilih filter lain untuk melihat ruang pemilihan yang tersedia.'}
+          />
+        ) : (
+          <StaggerContainer stagger={100} variant="fade-up" duration={600} className="grid gap-6 xl:grid-cols-2 2xl:grid-cols-4">
+            {filteredElections.map((election) => (
+              <SuperadminInteractiveCard
+                key={election.id}
+                onClick={() => router.push(getCardTarget(election.id, election.status))}
+                className="p-6 flex flex-col h-full"
+              >
+                <div className="flex-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-[12px] text-slate-500">{election.code}</span>
+                    <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${getElectionTone(election.status)}`}>
+                      {election.status === 'Ditangguhkan' ? <AlertTriangle className="h-3.5 w-3.5" /> : <span className="h-2 w-2 rounded-full bg-current" />}
+                      {election.note}
+                    </span>
+                  </div>
+
+                  <h2 className="mt-5 max-w-[14ch] text-[22px] font-semibold leading-tight text-slate-900">{election.title}</h2>
+                  <p className={`mt-8 flex items-center gap-2 text-[15px] ${election.status === 'Ditangguhkan' ? 'text-red-600' : 'text-slate-800'}`}>
+                    <Clock3 className="h-4 w-4" />
+                    {election.phaseLabel}
+                  </p>
                 </div>
 
-                <h2 className="mt-5 max-w-[14ch] text-[22px] font-semibold leading-tight text-slate-900">{election.title}</h2>
-                <p className={`mt-8 flex items-center gap-2 text-[15px] ${election.status === 'Ditangguhkan' ? 'text-red-600' : 'text-slate-800'}`}>
-                  <Clock3 className="h-4 w-4" />
-                  {election.phaseLabel}
-                </p>
-              </div>
-
-              <div className="mt-6 grid grid-cols-2 gap-4 rounded-[20px] bg-slate-50 p-5">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Total Pemilih</p>
-                  <p className="mt-2 text-[18px] font-semibold text-slate-900">{election.totalVoters}</p>
+                <div className="mt-6 grid grid-cols-2 gap-4 rounded-[20px] bg-slate-50 p-5">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Total Pemilih</p>
+                    <p className="mt-2 text-[18px] font-semibold text-slate-900">{election.totalVoters}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Partisipasi</p>
+                    <p className="mt-2 text-[18px] font-semibold text-slate-900">{election.participation}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Partisipasi</p>
-                  <p className="mt-2 text-[18px] font-semibold text-slate-900">{election.participation}</p>
-                </div>
-              </div>
 
-              <div className="mt-8 flex gap-3">
-                {election.status === 'Ditangguhkan' ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        router.push(`/superadmin/manajemen-pemilihan/${election.id}`)
-                      }}
-                      className="flex-1 rounded-2xl bg-slate-200 px-4 py-3 text-[15px] font-medium text-slate-900 hover:bg-slate-300"
-                    >
-                      Lihat Laporan
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        updateElectionStatus(election.id, 'Aktif', 'Pemilihan dilanjutkan kembali')
-                      }}
-                      className="rounded-2xl bg-black px-5 py-3 text-[15px] font-medium text-white hover:bg-slate-800"
-                    >
-                      Resume
-                    </button>
-                  </>
-                ) : election.status === 'Aktif' ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        router.push(`/superadmin/manajemen-pemilihan/${election.id}/moderasi`)
-                      }}
-                      className="flex-1 rounded-2xl bg-black px-4 py-3 text-[15px] font-medium text-white hover:bg-slate-800"
-                    >
-                      Moderasi
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        updateElectionStatus(election.id, 'Ditangguhkan', 'Pemilihan ditangguhkan')
-                      }}
-                      className="rounded-2xl bg-slate-200 px-5 py-3 text-[15px] font-medium text-slate-900 hover:bg-slate-300"
-                    >
-                      Suspend
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        router.push(`/superadmin/manajemen-pemilihan/${election.id}`)
-                      }}
-                      className="flex-1 rounded-2xl bg-slate-200 px-4 py-3 text-[15px] font-medium text-slate-900 hover:bg-slate-300"
-                    >
-                      Lihat Laporan
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        showToast({ tone: 'info', title: 'Pemilihan selesai', description: 'Status final tidak dapat dimoderasi lagi.' })
-                      }}
-                      className="rounded-2xl bg-black px-5 py-3 text-[15px] font-medium text-white hover:bg-slate-800"
-                    >
-                      Final
-                    </button>
-                  </>
-                )}
-              </div>
-            </SuperadminInteractiveCard>
-          ))}
-        </StaggerContainer>
+                <div className="mt-8 flex gap-3">
+                  {election.status === 'Ditangguhkan' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          router.push(`/superadmin/manajemen-pemilihan/${election.id}`)
+                        }}
+                        className="flex-1 rounded-2xl bg-slate-200 px-4 py-3 text-[15px] font-medium text-slate-900 hover:bg-slate-300"
+                      >
+                        Lihat Laporan
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          updateElectionStatus(election.id, 'Aktif', 'Pemilihan dilanjutkan kembali')
+                        }}
+                        className="rounded-2xl bg-black px-5 py-3 text-[15px] font-medium text-white hover:bg-slate-800"
+                      >
+                        Resume
+                      </button>
+                    </>
+                  ) : election.status === 'Aktif' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          router.push(`/superadmin/manajemen-pemilihan/${election.id}/moderasi`)
+                        }}
+                        className="flex-1 rounded-2xl bg-black px-4 py-3 text-[15px] font-medium text-white hover:bg-slate-800"
+                      >
+                        Moderasi
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          updateElectionStatus(election.id, 'Ditangguhkan', 'Pemilihan ditangguhkan')
+                        }}
+                        className="rounded-2xl bg-slate-200 px-5 py-3 text-[15px] font-medium text-slate-900 hover:bg-slate-300"
+                      >
+                        Suspend
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          router.push(`/superadmin/manajemen-pemilihan/${election.id}`)
+                        }}
+                        className="flex-1 rounded-2xl bg-slate-200 px-4 py-3 text-[15px] font-medium text-slate-900 hover:bg-slate-300"
+                      >
+                        Lihat Laporan
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          showToast({ tone: 'info', title: 'Pemilihan selesai', description: 'Status final tidak dapat dimoderasi lagi.' })
+                        }}
+                        className="rounded-2xl bg-black px-5 py-3 text-[15px] font-medium text-white hover:bg-slate-800"
+                      >
+                        Final
+                      </button>
+                    </>
+                  )}
+                </div>
+              </SuperadminInteractiveCard>
+            ))}
+          </StaggerContainer>
+        )}
       </AppSectionCard>
     </SuperadminShell>
   )
