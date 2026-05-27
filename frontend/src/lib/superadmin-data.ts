@@ -37,7 +37,16 @@ export interface SuperadminProposalDetail {
   timeline: Array<{ id: string; title: string; actor: string; time: string }>
   documents: Array<{ id: string; name: string; meta: string }>
 }
-export interface SuperadminRiskAlert { id: string; title: string; description: string; actorLabel: string; actorValue: string; time: string; tone: 'danger' | 'warning' }
+export interface SuperadminRiskAlert { 
+  id: string; 
+  title: string; 
+  description: string; 
+  actorLabel: string; 
+  actorValue: string; 
+  time: string; 
+  tone: 'danger' | 'warning';
+  status: 'active' | 'resolved' | 'blocked';
+}
 export interface SuperadminPlatformSession { id: string; device: string; meta: string; status: string }
 export interface SuperadminAuditLogItem { id: string; block: string; eventLabel: string; title: string; timestamp: string; txHash: string; status: string; statusTone: 'verified' | 'syncing'; icon: 'proposal' | 'vote' | 'validator' }
 

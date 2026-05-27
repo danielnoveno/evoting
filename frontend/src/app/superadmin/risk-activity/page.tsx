@@ -12,11 +12,62 @@ import { superadminRiskData } from '@/lib/superadmin-data'
 import { useSuperadminRiskAlertsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
+import { analyzeRiskPatterns } from '@/lib/ai/risk-engine'
+
 export default function SuperadminRiskActivityPage() {
   const router = useRouter()
   const { showToast } = useToast()
-  const { alerts, setAlerts } = useSuperadminRiskAlertsStore()
+  const { alerts, metrics, setAlerts, isLoading, blockActor } = useSuperadminRiskAlertsStore()
   const [blockedAlertId, setBlockedAlertId] = useState<string | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [aiSummary, setAiSummary] = useState<string>('Menganalisis pola keamanan...')
+  const [isAiLoading, setIsAiLoading] = useState(false)
+
+  // Option A: Neural Logic Analysis
+  const analysis = analyzeRiskPatterns(alerts)
+
+  // Option B: Fetch Generative Summary
+  useEffect(() => {
+    const fetchAiSummary = async () => {
+      if (alerts.length === 0) {
+        setAiSummary('Sistem dalam kondisi stabil. Tidak ada aktivitas mencurigakan yang terdeteksi melalui analisis neural.')
+        return
+      }
+
+      setIsAiLoading(true)
+      try {
+        const res = await fetch('/api/ai/risk-summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ alerts, analysis })
+        })
+        const data = await res.json()
+        setAiSummary(data.summary || 'Gagal memuat ringkasan AI.')
+      } catch (err) {
+        setAiSummary('Terjadi kesalahan saat menghubungi Neural Engine.')
+      } finally {
+        setIsAiLoading(false)
+      }
+    }
+
+    if (!isLoading) {
+      fetchAiSummary()
+    }
+  }, [alerts, isLoading])
+
+  const getNeuralSummary = () => {
+    return {
+      status: analysis.riskLevel === 'low' ? 'Optimal' : 
+              analysis.riskLevel === 'medium' ? 'Waspada' :
+              analysis.riskLevel === 'high' ? 'Anomali Tinggi' : 'Kritis',
+      confidence: `${90 + (analysis.weightedScore % 10)}%`,
+      description: aiSummary,
+      tone: analysis.riskLevel === 'low' ? 'success' as const :
+            analysis.riskLevel === 'medium' ? 'warning' as const : 'danger' as const
+    }
+  }
+
+  const neuralSummary = getNeuralSummary()
 
   return (
     <SuperadminShell>
@@ -28,17 +79,39 @@ export default function SuperadminRiskActivityPage() {
       </ScrollReveal>
 
       <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-5 xl:grid-cols-3">
-        {superadminRiskData.metrics.map((metric) => (
-          <article key={metric.id} className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
-            <p className="text-[12px] uppercase tracking-[0.08em] text-slate-500">{metric.label}</p>
-            <div className="mt-5 flex items-end gap-3">
-              <p className={`text-[54px] font-semibold leading-none tracking-[-0.04em] ${metric.tone === 'danger' ? 'text-red-700' : 'text-slate-900'}`}>{metric.value}</p>
-              {metric.suffix ? <span className="pb-1 text-[18px] font-medium text-slate-800">{metric.suffix}</span> : null}
-              {metric.accent ? <span className="rounded-xl bg-red-50 px-2 py-1 text-[14px] font-semibold text-red-600">{metric.accent}</span> : null}
-            </div>
-            <p className={`mt-5 text-[15px] ${metric.tone === 'success' ? 'text-emerald-500' : 'text-slate-800'}`}>{metric.note}</p>
-          </article>
-        ))}
+        {superadminRiskData.metrics.map((metric) => {
+          // Sync metric value with real alerts count
+          let displayValue = metric.value
+          let displayNote = metric.note
+
+          if (metric.id === 'alerts') {
+            displayValue = alerts.length.toString()
+            displayNote = alerts.length > 0 ? `${alerts.filter(a => a.tone === 'danger').length} risiko tinggi terdeteksi` : 'Sistem terpantau aman'
+          } else if (metric.id === 'spaces') {
+            displayValue = metrics.spaces.toString()
+            displayNote = `${metrics.spaces} ruang pemilihan aktif`
+          } else if (metric.id === 'incidents') {
+            displayValue = metrics.incidents.toString()
+            displayNote = `${metrics.incidents} anomali telah ditangani`
+          }
+
+          return (
+            <article key={metric.id} className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+              <p className="text-[12px] uppercase tracking-[0.08em] text-slate-500">{metric.label}</p>
+              <div className="mt-5 flex items-end gap-3">
+                <p className={`text-[54px] font-semibold leading-none tracking-[-0.04em] ${
+                  (metric.id === 'alerts' && alerts.length > 0) ? 'text-red-700' : 'text-slate-900'
+                }`}>{displayValue}</p>
+                {metric.suffix ? <span className="pb-1 text-[18px] font-medium text-slate-800">{metric.suffix}</span> : null}
+                {metric.accent ? <span className="rounded-xl bg-red-50 px-2 py-1 text-[14px] font-semibold text-red-600">{metric.accent}</span> : null}
+              </div>
+              <p className={`mt-5 text-[15px] ${
+                (metric.id === 'alerts' && alerts.length > 0) ? 'text-red-600' : 
+                (metric.tone === 'success' || (metric.id === 'incidents' && metrics.incidents > 0) ? 'text-emerald-500' : 'text-slate-800')
+              }`}>{displayNote}</p>
+            </article>
+          )
+        })}
       </StaggerContainer>
 
       <ScrollReveal variant="fade-up" delay={200} duration={800}>
@@ -46,7 +119,14 @@ export default function SuperadminRiskActivityPage() {
         <div>
           <h2 className="text-[20px] font-semibold text-slate-900">Suspicious Activity Feed</h2>
           <div className="mt-6 space-y-5">
-            {alerts.length > 0 ? alerts.map((alert) => (
+            {isLoading ? (
+              <div className="flex h-40 items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-slate-50">
+                <div className="text-center">
+                  <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-800" />
+                  <p className="mt-2 text-[15px] text-slate-500">Menganalisis anomali terbaru...</p>
+                </div>
+              </div>
+            ) : alerts.length > 0 ? alerts.map((alert) => (
               <SuperadminInteractiveCard key={alert.id} onClick={() => router.push('/superadmin/audit-log')} className={`bg-slate-100 p-6 ${alert.tone === 'danger' ? 'border-l-4 border-red-600' : 'border-l-4 border-amber-500'}`}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex gap-4">
@@ -92,17 +172,40 @@ export default function SuperadminRiskActivityPage() {
             <AppSectionCard className="mt-4 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
               <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-5">
                 <p className="text-[16px] text-slate-700">Status Model</p>
-                <span className="rounded-xl bg-emerald-50 px-3 py-1 text-[14px] font-semibold text-emerald-500">{superadminRiskData.neuralSummary.status}</span>
+                <span className={`rounded-xl px-3 py-1 text-[14px] font-semibold ${
+                  neuralSummary.tone === 'success' ? 'bg-emerald-50 text-emerald-600' :
+                  neuralSummary.tone === 'danger' ? 'bg-red-50 text-red-600' :
+                  'bg-amber-50 text-amber-600'
+                }`}>
+                  {neuralSummary.status}
+                </span>
               </div>
               <div className="pt-5">
                 <div className="flex items-center justify-between gap-4 text-[15px] text-slate-700">
                   <span>Tingkat Kepercayaan</span>
-                  <span>{superadminRiskData.neuralSummary.confidence}</span>
+                  <span>{neuralSummary.confidence}</span>
                 </div>
                 <div className="mt-4 h-1.5 rounded-full bg-slate-200">
-                  <div className="h-1.5 w-[94%] rounded-full bg-black" />
+                  <div 
+                    className={`h-1.5 rounded-full transition-all duration-1000 ${
+                      neuralSummary.tone === 'success' ? 'bg-emerald-500' :
+                      neuralSummary.tone === 'danger' ? 'bg-red-600' :
+                      'bg-amber-500'
+                    }`} 
+                    style={{ width: neuralSummary.confidence }} 
+                  />
                 </div>
-                <p className="mt-6 text-[15px] leading-8 text-slate-800">{superadminRiskData.neuralSummary.description}</p>
+                <div className={`mt-6 transition-opacity duration-300 ${isAiLoading ? 'opacity-50' : 'opacity-100'}`}>
+                  {isAiLoading ? (
+                    <div className="space-y-2">
+                      <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
+                      <div className="h-4 w-5/6 animate-pulse rounded bg-slate-100" />
+                      <div className="h-4 w-4/6 animate-pulse rounded bg-slate-100" />
+                    </div>
+                  ) : (
+                    <p className="text-[15px] leading-8 text-slate-800">{neuralSummary.description}</p>
+                  )}
+                </div>
               </div>
             </AppSectionCard>
           </div>
@@ -115,12 +218,14 @@ export default function SuperadminRiskActivityPage() {
         open={blockedAlertId !== null}
         title="Blokir akses aktor ini?"
         description="Tinjau kembali detail alert sebelum melakukan pemblokiran permanen."
-        confirmLabel="Ya, Blokir"
+        confirmLabel={isProcessing ? 'Memproses...' : 'Ya, Blokir'}
         tone="danger"
         onCancel={() => setBlockedAlertId(null)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (blockedAlertId) {
-            setAlerts((current) => current.filter((alert) => alert.id !== blockedAlertId))
+            setIsProcessing(true)
+            await blockActor(blockedAlertId)
+            setIsProcessing(false)
           }
           showToast({ tone: 'success', title: 'Akses berhasil diblokir', description: 'Langkah mitigasi berhasil diterapkan pada alert terpilih.' })
           setBlockedAlertId(null)
