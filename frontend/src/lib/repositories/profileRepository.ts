@@ -8,6 +8,35 @@ import { RepositoryError } from '@/lib/repositories/errors'
 
 type ProfileRow = Database['app']['Tables']['app_profiles']['Row']
 type AdminRegistryRow = Database['app']['Tables']['admin_registry']['Row']
+type SupabaseErrorLike = {
+  code?: string
+  message?: string
+  details?: string
+}
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function getSupabaseErrorLike(error: unknown): SupabaseErrorLike {
+  if (!isObjectRecord(error)) return {}
+  return {
+    code: typeof error.code === 'string' ? error.code : undefined,
+    message: typeof error.message === 'string' ? error.message : undefined,
+    details: typeof error.details === 'string' ? error.details : undefined,
+  }
+}
+
+function isUniqueConstraintError(error: unknown, fieldName: string): boolean {
+  const { code, message, details } = getSupabaseErrorLike(error)
+  const joined = `${message ?? ''} ${details ?? ''}`.toLowerCase()
+  return code === '23505' && joined.includes(fieldName.toLowerCase())
+}
+
+function sameWalletAddress(left: string | null | undefined, right: string | null | undefined): boolean {
+  if (!left || !right) return false
+  return left.trim().toLowerCase() === right.trim().toLowerCase()
+}
 
 function mapProfileRow(row: ProfileRow): AppProfileRecord {
   return {
@@ -66,7 +95,8 @@ export async function getProfileByWalletAddress(walletAddress: string): Promise<
     .schema('app')
     .from('app_profiles')
     .select('*')
-    .eq('wallet_address', normalizedWallet)
+    .ilike('wallet_address', normalizedWallet)
+    .limit(1)
     .maybeSingle()
 
   if (error) throw new RepositoryError('Gagal memuat profil. Coba lagi.')
@@ -107,19 +137,6 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
 
   const user = await requireUser()
 
-  const { data: existingWalletOwner, error: ownerError } = await client
-    .schema('app')
-    .from('app_profiles')
-    .select('*')
-    .eq('wallet_address', normalizedWallet)
-    .maybeSingle()
-
-  if (ownerError) throw new RepositoryError('Gagal memeriksa kepemilikan wallet. Coba lagi.')
-
-  if (existingWalletOwner && existingWalletOwner.user_id !== user.id) {
-    throw new RepositoryError('Wallet ini sudah ditautkan ke akun kampus lain.')
-  }
-
   const { data: currentProfile, error: currentProfileError } = await client
     .schema('app')
     .from('app_profiles')
@@ -128,6 +145,25 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
     .maybeSingle()
 
   if (currentProfileError) throw new RepositoryError('Gagal memuat profil akun kampus. Coba lagi.')
+
+  if (currentProfile && !sameWalletAddress(currentProfile.wallet_address, normalizedWallet)) {
+    throw new RepositoryError(`Akun kampus ini sudah tertaut ke wallet ${currentProfile.wallet_address}. Sambungkan wallet tersebut atau hubungi admin bila perlu mengganti wallet.`)
+  }
+
+  const { data: existingWalletOwner, error: ownerError } = await client
+    .schema('app')
+    .from('app_profiles')
+    .select('*')
+    .ilike('wallet_address', normalizedWallet)
+    .limit(1)
+    .maybeSingle()
+
+  if (ownerError) throw new RepositoryError('Gagal memeriksa kepemilikan wallet. Coba lagi.')
+
+  if (existingWalletOwner && existingWalletOwner.user_id !== user.id) {
+    const ownerEmail = existingWalletOwner.email ? ` (${existingWalletOwner.email})` : ''
+    throw new RepositoryError(`Wallet ini sudah ditautkan ke akun kampus lain${ownerEmail}. Sambungkan wallet yang sesuai dengan akun kamu.`)
+  }
 
   const payload: Database['app']['Tables']['app_profiles']['Insert'] = {
     user_id: user.id,
@@ -145,7 +181,13 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
     .select('*')
     .single()
 
-  if (error) throw new RepositoryError('Gagal menautkan wallet ke akun kampus. Coba lagi.')
+  if (error) {
+    if (isUniqueConstraintError(error, 'wallet_address')) {
+      throw new RepositoryError('Wallet ini sudah tercatat untuk akun kampus lain. Ganti wallet atau masuk dengan akun kampus yang sesuai.')
+    }
+
+    throw new RepositoryError('Gagal menautkan wallet ke akun kampus. Coba lagi.')
+  }
   return mapProfileRow(data)
 }
 

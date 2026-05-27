@@ -22,13 +22,18 @@ import { useAccount, useDisconnect } from 'wagmi'
 import { AuthField } from '@/components/auth/auth-shell'
 import { useToast } from '@/components/ui/toast-provider'
 import { useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useEmailPasswordLogin, useEmailPasswordSignUp, useResetPassword } from '@/hooks/use-auth-session'
-import { useBindCurrentWallet, useCurrentProfile } from '@/hooks/use-profile'
+import { useBindCurrentWallet, useCurrentProfile, useProfileByWallet } from '@/hooks/use-profile'
 import { ScrollReveal, FloatingShape } from '@/components/public/parallax'
 import { AsciiBackground } from '@/components/public/ascii-background'
 import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
 import Link from 'next/link'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { WalletAddress } from '@/components/ui/wallet-address'
+
+function sameWalletAddress(left: string | null | undefined, right: string | null | undefined): boolean {
+  if (!left || !right) return false
+  return left.trim().toLowerCase() === right.trim().toLowerCase()
+}
 
 function PortalAdminContent() {
   const router = useRouter()
@@ -37,6 +42,7 @@ function PortalAdminContent() {
   const { disconnect } = useDisconnect()
   const authSessionQuery = useAuthSession()
   const currentProfileQuery = useCurrentProfile()
+  const connectedWalletProfileQuery = useProfileByWallet(address)
   const bindWalletMutation = useBindCurrentWallet()
   const microsoftLoginMutation = useMicrosoftCampusLogin()
   const googleLoginMutation = useGoogleLogin()
@@ -48,6 +54,7 @@ function PortalAdminContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState('')
+  const [bindError, setBindError] = useState('')
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot'>('login')
   const [redirectState, setRedirectState] = useState<{
     target: string
@@ -69,9 +76,23 @@ function PortalAdminContent() {
 
   const authSession = authSessionQuery.data
   const currentProfile = currentProfileQuery.data
-  const isWalletBound = Boolean(address && currentProfile?.walletAddress === address)
-  const completedSteps = (isConnected ? 1 : 0) + (authSession ? 1 : 0)
-  const currentStepLabel = !isConnected ? 'Sambungkan dompet digital' : !authSession ? 'Verifikasi admin' : 'Akses siap'
+  const connectedWalletProfile = connectedWalletProfileQuery.data
+  const isWalletBound = sameWalletAddress(currentProfile?.walletAddress, address)
+  const accountHasDifferentWallet = Boolean(address && currentProfile?.walletAddress && !isWalletBound)
+  const connectedWalletOwnedByOther = Boolean(
+    authSession?.user?.id &&
+    connectedWalletProfile?.userId &&
+    connectedWalletProfile.userId !== authSession.user.id,
+  )
+  const bindingBlocked = accountHasDifferentWallet || connectedWalletOwnedByOther
+  const bindingBlockMessage = accountHasDifferentWallet
+    ? `Akun ${authSession?.user?.email ?? 'ini'} sudah tertaut ke wallet ${currentProfile?.walletAddress}. Sambungkan wallet tersebut untuk masuk.`
+    : connectedWalletOwnedByOther
+      ? `Wallet tersambung sudah tertaut ke akun ${connectedWalletProfile?.email ?? 'kampus lain'}. Ganti wallet atau masuk dengan akun yang sesuai.`
+      : ''
+  const isAdminAccessValidated = Boolean(authSession && isWalletBound)
+  const completedSteps = (isConnected ? 1 : 0) + (isAdminAccessValidated ? 1 : 0)
+  const currentStepLabel = !isConnected ? 'Sambungkan dompet digital' : !authSession ? 'Verifikasi admin' : !isWalletBound ? 'Validasi otoritas' : 'Akses siap'
 
   useEffect(() => {
     if (mounted && isConnected && authSession && isWalletBound) {
@@ -108,11 +129,29 @@ function PortalAdminContent() {
 
   const handleBind = () => {
     if (!address || !authSession?.user?.email) return
+    setBindError('')
+
+    if (bindingBlockMessage) {
+      setBindError(bindingBlockMessage)
+      showToast({ tone: 'error', title: 'Dompet dan Akun Tidak Cocok', description: bindingBlockMessage })
+      return
+    }
+
     bindWalletMutation.mutate(
       {
         walletAddress: address,
         email: authSession.user.email,
         displayName: 'Administrator'
+      },
+      {
+        onSuccess: () => {
+          showToast({ tone: 'success', title: 'Akses Berhasil Diaktifkan', description: 'Dompet digital dan akun kampus sudah sesuai.' })
+        },
+        onError: (err) => {
+          const message = getRepositoryErrorMessage(err, 'Dompet belum dapat ditautkan. Coba lagi.')
+          setBindError(message)
+          showToast({ tone: 'error', title: 'Validasi Gagal', description: message })
+        }
       }
     )
   }
@@ -241,17 +280,17 @@ function PortalAdminContent() {
                       {!isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
                     </div>
 
-                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${isConnected && !authSession ? 'bg-slate-100' : 'bg-white'} ${!isConnected ? 'opacity-50' : ''}`}>
-                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${authSession ? 'bg-emerald-50 text-emerald-600' : isConnected ? 'bg-[#0F172A] text-white' : 'bg-slate-100 text-slate-400'}`}>
-                        {authSession ? <Check className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
+                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${isConnected && !isAdminAccessValidated ? 'bg-slate-100' : 'bg-white'} ${!isConnected ? 'opacity-50' : ''}`}>
+                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isAdminAccessValidated ? 'bg-emerald-50 text-emerald-600' : isConnected ? 'bg-[#0F172A] text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        {isAdminAccessValidated ? <Check className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
                         <h2 className={isConnected ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Verifikasi Admin</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {authSession ? 'Akun institusi sudah terverifikasi.' : 'Validasi akun kampus untuk memastikan otoritas admin.'}
+                          {isAdminAccessValidated ? 'Akses admin sudah tervalidasi.' : authSession ? 'Akun kampus sudah masuk. Cocokkan dompet untuk membuka akses.' : 'Validasi akun kampus untuk memastikan otoritas admin.'}
                         </p>
                       </div>
-                      {isConnected && !authSession && <ChevronRight className="h-4 w-4 text-slate-400" />}
+                      {isConnected && !isAdminAccessValidated && <ChevronRight className="h-4 w-4 text-slate-400" />}
                     </div>
                   </div>
                 </aside>
@@ -420,10 +459,17 @@ function PortalAdminContent() {
                       <div className="mt-8 w-full">
                         <h2 className="text-[20px] font-semibold text-slate-900">Validasi Otoritas</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                          Dompet digital dan akun kampus sudah siap. Tautkan keduanya untuk membuka dashboard admin sesuai peran akun.
+                          Pastikan dompet digital yang tersambung adalah dompet yang sudah terdaftar untuk akun kampus ini.
                         </p>
 
                         <div className="mt-6 space-y-3">
+                          {bindingBlocked && (
+                            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                              <p className="text-[12px] font-semibold text-red-700">Dompet dan akun tidak cocok</p>
+                              <p className="mt-2 text-[12px] leading-5 text-red-600">{bindingBlockMessage}</p>
+                            </div>
+                          )}
+
                           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Dompet digital</p>
                             <WalletAddress
@@ -435,6 +481,29 @@ function PortalAdminContent() {
                             <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Akun Kampus</p>
                             <p className="mt-1 truncate text-[13px] font-semibold text-slate-900" title={authSession.user?.email}>{authSession.user?.email}</p>
                           </div>
+
+                          {currentProfile?.walletAddress && !isWalletBound && (
+                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-amber-700">Wallet terdaftar untuk akun ini</p>
+                              <WalletAddress
+                                address={currentProfile.walletAddress}
+                                className="mt-1 block font-mono text-[12px] font-semibold text-amber-900"
+                              />
+                            </div>
+                          )}
+
+                          {connectedWalletOwnedByOther && connectedWalletProfile?.email && (
+                            <div className="rounded-lg border border-slate-100 bg-white p-4">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Pemilik wallet tersambung</p>
+                              <p className="mt-1 truncate text-[13px] font-semibold text-slate-900" title={connectedWalletProfile.email}>{connectedWalletProfile.email}</p>
+                            </div>
+                          )}
+
+                          {bindError && (
+                            <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-[12px] leading-5 text-red-600">
+                              {bindError}
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -476,7 +545,7 @@ function PortalAdminContent() {
                     {isConnected && authSession && !isWalletBound && (
                       <button
                         onClick={handleBind}
-                        disabled={bindWalletMutation.isPending}
+                        disabled={bindWalletMutation.isPending || bindingBlocked}
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
                       >
                         {bindWalletMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}

@@ -21,13 +21,18 @@ import { useAccount, useDisconnect } from 'wagmi'
 import { AuthField } from '@/components/auth/auth-shell'
 import { useToast } from '@/components/ui/toast-provider'
 import { useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useEmailPasswordLogin, useEmailPasswordSignUp } from '@/hooks/use-auth-session'
-import { useBindCurrentWallet, useCurrentProfile } from '@/hooks/use-profile'
+import { useBindCurrentWallet, useCurrentProfile, useProfileByWallet } from '@/hooks/use-profile'
 import { ScrollReveal, FloatingShape } from '@/components/public/parallax'
 import { AsciiBackground } from '@/components/public/ascii-background'
 import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
 import Link from 'next/link'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { WalletAddress } from '@/components/ui/wallet-address'
+
+function sameWalletAddress(left: string | null | undefined, right: string | null | undefined): boolean {
+  if (!left || !right) return false
+  return left.trim().toLowerCase() === right.trim().toLowerCase()
+}
 
 function resolveRedirectTarget(redirectParam: string | null) {
   if (redirectParam?.startsWith('/')) return redirectParam
@@ -42,6 +47,7 @@ function ConnectWalletContent() {
   const { disconnect } = useDisconnect()
   const authSessionQuery = useAuthSession()
   const currentProfileQuery = useCurrentProfile()
+  const connectedWalletProfileQuery = useProfileByWallet(address)
   const bindWalletMutation = useBindCurrentWallet()
   const microsoftLoginMutation = useMicrosoftCampusLogin()
   const googleLoginMutation = useGoogleLogin()
@@ -55,6 +61,7 @@ function ConnectWalletContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState('')
+  const [bindError, setBindError] = useState('')
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
 
   useEffect(() => { setMounted(true) }, [])
@@ -87,7 +94,20 @@ function ConnectWalletContent() {
 
   const authSession = authSessionQuery.data
   const currentProfile = currentProfileQuery.data
-  const isWalletBound = Boolean(address && currentProfile?.walletAddress === address)
+  const connectedWalletProfile = connectedWalletProfileQuery.data
+  const isWalletBound = sameWalletAddress(currentProfile?.walletAddress, address)
+  const accountHasDifferentWallet = Boolean(address && currentProfile?.walletAddress && !isWalletBound)
+  const connectedWalletOwnedByOther = Boolean(
+    authSession?.user?.id &&
+    connectedWalletProfile?.userId &&
+    connectedWalletProfile.userId !== authSession.user.id,
+  )
+  const bindingBlocked = accountHasDifferentWallet || connectedWalletOwnedByOther
+  const bindingBlockMessage = accountHasDifferentWallet
+    ? `Akun ${authSession?.user?.email ?? 'ini'} sudah tertaut ke wallet ${currentProfile?.walletAddress}. Sambungkan wallet tersebut untuk melanjutkan.`
+    : connectedWalletOwnedByOther
+      ? `Wallet tersambung sudah tertaut ke akun ${connectedWalletProfile?.email ?? 'kampus lain'}. Ganti wallet atau masuk dengan akun yang sesuai.`
+      : ''
   const completedSteps = (isConnected ? 1 : 0) + (authSession ? 1 : 0) + (isWalletBound ? 1 : 0)
   const currentStepLabel = !isConnected
     ? '1. Sambungkan dompet digital'
@@ -111,6 +131,14 @@ function ConnectWalletContent() {
 
   const handleBind = () => {
     if (!address || !authSession?.user?.email) return
+    setBindError('')
+
+    if (bindingBlockMessage) {
+      setBindError(bindingBlockMessage)
+      showToast({ tone: 'error', title: 'Dompet dan Akun Tidak Cocok', description: bindingBlockMessage })
+      return
+    }
+
     bindWalletMutation.mutate(
       {
         walletAddress: address,
@@ -120,6 +148,11 @@ function ConnectWalletContent() {
       {
         onSuccess: () => {
           showToast({ tone: 'success', title: 'Akses Berhasil Diaktifkan', description: 'Dompet digital dan akun kampus sudah terhubung.' })
+        },
+        onError: (err) => {
+          const message = getRepositoryErrorMessage(err, 'Dompet belum dapat ditautkan. Coba lagi.')
+          setBindError(message)
+          showToast({ tone: 'error', title: 'Validasi Gagal', description: message })
         }
       }
     )
@@ -428,6 +461,13 @@ function ConnectWalletContent() {
                         </p>
 
                         <div className="mt-6 space-y-3">
+                          {bindingBlocked && (
+                            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                              <p className="text-[12px] font-semibold text-red-700">Dompet dan akun tidak cocok</p>
+                              <p className="mt-2 text-[12px] leading-5 text-red-600">{bindingBlockMessage}</p>
+                            </div>
+                          )}
+
                           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Dompet digital</p>
                             <WalletAddress
@@ -439,6 +479,22 @@ function ConnectWalletContent() {
                             <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Akun Mahasiswa</p>
                             <p className="mt-1 truncate text-[13px] font-semibold text-slate-900" title={authSession.user?.email}>{authSession.user?.email}</p>
                           </div>
+
+                          {currentProfile?.walletAddress && !isWalletBound && (
+                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-amber-700">Wallet terdaftar untuk akun ini</p>
+                              <WalletAddress
+                                address={currentProfile.walletAddress}
+                                className="mt-1 block font-mono text-[12px] font-semibold text-amber-900"
+                              />
+                            </div>
+                          )}
+
+                          {bindError && (
+                            <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-[12px] leading-5 text-red-600">
+                              {bindError}
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -478,7 +534,7 @@ function ConnectWalletContent() {
                     {isConnected && authSession && !isWalletBound && (
                       <button
                         onClick={handleBind}
-                        disabled={bindWalletMutation.isPending}
+                        disabled={bindWalletMutation.isPending || bindingBlocked}
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
                       >
                         {bindWalletMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
