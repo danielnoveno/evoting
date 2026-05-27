@@ -16,7 +16,7 @@ const categories = [
   {
     key: 'keamanan',
     title: 'Keamanan',
-    description: 'Bagaimana kriptografi commit-reveal menjaga kerahasiaan pilihan Anda.',
+    description: 'Mengapa pilihanmu dikunci dulu sebelum dihitung, tanpa istilah teknis yang rumit.',
     icon: ShieldCheck,
   },
   {
@@ -30,18 +30,18 @@ const categories = [
 const faqs = [
   {
     id: 'faq-1',
-    question: 'Apa bedanya fase commit dan reveal?',
-    answer: 'Fase commit menyimpan suara dalam bentuk hash terenkripsi, sedangkan fase reveal membuka suara yang sama agar dapat dihitung. Urutan ini menjaga kerahasiaan pilihan sampai waktu yang tepat.',
+    question: 'Kenapa suara harus disimpan dulu lalu dikonfirmasi lagi?',
+    answer: 'Tahap pertama mengunci pilihanmu agar tetap rahasia. Tahap kedua mencocokkan dan mengesahkan pilihan yang sama agar bisa dihitung. Jadi suara tidak dibuka terlalu cepat dan tidak bisa diganti sembarangan.',
   },
   {
     id: 'faq-2',
     question: 'Mengapa saya harus membuka dari browser yang sama?',
-    answer: 'Data salt dan commit disimpan lokal di perangkat. Membuka dari browser yang sama membantu memastikan data reveal tetap tersedia saat Anda melanjutkan proses voting.',
+    answer: 'Browser menyimpan kode rahasia kecil untuk mencocokkan pilihanmu nanti. Kalau pindah browser atau menghapus data browser, kode itu bisa hilang dan konfirmasi suara bisa gagal.',
   },
   {
     id: 'faq-3',
-    question: 'Bagaimana jika saya belum sempat reveal?',
-    answer: 'Jika fase reveal masih dibuka, masuk ke dashboard pemilih lalu lanjutkan dari kartu pemilihan terkait. Jika fase sudah berakhir, hanya admin yang dapat memberikan informasi tindak lanjut.',
+    question: 'Bagaimana jika saya belum sempat konfirmasi suara?',
+    answer: 'Jika tahap konfirmasi masih dibuka, masuk ke dashboard pemilih lalu lanjutkan dari kartu pemilihan terkait. Jika tahapnya sudah berakhir, hubungi admin untuk informasi tindak lanjut.',
   },
 ]
 
@@ -75,7 +75,7 @@ export default function VoterHelpPage() {
       <section className="max-w-4xl">
         <h1 className="text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[42px] md:text-[56px]">Pusat Bantuan Voter</h1>
         <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
-          Semua hal penting tentang proses voting berbasis blockchain dalam bahasa yang sederhana, aman, dan mudah diikuti.
+          Semua hal penting tentang proses voting dijelaskan dengan bahasa sederhana, aman, dan mudah diikuti.
         </p>
 
         <div className="mt-8 flex h-16 items-center gap-4 rounded-[24px] bg-slate-100 px-4 sm:px-5">
@@ -83,7 +83,7 @@ export default function VoterHelpPage() {
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Cari panduan, istilah teknis, atau kendala..."
+            placeholder="Cari panduan memilih, akun, atau kendala..."
             className="h-full w-full bg-transparent text-[16px] text-slate-900 outline-none placeholder:text-slate-400"
           />
         </div>
@@ -116,7 +116,7 @@ export default function VoterHelpPage() {
             </div>
             <div>
               <h3 className="text-[24px] font-semibold text-slate-900">Bukti Suara & Verifikasi</h3>
-              <p className="mt-3 text-[15px] leading-8 text-slate-800">Pelajari cara menggunakan hash blockchain untuk memverifikasi bahwa suara Anda telah tercatat tanpa membuka identitas pemilih.</p>
+              <p className="mt-3 text-[15px] leading-8 text-slate-800">Pelajari cara mengecek bukti bahwa suara Anda telah tercatat tanpa membuka identitas pemilih.</p>
             </div>
           </div>
           <ExternalLink className="hidden h-5 w-5 text-slate-400 md:block" />
@@ -126,14 +126,14 @@ export default function VoterHelpPage() {
 
       <ScrollReveal variant="fade-up" delay={150} duration={800}>
       <section className="mt-6 rounded-[32px] bg-[#161f35] p-8 text-white">
-          <h3 className="text-[26px] font-semibold text-white sm:text-[32px]">Alur Memilih Commit-Reveal</h3>
-        <p className="mt-4 text-[16px] leading-8 text-slate-300">Sistem menggunakan dua tahap agar integritas suara terjaga dan pilihan tidak terlihat sebelum waktunya.</p>
+          <h3 className="text-[26px] font-semibold text-white sm:text-[32px]">Alur Memilih yang Mudah Diikuti</h3>
+        <p className="mt-4 text-[16px] leading-8 text-slate-300">Intinya: pilih dulu, simpan aman, datang lagi untuk konfirmasi, lalu lihat hasil.</p>
         <div className="mt-10 grid gap-8 md:grid-cols-2 xl:grid-cols-4">
           {[
-            ['Pilih Kandidat', 'Tentukan pilihan dari daftar kandidat resmi.'],
-            ['Kirim Commit', 'Suara disimpan sebagai hash terenkripsi ke blockchain.'],
-            ['Tunggu Fase', 'Admin membuka reveal setelah periode commit selesai.'],
-            ['Buka Reveal', 'Suara dibuka dan langsung dihitung pada hasil akhir.'],
+            ['Pilih kandidat', 'Tentukan satu pilihan dari daftar kandidat resmi.'],
+            ['Simpan pilihan', 'Pilihan dikunci dulu supaya tetap rahasia.'],
+            ['Tunggu konfirmasi', 'Admin membuka tahap konfirmasi setelah waktu memilih selesai.'],
+            ['Konfirmasi suara', 'Suaramu disahkan dan masuk ke hasil akhir.'],
           ].map(([title, body], index) => (
             <article key={title}>
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[16px] font-semibold text-slate-900">{index + 1}</div>

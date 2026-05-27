@@ -47,7 +47,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         blockNumber: Number(receipt.blockNumber),
         gasUsed: Number(receipt.gasUsed),
         createdAt: new Date().toISOString(),
-        statusLabel: 'Reveal tervalidasi',
+        statusLabel: 'Suara disahkan',
       })
       // Clear commitment since it's used
       clearVoteCommitment(params.id)
@@ -81,21 +81,21 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
       <VoterShell>
         <VoterStepper
           steps={[
-            { label: 'pilih kandidat', done: true },
-            { label: 'commit', done: true },
-            { label: 'reveal', active: true },
-            { label: 'result' },
+            { label: 'Pilih kandidat', description: 'Pilih satu nama', done: true },
+            { label: 'Simpan pilihan', description: 'Kunci pilihanmu', done: true },
+            { label: 'Konfirmasi suara', description: 'Sahkan pilihanmu', active: true },
+            { label: 'Lihat hasil', description: 'Cek hasil akhir' },
           ]}
         />
         <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h1 className="text-[20px] font-semibold text-slate-900">Commit belum ditemukan</h1>
-          <p className="mt-2 text-[14px] leading-7 text-slate-800">Silakan kirim commit terlebih dahulu agar halaman reveal bisa digunakan.</p>
+          <h1 className="text-[20px] font-semibold text-slate-900">Pilihan belum tersimpan</h1>
+          <p className="mt-2 text-[14px] leading-7 text-slate-800">Silakan pilih kandidat dan simpan pilihan terlebih dahulu sebelum mengesahkan suara.</p>
           <Link 
             href={`/pemilih/pemilihan/${params.id}/commit`} 
             className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none"
-            aria-label="Menuju ke halaman Kirim Commit"
+            aria-label="Menuju ke halaman simpan pilihan"
           >
-            Kembali ke Commit
+            Simpan Pilihan Dulu
           </Link>
         </section>
       </VoterShell>
@@ -113,16 +113,16 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
 
   const stepState = election.revealProof || hasRevealedOnChain
     ? [
-        { label: 'pilih kandidat', done: true },
-        { label: 'commit', done: true },
-        { label: 'reveal', done: true },
-        { label: 'result', active: true },
+        { label: 'Pilih kandidat', description: 'Pilih satu nama', done: true },
+        { label: 'Simpan pilihan', description: 'Kunci pilihanmu', done: true },
+        { label: 'Konfirmasi suara', description: 'Sahkan pilihanmu', done: true },
+        { label: 'Lihat hasil', description: 'Cek hasil akhir', active: true },
       ]
     : [
-        { label: 'pilih kandidat', done: true },
-        { label: 'commit', done: true },
-        { label: 'reveal', active: true },
-        { label: 'result' },
+        { label: 'Pilih kandidat', description: 'Pilih satu nama', done: true },
+        { label: 'Simpan pilihan', description: 'Kunci pilihanmu', done: true },
+        { label: 'Konfirmasi suara', description: 'Sahkan pilihanmu', active: true },
+        { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
 
   return (
@@ -141,7 +141,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
           Konfirmasi Suara Anda
         </h1>
         <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-slate-600">
-          Sistem akan menggunakan kode rahasia yang tersimpan di browser ini untuk membuka komitmen suara Anda di blockchain Base Sepolia.
+          Sistem akan memakai kode rahasia yang tersimpan di browser ini untuk memastikan suara yang dihitung adalah suara yang sama dengan pilihanmu tadi.
         </p>
 
         {writeError && (
@@ -151,8 +151,8 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
               <h2 className="text-[15px] font-semibold text-red-900">Gagal konfirmasi suara</h2>
               <p className="mt-1 text-[13px] text-red-800 leading-relaxed">
                 {writeError.message.includes('CommitmentMismatch') 
-                  ? 'Kode rahasia tidak cocok dengan komitmen yang tersimpan di blockchain.' 
-                  : 'Terjadi kesalahan saat mengirim transaksi. Pastikan saldo Sepolia ETH mencukupi.'}
+                  ? 'Kode rahasia tidak cocok dengan pilihan yang sebelumnya disimpan.' 
+                  : 'Terjadi kesalahan saat mengesahkan suara. Pastikan dompet digitalmu siap dan memiliki saldo uji coba yang cukup.'}
               </p>
             </div>
           </section>
@@ -160,13 +160,13 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
 
         {!contractAddress ? (
           <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-[13px] leading-7 text-amber-900">
-            Smart contract untuk pemilihan ini belum tersedia di Supabase. Tombol reveal dinonaktifkan agar website tidak membuat bukti palsu.
+            Data resmi untuk pemilihan ini belum lengkap, jadi tombol konfirmasi dinonaktifkan agar website tidak menampilkan bukti palsu.
           </section>
         ) : null}
 
         <div className="mt-10">
           <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 mb-2">
-            Kode Rahasia (On-Device)
+            Kode Rahasia di Browser Ini
           </label>
           <div className="relative flex items-center">
             <LockKeyhole className="absolute left-4 h-4.5 w-4.5 text-slate-400" />
@@ -182,7 +182,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         <div className="mt-6 flex items-start gap-3 rounded-xl border-l-4 border-amber-400 bg-amber-50 p-4">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
           <p className="text-[13px] font-bold leading-relaxed text-amber-900">
-            Pastikan Anda menggunakan browser yang sama. Jika data lokal terhapus, Anda tidak dapat mengkonfirmasi suara ini.
+            Pastikan kamu menggunakan browser yang sama. Jika data browser terhapus, suara ini bisa gagal dikonfirmasi.
           </p>
         </div>
 
@@ -196,12 +196,12 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
             {isWritePending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Menunggu Wallet...
+                Menunggu persetujuan...
               </>
             ) : isConfirming ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Memvalidasi...
+                Mengesahkan suara...
               </>
             ) : (
               'Konfirmasi Suara Sekarang'
@@ -220,10 +220,10 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         <article className="rounded-[24px] border border-slate-200 bg-slate-50 p-6 shadow-sm">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4.5 w-4.5 text-slate-700" />
-            <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-700">Hash Komitmen di Blockchain</h2>
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-700">Kode bukti pilihan</h2>
           </div>
           <p className="mt-4 break-all font-mono text-[12px] leading-relaxed text-slate-500">
-            {election.commitmentHash ?? savedCommitment?.commitment ?? 'Belum ada hash komitmen.'}
+            {election.commitmentHash ?? savedCommitment?.commitment ?? 'Belum ada kode bukti.'}
           </p>
         </article>
 
@@ -254,7 +254,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
       <ConfirmDialog
         open={confirmOpen}
         title="Kirim konfirmasi suara sekarang?"
-        description="Pilihan kandidat dan kode rahasia Anda akan dikirim untuk memvalidasi komitmen suara yang sudah tersimpan di Base Sepolia."
+        description="Pilihan kandidat dan kode rahasia akan dicocokkan. Jika cocok, suaramu masuk ke hasil akhir."
         confirmLabel="Ya, Konfirmasi Suara"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleReveal}

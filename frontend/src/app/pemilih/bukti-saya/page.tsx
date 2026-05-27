@@ -95,7 +95,7 @@ export default function VoterProofPage() {
             </div>
 
             <div className="mt-8 rounded-[24px] bg-slate-100 p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Hash transaksi</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kode transaksi</p>
               <p className="mt-4 overflow-hidden break-all rounded-2xl bg-white px-4 py-4 font-mono text-[12px] text-slate-700 sm:text-[13px]">
                 {selectedElection.revealProof?.txHash ?? selectedElection.commitProof?.txHash ?? 'Belum ada transaksi'}
               </p>
@@ -112,7 +112,7 @@ export default function VoterProofPage() {
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Gas Terpakai</p>
                   <p className="mt-2 text-[18px] font-semibold text-slate-900">
                     {(selectedElection.revealProof?.gasUsed ?? selectedElection.commitProof?.gasUsed) == null
-                      ? 'Tidak disimpan indexer'
+                      ? 'Belum tersedia'
                       : formatNumber(selectedElection.revealProof?.gasUsed ?? selectedElection.commitProof?.gasUsed ?? 0)}
                   </p>
                 </div>
@@ -128,13 +128,13 @@ export default function VoterProofPage() {
         <article className="rounded-[32px] bg-slate-100 p-8">
           <h2 className="text-[26px] font-semibold text-slate-900 sm:text-[32px]">Bagaimana cara verifikasi?</h2>
           <p className="mt-4 max-w-3xl text-[16px] leading-8 text-slate-800">
-            Setiap bukti suara menyertakan hash transaksi yang dapat Anda cocokkan sendiri melalui penjelajah blockchain publik.
+            Setiap bukti suara punya kode transaksi. Kode ini bisa kamu cocokkan sendiri lewat Basescan jika ingin memastikan statusnya.
           </p>
           <ol className="mt-8 space-y-4">
             {[
-              'Salin transaction hash dari kartu bukti di atas.',
-              'Buka tautan Basescan untuk mencari transaksi tersebut.',
-              'Pastikan status transaksi menunjukkan sukses dan detail block sesuai.',
+              'Salin kode transaksi dari kartu bukti di atas.',
+              'Buka tautan Basescan, lalu cocokkan kode tersebut.',
+              'Pastikan statusnya sukses dan waktu/nomor bloknya sesuai.',
             ].map((item, index) => (
               <li key={item} className="flex gap-4 text-[16px] leading-8 text-slate-700">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[12px] font-semibold text-white">{index + 1}</span>

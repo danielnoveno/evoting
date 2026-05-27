@@ -58,8 +58,8 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   useEffect(() => {
     if (isConfirmed && hash && receipt) {
       showToast({
-        title: 'Komitmen Berhasil',
-        description: 'Suara Anda telah dicatat di blockchain.',
+        title: 'Pilihan Berhasil Disimpan',
+        description: 'Suaramu sudah dikunci dengan aman.',
         tone: 'success',
       })
       actions.commitVote(params.id, savedCommitment?.commitment, {
@@ -67,7 +67,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         blockNumber: Number(receipt.blockNumber),
         gasUsed: Number(receipt.gasUsed),
         createdAt: new Date().toISOString(),
-        statusLabel: 'Commit tersimpan',
+        statusLabel: 'Pilihan tersimpan',
       })
     }
   }, [isConfirmed, hash, receipt, params.id, actions, showToast, savedCommitment?.commitment])
@@ -108,16 +108,16 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
 
   const stepState = commitProof
     ? [
-        { label: 'pilih kandidat', done: true },
-        { label: 'commit', done: true },
-        { label: 'reveal' },
-        { label: 'result' },
+        { label: 'Pilih kandidat', description: 'Pilih satu nama', done: true },
+        { label: 'Simpan pilihan', description: 'Kunci pilihanmu', done: true },
+        { label: 'Konfirmasi suara', description: 'Datang lagi nanti' },
+        { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
     : [
-        { label: 'pilih kandidat', done: true },
-        { label: 'commit', active: true },
-        { label: 'reveal' },
-        { label: 'result' },
+        { label: 'Pilih kandidat', description: 'Pilih satu nama', done: true },
+        { label: 'Simpan pilihan', description: 'Kunci pilihanmu', active: true },
+        { label: 'Konfirmasi suara', description: 'Datang lagi nanti' },
+        { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
 
   if ((!selectedCandidate || !savedCommitment) && !commitProof && !hasCommittedOnChain) {
@@ -127,7 +127,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h1 className="text-[20px] font-semibold text-slate-900">Data pilihan belum siap</h1>
           <p className="mt-2 text-[14px] leading-7 text-slate-800">
-            Pilih kandidat terlebih dahulu dari halaman pilih kandidat sebelum masuk ke tahap commit.
+            Pilih kandidat terlebih dahulu sebelum suara bisa disimpan dengan aman.
           </p>
           <Link
             href={`/pemilih/pemilihan/${params.id}/pilih-kandidat`}
@@ -158,9 +158,9 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
             </div>
           </div>
 
-          <h1 className="mt-5 text-center text-[24px] font-semibold text-slate-900">Komitmen suara berhasil dikirim</h1>
+          <h1 className="mt-5 text-center text-[24px] font-semibold text-slate-900">Pilihan berhasil disimpan aman</h1>
           <p className="mx-auto mt-3 max-w-2xl text-center text-[14px] leading-7 text-slate-700">
-            Pilihan Anda sudah dicatat sebagai komitmen suara di blockchain. Gunakan browser dan perangkat yang sama saat fase konfirmasi suara dibuka.
+            Pilihanmu sudah dikunci sebagai bukti suara. Gunakan browser dan perangkat yang sama saat waktunya mengesahkan suara dibuka.
           </p>
 
           <div className="mt-8 grid gap-4 xl:grid-cols-2">
@@ -171,16 +171,16 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
                   {selectedCandidate ? selectedCandidate.name.slice(0, 2).toUpperCase() : 'VC'}
                 </div>
                 <div>
-                  <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate?.name ?? 'Commit terdeteksi di indexer'}</h2>
-                  <p className="mt-1 text-[14px] text-slate-600">{selectedCandidate?.vision ?? 'Detail kandidat asli tetap mengikuti data lokal browser dan baru dibuka saat reveal.'}</p>
+                  <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate?.name ?? 'Pilihan tersimpan terdeteksi'}</h2>
+                  <p className="mt-1 text-[14px] text-slate-600">{selectedCandidate?.vision ?? 'Detail kandidat asli tetap mengikuti data di browser dan baru dibuka saat konfirmasi suara.'}</p>
                 </div>
               </div>
             </article>
 
             <article className="rounded-2xl bg-[#0F172A] p-5 text-white">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Hash komitmen (On-Chain)</p>
-              <p className="mt-4 break-all font-mono text-[12px] leading-6 text-slate-200">{election.commitmentHash ?? savedCommitment?.commitment ?? 'Hash commit terdeteksi oleh indexer.'}</p>
-              <p className="mt-4 text-[13px] leading-6 text-slate-300">Bukti ini tersimpan secara permanen di Base Sepolia.</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Kode bukti suara</p>
+              <p className="mt-4 break-all font-mono text-[12px] leading-6 text-slate-200">{election.commitmentHash ?? savedCommitment?.commitment ?? 'Kode bukti pilihan terdeteksi.'}</p>
+              <p className="mt-4 text-[13px] leading-6 text-slate-300">Kode ini menjadi tanda bahwa pilihanmu sudah tersimpan dan tidak bisa diubah sembarangan.</p>
             </article>
           </div>
 
@@ -211,7 +211,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
               </Link>
             ) : (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] leading-6 text-amber-900">
-                Commit sudah terdeteksi, tetapi kode rahasia/kandidat lokal tidak tersedia. Reveal tetap membutuhkan browser yang menyimpan data commit.
+                Pilihan sudah pernah disimpan, tetapi kode rahasia di browser ini tidak ditemukan. Gunakan browser yang sama seperti saat memilih agar bisa mengesahkan suara.
               </div>
             )}
           </div>
@@ -227,7 +227,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h1 className="text-[20px] font-semibold text-slate-900">Data pilihan belum siap</h1>
           <p className="mt-2 text-[14px] leading-7 text-slate-800">
-            Pilih kandidat terlebih dahulu dari halaman pilih kandidat sebelum masuk ke tahap commit.
+            Pilih kandidat terlebih dahulu sebelum suara bisa disimpan dengan aman.
           </p>
           <Link
             href={`/pemilih/pemilihan/${params.id}/pilih-kandidat`}
@@ -251,7 +251,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         </span>
         <h1 className="mt-5 text-[28px] font-semibold tracking-tight text-slate-900 md:text-[40px]">Tinjau Suara Anda</h1>
         <p className="mt-4 max-w-3xl text-[16px] leading-8 text-slate-700">
-          Pastikan pilihan Anda sudah benar. Setelah dikirim, sistem akan mencatat komitmen suara Anda di blockchain Base Sepolia.
+          Pastikan pilihanmu sudah benar. Setelah dikirim, pilihan akan dikunci sebagai bukti suara dan belum akan terlihat oleh orang lain.
         </p>
       </section>
 
@@ -263,7 +263,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
             <p className="mt-1 text-[13px] text-red-800 leading-relaxed">
               {writeError.message.includes('User rejected') 
                 ? 'Transaksi dibatalkan oleh pengguna.' 
-                : 'Terjadi kesalahan saat mengirim transaksi ke blockchain. Pastikan saldo Sepolia ETH mencukupi.'}
+                : 'Terjadi kesalahan saat menyimpan suara. Pastikan dompet digitalmu siap dan memiliki saldo uji coba yang cukup.'}
             </p>
           </div>
         </section>
@@ -298,13 +298,13 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 text-slate-100">
             <ShieldCheck className="h-6 w-6" />
           </div>
-          <h2 className="mt-8 text-[18px] font-semibold text-white">Ringkasan Komitmen</h2>
+          <h2 className="mt-8 text-[18px] font-semibold text-white">Ringkasan Penyimpanan Suara</h2>
           <p className="mt-4 text-[16px] leading-8 text-slate-300">
-            Sistem telah menyiapkan komitmen suara di browser ini. Pilihan asli Anda tetap tersembunyi sampai tahap konfirmasi suara dibuka.
+            Sistem sudah menyiapkan kode bukti di browser ini. Pilihan aslimu tetap tersembunyi sampai tahap konfirmasi suara dibuka.
           </p>
 
           <div className="mt-8 space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-300">Hash komitmen</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-300">Kode bukti suara</p>
             <p className="font-mono text-[12px] leading-6 text-slate-300">{savedCommitment.commitment}</p>
           </div>
         </article>
@@ -316,7 +316,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           <div>
             <h2 className="text-[18px] font-semibold text-slate-900">Pernyataan privasi</h2>
             <p className="mt-2 text-[14px] leading-7 text-slate-700">
-              Setelah komitmen suara dikirim, pilihan Anda baru dapat dikonfirmasi kembali saat Anda menggunakan kode rahasia yang sama pada tahap berikutnya.
+              Setelah pilihan disimpan, suara baru dihitung saat kamu mengesahkannya pada tahap berikutnya dengan browser yang sama.
             </p>
           </div>
         </div>
@@ -350,24 +350,24 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           {isWritePending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Menunggu Wallet...
+              Menunggu persetujuan...
             </>
           ) : isConfirming ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Memproses Blockchain...
+              Menyimpan suara...
             </>
           ) : (
-            'Kirim Komitmen Suara'
+            'Simpan Pilihan Saya'
           )}
         </button>
       </section>
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Kirim komitmen suara sekarang?"
-        description="Setelah dikirim, Anda perlu kembali pada fase konfirmasi suara dengan browser yang sama. Pastikan kandidat yang dipilih sudah benar."
-        confirmLabel="Ya, Kirim Komitmen"
+        title="Simpan pilihan sekarang?"
+        description="Setelah disimpan, kamu perlu kembali saat tahap konfirmasi dibuka. Gunakan browser yang sama agar kode rahasianya tetap terbaca."
+        confirmLabel="Ya, Simpan Pilihan"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleCommit}
       />

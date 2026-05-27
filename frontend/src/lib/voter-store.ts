@@ -331,9 +331,9 @@ export function formatWallet(address: string) {
 }
 
 export function getPhaseLabel(phase: VoterElectionPhase) {
-  if (phase === 'registration') return 'Registrasi'
-  if (phase === 'commit') return 'Fase Commit'
-  if (phase === 'reveal') return 'Fase Reveal'
+  if (phase === 'registration') return 'Persiapan'
+  if (phase === 'commit') return 'Tahap Memilih'
+  if (phase === 'reveal') return 'Tahap Konfirmasi'
   return 'Selesai'
 }
 
@@ -385,7 +385,7 @@ export function sortDashboardElections(elections: VoterElection[]) {
 export function resolveElectionAction(election: VoterElection) {
   const viewState = getElectionViewState(election)
   if (viewState.nextAction === 'commit') return { label: 'Berikan Suara', href: `/pemilih/pemilihan/${election.id}/pilih-kandidat` }
-  if (viewState.nextAction === 'reveal') return { label: 'Mulai Reveal Suara', href: `/pemilih/pemilihan/${election.id}/reveal` }
+  if (viewState.nextAction === 'reveal') return { label: 'Konfirmasi Suara', href: `/pemilih/pemilihan/${election.id}/reveal` }
   if (viewState.nextAction === 'results') return { label: 'Lihat Hasil', href: `/pemilih/pemilihan/${election.id}/hasil` }
   return { label: 'Pantau Jadwal', href: '/pemilih/bukti-saya' }
 }
@@ -402,13 +402,13 @@ export function getRecentLogs(store: VoterStore): VoterLogItem[] {
     .flatMap((election) => {
       const items: VoterLogItem[] = []
       if (election.commitProof) {
-        items.push({ id: `${election.id}-commit`, title: `${election.title} · Commit tersimpan`, detail: `Tx: ${formatWallet(election.commitProof.txHash)} · Block #${formatNumber(election.commitProof.blockNumber)}`, timeLabel: formatDateTime(election.commitProof.createdAt), tone: 'success' })
+        items.push({ id: `${election.id}-commit`, title: `${election.title} · Pilihan tersimpan`, detail: `Kode bukti: ${formatWallet(election.commitProof.txHash)} · Blok #${formatNumber(election.commitProof.blockNumber)}`, timeLabel: formatDateTime(election.commitProof.createdAt), tone: 'success' })
       }
       if (election.phase === 'reveal' && !election.revealProof) {
-        items.push({ id: `${election.id}-phase`, title: `${election.title} · Reveal dibuka`, detail: 'Admin telah membuka fase reveal. Silakan konfirmasi suara Anda.', timeLabel: election.lastTransactionLabel, tone: 'info' })
+        items.push({ id: `${election.id}-phase`, title: `${election.title} · Konfirmasi dibuka`, detail: 'Admin telah membuka tahap konfirmasi. Silakan sahkan suara Anda.', timeLabel: election.lastTransactionLabel, tone: 'info' })
       }
       if (election.revealProof) {
-        items.push({ id: `${election.id}-reveal`, title: `${election.title} · Reveal tervalidasi`, detail: `Tx: ${formatWallet(election.revealProof.txHash)} · Block #${formatNumber(election.revealProof.blockNumber)}`, timeLabel: formatDateTime(election.revealProof.createdAt), tone: 'success' })
+        items.push({ id: `${election.id}-reveal`, title: `${election.title} · Suara disahkan`, detail: `Kode bukti: ${formatWallet(election.revealProof.txHash)} · Blok #${formatNumber(election.revealProof.blockNumber)}`, timeLabel: formatDateTime(election.revealProof.createdAt), tone: 'success' })
       }
       return items
     })
@@ -455,7 +455,7 @@ export function useVoterStore() {
         committedCount: Math.min(election.totalParticipants, election.committedCount + 1),
         commitmentHash: commitmentHash ?? election.commitmentHash,
         commitProof: proof,
-        lastTransactionLabel: 'Reveal siap dilakukan dari browser yang sama.',
+        lastTransactionLabel: 'Konfirmasi siap dilakukan dari browser yang sama.',
       })))
       return proof
     },

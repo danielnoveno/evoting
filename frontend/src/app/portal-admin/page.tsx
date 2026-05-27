@@ -56,7 +56,7 @@ function PortalAdminContent() {
   const currentProfile = currentProfileQuery.data
   const isWalletBound = Boolean(address && currentProfile?.walletAddress === address)
   const completedSteps = (isConnected ? 1 : 0) + (authSession ? 1 : 0)
-  const currentStepLabel = !isConnected ? 'Hubungkan Wallet' : !authSession ? 'Verifikasi Admin' : 'Akses Siap'
+  const currentStepLabel = !isConnected ? 'Sambungkan dompet digital' : !authSession ? 'Verifikasi admin' : 'Akses siap'
 
   useEffect(() => {
     if (mounted && isConnected && authSession && isWalletBound) {
@@ -136,7 +136,7 @@ function PortalAdminContent() {
   if (!mounted) return null
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden bg-slate-50">
+    <main className="flex h-screen flex-col overflow-hidden bg-slate-50 pb-10">
       <PublicNavbar activePath="/portal-admin" minimal />
       
       <div className="relative flex flex-1 items-center justify-center overflow-hidden p-4 md:p-8">
@@ -152,7 +152,7 @@ function PortalAdminContent() {
           className="right-[-60px] top-[60px] h-[260px] w-[260px] rounded-full bg-gradient-to-bl from-slate-100/60 to-purple-50/20 blur-3xl"
         />
 
-        <div className="relative z-10 w-full max-w-[1040px] pb-4 px-2 sm:px-0">
+        <div className="relative z-10 w-full max-w-[1040px] px-2 sm:px-0">
           <ScrollReveal variant="fade-up">
             <section className="relative overflow-hidden rounded-xl border border-slate-200 bg-white">
               <Link href="/" aria-label="Tutup dan kembali ke beranda" className="absolute right-4 top-4 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-900">
@@ -200,9 +200,9 @@ function PortalAdminContent() {
                         {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-[14px] font-semibold text-slate-900">Hubungkan Wallet</h2>
+                        <h2 className="text-[14px] font-semibold text-slate-900">Sambungkan dompet digital</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isConnected ? 'Wallet admin sudah tersambung.' : 'Sambungkan wallet yang dipakai untuk akses admin.'}
+                          {isConnected ? 'Dompet admin sudah tersambung.' : 'Dompet digital dipakai untuk mengenali sesi admin.'}
                         </p>
                       </div>
                       {!isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -224,21 +224,21 @@ function PortalAdminContent() {
                 </aside>
 
                 <section className="flex min-h-[520px] flex-col justify-between bg-white p-6 xl:p-8">
-                  <div className="pr-8">
+                  <div className="w-full">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">{currentStepLabel}</p>
 
                     {!isConnected && (
-                      <div className="mt-8 max-w-full xl:max-w-[420px]">
-                        <h2 className="text-[20px] font-semibold text-slate-900">Hubungkan Wallet Admin</h2>
+                      <div className="mt-8 w-full">
+                        <h2 className="text-[20px] font-semibold text-slate-900">Sambungkan dompet digital admin</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                          Sambungkan wallet yang akan digunakan sebagai identitas admin sebelum masuk ke dashboard manajemen pemilihan.
+                          Sambungkan dompet digital yang akan dipakai untuk mengenali akses admin sebelum masuk ke dashboard manajemen pemilihan.
                         </p>
 
                         <div className="mt-8 space-y-4">
                           {[
-                            'Wallet dipakai untuk mengenali sesi admin.',
-                            'Alamat wallet dapat diganti sebelum validasi selesai.',
-                            'Gunakan wallet dan akun kampus milik petugas berwenang.',
+                            'Dompet digital dipakai untuk mengenali sesi admin.',
+                            'Alamat dompet dapat diganti sebelum validasi selesai.',
+                            'Gunakan dompet dan akun kampus milik petugas berwenang.',
                           ].map((item) => (
                             <div key={item} className="flex items-center gap-3 text-[13px] text-slate-600">
                               <span className="h-3 w-3 rounded-full border-2 border-blue-500 bg-blue-50" />
@@ -250,14 +250,14 @@ function PortalAdminContent() {
                     )}
 
                     {isConnected && !authSession && (
-                      <div className="mt-8 max-w-full xl:max-w-[420px]">
+                      <div className="mt-8 w-full">
                         <h2 className="text-[20px] font-semibold text-slate-900">Verifikasi Admin</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           Masuk dengan akun kampus untuk memeriksa apakah akun memiliki otoritas admin atau Tata Usaha.
                         </p>
 
                         <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50 p-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Wallet terhubung</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Dompet tersambung</p>
                           <div className="mt-2 flex min-w-0 items-center gap-2">
                             <WalletAddress
                               address={address ?? ''}
@@ -271,7 +271,7 @@ function PortalAdminContent() {
                                   showToast({ tone: 'success', title: 'Alamat Disalin', description: 'Alamat dompet disalin ke clipboard.' })
                                 }
                               }}
-                              title="Salin alamat wallet"
+                              title="Salin alamat dompet"
                               className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-700"
                             >
                               <Copy className="h-3.5 w-3.5" />
@@ -384,15 +384,15 @@ function PortalAdminContent() {
                     )}
 
                     {isConnected && authSession && !isWalletBound && (
-                      <div className="mt-8 max-w-full xl:max-w-[420px]">
+                      <div className="mt-8 w-full">
                         <h2 className="text-[20px] font-semibold text-slate-900">Validasi Otoritas</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                          Wallet dan akun kampus sudah siap. Tautkan keduanya untuk membuka dashboard admin sesuai peran akun.
+                          Dompet digital dan akun kampus sudah siap. Tautkan keduanya untuk membuka dashboard admin sesuai peran akun.
                         </p>
 
                         <div className="mt-6 space-y-3">
                           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Wallet</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Dompet digital</p>
                             <WalletAddress
                               address={address ?? '-'}
                               className="mt-1 block font-mono text-[12px] font-semibold text-slate-900"
@@ -407,7 +407,7 @@ function PortalAdminContent() {
                     )}
 
                     {isConnected && authSession && isWalletBound && (
-                      <div className="mt-16 flex max-w-full xl:max-w-[420px] flex-col items-center text-center">
+                      <div className="mt-16 flex w-full flex-col items-center text-center">
                         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                           <CheckCircle2 className="h-8 w-8" />
                         </div>
@@ -417,7 +417,7 @@ function PortalAdminContent() {
                     )}
                   </div>
 
-                  <div className="mt-8 flex items-center justify-between gap-3 border-t border-slate-100 pt-5">
+                  <div className="mt-8 flex w-full items-center justify-between gap-3 border-t border-slate-100 pt-5">
                     <button
                       type="button"
                       onClick={() => router.push('/')}
@@ -429,7 +429,7 @@ function PortalAdminContent() {
 
                     {!isConnected && (
                       <ConnectWallet className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B]">
-                        Hubungkan Wallet Admin
+                        Sambungkan Dompet Admin
                         <ChevronRight className="h-4 w-4" />
                       </ConnectWallet>
                     )}

@@ -64,10 +64,10 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   }
 
   const stepState = [
-    { label: 'pilih kandidat', active: true },
-    { label: 'commit' },
-    { label: 'reveal' },
-    { label: 'result' },
+    { label: 'Pilih kandidat', description: 'Pilih satu nama', active: true },
+    { label: 'Simpan pilihan', description: 'Kunci pilihanmu' },
+    { label: 'Konfirmasi suara', description: 'Datang lagi nanti' },
+    { label: 'Lihat hasil', description: 'Cek hasil akhir' },
   ]
 
   const handleSelectClick = (candidateId: string) => {
@@ -108,9 +108,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             <span className="inline-flex rounded bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-blue-400">
               STATUS SAAT INI
             </span>
-            <h1 className="mt-3 text-[26px] font-bold tracking-tight text-white md:text-[32px]">Fase Commit</h1>
+            <h1 className="mt-3 text-[26px] font-bold tracking-tight text-white md:text-[32px]">Saatnya Memilih</h1>
             <p className="mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-slate-300">
-              Pilih satu kandidat untuk menyiapkan komitmen suara Anda. Pilihan tetap tersimpan aman dan baru dapat dikonfirmasi pada fase berikutnya.
+              Pilih satu kandidat dulu. Setelah itu, sistem akan mengunci pilihanmu supaya belum terlihat oleh siapa pun sampai waktu penghitungan dibuka.
             </p>
           </div>
 
@@ -158,7 +158,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         <div className="flex items-start gap-3">
           <Info className="mt-0.5 h-4.5 w-4.5 shrink-0 text-blue-700" />
           <p>
-            Setelah kandidat dipilih, sistem akan menyiapkan komitmen suara di browser ini sebelum dikirim. Simpan perangkat dan browser yang sama untuk tahap konfirmasi suara.
+            Setelah memilih, jangan ganti browser atau hapus data browser. Nanti kamu perlu membuka halaman ini lagi untuk mengesahkan suara.
           </p>
         </div>
       </section>
@@ -231,7 +231,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         <div className="flex items-center gap-3">
           <Clock3 className="h-4.5 w-4.5 shrink-0 text-slate-400" />
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-slate-500">Batas Fase Commit</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-slate-500">Batas waktu memilih</p>
             <p className="mt-0.5 text-[13.5px] font-semibold text-slate-900">
               {formatDateTime(election.deadlineIso)} WIB
             </p>
@@ -241,8 +241,8 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Konfirmasi Pilihan"
-        description="Apakah Anda yakin ingin melanjutkan dengan kandidat ini? Setelah itu Anda akan masuk ke tahap kirim komitmen suara."
+        title="Pilih kandidat ini?"
+        description="Pastikan namanya sudah benar. Setelah ini, pilihanmu akan disiapkan untuk disimpan dengan aman."
         confirmLabel="Ya, Pilih Kandidat"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleConfirm}

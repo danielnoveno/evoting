@@ -77,7 +77,7 @@ export default function VoterDashboardPage() {
         <section>
           <h1 className="mt-3 text-[28px] font-semibold text-slate-900 sm:text-[34px] md:text-[40px]">Ruang Voting Saya</h1>
           <p className="mt-3 max-w-3xl text-[14px] leading-7 text-slate-800 md:text-[16px] md:leading-8">
-            Pantau ruang voting yang sedang aktif, bukti komitmen yang sudah tersimpan, dan langkah berikutnya untuk menyelesaikan konfirmasi suara.
+            Pantau ruang voting yang sedang aktif, pilihan yang sudah disimpan, dan langkah berikutnya sampai suaramu selesai dihitung.
           </p>
         </section>
       </ScrollReveal>
@@ -100,7 +100,7 @@ export default function VoterDashboardPage() {
                     
                     {isCommitPhase && (
                       <p className="mt-4 text-[13px] font-medium text-slate-800 bg-blue-50/50 border border-blue-100 rounded-lg p-3 leading-relaxed">
-                        💡 <span className="font-semibold text-blue-900">Langkah pertama:</span> Pilih satu kandidat untuk menyiapkan komitmen suara Anda. Setelah itu Anda akan masuk ke tahap kirim komitmen.
+                        💡 <span className="font-semibold text-blue-900">Langkah pertama:</span> Pilih satu kandidat. Setelah itu, pilihanmu akan dikunci dulu supaya tetap rahasia.
                       </p>
                     )}
 
@@ -108,13 +108,13 @@ export default function VoterDashboardPage() {
                       <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50/40 space-y-3">
                         <p className="text-[13px] font-medium text-amber-900 flex items-center gap-2">
                           <Fingerprint className="h-4.5 w-4.5 text-amber-600 shrink-0" />
-                          <span className="font-semibold">Komitmen suara Anda sudah tersimpan.</span>
+                          <span className="font-semibold">Pilihanmu sudah tersimpan aman.</span>
                         </p>
                         <div className="font-mono text-[11px] text-slate-800 bg-white border border-amber-100 rounded-lg p-2.5 break-all leading-relaxed shadow-inner">
-                          <span className="font-semibold text-slate-400 select-none">HASH KOMITMEN:</span> {featuredElection.commitmentHash}
+                          <span className="font-semibold text-slate-400 select-none">KODE BUKTI:</span> {featuredElection.commitmentHash}
                         </div>
                         <p className="text-[12px] leading-relaxed text-slate-700">
-                          💡 <span className="font-semibold text-amber-900">Langkah berikutnya:</span> Konfirmasi suara Anda menggunakan browser dan perangkat yang sama agar kode rahasia dapat terbaca dengan benar.
+                          💡 <span className="font-semibold text-amber-900">Langkah berikutnya:</span> Buka lagi dari browser dan perangkat yang sama, lalu tekan konfirmasi suara.
                         </p>
                       </div>
                     )}
@@ -132,7 +132,7 @@ export default function VoterDashboardPage() {
                               <strong className="font-mono text-slate-900">#{featuredElection.revealProof.blockNumber}</strong>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-slate-400">Tx Hash:</span>
+                              <span className="text-slate-400">Kode bukti:</span>
                               <a 
                                 href={basescanTxUrl(featuredElection.revealProof.txHash)} 
                                 target="_blank" 
@@ -304,7 +304,7 @@ export default function VoterDashboardPage() {
           <span className="mt-6 inline-flex rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-800 border border-amber-200">Menunggu</span>
           <h3 className="mt-5 text-[24px] font-semibold text-slate-900">{elections.find((election) => election.phase === 'registration')?.title ?? 'Belum ada pemilihan lain'}</h3>
           <p className="mt-4 text-[16px] leading-8 text-slate-800">
-            Pendaftaran kandidat masih dibuka. Voting akan dimulai setelah admin membuka fase commit sesuai urutan resmi.
+            Pendaftaran kandidat masih dibuka. Voting akan dimulai setelah admin membuka tahap memilih sesuai urutan resmi.
           </p>
           <div className="mt-10 flex items-center justify-between border-t border-slate-100 pt-5 text-[14px]">
             <span className="text-slate-400">Status</span>
@@ -334,7 +334,7 @@ export default function VoterDashboardPage() {
         <article className="rounded-xl border border-slate-200 bg-white p-6">
           <h3 className="text-[20px] font-semibold text-slate-900 md:text-[24px]">Butuh Bantuan?</h3>
           <p className="mt-3 text-[14px] leading-7 text-slate-800">
-            Panduan langkah demi langkah untuk pilih kandidat, kirim komitmen, konfirmasi suara, hingga verifikasi hasil dapat diakses kapan saja.
+            Panduan langkah demi langkah untuk memilih kandidat, menyimpan pilihan, mengonfirmasi suara, hingga melihat hasil dapat dibuka kapan saja.
           </p>
           <Link href="/pemilih/bantuan" className="mt-6 inline-flex items-center gap-2 text-[14px] font-semibold text-slate-900 hover:text-slate-800">
             Buka Pusat Bantuan

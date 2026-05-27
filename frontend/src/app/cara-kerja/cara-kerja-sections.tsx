@@ -6,31 +6,31 @@ import { ScrollReveal, ParallaxLayer, FloatingShape } from '@/components/public/
 const steps = [
   {
     icon: UserRoundCheck,
-    title: '1. Registrasi (Whitelist)',
-    body: 'Hanya pemilih yang terdaftar yang dapat berpartisipasi. Identitas Anda diverifikasi secara aman, dan alamat dompet digital Anda dimasukkan ke dalam daftar putih (whitelist).',
-    noteTitle: 'Status Identitas',
-    noteBody: 'Diverifikasi & Terenkripsi',
+    title: '1. Pastikan kamu terdaftar',
+    body: 'Sistem mengecek apakah kamu memang termasuk daftar pemilih. Ibarat daftar hadir, hanya nama yang terdaftar yang bisa ikut memilih.',
+    noteTitle: 'Status pemilih',
+    noteBody: 'Sudah dikenali sistem',
   },
   {
     icon: LockKeyhole,
-    title: '2. Fase Commit (Pilihan Terenkripsi)',
-    body: 'Anda memberikan suara secara rahasia. Pilihan Anda diubah menjadi kode unik (hash) dan dikunci. Tidak ada yang tahu siapa yang Anda pilih pada tahap ini.',
-    noteTitle: 'Contoh Hash Suara',
-    noteBody: '0x7a3b ... 9f2c (Terkunci)',
+    title: '2. Pilih, lalu kunci pilihan',
+    body: 'Kamu memilih satu kandidat. Pilihan itu dikunci dulu sebagai kode bukti, jadi belum ada yang bisa melihat isi pilihanmu.',
+    noteTitle: 'Contoh kode bukti',
+    noteBody: '0x7a3b ... 9f2c (terkunci)',
   },
   {
     icon: Eye,
-    title: '3. Fase Reveal (Pembukaan Suara)',
-    body: 'Setelah waktu pemilihan selesai, kunci dibuka. Sistem secara otomatis mencocokkan hash yang dikunci sebelumnya untuk memastikan suara tidak dimanipulasi selama proses.',
+    title: '3. Datang lagi untuk konfirmasi',
+    body: 'Saat panitia membuka tahap konfirmasi, kamu tinggal mengesahkan suara dari browser yang sama. Sistem mencocokkan kode bukti dengan pilihanmu.',
     noteTitle: '',
-    noteBody: 'Proses pencocokan otomatis berjalan di latar belakang.',
+    noteBody: 'Pencocokan berjalan otomatis di belakang layar.',
   },
   {
     icon: CircleCheck,
-    title: '4. Finalisasi (Audit Publik)',
-    body: 'Hasil akhir dihitung dan dicatat secara permanen di blockchain. Siapa pun dapat memverifikasi hasil ini secara independen tanpa bisa mengubah datanya.',
+    title: '4. Lihat hasil dan bukti',
+    body: 'Setelah semua selesai, hasil dapat dilihat bersama. Bukti transaksi tetap tersedia untuk dicek ulang tanpa membuka identitas pemilih.',
     noteTitle: '',
-    noteBody: 'Lihat Kontrak Cerdas di Basescan',
+    noteBody: 'Lihat bukti teknis di Basescan',
   },
 ]
 
@@ -57,7 +57,7 @@ export function CaraKerjaSections() {
             <div className="max-w-[920px]">
               <h1 className="text-[44px] font-semibold leading-[1.08] tracking-[-0.03em] text-slate-900 md:text-[64px]">Transparansi dalam Setiap Suara.</h1>
               <p className="mt-5 text-[18px] leading-9 text-slate-800">
-                Pelajari bagaimana teknologi blockchain memastikan setiap suara Anda aman, rahasia, dan tidak dapat diubah. Proses pemilihan kami dirancang untuk memberikan kepercayaan penuh melalui empat tahap terstruktur.
+                Lihat alur memilih dari awal sampai hasil akhir dengan bahasa sederhana. Detail teknis tetap ada sebagai bukti, tetapi kamu tidak perlu memahaminya untuk ikut memilih.
               </p>
             </div>
           </ScrollReveal>
@@ -109,7 +109,7 @@ export function CaraKerjaSections() {
                 <div>
                   <h2 className="text-[32px] font-semibold tracking-[-0.02em]">Bukti Transparansi</h2>
                   <p className="mt-4 text-[16px] leading-8 text-slate-300">
-                    Seluruh proses ini berjalan di atas jaringan blockchain publik. Anda tidak perlu mempercayai penyelenggara, cukup percaya kode. Periksa setiap transaksi dan status kontrak pintar kami secara langsung.
+                    Setiap suara yang selesai dikonfirmasi memiliki jejak bukti yang bisa diperiksa. Jika ingin melihat detail teknisnya, gunakan tautan Basescan di bawah ini.
                   </p>
                   <a href="https://sepolia.basescan.org" target="_blank" rel="noreferrer" className="mt-8 inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-100">
                     Eksplorasi Basescan

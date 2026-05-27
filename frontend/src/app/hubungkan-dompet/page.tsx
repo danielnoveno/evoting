@@ -88,8 +88,14 @@ function ConnectWalletContent() {
   const authSession = authSessionQuery.data
   const currentProfile = currentProfileQuery.data
   const isWalletBound = Boolean(address && currentProfile?.walletAddress === address)
-  const completedSteps = (isConnected ? 1 : 0) + (authSession ? 1 : 0)
-  const currentStepLabel = !isConnected ? 'Hubungkan Wallet' : !authSession ? 'Verifikasi Mahasiswa' : 'Akses Siap'
+  const completedSteps = (isConnected ? 1 : 0) + (authSession ? 1 : 0) + (isWalletBound ? 1 : 0)
+  const currentStepLabel = !isConnected
+    ? '1. Sambungkan dompet digital'
+    : !authSession
+      ? '2. Masuk dengan akun kampus'
+      : !isWalletBound
+        ? '3. Aktifkan hak suara'
+        : 'Selesai, akses siap'
 
   // Auto-redirect if everything is ready
   useEffect(() => {
@@ -113,7 +119,7 @@ function ConnectWalletContent() {
       },
       {
         onSuccess: () => {
-          showToast({ tone: 'success', title: 'Aktivasi Berhasil', description: 'Wallet dan Akun Kampus telah ditautkan.' })
+          showToast({ tone: 'success', title: 'Akses Berhasil Diaktifkan', description: 'Dompet digital dan akun kampus sudah terhubung.' })
         }
       }
     )
@@ -161,7 +167,7 @@ function ConnectWalletContent() {
   if (!mounted) return null
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden bg-slate-50">
+    <main className="flex h-screen flex-col overflow-hidden bg-slate-50 pb-10">
       <PublicNavbar activePath="/hubungkan-dompet" minimal />
       
       <div className="relative flex flex-1 items-center justify-center overflow-hidden p-4 md:p-8">
@@ -177,7 +183,7 @@ function ConnectWalletContent() {
           className="right-[-60px] top-[60px] h-[260px] w-[260px] rounded-full bg-gradient-to-bl from-slate-100/60 to-blue-50/20 blur-3xl"
         />
 
-        <div className="relative z-10 w-full max-w-[1040px] pb-4 px-2 sm:px-0">
+        <div className="relative z-10 w-full max-w-[1040px] px-2 sm:px-0">
           <ScrollReveal variant="fade-up">
             <section className="relative overflow-hidden rounded-xl border border-slate-200 bg-white">
               <Link href="/" aria-label="Tutup dan kembali ke beranda" className="absolute right-4 top-4 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-900">
@@ -192,9 +198,9 @@ function ConnectWalletContent() {
                         <ArrowLeft className="h-3.5 w-3.5" />
                         Kembali ke Beranda
                       </Link>
-                      <h1 className="text-[24px] font-semibold leading-tight text-slate-900">Masuk Sistem</h1>
+                      <h1 className="text-[24px] font-semibold leading-tight text-slate-900">Masuk ke Votein</h1>
                       <p className="mt-1 text-[13px] leading-6 text-slate-400">
-                        Hubungkan wallet dan verifikasi mahasiswa.
+                        Ikuti 3 langkah pendek. Untuk mulai menggunakan Votein.
                       </p>
                     </div>
 
@@ -209,11 +215,11 @@ function ConnectWalletContent() {
                           stroke="currentColor"
                           strokeWidth="3"
                           strokeLinecap="round"
-                          strokeDasharray={`${completedSteps * 50} 100`}
+                          strokeDasharray={`${completedSteps * 33.34} 100`}
                           className="text-emerald-500"
                         />
                       </svg>
-                      <span className="absolute text-[13px] font-semibold text-slate-700">{completedSteps}/2</span>
+                      <span className="absolute text-[13px] font-semibold text-slate-700">{completedSteps}/3</span>
                     </div>
                   </div>
 
@@ -225,9 +231,9 @@ function ConnectWalletContent() {
                         {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-[14px] font-semibold text-slate-900">Hubungkan Wallet</h2>
+                        <h2 className="text-[14px] font-semibold text-slate-900">Sambungkan dompet digital</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isConnected ? 'Dompet sudah tersambung dan siap dipakai.' : 'Sambungkan dompet yang akan dipakai untuk akses Votein.'}
+                          {isConnected ? 'Dompet sudah tersambung.' : 'Dompet digital dipakai seperti kartu anggota untuk mengenali kamu.'}
                         </p>
                       </div>
                       {!isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -238,32 +244,45 @@ function ConnectWalletContent() {
                         {authSession ? <Check className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className={isConnected ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Verifikasi Mahasiswa</h2>
+                        <h2 className={isConnected ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Masuk dengan akun kampus</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {authSession ? 'Akun kampus sudah terverifikasi.' : 'Validasi akun kampus untuk memastikan status mahasiswa.'}
+                          {authSession ? 'Akun kampus sudah dikenali.' : 'Ini memastikan yang masuk benar-benar mahasiswa UAJY.'}
                         </p>
                       </div>
                       {isConnected && !authSession && <ChevronRight className="h-4 w-4 text-slate-400" />}
+                    </div>
+
+                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${isConnected && authSession && !isWalletBound ? 'bg-slate-100' : 'bg-white'} ${!isConnected || !authSession ? 'opacity-50' : ''}`}>
+                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isWalletBound ? 'bg-emerald-50 text-emerald-600' : isConnected && authSession ? 'bg-[#0F172A] text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        {isWalletBound ? <Check className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className={isConnected && authSession ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Aktifkan hak suara</h2>
+                        <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
+                          {isWalletBound ? 'Akses memilih sudah siap.' : 'Hubungkan akun kampus dan dompet supaya kamu bisa memilih.'}
+                        </p>
+                      </div>
+                      {isConnected && authSession && !isWalletBound && <ChevronRight className="h-4 w-4 text-slate-400" />}
                     </div>
                   </div>
                 </aside>
 
                 <section className="flex min-h-[520px] flex-col justify-between bg-white p-6 xl:p-8">
-                  <div className="pr-8">
+                  <div className="w-full">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">{currentStepLabel}</p>
 
                     {!isConnected && (
-                      <div className="mt-8 max-w-full xl:max-w-[420px]">
-                        <h2 className="text-[20px] font-semibold text-slate-900">Hubungkan Wallet</h2>
+                      <div className="mt-8 w-full">
+                        <h2 className="text-[20px] font-semibold text-slate-900">Sambungkan dompet digital</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                          Gunakan wallet untuk membuka akses Votein. Setelah tersambung, kamu bisa lanjut verifikasi mahasiswa.
+                          Dompet digital itu seperti kartu pengenal untuk voting. Klik tombol sambungkan, lalu setujui dari aplikasi dompet yang muncul.
                         </p>
 
                         <div className="mt-8 space-y-4">
                           {[
-                            'Wallet dipakai sebagai identitas akun di sistem.',
-                            'Alamat wallet dapat diganti sebelum proses verifikasi selesai.',
-                            'Jangan bagikan akses wallet kepada orang lain.',
+                            'Kalau belum punya, aplikasi biasanya membantu membuat dompet baru.',
+                            'Pakai dompet yang sama sampai proses memilih selesai.',
+                            'Jangan berikan akses dompet ke orang lain, sama seperti jangan memberi password.',
                           ].map((item) => (
                             <div key={item} className="flex items-center gap-3 text-[13px] text-slate-600">
                               <span className="h-3 w-3 rounded-full border-2 border-blue-500 bg-blue-50" />
@@ -275,14 +294,14 @@ function ConnectWalletContent() {
                     )}
 
                     {isConnected && !authSession && (
-                      <div className="mt-8 max-w-full xl:max-w-[420px]">
-                        <h2 className="text-[20px] font-semibold text-slate-900">Verifikasi Mahasiswa</h2>
+                      <div className="mt-8 w-full">
+                        <h2 className="text-[20px] font-semibold text-slate-900">Masuk dengan akun kampus</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                          Masuk dengan akun kampus untuk memastikan hanya mahasiswa yang terdaftar yang dapat mengakses pemilihan.
+                          Setelah dompet tersambung, masuk dengan akun kampus. Ini membantu sistem memastikan hak pilih diberikan ke mahasiswa yang benar.
                         </p>
 
                         <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50 p-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Wallet terhubung</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Dompet tersambung</p>
                           <div className="mt-2 flex min-w-0 items-center gap-2">
                             <WalletAddress
                               address={address ?? ''}
@@ -296,7 +315,7 @@ function ConnectWalletContent() {
                                   showToast({ tone: 'success', title: 'Alamat Disalin', description: 'Alamat dompet disalin ke clipboard.' })
                                 }
                               }}
-                              title="Salin alamat wallet"
+                              title="Salin alamat dompet"
                               className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-700"
                             >
                               <Copy className="h-3.5 w-3.5" />
@@ -402,15 +421,15 @@ function ConnectWalletContent() {
                     )}
 
                     {isConnected && authSession && !isWalletBound && (
-                      <div className="mt-8 max-w-full xl:max-w-[420px]">
-                        <h2 className="text-[20px] font-semibold text-slate-900">Aktifkan Hak Suara</h2>
+                      <div className="mt-8 w-full">
+                          <h2 className="text-[20px] font-semibold text-slate-900">Aktifkan hak suara</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                          Wallet dan akun mahasiswa sudah siap. Tautkan keduanya agar akses pemilih aktif.
+                          Tinggal satu klik lagi. Kami akan memasangkan akun kampus dengan dompet digitalmu supaya hak memilih aktif.
                         </p>
 
                         <div className="mt-6 space-y-3">
                           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Wallet</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Dompet digital</p>
                             <WalletAddress
                               address={address ?? '-'}
                               className="mt-1 block font-mono text-[12px] font-semibold text-slate-900"
@@ -425,17 +444,17 @@ function ConnectWalletContent() {
                     )}
 
                     {isConnected && authSession && isWalletBound && (
-                      <div className="mt-16 flex max-w-full xl:max-w-[420px] flex-col items-center text-center">
+                      <div className="mt-16 flex w-full flex-col items-center text-center">
                         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                           <CheckCircle2 className="h-8 w-8" />
                         </div>
-                        <h2 className="mt-6 text-[20px] font-semibold text-slate-900">Akses Berhasil Divalidasi</h2>
-                        <p className="mt-3 text-[13px] leading-6 text-slate-600">Mengarahkan Anda ke dashboard pemilihan...</p>
+                        <h2 className="mt-6 text-[20px] font-semibold text-slate-900">Akses siap digunakan</h2>
+                        <p className="mt-3 text-[13px] leading-6 text-slate-600">Sebentar lagi kamu diarahkan ke halaman pemilihan...</p>
                       </div>
                     )}
                   </div>
 
-                  <div className="mt-8 flex items-center justify-between gap-3 border-t border-slate-100 pt-5">
+                  <div className="mt-8 flex w-full items-center justify-between gap-3 border-t border-slate-100 pt-5">
                     <button
                       type="button"
                       onClick={() => router.push('/')}
@@ -447,7 +466,7 @@ function ConnectWalletContent() {
 
                     {!isConnected && (
                       <ConnectWallet className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B]">
-                        Hubungkan Dompet
+                        Sambungkan Dompet Digital
                         <ChevronRight className="h-4 w-4" />
                       </ConnectWallet>
                     )}
@@ -463,7 +482,7 @@ function ConnectWalletContent() {
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
                       >
                         {bindWalletMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
-                        Aktivasi Profil
+                        Aktifkan Hak Suara
                       </button>
                     )}
 
@@ -481,7 +500,7 @@ function ConnectWalletContent() {
 
             {/* <ScrollReveal variant="fade-up" delay={500} className="mt-8 text-center">
               <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-400">
-                Hubungkan Wallet Kamu
+                Sambungkan Dompet Digital Kamu
               </p>
             </ScrollReveal> */}
           </div>

@@ -56,16 +56,16 @@ function resolvePhase(row: ProposalRow): PublicElectionPhase {
 }
 
 function phaseLabel(phase: PublicElectionPhase): string {
-  if (phase === 'commit') return 'Fase Commit'
-  if (phase === 'reveal') return 'Fase Reveal'
+  if (phase === 'commit') return 'Tahap Memilih'
+  if (phase === 'reveal') return 'Tahap Konfirmasi'
   if (phase === 'ended') return 'Selesai'
-  return 'Registrasi'
+  return 'Persiapan'
 }
 
 function deadlineLabel(row: ProposalRow, phase: PublicElectionPhase): string {
-  if (phase === 'commit') return `Commit sampai ${formatDateTimeLabel(row.reveal_start_at)}`
-  if (phase === 'reveal') return `Reveal sampai ${formatDateTimeLabel(row.ended_at)}`
-  if (phase === 'registration') return `Commit mulai ${formatDateTimeLabel(row.commit_start_at)}`
+  if (phase === 'commit') return `Batas memilih ${formatDateTimeLabel(row.reveal_start_at)}`
+  if (phase === 'reveal') return `Batas konfirmasi ${formatDateTimeLabel(row.ended_at)}`
+  if (phase === 'registration') return `Mulai memilih ${formatDateTimeLabel(row.commit_start_at)}`
   return row.ended_at ? `Selesai ${formatDateTimeLabel(row.ended_at)}` : 'Selesai'
 }
 

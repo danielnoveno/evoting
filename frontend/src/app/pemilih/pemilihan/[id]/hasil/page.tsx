@@ -59,10 +59,10 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
     <VoterShell>
       <VoterStepper
         steps={[
-          { label: 'pilih kandidat', done: true },
-          { label: 'commit', done: true },
-          { label: 'reveal', done: true },
-          { label: 'result', active: true },
+          { label: 'Pilih kandidat', description: 'Pilih satu nama', done: true },
+          { label: 'Simpan pilihan', description: 'Kunci pilihanmu', done: true },
+          { label: 'Konfirmasi suara', description: 'Sahkan pilihanmu', done: true },
+          { label: 'Lihat hasil', description: 'Cek hasil akhir', active: true },
         ]}
       />
 
@@ -111,8 +111,8 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
           value={`${election.quorumPercent}%`} 
           subValue={`${formatNumber(election.revealedCount)} dari ${formatNumber(election.totalParticipants)} pemilih`} 
         />
-        <MetricCard label="Commit Tercatat" value={formatNumber(election.committedCount)} />
-        <MetricCard label="Reveal Sukses" value={formatNumber(election.revealedCount)} />
+        <MetricCard label="Pilihan Disimpan" value={formatNumber(election.committedCount)} />
+        <MetricCard label="Suara Disahkan" value={formatNumber(election.revealedCount)} />
       </section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
@@ -189,9 +189,9 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
             {election.revealProof ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 font-mono text-[12px] text-slate-800 space-y-3 shadow-inner">
                 {[
-                  ['Tx Hash', election.revealProof.txHash],
+                  ['Kode Bukti', election.revealProof.txHash],
                   ['Nomor Block', formatNumber(election.revealProof.blockNumber)],
-                  ['Gas Terpakai', election.revealProof.gasUsed == null ? 'Tidak disimpan indexer' : formatNumber(election.revealProof.gasUsed)],
+                  ['Biaya Jaringan', election.revealProof.gasUsed == null ? 'Belum tersedia' : formatNumber(election.revealProof.gasUsed)],
                   ['Waktu Sinkron', formatDateTime(election.revealProof.createdAt)],
                 ].map(([label, value], index, rows) => (
                   <div 
