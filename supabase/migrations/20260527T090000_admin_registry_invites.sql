@@ -60,6 +60,23 @@ create table if not exists app.admin_registry (
   constraint admin_registry_role_check check (assigned_role in ('admin'::app.app_role, 'super_admin'::app.app_role))
 );
 
+alter table app.admin_registry
+  add column if not exists display_name text,
+  add column if not exists organization_name text,
+  add column if not exists access_scope text not null default 'all',
+  add column if not exists status text not null default 'pending',
+  add column if not exists created_by uuid references app.app_profiles(id) on delete set null,
+  add column if not exists updated_by uuid references app.app_profiles(id) on delete set null,
+  add column if not exists updated_at timestamptz not null default timezone('utc', now());
+
+update app.admin_registry
+set access_scope = 'all'
+where access_scope is null;
+
+update app.admin_registry
+set status = 'pending'
+where status is null;
+
 drop trigger if exists set_admin_registry_updated_at on app.admin_registry;
 create trigger set_admin_registry_updated_at
 before update on app.admin_registry
