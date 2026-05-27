@@ -1,6 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useDisconnect } from 'wagmi'
 import { getCurrentSession, signInWithEmailPassword, signOutCurrentSession, signUpWithEmailPassword, resetPasswordForEmail, updatePassword } from '@/lib/repositories/authRepository'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { getPublicAppOrigin } from '@/lib/supabase/config'
@@ -108,10 +109,12 @@ export function useGoogleLogin() {
 
 export function useLogoutSession() {
   const queryClient = useQueryClient()
+  const { disconnect } = useDisconnect()
 
   return useMutation({
     mutationFn: signOutCurrentSession,
-    onSuccess: () => {
+    onSettled: () => {
+      disconnect()
       void queryClient.invalidateQueries({ queryKey: authSessionQueryKey })
       void queryClient.invalidateQueries({ queryKey: ['profile'] })
     },
