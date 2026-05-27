@@ -48,6 +48,26 @@ export type Database = {
           updated_at?: string
         }
       }
+      admin_registry: {
+        Row: {
+          email: string
+          assigned_role: 'voter' | 'admin' | 'super_admin'
+          description: string | null
+          created_at: string | null
+        }
+        Insert: {
+          email: string
+          assigned_role?: 'voter' | 'admin' | 'super_admin'
+          description?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          email?: string
+          assigned_role?: 'voter' | 'admin' | 'super_admin'
+          description?: string | null
+          created_at?: string | null
+        }
+      }
       proposal_drafts: {
         Row: {
           id: string

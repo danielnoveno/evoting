@@ -2,12 +2,13 @@
 
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { bindCurrentUserWallet, getCurrentProfile, getProfileByWalletAddress, upsertCurrentProfile } from '@/lib/repositories/profileRepository'
+import { bindCurrentUserWallet, getCurrentProfile, getProfileByWalletAddress, listAdminDirectory, upsertCurrentProfile } from '@/lib/repositories/profileRepository'
 import type { AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
 
 export const profileQueryKeys = {
   current: ['profile', 'current'] as const,
   wallet: (walletAddress: string) => ['profile', 'wallet', walletAddress] as const,
+  adminDirectory: ['profile', 'admin-directory'] as const,
 }
 
 export function useCurrentProfile() {
@@ -23,6 +24,14 @@ export function useProfileByWallet(walletAddress: string | null | undefined) {
     queryKey: profileQueryKeys.wallet(walletAddress ?? 'unknown'),
     queryFn: () => getProfileByWalletAddress(walletAddress ?? ''),
     enabled: Boolean(walletAddress),
+    retry: false,
+  })
+}
+
+export function useSuperadminAdminDirectory() {
+  return useQuery({
+    queryKey: profileQueryKeys.adminDirectory,
+    queryFn: listAdminDirectory,
     retry: false,
   })
 }

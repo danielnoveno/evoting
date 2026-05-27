@@ -21,6 +21,8 @@ import {
 } from '@/components/superadmin/superadmin-shell'
 import { superadminAdminStatuses, superadminAdminTabs, type SuperadminAdminRecord } from '@/lib/superadmin-data'
 import { useSuperadminAdminsStore } from '@/lib/superadmin-store'
+import { useSuperadminAdminDirectory } from '@/hooks/use-profile'
+import type { AdminDirectoryRecord } from '@/lib/repositories/types'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -46,14 +48,55 @@ function getInitials(name: string) {
     .toUpperCase()
 }
 
+function formatAdminDate(value: string | null | undefined) {
+  if (!value) return '-'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+
+  return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(date)
+}
+
+function mapDirectoryAdmin(record: AdminDirectoryRecord): SuperadminAdminRecord {
+  const name = record.profile?.displayName?.trim() || record.email.split('@')[0] || 'Admin'
+  const isSuperAdmin = record.role === 'super_admin'
+
+  return {
+    id: record.profile?.id ?? `registry-${record.email}`,
+    initials: getInitials(name),
+    name,
+    email: record.email,
+    accessLabel: isSuperAdmin ? 'Super Admin' : 'Admin',
+    accessDetail: record.description ?? (isSuperAdmin ? 'Akses Platform' : 'Admin Pemilihan'),
+    status: record.profile ? 'Aktif' : 'Menunggu',
+    lastSeen: record.profile ? formatAdminDate(record.profile.updatedAt) : '-',
+    lastIp: '-',
+    joinedAt: formatAdminDate(record.profile?.createdAt ?? record.createdAt),
+    lastLoginText: record.profile ? 'Profil aktif' : 'Menunggu aktivasi',
+    lastLoginRelative: record.profile ? 'Terhubung ke profil Supabase' : 'Terdaftar di registry admin',
+    blockchainIdentity: record.profile?.walletAddress ?? `registry_${record.email}`,
+    spaces: [],
+    recentActivity: [],
+  }
+}
+
 function SuperadminAdminManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { showToast } = useToast()
   const [activeTab, setActiveTab] = useState<AdminTabKey>('daftar')
   const [activeStatus, setActiveStatus] = useState<(typeof superadminAdminStatuses)[number]>('Semua Status')
-  const { admins, setAdmins } = useSuperadminAdminsStore()
+  const { admins: localAdmins, setAdmins } = useSuperadminAdminsStore()
+  const adminDirectoryQuery = useSuperadminAdminDirectory()
   const [formData, setFormData] = useState(initialFormData)
+
+  const admins = useMemo(() => {
+    const remoteAdmins = (adminDirectoryQuery.data ?? []).map(mapDirectoryAdmin)
+    const remoteEmails = new Set(remoteAdmins.map((admin) => admin.email.toLowerCase()))
+    const localOnlyAdmins = localAdmins.filter((admin) => !remoteEmails.has(admin.email.toLowerCase()))
+
+    return [...remoteAdmins, ...localOnlyAdmins]
+  }, [adminDirectoryQuery.data, localAdmins])
 
   const filteredAdmins = useMemo(() => {
     if (activeStatus === 'Semua Status') return admins
@@ -182,7 +225,15 @@ function SuperadminAdminManagementContent() {
             </div>
 
             <div>
-              {filteredAdmins.length > 0 ? filteredAdmins.map((admin) => (
+              {adminDirectoryQuery.isLoading && admins.length === 0 ? (
+                <div className="p-6">
+                  <SuperadminEmptyState title="Memuat daftar admin" description="Sistem sedang mengambil data admin dari Supabase." />
+                </div>
+              ) : adminDirectoryQuery.error ? (
+                <div className="p-6">
+                  <SuperadminEmptyState title="Daftar admin belum dapat dimuat" description="Terjadi kendala saat mengambil data app_profiles atau admin_registry. Coba muat ulang halaman." />
+                </div>
+              ) : filteredAdmins.length > 0 ? filteredAdmins.map((admin) => (
                 <SuperadminTableRowLink
                   key={admin.id}
                   href={`/superadmin/manajemen-admin/${admin.id}`}

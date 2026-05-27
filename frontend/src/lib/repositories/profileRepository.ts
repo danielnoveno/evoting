@@ -3,10 +3,11 @@
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import type { Database } from '@/lib/supabase/database.types'
-import type { AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
+import type { AdminDirectoryRecord, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
 
 type ProfileRow = Database['app']['Tables']['app_profiles']['Row']
+type AdminRegistryRow = Database['app']['Tables']['admin_registry']['Row']
 
 function mapProfileRow(row: ProfileRow): AppProfileRecord {
   return {
@@ -161,4 +162,68 @@ export async function listProfilesByRole(role: AppProfileRecord['role']): Promis
 
   if (error) throw new RepositoryError('Gagal memuat daftar profil. Coba lagi.')
   return data.map(mapProfileRow)
+}
+
+export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return []
+
+  const [profilesResult, registryResult] = await Promise.all([
+    client
+      .schema('app')
+      .from('app_profiles')
+      .select('*')
+      .in('role', ['admin', 'super_admin'])
+      .order('created_at', { ascending: false }),
+    client
+      .schema('app')
+      .from('admin_registry')
+      .select('*')
+      .in('assigned_role', ['admin', 'super_admin'])
+      .order('created_at', { ascending: false }),
+  ])
+
+  if (profilesResult.error) throw new RepositoryError('Gagal memuat profil admin. Coba lagi.')
+  if (registryResult.error) throw new RepositoryError('Gagal memuat registry admin. Coba lagi.')
+
+  const registryByEmail = new Map<string, AdminRegistryRow>()
+  registryResult.data.forEach((row) => {
+    registryByEmail.set(row.email.toLowerCase(), row)
+  })
+
+  const directoryByEmail = new Map<string, AdminDirectoryRecord>()
+
+  profilesResult.data.forEach((row) => {
+    const profile = mapProfileRow(row)
+    const email = profile.email?.trim() || profile.walletAddress
+    const registry = profile.email ? registryByEmail.get(profile.email.toLowerCase()) : undefined
+
+    directoryByEmail.set(email.toLowerCase(), {
+      email,
+      role: profile.role === 'super_admin' ? 'super_admin' : 'admin',
+      description: registry?.description ?? null,
+      createdAt: registry?.created_at ?? profile.createdAt,
+      profile,
+    })
+  })
+
+  registryResult.data.forEach((row) => {
+    const key = row.email.toLowerCase()
+    if (directoryByEmail.has(key)) return
+    if (row.assigned_role !== 'admin' && row.assigned_role !== 'super_admin') return
+
+    directoryByEmail.set(key, {
+      email: row.email,
+      role: row.assigned_role,
+      description: row.description,
+      createdAt: row.created_at,
+      profile: null,
+    })
+  })
+
+  return Array.from(directoryByEmail.values()).sort((left, right) => {
+    const leftTime = left.profile?.createdAt ?? left.createdAt ?? ''
+    const rightTime = right.profile?.createdAt ?? right.createdAt ?? ''
+    return rightTime.localeCompare(leftTime)
+  })
 }

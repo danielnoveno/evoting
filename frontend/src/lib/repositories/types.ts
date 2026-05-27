@@ -13,6 +13,14 @@ export interface AppProfileRecord {
   updatedAt: string
 }
 
+export interface AdminDirectoryRecord {
+  email: string
+  role: Extract<AppRole, 'admin' | 'super_admin'>
+  description: string | null
+  createdAt: string | null
+  profile: AppProfileRecord | null
+}
+
 export type ProposalDraftStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'deployed' | 'archived'
 export type ProposalListStatus = 'DRAF' | 'MENUNGGU REVIEW' | 'DISETUJUI' | 'DITOLAK'
 
