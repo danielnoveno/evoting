@@ -2,8 +2,8 @@
 
 import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { bindCurrentUserWallet, getCurrentProfile, getProfileByWalletAddress, listAdminDirectory, upsertCurrentProfile } from '@/lib/repositories/profileRepository'
-import type { AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
+import { bindCurrentUserWallet, createAdminRegistry, deleteAdminRegistry, getCurrentProfile, getProfileByWalletAddress, listAdminDirectory, updateAdminRegistry, upsertCurrentProfile } from '@/lib/repositories/profileRepository'
+import type { AdminRegistryInput, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
 
 export const profileQueryKeys = {
   current: ['profile', 'current'] as const,
@@ -33,6 +33,42 @@ export function useSuperadminAdminDirectory() {
     queryKey: profileQueryKeys.adminDirectory,
     queryFn: listAdminDirectory,
     retry: false,
+  })
+}
+
+export function useCreateAdminRegistry() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: AdminRegistryInput) => createAdminRegistry(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+      void queryClient.invalidateQueries({ queryKey: ['profile'] })
+    },
+  })
+}
+
+export function useUpdateAdminRegistry() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ currentEmail, input }: { currentEmail: string; input: AdminRegistryInput }) => updateAdminRegistry(currentEmail, input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+      void queryClient.invalidateQueries({ queryKey: ['profile'] })
+    },
+  })
+}
+
+export function useDeleteAdminRegistry() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (email: string) => deleteAdminRegistry(email),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+      void queryClient.invalidateQueries({ queryKey: ['profile'] })
+    },
   })
 }
 

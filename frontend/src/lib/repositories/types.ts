@@ -16,9 +16,35 @@ export interface AppProfileRecord {
 export interface AdminDirectoryRecord {
   email: string
   role: Extract<AppRole, 'admin' | 'super_admin'>
+  displayName: string | null
+  organizationName: string | null
+  accessScope: 'all' | 'specific'
+  registryStatus: 'pending' | 'active' | 'inactive' | null
   description: string | null
-  createdAt: string | null
+  createdAt: string
+  updatedAt: string | null
   profile: AppProfileRecord | null
+}
+
+export interface AdminRegistryRecord {
+  email: string
+  assignedRole: Extract<AppRole, 'admin' | 'super_admin'>
+  displayName: string | null
+  organizationName: string | null
+  accessScope: 'all' | 'specific'
+  status: 'pending' | 'active' | 'inactive'
+  description: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdminRegistryInput {
+  email: string
+  displayName?: string | null
+  organizationName?: string | null
+  accessScope?: 'all' | 'specific'
+  status?: 'pending' | 'active' | 'inactive'
+  description?: string | null
 }
 
 export type ProposalDraftStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'deployed' | 'archived'

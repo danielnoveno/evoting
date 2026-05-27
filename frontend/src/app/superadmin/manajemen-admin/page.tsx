@@ -1,7 +1,6 @@
 'use client'
 
 import { Download, EllipsisVertical, UserPlus } from 'lucide-react'
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -19,13 +18,13 @@ import {
   SuperadminTextInput,
   SuperadminToolbarButton,
 } from '@/components/superadmin/superadmin-shell'
-import { superadminAdminStatuses, superadminAdminTabs, type SuperadminAdminRecord } from '@/lib/superadmin-data'
-import { useSuperadminAdminsStore } from '@/lib/superadmin-store'
-import { useSuperadminAdminDirectory } from '@/hooks/use-profile'
-import type { AdminDirectoryRecord } from '@/lib/repositories/types'
+import { superadminAdminStatuses, superadminAdminTabs } from '@/lib/superadmin-data'
+import { useCreateAdminRegistry, useSuperadminAdminDirectory } from '@/hooks/use-profile'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
 
 type AdminTabKey = (typeof superadminAdminTabs)[number]['key']
 
@@ -34,50 +33,8 @@ type AdminScope = 'all' | 'specific'
 const initialFormData = {
   name: '',
   email: '',
-  password: '',
-  confirmPassword: '',
+  organizationName: '',
   scope: 'all' as AdminScope,
-}
-
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
-}
-
-function formatAdminDate(value: string | null | undefined) {
-  if (!value) return '-'
-
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-
-  return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(date)
-}
-
-function mapDirectoryAdmin(record: AdminDirectoryRecord): SuperadminAdminRecord {
-  const name = record.profile?.displayName?.trim() || record.email.split('@')[0] || 'Admin'
-  const isSuperAdmin = record.role === 'super_admin'
-
-  return {
-    id: record.profile?.id ?? `registry-${record.email}`,
-    initials: getInitials(name),
-    name,
-    email: record.email,
-    accessLabel: isSuperAdmin ? 'Super Admin' : 'Admin',
-    accessDetail: record.description ?? (isSuperAdmin ? 'Akses Platform' : 'Admin Pemilihan'),
-    status: record.profile ? 'Aktif' : 'Menunggu',
-    lastSeen: record.profile ? formatAdminDate(record.profile.updatedAt) : '-',
-    lastIp: '-',
-    joinedAt: formatAdminDate(record.profile?.createdAt ?? record.createdAt),
-    lastLoginText: record.profile ? 'Profil aktif' : 'Menunggu aktivasi',
-    lastLoginRelative: record.profile ? 'Terhubung ke profil Supabase' : 'Terdaftar di registry admin',
-    blockchainIdentity: record.profile?.walletAddress ?? `registry_${record.email}`,
-    spaces: [],
-    recentActivity: [],
-  }
 }
 
 function SuperadminAdminManagementContent() {
@@ -86,17 +43,15 @@ function SuperadminAdminManagementContent() {
   const { showToast } = useToast()
   const [activeTab, setActiveTab] = useState<AdminTabKey>('daftar')
   const [activeStatus, setActiveStatus] = useState<(typeof superadminAdminStatuses)[number]>('Semua Status')
-  const { admins: localAdmins, setAdmins } = useSuperadminAdminsStore()
   const adminDirectoryQuery = useSuperadminAdminDirectory()
+  const createAdminMutation = useCreateAdminRegistry()
   const [formData, setFormData] = useState(initialFormData)
 
   const admins = useMemo(() => {
-    const remoteAdmins = (adminDirectoryQuery.data ?? []).map(mapDirectoryAdmin)
-    const remoteEmails = new Set(remoteAdmins.map((admin) => admin.email.toLowerCase()))
-    const localOnlyAdmins = localAdmins.filter((admin) => !remoteEmails.has(admin.email.toLowerCase()))
-
-    return [...remoteAdmins, ...localOnlyAdmins]
-  }, [adminDirectoryQuery.data, localAdmins])
+    return (adminDirectoryQuery.data ?? [])
+      .filter((record) => record.role === 'admin')
+      .map(mapDirectoryAdmin)
+  }, [adminDirectoryQuery.data])
 
   const filteredAdmins = useMemo(() => {
     if (activeStatus === 'Semua Status') return admins
@@ -122,8 +77,8 @@ function SuperadminAdminManagementContent() {
   }
 
   const handleCreateAdmin = () => {
-    if (!formData.name.trim() || !formData.email.trim() || !formData.password || !formData.confirmPassword) {
-      showToast({ tone: 'error', title: 'Data admin belum lengkap', description: 'Lengkapi nama, email, dan password admin terlebih dahulu.' })
+    if (!formData.name.trim() || !formData.email.trim()) {
+      showToast({ tone: 'error', title: 'Data admin belum lengkap', description: 'Lengkapi nama dan email institusi admin terlebih dahulu.' })
       return
     }
 
@@ -132,39 +87,27 @@ function SuperadminAdminManagementContent() {
       return
     }
 
-    if (formData.password.length < 8) {
-      showToast({ tone: 'error', title: 'Password terlalu singkat', description: 'Gunakan minimal 8 karakter untuk keamanan akun admin.' })
-      return
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      showToast({ tone: 'error', title: 'Konfirmasi password tidak cocok', description: 'Pastikan password dan konfirmasi password sama.' })
-      return
-    }
-
-    const newAdmin: SuperadminAdminRecord = {
-      id: `draft-${Date.now()}`,
-      initials: getInitials(formData.name),
-      name: formData.name,
-      email: formData.email,
-      accessLabel: formData.scope === 'all' ? 'Global Access' : 'Editor',
-      accessDetail: formData.scope === 'all' ? 'Semua Pemilihan' : 'Pemilihan Tertentu',
-      status: 'Menunggu',
-      lastSeen: '-',
-      lastIp: '-',
-      joinedAt: 'Hari ini',
-      lastLoginText: 'Belum login',
-      lastLoginRelative: 'Undangan baru dibuat',
-      blockchainIdentity: `vtn_adm_invite_${Date.now()}`,
-      spaces: [],
-      recentActivity: [],
-    }
-
-    setAdmins((current) => [newAdmin, ...current])
-    updateTab('daftar')
-    setActiveStatus('Semua Status')
-    setFormData(initialFormData)
-    showToast({ tone: 'success', title: 'Undangan admin dibuat', description: 'Admin baru berhasil ditambahkan ke daftar.' })
+    createAdminMutation.mutate(
+      {
+        email: formData.email,
+        displayName: formData.name,
+        organizationName: formData.organizationName,
+        accessScope: formData.scope,
+        status: 'pending',
+        description: formData.scope === 'all' ? 'Semua Pemilihan' : 'Pemilihan Tertentu',
+      },
+      {
+        onSuccess: () => {
+          updateTab('daftar')
+          setActiveStatus('Semua Status')
+          setFormData(initialFormData)
+          showToast({ tone: 'success', title: 'Undangan admin dibuat', description: 'Email ini sekarang terdaftar sebagai admin organisasi. Admin dapat masuk lalu menautkan wallet sendiri.' })
+        },
+        onError: (error) => {
+          showToast({ tone: 'error', title: 'Gagal menambahkan admin', description: getRepositoryErrorMessage(error) })
+        },
+      },
+    )
   }
 
   return (
@@ -200,22 +143,21 @@ function SuperadminAdminManagementContent() {
 
       {activeTab === 'daftar' ? (
         <>
-          <ScrollReveal variant="fade-up" delay={150} duration={800}>
-            <AppSectionCard className="mt-8">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex flex-wrap gap-3">
-                  {superadminAdminStatuses.map((status) => (
-                    <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
-                      {status}
-                    </SuperadminFilterChip>
-                  ))}
-                </div>
-                <p className="text-[15px] text-slate-800">Total: {filteredAdmins.length} admin</p>
-              </div>
-            </AppSectionCard>
-          </ScrollReveal>
-
           <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+            <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Total Admin</p>
+                <p className="mt-1 text-[18px] font-semibold text-slate-900">{filteredAdmins.length} admin</p>
+              </div>
+              <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100 p-1 lg:justify-end">
+                {superadminAdminStatuses.map((status) => (
+                  <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
+                    {status}
+                  </SuperadminFilterChip>
+                ))}
+              </div>
+            </div>
+
             <div className="hidden grid-cols-[1.3fr_1fr_0.8fr_1fr_56px] gap-4 border-b border-slate-100 px-6 py-5 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500 lg:grid">
               <span>Profil Admin</span>
               <span>Akses Space</span>
@@ -236,7 +178,7 @@ function SuperadminAdminManagementContent() {
               ) : filteredAdmins.length > 0 ? filteredAdmins.map((admin) => (
                 <SuperadminTableRowLink
                   key={admin.id}
-                  href={`/superadmin/manajemen-admin/${admin.id}`}
+                  href={`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}`}
                   className="lg:grid-cols-[1.3fr_1fr_0.8fr_1fr_56px] lg:items-center"
                 >
                   <div className="flex items-center gap-4">
@@ -255,7 +197,7 @@ function SuperadminAdminManagementContent() {
                   </div>
                   <div>
                     <p className="text-[15px] text-slate-900">{admin.lastSeen}</p>
-                    <p className="mt-1 font-mono text-[13px] text-slate-500">IP: {admin.lastIp}</p>
+                    <p className="mt-1 text-[13px] text-slate-500">{admin.lastLoginRelative}</p>
                   </div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500">
                     <EllipsisVertical className="h-5 w-5" />
@@ -270,13 +212,13 @@ function SuperadminAdminManagementContent() {
 
             <div className="flex flex-col gap-4 px-6 py-5 text-[15px] text-slate-800 sm:flex-row sm:items-center sm:justify-between">
               <p>
-                Menampilkan 1 hingga {filteredAdmins.length} dari {admins.length} admin
+                Menampilkan {filteredAdmins.length > 0 ? 1 : 0} hingga {filteredAdmins.length} dari {admins.length} admin
               </p>
-              <div className="flex items-center gap-3 text-slate-500">
-                <button type="button" className="h-8 w-8 rounded-xl bg-slate-100 text-slate-400">1</button>
-                <button type="button">2</button>
-                <button type="button">3</button>
-              </div>
+              {filteredAdmins.length > 0 ? (
+                <div className="flex items-center gap-3 text-slate-500">
+                  <button type="button" className="h-8 w-8 rounded-xl bg-slate-100 text-slate-400">1</button>
+                </div>
+              ) : null}
             </div>
           </StaggerContainer>
         </>
@@ -303,6 +245,15 @@ function SuperadminAdminManagementContent() {
                   value={formData.email}
                   onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
                   placeholder="nama@institusi.edu"
+                />
+              </label>
+
+              <label className="block xl:col-span-2">
+                <SuperadminFieldLabel>Nama Organisasi</SuperadminFieldLabel>
+                <SuperadminTextInput
+                  value={formData.organizationName}
+                  onChange={(event) => setFormData((current) => ({ ...current, organizationName: event.target.value }))}
+                  placeholder="Contoh: HIMAFORKA FTI UAJY"
                 />
               </label>
             </div>
@@ -339,30 +290,9 @@ function SuperadminAdminManagementContent() {
 
           <AppSectionCard>
             <SuperadminSectionHeading
-              title="Keamanan"
-              description="Siapkan kata sandi awal admin. Nanti admin bisa menggantinya setelah login pertama."
+              title="Aktivasi Akun"
+              description="Super admin hanya mendaftarkan email. Admin organisasi membuat atau masuk akun sendiri, lalu menautkan wallet pada halaman Hubungkan Wallet. Wallet tidak perlu diisi oleh super admin."
             />
-            <div className="mt-8 grid gap-5 xl:grid-cols-2">
-              <label className="block">
-                <SuperadminFieldLabel>Password</SuperadminFieldLabel>
-                <SuperadminTextInput
-                  type="password"
-                  value={formData.password}
-                  onChange={(event) => setFormData((current) => ({ ...current, password: event.target.value }))}
-                  placeholder="••••••••"
-                />
-              </label>
-
-              <label className="block">
-                <SuperadminFieldLabel>Konfirmasi Password</SuperadminFieldLabel>
-                <SuperadminTextInput
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(event) => setFormData((current) => ({ ...current, confirmPassword: event.target.value }))}
-                  placeholder="••••••••"
-                />
-              </label>
-            </div>
           </AppSectionCard>
 
           <section className="flex flex-col gap-3 sm:flex-row sm:justify-end">
@@ -376,8 +306,8 @@ function SuperadminAdminManagementContent() {
             >
               Batal
             </button>
-            <SuperadminToolbarButton variant="primary" onClick={handleCreateAdmin}>
-              Simpan Admin
+            <SuperadminToolbarButton variant="primary" onClick={handleCreateAdmin} disabled={createAdminMutation.isPending}>
+              {createAdminMutation.isPending ? 'Menyimpan...' : 'Simpan Admin'}
             </SuperadminToolbarButton>
           </section>
         </StaggerContainer>

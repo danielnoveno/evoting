@@ -51,21 +51,42 @@ export type Database = {
       admin_registry: {
         Row: {
           email: string
-          assigned_role: 'voter' | 'admin' | 'super_admin'
+          assigned_role: 'admin' | 'super_admin'
+          display_name: string | null
+          organization_name: string | null
+          access_scope: 'all' | 'specific'
+          status: 'pending' | 'active' | 'inactive'
           description: string | null
-          created_at: string | null
+          created_by: string | null
+          updated_by: string | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
           email: string
-          assigned_role?: 'voter' | 'admin' | 'super_admin'
+          assigned_role?: 'admin' | 'super_admin'
+          display_name?: string | null
+          organization_name?: string | null
+          access_scope?: 'all' | 'specific'
+          status?: 'pending' | 'active' | 'inactive'
           description?: string | null
-          created_at?: string | null
+          created_by?: string | null
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           email?: string
-          assigned_role?: 'voter' | 'admin' | 'super_admin'
+          assigned_role?: 'admin' | 'super_admin'
+          display_name?: string | null
+          organization_name?: string | null
+          access_scope?: 'all' | 'specific'
+          status?: 'pending' | 'active' | 'inactive'
           description?: string | null
-          created_at?: string | null
+          created_by?: string | null
+          updated_by?: string | null
+          created_at?: string
+          updated_at?: string
         }
       }
       proposal_drafts: {

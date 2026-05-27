@@ -3,7 +3,7 @@
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import type { Database } from '@/lib/supabase/database.types'
-import type { AdminDirectoryRecord, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
+import type { AdminDirectoryRecord, AdminRegistryInput, AdminRegistryRecord, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
 
 type ProfileRow = Database['app']['Tables']['app_profiles']['Row']
@@ -38,6 +38,10 @@ function sameWalletAddress(left: string | null | undefined, right: string | null
   return left.trim().toLowerCase() === right.trim().toLowerCase()
 }
 
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
 function mapProfileRow(row: ProfileRow): AppProfileRecord {
   return {
     id: row.id,
@@ -48,6 +52,20 @@ function mapProfileRow(row: ProfileRow): AppProfileRecord {
     role: row.role,
     roleHint: row.role_hint,
     avatarUrl: row.avatar_url,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function mapAdminRegistryRow(row: AdminRegistryRow): AdminRegistryRecord {
+  return {
+    email: row.email,
+    assignedRole: row.assigned_role,
+    displayName: row.display_name,
+    organizationName: row.organization_name,
+    accessScope: row.access_scope,
+    status: row.status,
+    description: row.description,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -79,6 +97,22 @@ export async function getCurrentProfile(): Promise<AppProfileRecord | null> {
   return data ? mapProfileRow(data) : null
 }
 
+async function getCurrentProfileId(): Promise<string | null> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return null
+
+  const user = await requireUser()
+  const { data, error } = await client
+    .schema('app')
+    .from('app_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (error) throw new RepositoryError('Gagal memuat profil super admin. Coba lagi.')
+  return data?.id ?? null
+}
+
 export async function getCurrentProfileRole(): Promise<AppProfileRecord['role'] | null> {
   const profile = await getCurrentProfile()
   return profile?.role ?? null
@@ -108,11 +142,15 @@ export async function upsertCurrentProfile(input: ProfileUpsertInput): Promise<A
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
 
   const user = await requireUser()
+  const currentProfile = await getCurrentProfile()
+  const assignedRole = await resolveRegisteredRoleForEmail(input.email ?? user.email ?? null)
+  const nextRole = currentProfile?.role === 'super_admin' && assignedRole === 'voter' ? 'super_admin' : assignedRole
   const payload: Database['app']['Tables']['app_profiles']['Insert'] = {
     user_id: user.id,
     wallet_address: input.walletAddress,
     display_name: input.displayName ?? null,
     email: input.email ?? user.email ?? null,
+    role: nextRole,
     avatar_url: input.avatarUrl ?? null,
     role_hint: input.roleHint ?? null,
   }
@@ -165,11 +203,15 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
     throw new RepositoryError(`Wallet ini sudah ditautkan ke akun kampus lain${ownerEmail}. Putuskan dompet tersambung, lalu sambungkan wallet yang sesuai.`)
   }
 
+  const assignedRole = await resolveRegisteredRoleForEmail(input.email ?? user.email ?? null)
+  const nextRole = currentProfile?.role === 'super_admin' && assignedRole === 'voter' ? 'super_admin' : assignedRole
+
   const payload: Database['app']['Tables']['app_profiles']['Insert'] = {
     user_id: user.id,
     wallet_address: normalizedWallet,
     display_name: input.displayName ?? currentProfile?.display_name ?? null,
     email: input.email ?? currentProfile?.email ?? user.email ?? null,
+    role: nextRole,
     avatar_url: input.avatarUrl ?? currentProfile?.avatar_url ?? null,
     role_hint: input.roleHint ?? currentProfile?.role_hint ?? 'microsoft-bound-wallet',
   }
@@ -189,6 +231,25 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
     throw new RepositoryError('Gagal menautkan wallet ke akun kampus. Coba lagi.')
   }
   return mapProfileRow(data)
+}
+
+export async function resolveRegisteredRoleForEmail(email: string | null | undefined): Promise<AppProfileRecord['role']> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return 'voter'
+
+  const normalizedEmail = normalizeEmail(email ?? '')
+  if (!normalizedEmail) return 'voter'
+
+  const { data, error } = await client
+    .schema('app')
+    .from('admin_registry')
+    .select('assigned_role,status')
+    .eq('email', normalizedEmail)
+    .maybeSingle()
+
+  if (error) throw new RepositoryError('Gagal memeriksa undangan role admin. Coba lagi.')
+  if (!data || data.status === 'inactive') return 'voter'
+  return data.assigned_role
 }
 
 export async function listProfilesByRole(role: AppProfileRecord['role']): Promise<AppProfileRecord[]> {
@@ -243,8 +304,13 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
     directoryByEmail.set(email.toLowerCase(), {
       email,
       role: profile.role === 'super_admin' ? 'super_admin' : 'admin',
+      displayName: registry?.display_name ?? profile.displayName,
+      organizationName: registry?.organization_name ?? null,
+      accessScope: registry?.access_scope ?? 'all',
+      registryStatus: registry?.status ?? null,
       description: registry?.description ?? null,
       createdAt: registry?.created_at ?? profile.createdAt,
+      updatedAt: registry?.updated_at ?? profile.updatedAt,
       profile,
     })
   })
@@ -257,8 +323,13 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
     directoryByEmail.set(key, {
       email: row.email,
       role: row.assigned_role,
+      displayName: row.display_name,
+      organizationName: row.organization_name,
+      accessScope: row.access_scope,
+      registryStatus: row.status,
       description: row.description,
       createdAt: row.created_at,
+      updatedAt: row.updated_at,
       profile: null,
     })
   })
@@ -268,4 +339,123 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
     const rightTime = right.profile?.createdAt ?? right.createdAt ?? ''
     return rightTime.localeCompare(leftTime)
   })
+}
+
+async function syncProfileRoleForEmail(email: string, role: AppProfileRecord['role'], displayName?: string | null) {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const payload: Database['app']['Tables']['app_profiles']['Update'] = {
+    role,
+  }
+
+  if (displayName !== undefined) {
+    payload.display_name = displayName
+  }
+
+  const { error } = await client
+    .schema('app')
+    .from('app_profiles')
+    .update(payload)
+    .ilike('email', email)
+
+  if (error) throw new RepositoryError('Gagal menyinkronkan role profil admin. Coba lagi.')
+}
+
+export async function createAdminRegistry(input: AdminRegistryInput): Promise<AdminRegistryRecord> {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const email = normalizeEmail(input.email)
+  if (!email) throw new RepositoryError('Email admin wajib diisi.')
+
+  const actorProfileId = await getCurrentProfileId()
+  const payload: Database['app']['Tables']['admin_registry']['Insert'] = {
+    email,
+    assigned_role: 'admin',
+    display_name: input.displayName?.trim() || null,
+    organization_name: input.organizationName?.trim() || null,
+    access_scope: input.accessScope ?? 'all',
+    status: input.status ?? 'pending',
+    description: input.description?.trim() || null,
+    created_by: actorProfileId,
+    updated_by: actorProfileId,
+  }
+
+  const { data, error } = await client
+    .schema('app')
+    .from('admin_registry')
+    .insert(payload)
+    .select('*')
+    .single()
+
+  if (error) {
+    if (isUniqueConstraintError(error, 'email')) {
+      throw new RepositoryError('Email ini sudah terdaftar sebagai admin organisasi.')
+    }
+    throw new RepositoryError('Gagal menambahkan admin organisasi. Coba lagi.')
+  }
+
+  if (payload.status !== 'inactive') {
+    await syncProfileRoleForEmail(email, 'admin', payload.display_name)
+  }
+
+  return mapAdminRegistryRow(data)
+}
+
+export async function updateAdminRegistry(currentEmail: string, input: AdminRegistryInput): Promise<AdminRegistryRecord> {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const oldEmail = normalizeEmail(currentEmail)
+  const nextEmail = normalizeEmail(input.email)
+  if (!oldEmail || !nextEmail) throw new RepositoryError('Email admin wajib diisi.')
+
+  const actorProfileId = await getCurrentProfileId()
+  const payload: Database['app']['Tables']['admin_registry']['Update'] = {
+    email: nextEmail,
+    assigned_role: 'admin',
+    display_name: input.displayName?.trim() || null,
+    organization_name: input.organizationName?.trim() || null,
+    access_scope: input.accessScope ?? 'all',
+    status: input.status ?? 'pending',
+    description: input.description?.trim() || null,
+    updated_by: actorProfileId,
+  }
+
+  const { data, error } = await client
+    .schema('app')
+    .from('admin_registry')
+    .update(payload)
+    .eq('email', oldEmail)
+    .select('*')
+    .single()
+
+  if (error) throw new RepositoryError('Gagal memperbarui admin organisasi. Coba lagi.')
+
+  if (oldEmail !== nextEmail) {
+    await syncProfileRoleForEmail(oldEmail, 'voter')
+  }
+
+  await syncProfileRoleForEmail(nextEmail, payload.status === 'inactive' ? 'voter' : 'admin', payload.display_name)
+
+  return mapAdminRegistryRow(data)
+}
+
+export async function deleteAdminRegistry(email: string): Promise<void> {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const normalizedEmail = normalizeEmail(email)
+  if (!normalizedEmail) throw new RepositoryError('Email admin wajib diisi.')
+
+  const { error } = await client
+    .schema('app')
+    .from('admin_registry')
+    .delete()
+    .eq('email', normalizedEmail)
+
+  if (error) throw new RepositoryError('Gagal menghapus admin organisasi. Coba lagi.')
+
+  await syncProfileRoleForEmail(normalizedEmail, 'voter')
 }

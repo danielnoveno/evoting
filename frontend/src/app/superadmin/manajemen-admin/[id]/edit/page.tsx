@@ -2,7 +2,7 @@
 
 import { ShieldCheck, UserCog } from 'lucide-react'
 import { notFound, useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   SuperadminFieldLabel,
   SuperadminPageHeader,
@@ -17,8 +17,10 @@ import {
 } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
-import { useSuperadminAdminsStore } from '@/lib/superadmin-store'
+import { useSuperadminAdminDirectory, useUpdateAdminRegistry } from '@/hooks/use-profile'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
 
 type AdminScope = 'all' | 'specific'
 type AdminStatus = 'Aktif' | 'Menunggu' | 'Nonaktif'
@@ -30,25 +32,41 @@ function inferScope(accessDetail: string): AdminScope {
 export default function SuperadminAdminEditPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { showToast } = useToast()
-  const { admins } = useSuperadminAdminsStore()
-  const admin = useMemo(() => admins.find((item) => item.id === params.id), [admins, params.id])
+  const adminId = decodeURIComponent(params.id)
+  const adminDirectoryQuery = useSuperadminAdminDirectory()
+  const updateAdminMutation = useUpdateAdminRegistry()
+  const directoryRecord = useMemo(() => adminDirectoryQuery.data?.find((item) => item.email === adminId && item.role === 'admin') ?? null, [adminDirectoryQuery.data, adminId])
+  const admin = useMemo(() => directoryRecord ? mapDirectoryAdmin(directoryRecord) : null, [directoryRecord])
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
 
-  if (!admin) notFound()
-
-  const initialForm = {
-    name: admin.name,
-    email: admin.email,
-    scope: inferScope(admin.accessDetail),
-    status: admin.status as AdminStatus,
-    accessLabel: admin.accessLabel,
-    accessDetail: admin.accessDetail,
-    password: '',
-    confirmPassword: '',
-  }
+  const initialForm = useMemo(() => ({
+    name: admin?.name ?? '',
+    email: admin?.email ?? '',
+    organizationName: directoryRecord?.organizationName ?? '',
+    scope: directoryRecord?.accessScope ?? (admin ? inferScope(admin.accessDetail) : 'all' as AdminScope),
+    status: (admin?.status ?? 'Menunggu') as AdminStatus,
+    accessLabel: admin?.accessLabel ?? 'Admin Organisasi',
+    accessDetail: admin?.accessDetail ?? 'Pemilihan Tertentu',
+  }), [admin, directoryRecord])
 
   const [formData, setFormData] = useState(initialForm)
+
+  useEffect(() => {
+    setFormData(initialForm)
+  }, [initialForm])
+
+  if (adminDirectoryQuery.isLoading) {
+    return (
+      <SuperadminShell>
+        <div className="flex h-[50vh] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-black" />
+        </div>
+      </SuperadminShell>
+    )
+  }
+
+  if (!admin || !directoryRecord) notFound()
 
   const isDirty = JSON.stringify(formData) !== JSON.stringify(initialForm)
 
@@ -67,36 +85,43 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
       return
     }
 
-    if (formData.password || formData.confirmPassword) {
-      if (formData.password.length < 8) {
-        showToast({ tone: 'error', title: 'Password terlalu singkat', description: 'Password baru minimal 8 karakter.' })
-        return
-      }
-
-      if (formData.password !== formData.confirmPassword) {
-        showToast({ tone: 'error', title: 'Konfirmasi password tidak cocok', description: 'Pastikan password baru dan konfirmasinya sama.' })
-        return
-      }
-    }
-
     setConfirmOpen(true)
   }
 
   const handleConfirmSave = () => {
-    setConfirmOpen(false)
-    showToast({
-      tone: 'success',
-      title: 'Perubahan admin berhasil disimpan',
-      description: 'Perubahan telah diproses dan Anda akan kembali ke halaman detail admin.',
-    })
-    window.setTimeout(() => {
-      router.push(`/superadmin/manajemen-admin/${admin.id}`)
-    }, 500)
+    updateAdminMutation.mutate(
+      {
+        currentEmail: directoryRecord.email,
+        input: {
+          email: formData.email,
+          displayName: formData.name,
+          organizationName: formData.organizationName,
+          accessScope: formData.scope,
+          status: formData.status === 'Nonaktif' ? 'inactive' : formData.status === 'Aktif' ? 'active' : 'pending',
+          description: formData.accessDetail,
+        },
+      },
+      {
+        onSuccess: (updated) => {
+          setConfirmOpen(false)
+          showToast({
+            tone: 'success',
+            title: 'Perubahan admin berhasil disimpan',
+            description: 'Registry admin organisasi sudah diperbarui.',
+          })
+          router.push(`/superadmin/manajemen-admin/${encodeURIComponent(updated.email)}`)
+        },
+        onError: (error) => {
+          setConfirmOpen(false)
+          showToast({ tone: 'error', title: 'Gagal menyimpan perubahan', description: getRepositoryErrorMessage(error) })
+        },
+      },
+    )
   }
 
   const handleCancel = () => {
     if (!isDirty) {
-      router.push(`/superadmin/manajemen-admin/${admin.id}`)
+      router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}`)
       return
     }
     setCancelConfirmOpen(true)
@@ -106,7 +131,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
     <SuperadminShell>
       <ScrollReveal variant="fade-up" duration={800}>
         <SuperadminPageHeader
-          backHref={`/superadmin/manajemen-admin/${admin.id}`}
+          backHref={`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}`}
           backLabel="Kembali ke Detail Admin"
           title="Edit Admin"
           description="Perbarui data admin dan tinjau kembali hak akses yang berlaku."
@@ -115,8 +140,8 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
               <button type="button" onClick={handleCancel} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-700 hover:bg-slate-200">
                 Batal
               </button>
-              <SuperadminToolbarButton variant="primary" onClick={handleSaveClick}>
-                Simpan Perubahan
+              <SuperadminToolbarButton variant="primary" onClick={handleSaveClick} disabled={updateAdminMutation.isPending}>
+                {updateAdminMutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
               </SuperadminToolbarButton>
             </>
           )}
@@ -136,6 +161,11 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
               <label className="block xl:col-span-2">
                 <SuperadminFieldLabel>Email Institusi</SuperadminFieldLabel>
                 <SuperadminTextInput value={formData.email} onChange={(event) => handleChange('email', event.target.value)} placeholder="nama@institusi.edu" />
+              </label>
+
+              <label className="block xl:col-span-2">
+                <SuperadminFieldLabel>Nama Organisasi</SuperadminFieldLabel>
+                <SuperadminTextInput value={formData.organizationName} onChange={(event) => handleChange('organizationName', event.target.value)} placeholder="Contoh: HIMAFORKA FTI UAJY" />
               </label>
 
               <label className="block">
@@ -178,17 +208,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
           </SuperadminSectionCard>
 
           <SuperadminSectionCard>
-            <SuperadminSectionHeading title="Reset Kata Sandi (Opsional)" description="Biarkan kosong jika tidak ingin mengganti password." />
-            <div className="mt-8 grid gap-5 xl:grid-cols-2">
-              <label className="block">
-                <SuperadminFieldLabel>Password Baru</SuperadminFieldLabel>
-                <SuperadminTextInput type="password" value={formData.password} onChange={(event) => handleChange('password', event.target.value)} placeholder="••••••••" />
-              </label>
-              <label className="block">
-                <SuperadminFieldLabel>Konfirmasi Password Baru</SuperadminFieldLabel>
-                <SuperadminTextInput type="password" value={formData.confirmPassword} onChange={(event) => handleChange('confirmPassword', event.target.value)} placeholder="••••••••" />
-              </label>
-            </div>
+            <SuperadminSectionHeading title="Aktivasi Wallet" description="Wallet tetap ditautkan oleh admin organisasi sendiri saat masuk ke halaman Hubungkan Wallet. Super admin tidak mengisi private key atau wallet pengguna." />
           </SuperadminSectionCard>
         </div>
 
@@ -216,7 +236,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
                 <SuperadminStatusBadge status={formData.status} />
               </div>
               <div className="mt-5 space-y-3 text-[14px] text-slate-800">
-                <p><span className="font-semibold text-slate-900">Identitas blockchain:</span> {admin.blockchainIdentity}</p>
+                <p><span className="font-semibold text-slate-900">Identitas wallet:</span> {admin.blockchainIdentity}</p>
                 <p><span className="font-semibold text-slate-900">Akses saat ini:</span> {formData.accessLabel} · {formData.accessDetail}</p>
                 <p><span className="font-semibold text-slate-900">Mode akses:</span> {formData.scope === 'all' ? 'Semua Pemilihan' : 'Pemilihan Tertentu'}</p>
               </div>
@@ -232,7 +252,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
                 <h2 className="text-[18px] font-semibold text-slate-900">Catatan Perubahan</h2>
                 <ul className="mt-3 space-y-2 text-[14px] leading-7 text-slate-800">
                   <li>• Form dapat diisi dan divalidasi sebelum disimpan.</li>
-                  <li>• Tinjau kembali status akun, akses, dan password sebelum konfirmasi.</li>
+                  <li>• Tinjau kembali status akun, organisasi, dan akses sebelum konfirmasi.</li>
                   <li>• Setelah disimpan, Anda akan kembali ke halaman detail admin.</li>
                 </ul>
               </div>
@@ -260,7 +280,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
           setCancelConfirmOpen(false)
           showToast({ tone: 'info', title: 'Perubahan dibatalkan', description: 'Form edit admin dikembalikan tanpa menyimpan perubahan.' })
           window.setTimeout(() => {
-            router.push(`/superadmin/manajemen-admin/${admin.id}`)
+            router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}`)
           }, 300)
         }}
       />

@@ -317,14 +317,15 @@ export function SuperadminDetailIntro({
   )
 }
 
-export function SuperadminToolbarButton({ children, variant = 'secondary', onClick }: { children: ReactNode; variant?: 'primary' | 'secondary'; onClick?: () => void }) {
+export function SuperadminToolbarButton({ children, variant = 'secondary', onClick, disabled = false }: { children: ReactNode; variant?: 'primary' | 'secondary'; onClick?: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={variant === 'primary'
-        ? 'inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-6 text-[15px] font-medium text-white hover:bg-slate-800'
-        : 'inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-200'}
+        ? 'inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-6 text-[15px] font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50'
+        : 'inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50'}
     >
       {children}
     </button>

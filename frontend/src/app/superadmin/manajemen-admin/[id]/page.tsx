@@ -13,18 +13,36 @@ import {
   SuperadminStatusBadge,
   SuperadminToolbarButton,
 } from '@/components/superadmin/superadmin-shell'
-import { useSuperadminAdminsStore } from '@/lib/superadmin-store'
+import { useDeleteAdminRegistry, useSuperadminAdminDirectory, useUpdateAdminRegistry } from '@/hooks/use-profile'
+import { useResetPassword } from '@/hooks/use-auth-session'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
 
 export default function SuperadminAdminDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const { admins, setAdmins } = useSuperadminAdminsStore()
-  const seedRecord = useMemo(() => admins.find((admin) => admin.id === params.id), [admins, params.id])
+  const adminId = decodeURIComponent(params.id)
+  const adminDirectoryQuery = useSuperadminAdminDirectory()
+  const updateAdminMutation = useUpdateAdminRegistry()
+  const deleteAdminMutation = useDeleteAdminRegistry()
+  const resetPasswordMutation = useResetPassword()
+  const directoryRecord = useMemo(() => adminDirectoryQuery.data?.find((admin) => admin.email === adminId && admin.role === 'admin') ?? null, [adminDirectoryQuery.data, adminId])
+  const seedRecord = useMemo(() => directoryRecord ? mapDirectoryAdmin(directoryRecord) : null, [directoryRecord])
   const { showToast } = useToast()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [enabled, setEnabled] = useState(seedRecord?.status !== 'Nonaktif')
+  const enabled = seedRecord?.status !== 'Nonaktif'
 
-  if (!seedRecord) {
+  if (adminDirectoryQuery.isLoading) {
+    return (
+      <SuperadminShell>
+        <div className="flex h-[50vh] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-black" />
+        </div>
+      </SuperadminShell>
+    )
+  }
+
+  if (!seedRecord || !directoryRecord) {
     notFound()
   }
 
@@ -65,12 +83,12 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
                   <Mail className="h-4 w-4" />
                   {seedRecord.email}
                 </div>
-                <p className="mt-2 font-mono text-[15px] text-slate-400">ID Admin: {seedRecord.blockchainIdentity}</p>
+                <p className="mt-2 font-mono text-[15px] text-slate-400">Wallet: {seedRecord.blockchainIdentity}</p>
               </div>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <SuperadminToolbarButton onClick={() => router.push(`/superadmin/manajemen-admin/${seedRecord.id}/edit`)}>
+              <SuperadminToolbarButton onClick={() => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(seedRecord.id)}/edit`)}>
                 <Pencil className="h-4 w-4" />
                 Edit Profil
               </SuperadminToolbarButton>
@@ -126,9 +144,27 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
                   type="button"
                   aria-pressed={enabled}
                   onClick={() => {
-                    setEnabled((current) => !current)
-                    setAdmins((current) => current.map((admin) => admin.id === seedRecord.id ? { ...admin, status: enabled ? 'Nonaktif' : 'Aktif' } : admin))
-                    showToast({ tone: 'success', title: enabled ? 'Akun dinonaktifkan' : 'Akun diaktifkan kembali', description: 'Perubahan status akun berhasil diterapkan.' })
+                    updateAdminMutation.mutate(
+                      {
+                        currentEmail: directoryRecord.email,
+                        input: {
+                          email: directoryRecord.email,
+                          displayName: directoryRecord.displayName ?? seedRecord.name,
+                          organizationName: directoryRecord.organizationName,
+                          accessScope: directoryRecord.accessScope,
+                          status: enabled ? 'inactive' : 'active',
+                          description: directoryRecord.description,
+                        },
+                      },
+                      {
+                        onSuccess: () => {
+                          showToast({ tone: 'success', title: enabled ? 'Akun dinonaktifkan' : 'Akun diaktifkan kembali', description: 'Perubahan status akun berhasil disimpan ke registry admin.' })
+                        },
+                        onError: (error) => {
+                          showToast({ tone: 'error', title: 'Status gagal diperbarui', description: getRepositoryErrorMessage(error) })
+                        },
+                      },
+                    )
                   }}
                   className={`relative h-8 w-14 rounded-full transition ${enabled ? 'bg-slate-900' : 'bg-slate-300'}`}
                 >
@@ -139,7 +175,12 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
 
             <button
               type="button"
-              onClick={() => showToast({ tone: 'info', title: 'Reset password dikirim', description: 'Email reset password berhasil dikirim ke admin ini.' })}
+              onClick={() => {
+                resetPasswordMutation.mutate(seedRecord.email, {
+                  onSuccess: () => showToast({ tone: 'success', title: 'Email reset dikirim', description: 'Admin akan menerima tautan untuk mengatur ulang kata sandi.' }),
+                  onError: (error) => showToast({ tone: 'error', title: 'Reset password gagal', description: getRepositoryErrorMessage(error) }),
+                })
+              }}
               className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-200 text-[15px] font-medium text-slate-900 hover:bg-slate-300"
             >
               <RefreshCcw className="h-4 w-4" />
@@ -216,12 +257,12 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
                 <ShieldCheck className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-[18px] font-semibold">Identitas Terverifikasi Blockchain</h2>
-                <p className="mt-2 text-[14px] text-slate-300">Seluruh aktivitas profil ini dicatat secara permanen di ledger publik.</p>
+                <h2 className="text-[18px] font-semibold">Identitas Akun Tertaut</h2>
+                <p className="mt-2 text-[14px] text-slate-300">Status wallet ditampilkan setelah admin organisasi menautkan dompetnya sendiri.</p>
               </div>
             </div>
             <div className="rounded-2xl border border-white/10 bg-[#11182a] px-5 py-4 font-mono text-[14px] text-white">
-              verification hash: {seedRecord.blockchainIdentity}
+              identitas wallet: {seedRecord.blockchainIdentity}
             </div>
           </div>
         </section>
@@ -236,7 +277,13 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
         onCancel={() => setDeleteDialogOpen(false)}
         onConfirm={() => {
           setDeleteDialogOpen(false)
-          showToast({ tone: 'success', title: 'Akun admin dihapus', description: 'Akun admin berhasil dihapus.' })
+          deleteAdminMutation.mutate(seedRecord.email, {
+            onSuccess: () => {
+              showToast({ tone: 'success', title: 'Akun admin dihapus', description: 'Email admin dicabut dari registry dan role profil disinkronkan.' })
+              router.push('/superadmin/manajemen-admin')
+            },
+            onError: (error) => showToast({ tone: 'error', title: 'Gagal menghapus admin', description: getRepositoryErrorMessage(error) }),
+          })
         }}
       />
     </SuperadminShell>
