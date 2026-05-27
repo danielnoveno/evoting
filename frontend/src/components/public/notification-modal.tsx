@@ -5,6 +5,7 @@ import { Bell, Clock, Info, CheckCircle2, AlertTriangle, ExternalLink } from 'lu
 import { useQuery } from '@tanstack/react-query'
 import { ModalShell } from '@/components/ui/modal-shell'
 import { listPublicNotifications, listUserNotifications } from '@/lib/repositories/electionRepository'
+import { areNotificationsEnabled } from '@/lib/supabase/config'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
 
 export interface NotificationItem {
@@ -28,13 +29,14 @@ export function NotificationModal({
   walletAddress?: string
 }) {
   const { markAsRead } = useNotificationBadge()
+  const notificationsEnabled = areNotificationsEnabled()
   const isPersonal = !!(profileId || walletAddress)
   const notificationQuery = useQuery({
     queryKey: isPersonal ? ['user', 'notifications', profileId, walletAddress] : ['public', 'notifications'],
     queryFn: () => isPersonal 
       ? listUserNotifications(profileId, walletAddress)
       : listPublicNotifications(),
-    enabled: open,
+    enabled: notificationsEnabled && open,
     retry: false,
   })
   const notifications = notificationQuery.data ?? []
@@ -95,13 +97,20 @@ export function NotificationModal({
           ))}
         </div>
 
-        {!notificationQuery.isLoading && notifications.length === 0 && (
+        {!notificationsEnabled ? (
+          <div className="py-12 text-center">
+            <Bell className="mx-auto h-12 w-12 text-slate-200" />
+            <p className="mt-4 text-[14px] text-slate-500">Notifikasi belum diaktifkan.</p>
+          </div>
+        ) : null}
+
+        {notificationsEnabled && !notificationQuery.isLoading && notifications.length === 0 && (
           <div className="py-12 text-center">
             <Bell className="mx-auto h-12 w-12 text-slate-200" />
             <p className="mt-4 text-[14px] text-slate-500">Tidak ada notifikasi saat ini.</p>
           </div>
         )}
-        {notificationQuery.isLoading ? (
+        {notificationsEnabled && notificationQuery.isLoading ? (
           <div className="py-12 text-center text-[14px] text-slate-500">Memuat notifikasi dari Supabase...</div>
         ) : null}
       </div>

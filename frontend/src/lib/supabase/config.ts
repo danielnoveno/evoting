@@ -28,6 +28,10 @@ export function getPublicAppOrigin(fallbackOrigin?: string) {
   return fallbackOrigin?.replace(/\/$/, '') ?? ''
 }
 
+export function areNotificationsEnabled() {
+  return process.env.NEXT_PUBLIC_ENABLE_NOTIFICATIONS === 'true'
+}
+
 export function getSupabaseServerConfig() {
   return {
     ...getSupabaseBrowserConfig(),

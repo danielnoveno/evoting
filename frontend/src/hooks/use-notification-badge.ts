@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listPublicNotifications, listUserNotifications } from '@/lib/repositories/electionRepository'
+import { areNotificationsEnabled } from '@/lib/supabase/config'
 import { useCurrentProfile } from '@/hooks/use-profile'
 
 const STORAGE_KEY = 'votein_last_notif_seen'
@@ -10,6 +11,7 @@ const STORAGE_KEY = 'votein_last_notif_seen'
 export function useNotificationBadge() {
   const { data: profile } = useCurrentProfile()
   const [hasUnread, setHasUnread] = useState(false)
+  const notificationsEnabled = areNotificationsEnabled()
 
   const isPersonal = !!profile
   const { data: notifications } = useQuery({
@@ -17,6 +19,7 @@ export function useNotificationBadge() {
     queryFn: () => isPersonal 
       ? listUserNotifications(profile.id, profile.walletAddress)
       : listPublicNotifications(),
+    enabled: notificationsEnabled,
     retry: false,
     refetchInterval: 60000, // Check every minute
   })
@@ -36,6 +39,7 @@ export function useNotificationBadge() {
   }, [notifications])
 
   const markAsRead = () => {
+    if (!notificationsEnabled) return
     if (notifications && notifications.length > 0) {
       localStorage.setItem(STORAGE_KEY, notifications[0].id)
       setHasUnread(false)
