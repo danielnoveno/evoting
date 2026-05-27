@@ -20,6 +20,13 @@ type WhitelistRow = Database['app']['Tables']['proposal_whitelist_entries']['Row
 type TxAuditRow = Database['app']['Tables']['tx_audit_log']['Row']
 type NotificationRow = Database['app']['Tables']['notification_jobs']['Row']
 
+let notificationBackendUnavailable = false
+
+function isMissingNotificationBackend(error: { code?: string; message?: string; details?: string }) {
+  const text = `${error.code ?? ''} ${error.message ?? ''} ${error.details ?? ''}`.toLowerCase()
+  return text.includes('notification_jobs') || text.includes('schema') || text.includes('not found') || text.includes('could not find')
+}
+
 function asObject(value: Json): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 }
@@ -512,6 +519,8 @@ function relativeTime(value: string): string {
 }
 
 export async function listPublicNotifications(): Promise<NotificationJobRecord[]> {
+  if (notificationBackendUnavailable) return []
+
   const client = getSupabaseBrowserClient()
   if (!client) return []
 
@@ -526,12 +535,20 @@ export async function listPublicNotifications(): Promise<NotificationJobRecord[]
     .order('created_at', { ascending: false })
     .limit(10)
 
-  if (error) throw new RepositoryError('Gagal memuat notifikasi dari Supabase.')
+  if (error) {
+    if (isMissingNotificationBackend(error)) {
+      notificationBackendUnavailable = true
+      return []
+    }
+    throw new RepositoryError('Gagal memuat notifikasi dari Supabase.')
+  }
 
   return (data ?? []).map(mapNotificationRow)
 }
 
 export async function listUserNotifications(profileId?: string, walletAddress?: string): Promise<NotificationJobRecord[]> {
+  if (notificationBackendUnavailable) return []
+
   const client = getSupabaseBrowserClient()
   if (!client) return []
 
@@ -552,7 +569,13 @@ export async function listUserNotifications(profileId?: string, walletAddress?: 
   query = query.or(filters.join(','))
 
   const { data, error } = await query
-  if (error) throw new RepositoryError('Gagal memuat notifikasi personal dari Supabase.')
+  if (error) {
+    if (isMissingNotificationBackend(error)) {
+      notificationBackendUnavailable = true
+      return []
+    }
+    throw new RepositoryError('Gagal memuat notifikasi personal dari Supabase.')
+  }
 
   return (data ?? []).map(mapNotificationRow)
 }

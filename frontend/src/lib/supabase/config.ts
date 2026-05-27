@@ -20,6 +20,14 @@ export function getSupabaseBrowserConfig() {
   return { url, anonKey }
 }
 
+export function getPublicAppOrigin(fallbackOrigin?: string) {
+  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL
+  const origin = configuredOrigin?.trim().replace(/\/$/, '')
+
+  if (origin) return origin
+  return fallbackOrigin?.replace(/\/$/, '') ?? ''
+}
+
 export function getSupabaseServerConfig() {
   return {
     ...getSupabaseBrowserConfig(),

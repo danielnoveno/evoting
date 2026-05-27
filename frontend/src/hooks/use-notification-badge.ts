@@ -17,6 +17,7 @@ export function useNotificationBadge() {
     queryFn: () => isPersonal 
       ? listUserNotifications(profile.id, profile.walletAddress)
       : listPublicNotifications(),
+    retry: false,
     refetchInterval: 60000, // Check every minute
   })
 

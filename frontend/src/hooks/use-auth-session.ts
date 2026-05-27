@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getCurrentSession, signInWithEmailPassword, signOutCurrentSession, signUpWithEmailPassword, resetPasswordForEmail, updatePassword } from '@/lib/repositories/authRepository'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
+import { getPublicAppOrigin } from '@/lib/supabase/config'
 
 export const authSessionQueryKey = ['auth', 'session'] as const
 
@@ -55,18 +56,17 @@ export function useUpdatePassword() {
 }
 
 export function useMicrosoftCampusLogin() {
-  const queryClient = useQueryClient()
-
   return useMutation({
     mutationFn: async ({ nextPath }: { nextPath?: string }) => {
       const client = getSupabaseBrowserClient()
       if (!client) throw new Error('Supabase client not available')
+      const appOrigin = getPublicAppOrigin(window.location.origin)
 
       const { data, error } = await client.auth.signInWithOAuth({
         provider: 'azure',
         options: {
           scopes: 'openid profile email',
-          redirectTo: `${window.location.origin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`,
+          redirectTo: `${appOrigin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`,
         }
       })
 
@@ -80,12 +80,11 @@ export function useMicrosoftCampusLogin() {
 }
 
 export function useGoogleLogin() {
-  const queryClient = useQueryClient()
-
   return useMutation({
     mutationFn: async ({ nextPath }: { nextPath?: string }) => {
       const client = getSupabaseBrowserClient()
       if (!client) throw new Error('Supabase client not available')
+      const appOrigin = getPublicAppOrigin(window.location.origin)
 
       const { data, error } = await client.auth.signInWithOAuth({
         provider: 'google',
@@ -94,7 +93,7 @@ export function useGoogleLogin() {
             access_type: 'offline',
             prompt: 'select_account',
           },
-          redirectTo: `${window.location.origin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`,
+          redirectTo: `${appOrigin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`,
         }
       })
 

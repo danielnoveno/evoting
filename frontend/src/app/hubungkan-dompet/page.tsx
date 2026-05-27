@@ -126,11 +126,11 @@ function ConnectWalletContent() {
   }
 
   const handleMicrosoftLogin = () => {
-    microsoftLoginMutation.mutate({ nextPath: `/hubungkan-dompet?redirect=${redirectParam}` })
+    microsoftLoginMutation.mutate({ nextPath: `/hubungkan-dompet?redirect=${encodeURIComponent(redirectTarget)}` })
   }
 
   const handleGoogleLogin = () => {
-    googleLoginMutation.mutate({ nextPath: `/hubungkan-dompet?redirect=${redirectParam}` })
+    googleLoginMutation.mutate({ nextPath: `/hubungkan-dompet?redirect=${encodeURIComponent(redirectTarget)}` })
   }
 
   const handleEmailAuth = (e: FormEvent) => {
