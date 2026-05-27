@@ -111,7 +111,7 @@ function SuperadminManagementContent() {
           </div>
         </section>
 
-        <div className="mt-10 flex items-center gap-8 border-b border-slate-200">
+        <div className="mt-10 flex items-end gap-8 border-b border-slate-200">
           <SuperadminTabButton active={activeTab === 'daftar'} onClick={() => updateTab('daftar')}>
             Daftar Otoritas
           </SuperadminTabButton>

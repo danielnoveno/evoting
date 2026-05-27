@@ -117,7 +117,7 @@ function SuperadminAdminManagementContent() {
       </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={150} duration={800} className="mt-8 space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-200">
+        <div className="flex items-end justify-between border-b border-slate-200">
           <div className="flex items-center gap-8">
             {superadminAdminTabs.map((tab) => (
               <SuperadminTabButton key={tab.key} active={activeTab === tab.key} onClick={() => updateTab(tab.key)}>
