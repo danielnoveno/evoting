@@ -124,8 +124,13 @@ function SuperadminAdminManagementContent() {
               ))}
             </div>
           }
-          rightContent={
-            activeTab === 'daftar' ? (
+        />
+      </ScrollReveal>
+
+      {activeTab === 'daftar' ? (
+        <>
+          <ScrollReveal variant="fade-up" duration={800}>
+            <div className="mt-8 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-col gap-3 sm:flex-row">
                 <SuperadminToolbarButton onClick={() => showToast({ tone: 'info', title: 'Unduh laporan belum aktif', description: 'Fitur unduh laporan sedang disiapkan.' })}>
                   <Download className="h-4 w-4" />
@@ -136,28 +141,24 @@ function SuperadminAdminManagementContent() {
                   Tambah Admin
                 </SuperadminToolbarButton>
               </div>
-            ) : null
-          }
-        />
-      </ScrollReveal>
 
-      {activeTab === 'daftar' ? (
-        <>
-          <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
-            <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Total Admin</p>
-                <p className="mt-1 text-[18px] font-semibold text-slate-900">{filteredAdmins.length} admin</p>
-              </div>
-              <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100 p-1 lg:justify-end">
-                {superadminAdminStatuses.map((status) => (
-                  <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
-                    {status}
-                  </SuperadminFilterChip>
-                ))}
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+                <div>
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Total Admin</p>
+                  <p className="mt-1 text-[18px] font-semibold text-slate-900">{filteredAdmins.length} admin</p>
+                </div>
+                <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100 p-1">
+                  {superadminAdminStatuses.map((status) => (
+                    <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
+                      {status}
+                    </SuperadminFilterChip>
+                  ))}
+                </div>
               </div>
             </div>
+          </ScrollReveal>
 
+          <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
             <div className="hidden grid-cols-[1.3fr_1fr_0.8fr_1fr_56px] gap-4 border-b border-slate-100 px-6 py-5 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500 lg:grid">
               <span>Profil Admin</span>
               <span>Akses Space</span>
