@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/toast-provider'
 import { ConnectWalletButton } from '@/components/wallet/ConnectWalletButton'
 import { AuditShortcutModal } from './audit-shortcut-modal'
 import { NotificationModal } from './notification-modal'
+import { useNotificationBadge } from '@/hooks/use-notification-badge'
 
 const navItems = [
   { href: '/', label: 'Beranda' },
@@ -20,6 +21,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
   const [auditOpen, setAuditOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const { showToast } = useToast()
+  const { hasUnread } = useNotificationBadge()
 
   return (
     <AppNavbar className="sticky top-0 z-40">
@@ -67,10 +69,16 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
             <button
               type="button"
               onClick={() => setNotifOpen(true)}
-              className="hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:inline-flex"
+              className="relative hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:inline-flex"
               aria-label="Notifikasi"
             >
               <Bell className="h-4 w-4" />
+              {hasUnread && (
+                <span className="absolute right-2 top-2 flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+                </span>
+              )}
             </button>
             <ConnectWalletButton />
             <button

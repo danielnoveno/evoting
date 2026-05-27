@@ -14,6 +14,7 @@ import { formatWallet, useVoterStore } from '@/lib/voter-store'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { useLogoutSession } from '@/hooks/use-auth-session'
 import { NotificationModal } from '@/components/public/notification-modal'
+import { useNotificationBadge } from '@/hooks/use-notification-badge'
 
 const sidebarItems = [
   { href: '/pemilih', label: 'Beranda', icon: Home },
@@ -34,6 +35,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
   const { sidebarWidthClass } = useSidebarLayout(collapsed)
   const { data: currentProfile } = useCurrentProfile()
   const logoutSession = useLogoutSession()
+  const { hasUnread } = useNotificationBadge()
 
   const profile = currentProfile
     ? {
@@ -114,8 +116,14 @@ export function VoterShell({ children }: { children: ReactNode }) {
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
                   {profile ? formatWallet(profile.wallet) : 'Belum terhubung'}
                 </div>
-                <button type="button" onClick={() => setNotifOpen(true)} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2" aria-label="Notifikasi pemilih">
+                <button type="button" onClick={() => setNotifOpen(true)} className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2" aria-label="Notifikasi pemilih">
                   <Bell className="h-4 w-4" />
+                  {hasUnread && (
+                    <span className="absolute right-2 top-2 flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+                    </span>
+                  )}
                 </button>
                 <Link
                   href="/pemilih/profil"

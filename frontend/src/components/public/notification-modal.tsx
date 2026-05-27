@@ -1,9 +1,11 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Bell, Clock, Info, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { ModalShell } from '@/components/ui/modal-shell'
 import { listPublicNotifications, listUserNotifications } from '@/lib/repositories/electionRepository'
+import { useNotificationBadge } from '@/hooks/use-notification-badge'
 
 export interface NotificationItem {
   id: string
@@ -25,6 +27,7 @@ export function NotificationModal({
   profileId?: string
   walletAddress?: string
 }) {
+  const { markAsRead } = useNotificationBadge()
   const isPersonal = !!(profileId || walletAddress)
   const notificationQuery = useQuery({
     queryKey: isPersonal ? ['user', 'notifications', profileId, walletAddress] : ['public', 'notifications'],
@@ -35,6 +38,12 @@ export function NotificationModal({
     retry: false,
   })
   const notifications = notificationQuery.data ?? []
+
+  useEffect(() => {
+    if (open && !notificationQuery.isLoading && notifications.length > 0) {
+      markAsRead()
+    }
+  }, [open, notificationQuery.isLoading, notifications.length, markAsRead])
 
   return (
     <ModalShell

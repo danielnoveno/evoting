@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/toast-provider'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { useLogoutSession } from '@/hooks/use-auth-session'
 import { NotificationModal } from '@/components/public/notification-modal'
+import { useNotificationBadge } from '@/hooks/use-notification-badge'
 
 export type { SidebarNavItem as ConsoleNavItem }
 
@@ -68,6 +69,7 @@ export function ConsoleShell({
   const { sidebarWidthClass } = useSidebarLayout(collapsed)
   const { data: currentProfile } = useCurrentProfile()
   const logoutSession = useLogoutSession()
+  const { hasUnread } = useNotificationBadge()
 
   const resolvedProfile = {
     ...profile,
@@ -135,8 +137,14 @@ export function ConsoleShell({
                     <span className="text-[12px]">⌘</span>K
                   </kbd>
                 </button>
-                <button type="button" onClick={() => setNotifOpen(true)} className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-800 hover:bg-slate-100" aria-label="Notifikasi">
+                <button type="button" onClick={() => setNotifOpen(true)} className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-800 hover:bg-slate-100" aria-label="Notifikasi">
                   <Bell className="h-4 w-4" />
+                  {hasUnread && (
+                    <span className="absolute right-2.5 top-2.5 flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+                    </span>
+                  )}
                 </button>
                 <Link
                   href={resolvedProfile.editHref}
