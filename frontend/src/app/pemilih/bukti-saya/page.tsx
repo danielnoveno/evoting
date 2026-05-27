@@ -29,6 +29,34 @@ export default function VoterProofPage() {
 
   const selectedElection = store.elections.find((election) => election.id === store.selectedProofElectionId) ?? store.elections[0]
 
+  if (!selectedElection) {
+    return (
+      <VoterShell>
+        <ScrollReveal variant="fade-up" duration={800}>
+          <section className="max-w-4xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Arsip digital</p>
+            <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Bukti Saya</h1>
+            <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
+              Riwayat pemilihan yang akan, sedang, dan sudah Anda ikuti beserta bukti transaksi yang dapat ditinjau secara publik.
+            </p>
+          </section>
+        </ScrollReveal>
+
+        <ScrollReveal variant="fade-up" delay={100} duration={800}>
+          <section className="mt-10 rounded-[32px] border border-slate-100 bg-white p-8 text-center md:p-10">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-slate-100 text-slate-700">
+              <ShieldCheck className="h-7 w-7" />
+            </div>
+            <h2 className="mt-6 text-[24px] font-semibold text-slate-900 sm:text-[32px]">Belum ada bukti pemilihan</h2>
+            <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-8 text-slate-700 sm:text-[16px]">
+              Data pemilihan belum tersedia untuk akun ini. Setelah Anda mengikuti pemilihan dan transaksi berhasil, bukti akan tampil di halaman ini.
+            </p>
+          </section>
+        </ScrollReveal>
+      </VoterShell>
+    )
+  }
+
   return (
     <VoterShell>
       <ScrollReveal variant="fade-up" duration={800}>
