@@ -113,51 +113,57 @@ function SuperadminAdminManagementContent() {
   return (
     <SuperadminShell>
       <ScrollReveal variant="fade-up" duration={800}>
-        <AppPageHeader
-          title="Manajemen Admin"
-          bottomContent={
-            <div className="flex items-center gap-8 border-b border-slate-200">
-              {superadminAdminTabs.map((tab) => (
-                <SuperadminTabButton key={tab.key} active={activeTab === tab.key} onClick={() => updateTab(tab.key)}>
-                  {tab.label}
-                </SuperadminTabButton>
+        <AppPageHeader title="Manajemen Admin" />
+      </ScrollReveal>
+
+      <ScrollReveal variant="fade-up" delay={150} duration={800} className="mt-8 space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-200">
+          <div className="flex items-center gap-8">
+            {superadminAdminTabs.map((tab) => (
+              <SuperadminTabButton key={tab.key} active={activeTab === tab.key} onClick={() => updateTab(tab.key)}>
+                {tab.label}
+              </SuperadminTabButton>
+            ))}
+          </div>
+          {activeTab === 'daftar' && (
+            <div className="hidden items-center gap-4 pb-3 sm:flex">
+              <div className="h-4 w-px bg-slate-200" />
+              <div className="text-right">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Total Admin</p>
+                <p className="mt-0.5 text-[16px] font-semibold text-slate-900">
+                  {filteredAdmins.length} Admin
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {activeTab === 'daftar' && (
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              <SuperadminToolbarButton onClick={() => showToast({ tone: 'info', title: 'Unduh laporan belum aktif', description: 'Fitur unduh laporan sedang disiapkan.' })}>
+                <Download className="h-4 w-4" />
+                Unduh Laporan
+              </SuperadminToolbarButton>
+              <SuperadminToolbarButton variant="primary" onClick={() => updateTab('tambah')}>
+                <UserPlus className="h-4 w-4" />
+                Tambah Admin
+              </SuperadminToolbarButton>
+            </div>
+            <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
+              {superadminAdminStatuses.map((status) => (
+                <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
+                  {status}
+                </SuperadminFilterChip>
               ))}
             </div>
-          }
-          rightContent={
-            activeTab === 'daftar' ? (
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <SuperadminToolbarButton onClick={() => showToast({ tone: 'info', title: 'Unduh laporan belum aktif', description: 'Fitur unduh laporan sedang disiapkan.' })}>
-                  <Download className="h-4 w-4" />
-                  Unduh Laporan
-                </SuperadminToolbarButton>
-                <SuperadminToolbarButton variant="primary" onClick={() => updateTab('tambah')}>
-                  <UserPlus className="h-4 w-4" />
-                  Tambah Admin
-                </SuperadminToolbarButton>
-              </div>
-            ) : null
-          }
-        />
+          </div>
+        )}
       </ScrollReveal>
 
       {activeTab === 'daftar' ? (
         <>
           <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
-            <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Total Admin</p>
-                <p className="mt-1 text-[18px] font-semibold text-slate-900">{filteredAdmins.length} admin</p>
-              </div>
-              <div className="flex flex-wrap gap-2 rounded-2xl bg-slate-100 p-1 lg:justify-end">
-                {superadminAdminStatuses.map((status) => (
-                  <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
-                    {status}
-                  </SuperadminFilterChip>
-                ))}
-              </div>
-            </div>
-
             <div className="hidden grid-cols-[1.3fr_1fr_0.8fr_1fr_56px] gap-4 border-b border-slate-100 px-6 py-5 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500 lg:grid">
               <span>Profil Admin</span>
               <span>Akses Space</span>
@@ -173,7 +179,7 @@ function SuperadminAdminManagementContent() {
                 </div>
               ) : adminDirectoryQuery.error ? (
                 <div className="p-6">
-                  <SuperadminEmptyState title="Daftar admin belum dapat dimuat" description="Terjadi kendala saat mengambil data app_profiles atau admin_registry. Coba muat ulang halaman." />
+                  <SuperadminEmptyState title="Daftar admin belum dapat dimuat" description="Terjadi kendala saat mengambil data app_profiles or admin_registry. Coba muat ulang halaman." />
                 </div>
               ) : filteredAdmins.length > 0 ? filteredAdmins.map((admin) => (
                 <SuperadminTableRowLink
@@ -212,7 +218,7 @@ function SuperadminAdminManagementContent() {
 
             <div className="flex flex-col gap-4 px-6 py-5 text-[15px] text-slate-800 sm:flex-row sm:items-center sm:justify-between">
               <p>
-                Menampilkan {filteredAdmins.length > 0 ? 1 : 0} hingga {filteredAdmins.length} dari {admins.length} admin
+                Menampilkan {filteredAdmins.length > 0 ? 1 : 0} hingga {filteredAdmins.length} dari {admins.length} Admin
               </p>
               {filteredAdmins.length > 0 ? (
                 <div className="flex items-center gap-3 text-slate-500">
