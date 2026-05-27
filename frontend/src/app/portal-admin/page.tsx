@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import {
   CheckCircle2,
   Check,
@@ -49,8 +49,23 @@ function PortalAdminContent() {
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState('')
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot'>('login')
+  const [redirectState, setRedirectState] = useState<{
+    target: string
+    label: string
+    description: string
+  } | null>(null)
+  const redirectStartedRef = useRef(false)
+  const redirectTimerRef = useRef<number | null>(null)
 
   useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        window.clearTimeout(redirectTimerRef.current)
+      }
+    }
+  }, [])
 
   const authSession = authSessionQuery.data
   const currentProfile = currentProfileQuery.data
@@ -61,11 +76,29 @@ function PortalAdminContent() {
   useEffect(() => {
     if (mounted && isConnected && authSession && isWalletBound) {
       if (currentProfile?.role === 'super_admin') {
+        if (redirectStartedRef.current) return
+        redirectStartedRef.current = true
+        setRedirectState({
+          target: '/superadmin',
+          label: 'Portal Utama Admin',
+          description: 'Akses berhasil divalidasi. Anda akan diarahkan ke portal utama admin.',
+        })
         showToast({ tone: 'success', title: 'Akses Diterima', description: 'Selamat datang di Portal Utama Admin.' })
-        router.push('/superadmin')
+        redirectTimerRef.current = window.setTimeout(() => {
+          router.push('/superadmin')
+        }, 900)
       } else if (currentProfile?.role === 'admin') {
+        if (redirectStartedRef.current) return
+        redirectStartedRef.current = true
+        setRedirectState({
+          target: '/admin',
+          label: 'Dashboard Admin',
+          description: 'Akses berhasil divalidasi. Anda akan diarahkan ke dashboard admin.',
+        })
         showToast({ tone: 'success', title: 'Akses Diterima', description: 'Selamat datang di Dashboard Admin.' })
-        router.push('/admin')
+        redirectTimerRef.current = window.setTimeout(() => {
+          router.push('/admin')
+        }, 900)
       } else {
         showToast({ tone: 'error', title: 'Akses Ditolak', description: 'Akun Anda tidak memiliki otoritas Administrator Kampus.' })
         disconnect()
@@ -409,10 +442,12 @@ function PortalAdminContent() {
                     {isConnected && authSession && isWalletBound && (
                       <div className="mt-16 flex w-full flex-col items-center text-center">
                         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                          <CheckCircle2 className="h-8 w-8" />
+                          {redirectState ? <Loader2 className="h-8 w-8 animate-spin" /> : <CheckCircle2 className="h-8 w-8" />}
                         </div>
                         <h2 className="mt-6 text-[20px] font-semibold text-slate-900">Akses Berhasil Divalidasi</h2>
-                        <p className="mt-3 text-[13px] leading-6 text-slate-600">Mengarahkan Anda ke dashboard admin...</p>
+                        <p className="mt-3 text-[13px] leading-6 text-slate-600">
+                          {redirectState ? `Mengarahkan Anda ke ${redirectState.label.toLowerCase()}...` : 'Menyiapkan akses admin...'}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -451,8 +486,8 @@ function PortalAdminContent() {
 
                     {isConnected && authSession && isWalletBound && (
                       <span className="inline-flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 text-[12px] font-semibold text-emerald-700">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Selesai
+                        {redirectState ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                        {redirectState ? 'Mengarahkan...' : 'Selesai'}
                       </span>
                     )}
                   </div>
@@ -461,6 +496,24 @@ function PortalAdminContent() {
             </section>
           </ScrollReveal>
         </div>
+
+        {redirectState && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="admin-redirect-title" aria-describedby="admin-redirect-description">
+            <div className="w-full max-w-[360px] rounded-xl border border-slate-200 bg-white p-6 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                <Loader2 className="h-7 w-7 animate-spin" aria-hidden="true" />
+              </div>
+              <h2 id="admin-redirect-title" className="mt-5 text-[16px] font-semibold text-slate-900">Akses Berhasil Divalidasi</h2>
+              <p id="admin-redirect-description" className="mt-3 text-[13px] leading-6 text-slate-600">
+                {redirectState.description}
+              </p>
+              <div className="mt-5 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3" aria-live="polite">
+                <p className="text-[12px] font-semibold text-slate-900">Mengarahkan ke {redirectState.label}...</p>
+                <p className="mt-1 text-[12px] leading-5 text-slate-400">Mohon tunggu sebentar, proses ini berjalan otomatis.</p>
+              </div>
+            </div>
+          </div>
+        )}
         </div>
 
         <PublicFooter />
