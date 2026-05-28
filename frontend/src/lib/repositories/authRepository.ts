@@ -43,7 +43,18 @@ export async function signUpWithEmailPassword(email: string, password: string) {
     }
   })
   
-  if (error) throw new RepositoryError(error.message)
+  if (error) {
+    if (error.message.includes('User already registered')) {
+      throw new RepositoryError('Email ini sudah terdaftar. Silakan masuk atau gunakan email lain.')
+    }
+    if (error.message.includes('Password should be at least')) {
+      throw new RepositoryError('Password minimal harus 6 karakter.')
+    }
+    if (error.message.includes('invalid format')) {
+      throw new RepositoryError('Format email tidak valid. Pastikan email Anda benar.')
+    }
+    throw new RepositoryError(error.message)
+  }
   return data.session
 }
 
