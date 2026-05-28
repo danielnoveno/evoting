@@ -292,7 +292,7 @@ function PortalAdminContent() {
                       </Link>
                       <h1 className="text-[24px] font-semibold leading-tight text-slate-900">Portal Admin</h1>
                       <p className="mt-1 text-[13px] leading-6 text-slate-400">
-                        Akses untuk admin dan Tata Usaha UAJY.
+                        Akses untuk Tata Usaha UAJY.
                       </p>
                     </div>
 
