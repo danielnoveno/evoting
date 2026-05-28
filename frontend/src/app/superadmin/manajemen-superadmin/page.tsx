@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, EllipsisVertical, UserPlus, ShieldAlert, CheckCircle2 } from 'lucide-react'
+import { Copy, Loader2, UserPlus, ShieldAlert, CheckCircle2, Clock3 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -18,9 +18,10 @@ import {
 } from '@/components/superadmin/superadmin-shell'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listProfilesByRole } from '@/lib/repositories/profileRepository'
+import { useQuery } from '@tanstack/react-query'
+import { listAdminDirectory } from '@/lib/repositories/profileRepository'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+import { useCreateSuperadminInvite } from '@/hooks/use-admin-invite'
 
 type TabKey = 'daftar' | 'tambah'
 
@@ -44,13 +45,17 @@ function SuperadminManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { showToast } = useToast()
-  const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<TabKey>('daftar')
   const [formData, setFormData] = useState(initialFormData)
+  const [activationLink, setActivationLink] = useState('')
+  const createSuperadminInviteMutation = useCreateSuperadminInvite()
 
   const { data: superadmins = [], isLoading, error } = useQuery({
     queryKey: ['superadmins'],
-    queryFn: () => listProfilesByRole('super_admin'),
+    queryFn: async () => {
+      const directory = await listAdminDirectory()
+      return directory.filter((admin) => admin.role === 'super_admin')
+    },
   })
 
   useEffect(() => {
@@ -79,16 +84,27 @@ function SuperadminManagementContent() {
       return
     }
 
-    // In a real implementation, this would call an Edge Function or Admin API
-    // To promote a user to super_admin or create a new invite.
-    showToast({ 
-      tone: 'success', 
-      title: 'Akses Super Admin Diberikan', 
-      description: `Undangan aktivasi telah disiapkan untuk ${formData.name}.` 
-    })
-    
-    setFormData(initialFormData)
-    updateTab('daftar')
+    createSuperadminInviteMutation.mutate(
+      {
+        displayName: formData.name,
+        email: formData.email,
+        walletAddress: formData.walletAddress,
+      },
+      {
+        onSuccess: (invite) => {
+          setActivationLink(invite.activationLink)
+          showToast({
+            tone: 'success',
+            title: 'Undangan Aktivasi Dibuat',
+            description: `${formData.name} dapat membuat password lewat link aktivasi yang disiapkan.`,
+          })
+          setFormData(initialFormData)
+        },
+        onError: (err) => {
+          showToast({ tone: 'error', title: 'Undangan Gagal Dibuat', description: getRepositoryErrorMessage(err) })
+        },
+      },
+    )
   }
 
   return (
@@ -142,9 +158,12 @@ function SuperadminManagementContent() {
                 Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="h-20 w-full animate-pulse border-b border-slate-50" />
                 ))
-              ) : superadmins.length > 0 ? superadmins.map((admin) => (
+              ) : superadmins.length > 0 ? superadmins.map((admin) => {
+                const isActive = Boolean(admin.profile) || admin.registryStatus === 'active'
+
+                return (
                 <div
-                  key={admin.id}
+                  key={admin.email}
                   className="grid gap-4 border-b border-slate-100 px-6 py-5 lg:grid-cols-[1.5fr_1.5fr_1fr_56px] lg:items-center"
                 >
                   <div className="flex items-center gap-4">
@@ -155,19 +174,20 @@ function SuperadminManagementContent() {
                     </div>
                   </div>
                   <div>
-                    <p className="font-mono text-[13px] text-slate-600 truncate">{admin.walletAddress}</p>
+                    <p className="font-mono text-[13px] text-slate-600 truncate">{admin.walletAddress || admin.profile?.walletAddress || 'Belum ditautkan'}</p>
                   </div>
                   <div>
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-700">
-                      <ShieldAlert className="h-3 w-3" />
-                      Super Admin
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                      {isActive ? <ShieldAlert className="h-3 w-3" /> : <Clock3 className="h-3 w-3" />}
+                      {isActive ? 'Super Admin Aktif' : 'Menunggu Aktivasi'}
                     </span>
                   </div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                    {isActive ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Clock3 className="h-5 w-5 text-amber-500" />}
                   </div>
                 </div>
-              )) : (
+                )
+              }) : (
                 <div className="p-10">
                   <SuperadminEmptyState title="Belum ada superadmin lain" description="Hanya akun Anda yang terdaftar sebagai otoritas tertinggi saat ini." />
                 </div>
@@ -180,8 +200,36 @@ function SuperadminManagementContent() {
           <AppSectionCard>
             <SuperadminSectionHeading
               title="Identitas Superadmin Baru"
-              description="Pastikan data yang dimasukkan benar. Superadmin memiliki kontrol penuh atas sistem."
+              description="Superadmin baru akan membuat password sendiri melalui link aktivasi. Wallet harus sama saat validasi akses pertama."
             />
+
+            {activationLink && (
+              <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-[12px] font-semibold text-emerald-700">Link aktivasi siap digunakan</p>
+                <p className="mt-2 text-[12px] leading-5 text-emerald-700">
+                  Kirimkan link ini ke email superadmin baru. Sistem belum mengirim email otomatis dari halaman ini.
+                </p>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    value={activationLink}
+                    readOnly
+                    className="h-10 min-w-0 flex-1 rounded-md border border-emerald-200 bg-white px-3 font-mono text-[12px] text-slate-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(activationLink)
+                      showToast({ tone: 'success', title: 'Link Disalin', description: 'Link aktivasi sudah disalin ke clipboard.' })
+                    }}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-emerald-200 bg-white px-4 text-[13px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-50"
+                  >
+                    <Copy className="h-4 w-4" />
+                    Salin Link
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="mt-8 grid gap-5 xl:grid-cols-2">
               <label className="block">
                 <SuperadminFieldLabel>Nama Lengkap</SuperadminFieldLabel>
@@ -223,8 +271,9 @@ function SuperadminManagementContent() {
             >
               Batal
             </button>
-            <SuperadminToolbarButton variant="primary" onClick={handleCreateSuperAdmin}>
-              Kirim Undangan Otoritas
+            <SuperadminToolbarButton variant="primary" onClick={handleCreateSuperAdmin} disabled={createSuperadminInviteMutation.isPending}>
+              {createSuperadminInviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {createSuperadminInviteMutation.isPending ? 'Menyiapkan Undangan' : 'Kirim Undangan Otoritas'}
             </SuperadminToolbarButton>
           </section>
         </StaggerContainer>

@@ -1,0 +1,171 @@
+import { createHash, randomBytes } from 'crypto'
+import { NextResponse, type NextRequest } from 'next/server'
+import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
+
+export const runtime = 'nodejs'
+
+type InviteRole = 'admin' | 'super_admin'
+
+type InviteRow = {
+  email: string
+  assigned_role: InviteRole
+  display_name: string | null
+  wallet_address: string | null
+  activation_expires_at: string | null
+  activation_accepted_at: string | null
+  status: 'pending' | 'active' | 'inactive'
+}
+
+function jsonError(message: string, status = 400) {
+  return NextResponse.json({ error: message }, { status })
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase()
+}
+
+function hashToken(token: string) {
+  return createHash('sha256').update(token).digest('hex')
+}
+
+function createActivationToken() {
+  return randomBytes(32).toString('base64url')
+}
+
+function getRequestOrigin(request: NextRequest) {
+  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL
+  if (configuredOrigin?.trim()) return configuredOrigin.trim().replace(/\/$/, '')
+
+  return request.nextUrl.origin.replace(/\/$/, '')
+}
+
+function toInviteResponse(row: InviteRow) {
+  return {
+    email: row.email,
+    displayName: row.display_name,
+    walletAddress: row.wallet_address,
+    role: row.assigned_role,
+    expiresAt: row.activation_expires_at ?? '',
+  }
+}
+
+async function requireSuperadmin(request: NextRequest) {
+  const client = getSupabaseServiceRoleClient()
+  if (!client) return { error: jsonError('Service role Supabase belum dikonfigurasi.', 503), profileId: null, client: null }
+
+  const authorization = request.headers.get('authorization')
+  const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1]
+  if (!token) return { error: jsonError('Sesi superadmin tidak ditemukan.', 401), profileId: null, client }
+
+  const { data: userData, error: userError } = await client.auth.getUser(token)
+  if (userError || !userData.user) return { error: jsonError('Sesi superadmin tidak valid atau sudah berakhir.', 401), profileId: null, client }
+
+  const { data: profile, error: profileError } = await client
+    .schema('app')
+    .from('app_profiles')
+    .select('id,role')
+    .eq('user_id', userData.user.id)
+    .maybeSingle()
+
+  if (profileError) return { error: jsonError('Gagal memeriksa otoritas superadmin.', 500), profileId: null, client }
+  if (!profile || profile.role !== 'super_admin') return { error: jsonError('Hanya superadmin aktif yang dapat membuat undangan.', 403), profileId: null, client }
+
+  return { error: null, profileId: profile.id, client }
+}
+
+export async function GET(request: NextRequest) {
+  const token = request.nextUrl.searchParams.get('token')?.trim() ?? ''
+  if (!token) return jsonError('Token undangan tidak ditemukan.', 400)
+
+  const client = getSupabaseServiceRoleClient()
+  if (!client) return jsonError('Service role Supabase belum dikonfigurasi.', 503)
+
+  const tokenHash = hashToken(token)
+  const { data, error } = await client
+    .schema('app')
+    .from('admin_registry')
+    .select('email,assigned_role,display_name,wallet_address,activation_expires_at,activation_accepted_at,status')
+    .eq('activation_token_hash', tokenHash)
+    .maybeSingle()
+
+  if (error) return jsonError('Gagal memeriksa undangan aktivasi.', 500)
+  if (!data) return jsonError('Undangan tidak valid.', 404)
+
+  const invite = data as InviteRow
+  if (invite.status === 'inactive') return jsonError('Undangan ini sudah dinonaktifkan.', 410)
+  if (invite.activation_accepted_at) return jsonError('Undangan ini sudah digunakan. Silakan masuk dengan password yang sudah dibuat.', 409)
+  if (!invite.activation_expires_at || new Date(invite.activation_expires_at).getTime() <= Date.now()) {
+    return jsonError('Undangan sudah kedaluwarsa. Minta superadmin utama mengirim undangan baru.', 410)
+  }
+
+  return NextResponse.json({ invite: toInviteResponse(invite) })
+}
+
+export async function POST(request: NextRequest) {
+  const auth = await requireSuperadmin(request)
+  if (auth.error) return auth.error
+  if (!auth.client || !auth.profileId) return jsonError('Sesi superadmin tidak dapat diverifikasi.', 401)
+
+  let payload: unknown
+  try {
+    payload = await request.json()
+  } catch {
+    return jsonError('Format permintaan tidak valid.', 400)
+  }
+
+  if (!isRecord(payload)) return jsonError('Data undangan tidak valid.', 400)
+
+  const displayName = typeof payload.displayName === 'string' ? payload.displayName.trim() : ''
+  const email = typeof payload.email === 'string' ? normalizeEmail(payload.email) : ''
+  const walletAddress = typeof payload.walletAddress === 'string' ? payload.walletAddress.trim() : ''
+
+  if (!displayName || !email || !walletAddress) return jsonError('Lengkapi nama, email, dan wallet address.', 400)
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError('Format email institusi tidak valid.', 400)
+  if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) return jsonError('Wallet address tidak valid.', 400)
+
+  const { data: existingProfile, error: profileError } = await auth.client
+    .schema('app')
+    .from('app_profiles')
+    .select('id,email,role')
+    .ilike('email', email)
+    .limit(1)
+    .maybeSingle()
+
+  if (profileError) return jsonError('Gagal memeriksa profil yang sudah ada.', 500)
+  if (existingProfile?.role === 'super_admin') return jsonError('Email ini sudah aktif sebagai superadmin.', 409)
+
+  const token = createActivationToken()
+  const tokenHash = hashToken(token)
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString()
+
+  const { data, error } = await auth.client
+    .schema('app')
+    .from('admin_registry')
+    .upsert({
+      email,
+      assigned_role: 'super_admin',
+      display_name: displayName,
+      organization_name: null,
+      access_scope: 'all',
+      status: 'pending',
+      description: 'Undangan superadmin dari portal utama admin.',
+      wallet_address: walletAddress,
+      activation_token_hash: tokenHash,
+      activation_sent_at: new Date().toISOString(),
+      activation_expires_at: expiresAt,
+      activation_accepted_at: null,
+      created_by: auth.profileId,
+      updated_by: auth.profileId,
+    }, { onConflict: 'email' })
+    .select('email,assigned_role,display_name,wallet_address,activation_expires_at,activation_accepted_at,status')
+    .single()
+
+  if (error) return jsonError('Gagal menyimpan undangan superadmin.', 500)
+
+  const activationLink = `${getRequestOrigin(request)}/portal-admin?invite=${encodeURIComponent(token)}`
+  return NextResponse.json({ invite: toInviteResponse(data as InviteRow), activationLink })
+}

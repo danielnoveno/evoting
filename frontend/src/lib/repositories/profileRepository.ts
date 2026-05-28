@@ -66,9 +66,33 @@ function mapAdminRegistryRow(row: AdminRegistryRow): AdminRegistryRecord {
     accessScope: row.access_scope,
     status: row.status,
     description: row.description,
+    walletAddress: row.wallet_address,
+    activationExpiresAt: row.activation_expires_at,
+    activationAcceptedAt: row.activation_accepted_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
+}
+
+async function getRegisteredAdminAccessForEmail(email: string | null | undefined): Promise<AdminRegistryRow | null> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return null
+
+  const normalizedEmail = normalizeEmail(email ?? '')
+  if (!normalizedEmail) return null
+
+  const { data, error } = await client
+    .schema('app')
+    .from('admin_registry')
+    .select('*')
+    .eq('email', normalizedEmail)
+    .maybeSingle()
+
+  if (error) throw new RepositoryError('Gagal memeriksa undangan role admin. Coba lagi.')
+  if (!data || data.status === 'inactive') return null
+  if (data.assigned_role === 'super_admin' && data.status !== 'active') return null
+
+  return data
 }
 
 async function requireUser(): Promise<User> {
@@ -143,7 +167,12 @@ export async function upsertCurrentProfile(input: ProfileUpsertInput): Promise<A
 
   const user = await requireUser()
   const currentProfile = await getCurrentProfile()
-  const assignedRole = await resolveRegisteredRoleForEmail(input.email ?? user.email ?? null)
+  const registeredAccess = await getRegisteredAdminAccessForEmail(input.email ?? user.email ?? null)
+  if (registeredAccess?.wallet_address && !sameWalletAddress(registeredAccess.wallet_address, input.walletAddress)) {
+    throw new RepositoryError('Wallet tersambung tidak sesuai dengan wallet yang didaftarkan pada undangan admin.')
+  }
+
+  const assignedRole = registeredAccess?.assigned_role ?? 'voter'
   const nextRole = currentProfile?.role === 'super_admin' && assignedRole === 'voter' ? 'super_admin' : assignedRole
   const payload: Database['app']['Tables']['app_profiles']['Insert'] = {
     user_id: user.id,
@@ -203,7 +232,12 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
     throw new RepositoryError(`Wallet ini sudah ditautkan ke akun kampus lain${ownerEmail}. Putuskan dompet tersambung, lalu sambungkan wallet yang sesuai.`)
   }
 
-  const assignedRole = await resolveRegisteredRoleForEmail(input.email ?? user.email ?? null)
+  const registeredAccess = await getRegisteredAdminAccessForEmail(input.email ?? user.email ?? null)
+  if (registeredAccess?.wallet_address && !sameWalletAddress(registeredAccess.wallet_address, input.walletAddress)) {
+    throw new RepositoryError('Wallet tersambung tidak sesuai dengan wallet yang didaftarkan pada undangan admin.')
+  }
+
+  const assignedRole = registeredAccess?.assigned_role ?? 'voter'
   const nextRole = currentProfile?.role === 'super_admin' && assignedRole === 'voter' ? 'super_admin' : assignedRole
 
   const payload: Database['app']['Tables']['app_profiles']['Insert'] = {
@@ -234,22 +268,8 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
 }
 
 export async function resolveRegisteredRoleForEmail(email: string | null | undefined): Promise<AppProfileRecord['role']> {
-  const client = getSupabaseBrowserClient()
-  if (!client) return 'voter'
-
-  const normalizedEmail = normalizeEmail(email ?? '')
-  if (!normalizedEmail) return 'voter'
-
-  const { data, error } = await client
-    .schema('app')
-    .from('admin_registry')
-    .select('assigned_role,status')
-    .eq('email', normalizedEmail)
-    .maybeSingle()
-
-  if (error) throw new RepositoryError('Gagal memeriksa undangan role admin. Coba lagi.')
-  if (!data || data.status === 'inactive') return 'voter'
-  return data.assigned_role
+  const registeredAccess = await getRegisteredAdminAccessForEmail(email)
+  return registeredAccess?.assigned_role ?? 'voter'
 }
 
 export async function listProfilesByRole(role: AppProfileRecord['role']): Promise<AppProfileRecord[]> {
@@ -309,6 +329,7 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
       accessScope: registry?.access_scope ?? 'all',
       registryStatus: registry?.status ?? null,
       description: registry?.description ?? null,
+      walletAddress: registry?.wallet_address ?? profile.walletAddress,
       createdAt: registry?.created_at ?? profile.createdAt,
       updatedAt: registry?.updated_at ?? profile.updatedAt,
       profile,
@@ -328,6 +349,7 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
       accessScope: row.access_scope,
       registryStatus: row.status,
       description: row.description,
+      walletAddress: row.wallet_address,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       profile: null,
@@ -378,6 +400,7 @@ export async function createAdminRegistry(input: AdminRegistryInput): Promise<Ad
     access_scope: input.accessScope ?? 'all',
     status: input.status ?? 'pending',
     description: input.description?.trim() || null,
+    wallet_address: input.walletAddress?.trim() || null,
     created_by: actorProfileId,
     updated_by: actorProfileId,
   }
@@ -420,6 +443,7 @@ export async function updateAdminRegistry(currentEmail: string, input: AdminRegi
     access_scope: input.accessScope ?? 'all',
     status: input.status ?? 'pending',
     description: input.description?.trim() || null,
+    wallet_address: input.walletAddress?.trim() || null,
     updated_by: actorProfileId,
   }
 

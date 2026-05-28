@@ -21,6 +21,7 @@ export interface AdminDirectoryRecord {
   accessScope: 'all' | 'specific'
   registryStatus: 'pending' | 'active' | 'inactive' | null
   description: string | null
+  walletAddress: string | null
   createdAt: string
   updatedAt: string | null
   profile: AppProfileRecord | null
@@ -34,6 +35,9 @@ export interface AdminRegistryRecord {
   accessScope: 'all' | 'specific'
   status: 'pending' | 'active' | 'inactive'
   description: string | null
+  walletAddress: string | null
+  activationExpiresAt: string | null
+  activationAcceptedAt: string | null
   createdAt: string
   updatedAt: string
 }
@@ -45,6 +49,7 @@ export interface AdminRegistryInput {
   accessScope?: 'all' | 'specific'
   status?: 'pending' | 'active' | 'inactive'
   description?: string | null
+  walletAddress?: string | null
 }
 
 export type ProposalDraftStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'deployed' | 'archived'

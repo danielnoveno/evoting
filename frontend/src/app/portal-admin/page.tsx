@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import {
   CheckCircle2,
@@ -15,6 +15,8 @@ import {
   RefreshCw,
   X,
   Copy,
+  KeyRound,
+  ShieldCheck,
 } from 'lucide-react'
 import { ConnectWallet } from '@coinbase/onchainkit/wallet'
 import { useAccount, useDisconnect } from 'wagmi'
@@ -28,6 +30,7 @@ import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
 import Link from 'next/link'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { WalletAddress } from '@/components/ui/wallet-address'
+import { useActivateAdminInvite, useAdminInvitePreview } from '@/hooks/use-admin-invite'
 
 function sameWalletAddress(left: string | null | undefined, right: string | null | undefined): boolean {
   if (!left || !right) return false
@@ -36,6 +39,7 @@ function sameWalletAddress(left: string | null | undefined, right: string | null
 
 function PortalAdminContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { showToast } = useToast()
   const { address, isConnected } = useAccount()
   const { disconnect } = useDisconnect()
@@ -47,11 +51,17 @@ function PortalAdminContent() {
   const googleLoginMutation = useGoogleLogin()
   const emailLoginMutation = useEmailPasswordLogin()
   const resetPasswordMutation = useResetPassword()
+  const inviteToken = searchParams.get('invite')?.trim() ?? ''
+  const invitePreviewQuery = useAdminInvitePreview(inviteToken)
+  const activateInviteMutation = useActivateAdminInvite()
 
   const [mounted, setMounted] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [activationPassword, setActivationPassword] = useState('')
+  const [activationPasswordConfirm, setActivationPasswordConfirm] = useState('')
   const [formError, setFormError] = useState('')
+  const [activationError, setActivationError] = useState('')
   const [bindError, setBindError] = useState('')
   const [authMode, setAuthMode] = useState<'login' | 'forgot'>('login')
   const [redirectState, setRedirectState] = useState<{
@@ -75,6 +85,8 @@ function PortalAdminContent() {
   const authSession = authSessionQuery.data
   const currentProfile = currentProfileQuery.data
   const connectedWalletProfile = connectedWalletProfileQuery.data
+  const invitePreview = invitePreviewQuery.data
+  const isInviteActivationMode = Boolean(inviteToken && !authSession)
   const isWalletBound = sameWalletAddress(currentProfile?.walletAddress, address)
   const accountHasDifferentWallet = Boolean(address && currentProfile?.walletAddress && !isWalletBound)
   const connectedWalletOwnedByOther = Boolean(
@@ -90,7 +102,13 @@ function PortalAdminContent() {
       : ''
   const isAdminAccessValidated = Boolean(authSession && isWalletBound)
   const completedSteps = (isConnected ? 1 : 0) + (isAdminAccessValidated ? 1 : 0)
-  const currentStepLabel = !isConnected ? 'Sambungkan dompet digital' : !authSession ? 'Verifikasi admin' : !isWalletBound ? 'Validasi otoritas' : 'Akses siap'
+  const currentStepLabel = isInviteActivationMode ? 'Aktivasi akun' : !isConnected ? 'Sambungkan dompet digital' : !authSession ? 'Verifikasi admin' : !isWalletBound ? 'Validasi otoritas' : 'Akses siap'
+
+  useEffect(() => {
+    if (invitePreview?.email && !authSession) {
+      setEmail(invitePreview.email)
+    }
+  }, [invitePreview?.email, authSession])
 
   useEffect(() => {
     if (mounted && isConnected && authSession && isWalletBound) {
@@ -139,7 +157,7 @@ function PortalAdminContent() {
       {
         walletAddress: address,
         email: authSession.user.email,
-        displayName: 'Administrator'
+        displayName: authSession.user.user_metadata?.full_name || authSession.user.user_metadata?.name || 'Administrator'
       },
       {
         onSuccess: () => {
@@ -189,6 +207,49 @@ function PortalAdminContent() {
         }
       })
     }
+  }
+
+  const handleActivateInvite = (event: React.FormEvent) => {
+    event.preventDefault()
+    setActivationError('')
+
+    if (!invitePreview) {
+      setActivationError('Undangan belum dapat divalidasi. Muat ulang halaman atau minta link baru.')
+      return
+    }
+
+    if (activationPassword.length < 8) {
+      setActivationError('Password minimal 8 karakter.')
+      return
+    }
+
+    if (activationPassword !== activationPasswordConfirm) {
+      setActivationError('Konfirmasi password belum sama.')
+      return
+    }
+
+    activateInviteMutation.mutate(
+      { token: inviteToken, password: activationPassword },
+      {
+        onSuccess: (result) => {
+          showToast({ tone: 'success', title: 'Akun Diaktifkan', description: 'Password berhasil dibuat. Menyiapkan sesi admin.' })
+          emailLoginMutation.mutate(
+            { email: result.email, password: activationPassword },
+            {
+              onSuccess: () => {
+                showToast({ tone: 'success', title: 'Login Berhasil', description: 'Lanjutkan dengan menyambungkan wallet yang terdaftar.' })
+              },
+              onError: (err) => {
+                setActivationError(getRepositoryErrorMessage(err, 'Akun aktif, tetapi login otomatis gagal. Silakan login manual dengan password baru.'))
+              },
+            },
+          )
+        },
+        onError: (err) => {
+          setActivationError(getRepositoryErrorMessage(err, 'Aktivasi akun gagal. Coba lagi.'))
+        },
+      },
+    )
   }
 
   if (!mounted) return null
@@ -285,7 +346,78 @@ function PortalAdminContent() {
                   <div className="w-full">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">{currentStepLabel}</p>
 
-                    {!isConnected && (
+                    {isInviteActivationMode && (
+                      <div className="mt-8 w-full">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                          <ShieldCheck className="h-6 w-6" />
+                        </div>
+                        <h2 className="mt-5 text-[20px] font-semibold text-slate-900">Aktivasi Akun Admin</h2>
+                        <p className="mt-3 text-[13px] leading-6 text-slate-600">
+                          Buat password pertama untuk email yang sudah diundang. Setelah aktif, sambungkan wallet yang terdaftar untuk membuka portal admin.
+                        </p>
+
+                        {invitePreviewQuery.isLoading && (
+                          <div className="mt-6 space-y-3">
+                            <div className="h-16 animate-pulse rounded-lg bg-slate-100" />
+                            <div className="h-11 animate-pulse rounded-md bg-slate-100" />
+                            <div className="h-11 animate-pulse rounded-md bg-slate-100" />
+                          </div>
+                        )}
+
+                        {invitePreviewQuery.error && (
+                          <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4">
+                            <p className="text-[12px] font-semibold text-red-700">Link aktivasi tidak dapat digunakan</p>
+                            <p className="mt-2 text-[12px] leading-5 text-red-600">
+                              {getRepositoryErrorMessage(invitePreviewQuery.error, 'Undangan tidak valid atau sudah kedaluwarsa.')}
+                            </p>
+                          </div>
+                        )}
+
+                        {invitePreview && (
+                          <form onSubmit={handleActivateInvite} className="mt-6 flex flex-col gap-4">
+                            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">Email undangan</p>
+                              <p className="mt-1 truncate text-[13px] font-semibold text-slate-900" title={invitePreview.email}>{invitePreview.email}</p>
+                              {invitePreview.walletAddress && (
+                                <p className="mt-2 font-mono text-[12px] leading-5 text-blue-700">Wallet terdaftar: {invitePreview.walletAddress}</p>
+                              )}
+                            </div>
+
+                            <AuthField
+                              label="Buat Password"
+                              type="password"
+                              value={activationPassword}
+                              onChange={(event) => setActivationPassword(event.target.value)}
+                              placeholder="Minimal 8 karakter"
+                            />
+                            <AuthField
+                              label="Konfirmasi Password"
+                              type="password"
+                              value={activationPasswordConfirm}
+                              onChange={(event) => setActivationPasswordConfirm(event.target.value)}
+                              placeholder="Ulangi password"
+                            />
+
+                            {activationError && (
+                              <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-[12px] leading-5 text-red-600">
+                                {activationError}
+                              </p>
+                            )}
+
+                            <button
+                              type="submit"
+                              disabled={activateInviteMutation.isPending || emailLoginMutation.isPending}
+                              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
+                            >
+                              {activateInviteMutation.isPending || emailLoginMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                              {activateInviteMutation.isPending || emailLoginMutation.isPending ? 'Mengaktifkan Akun' : 'Aktifkan Akun'}
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                    )}
+
+                    {!isInviteActivationMode && !isConnected && (
                       <div className="mt-8 w-full">
                         <h2 className="text-[20px] font-semibold text-slate-900">Sambungkan dompet digital admin</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
@@ -307,7 +439,7 @@ function PortalAdminContent() {
                       </div>
                     )}
 
-                    {isConnected && !authSession && (
+                    {!isInviteActivationMode && isConnected && !authSession && (
                       <div className="mt-8 w-full">
                         <h2 className="text-[20px] font-semibold text-slate-900">Verifikasi Admin</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
@@ -516,14 +648,18 @@ function PortalAdminContent() {
                       <ArrowLeft className="h-4 w-4" />
                     </button>
 
-                    {!isConnected && (
+                    {!isInviteActivationMode && !isConnected && (
                       <ConnectWallet className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B]">
                         Sambungkan Dompet Admin
                         <ChevronRight className="h-4 w-4" />
                       </ConnectWallet>
                     )}
 
-                    {isConnected && !authSession && (
+                    {isInviteActivationMode && (
+                      <p className="text-right text-[12px] text-slate-400">Aktifkan akun terlebih dahulu.</p>
+                    )}
+
+                    {!isInviteActivationMode && isConnected && !authSession && (
                       <p className="text-right text-[12px] text-slate-400">Pilih salah satu metode masuk di atas.</p>
                     )}
 

@@ -57,6 +57,11 @@ export type Database = {
           access_scope: 'all' | 'specific'
           status: 'pending' | 'active' | 'inactive'
           description: string | null
+          wallet_address: string | null
+          activation_token_hash: string | null
+          activation_sent_at: string | null
+          activation_expires_at: string | null
+          activation_accepted_at: string | null
           created_by: string | null
           updated_by: string | null
           created_at: string
@@ -70,6 +75,11 @@ export type Database = {
           access_scope?: 'all' | 'specific'
           status?: 'pending' | 'active' | 'inactive'
           description?: string | null
+          wallet_address?: string | null
+          activation_token_hash?: string | null
+          activation_sent_at?: string | null
+          activation_expires_at?: string | null
+          activation_accepted_at?: string | null
           created_by?: string | null
           updated_by?: string | null
           created_at?: string
@@ -83,6 +93,11 @@ export type Database = {
           access_scope?: 'all' | 'specific'
           status?: 'pending' | 'active' | 'inactive'
           description?: string | null
+          wallet_address?: string | null
+          activation_token_hash?: string | null
+          activation_sent_at?: string | null
+          activation_expires_at?: string | null
+          activation_accepted_at?: string | null
           created_by?: string | null
           updated_by?: string | null
           created_at?: string
