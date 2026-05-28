@@ -73,9 +73,9 @@ async function requireSuperadmin(request: NextRequest) {
 
   const userId = userData.user.id
 
-  // Query app_profiles via the client (schema is already set to 'app' in client config, but we keep .schema() for safety)
+  // We use the client directly since it's already configured with schema: 'app' in getSupabaseServiceRoleClient()
+  // This avoids potential issues with redundant .schema() calls in some environments.
   const { data: profile, error: profileError } = await client
-    .schema('app')
     .from('app_profiles')
     .select('id, role, email')
     .eq('user_id', userId)
@@ -83,7 +83,11 @@ async function requireSuperadmin(request: NextRequest) {
 
   if (profileError) {
     console.error('[Admin Invites] Profile query error for user:', userId, profileError)
-    return { error: jsonError('Gagal memeriksa otoritas superadmin.', 500), profileId: null, client }
+    return { 
+      error: jsonError(`Gagal memeriksa otoritas superadmin: ${profileError.message}`, 500), 
+      profileId: null, 
+      client 
+    }
   }
 
   if (!profile) {
@@ -108,13 +112,12 @@ export async function GET(request: NextRequest) {
 
   const tokenHash = hashToken(token)
   const { data, error } = await client
-    .schema('app')
     .from('admin_registry')
     .select('email,assigned_role,display_name,wallet_address,activation_expires_at,activation_accepted_at,status')
     .eq('activation_token_hash', tokenHash)
     .maybeSingle()
 
-  if (error) return jsonError('Gagal memeriksa undangan aktivasi.', 500)
+  if (error) return jsonError(`Gagal memeriksa undangan aktivasi: ${error.message}`, 500)
   if (!data) return jsonError('Undangan tidak valid.', 404)
 
   const invite = data as InviteRow
@@ -154,14 +157,13 @@ export async function POST(request: NextRequest) {
   if (walletAddress && !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) return jsonError('Wallet address tidak valid.', 400)
 
   const { data: existingProfile, error: profileError } = await auth.client
-    .schema('app')
     .from('app_profiles')
     .select('id,email,role')
     .ilike('email', email)
     .limit(1)
     .maybeSingle()
 
-  if (profileError) return jsonError('Gagal memeriksa profil yang sudah ada.', 500)
+  if (profileError) return jsonError(`Gagal memeriksa profil yang sudah ada: ${profileError.message}`, 500)
   if (existingProfile?.role === 'super_admin') return jsonError('Email ini sudah aktif sebagai superadmin.', 409)
   if (existingProfile?.role && assignedRole === 'super_admin' && existingProfile.role === 'admin') {
     return jsonError('Email ini sudah terdaftar sebagai admin organisasi. Hapus akses dulu sebelum menjadikan superadmin.', 409)
@@ -194,19 +196,18 @@ export async function POST(request: NextRequest) {
   }
 
   const { data, error } = await auth.client
-    .schema('app')
     .from('admin_registry')
     .upsert(payloadRow, { onConflict: 'email' })
     .select('email,assigned_role,display_name,wallet_address,activation_expires_at,activation_accepted_at,status')
     .single()
 
-  if (error) return jsonError('Gagal menyimpan undangan.', 500)
+  if (error) return jsonError(`Gagal menyimpan undangan: ${error.message}`, 500)
+
 
   // For admins without wallet, skip email — they use OAuth login instead
   if (assignedRole === 'admin' && !walletAddress) {
     // Also sync profile role if exists
     await auth.client
-      .schema('app')
       .from('app_profiles')
       .update({ role: 'admin' })
       .ilike('email', email)

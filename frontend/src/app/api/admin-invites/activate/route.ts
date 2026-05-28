@@ -49,13 +49,12 @@ export async function POST(request: NextRequest) {
 
   const tokenHash = hashToken(token)
   const { data, error } = await client
-    .schema('app')
     .from('admin_registry')
     .select('email,assigned_role,display_name,wallet_address,activation_expires_at,activation_accepted_at,status')
     .eq('activation_token_hash', tokenHash)
     .maybeSingle()
 
-  if (error) return jsonError('Gagal memeriksa undangan aktivasi.', 500)
+  if (error) return jsonError(`Gagal memeriksa undangan aktivasi: ${error.message}`, 500)
   if (!data) return jsonError('Undangan tidak valid.', 404)
 
   const invite = data as ActivationInviteRow
@@ -80,11 +79,10 @@ export async function POST(request: NextRequest) {
       return jsonError('Akun email ini sudah ada. Gunakan login biasa atau menu Lupa Password.', 409)
     }
 
-    return jsonError('Akun belum dapat diaktifkan. Coba lagi.', 500)
+    return jsonError(`Akun belum dapat diaktifkan: ${createUserError?.message ?? 'Unknown error'}`, 500)
   }
 
   const { error: updateError } = await client
-    .schema('app')
     .from('admin_registry')
     .update({
       status: 'active',
@@ -93,7 +91,8 @@ export async function POST(request: NextRequest) {
     })
     .eq('email', invite.email)
 
-  if (updateError) return jsonError('Akun dibuat, tetapi status undangan belum tersimpan. Hubungi superadmin utama.', 500)
+  if (updateError) return jsonError(`Akun dibuat, tetapi status undangan belum tersimpan: ${updateError.message}. Hubungi superadmin utama.`, 500)
+
 
   return NextResponse.json({
     email: invite.email,

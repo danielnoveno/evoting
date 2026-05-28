@@ -50,8 +50,9 @@ async function requireSuperadmin(request: NextRequest) {
 
   const userId = userData.user.id
 
+  // We use the client directly since it's already configured with schema: 'app' in getSupabaseServiceRoleClient()
+  // This avoids potential issues with redundant .schema() calls in some environments.
   const { data: profile, error: profileError } = await client
-    .schema('app')
     .from('app_profiles')
     .select('id, role, email')
     .eq('user_id', userId)
@@ -59,7 +60,11 @@ async function requireSuperadmin(request: NextRequest) {
 
   if (profileError) {
     console.error('[Admin Resend] Profile query error for user:', userId, profileError)
-    return { error: jsonError('Gagal memeriksa otoritas superadmin.', 500), profileId: null, client }
+    return { 
+      error: jsonError(`Gagal memeriksa otoritas superadmin: ${profileError.message}`, 500), 
+      profileId: null, 
+      client 
+    }
   }
 
   if (!profile) {
@@ -93,16 +98,15 @@ export async function POST(request: NextRequest) {
   if (!email) return jsonError('Email wajib diisi.', 400)
 
   const { data: invite, error: fetchError } = await auth.client
-    .schema('app')
     .from('admin_registry')
     .select('email,assigned_role,display_name,wallet_address,activation_token_hash,activation_expires_at,activation_accepted_at,status')
     .eq('email', email)
     .maybeSingle()
 
-  if (fetchError) return jsonError('Gagal memeriksa undangan.', 500)
+  if (fetchError) return jsonError(`Gagal memeriksa undangan: ${fetchError.message}`, 500)
   if (!invite) return jsonError('Undangan tidak ditemukan untuk email ini.', 404)
   if (invite.status === 'inactive') return jsonError('Undangan sudah dinonaktifkan.', 410)
-  if (invite.activation_accepted_at) return jsonError('Undangan ini sudah digunakan dan tidak bisa dikirim ulang.', 409)
+  if (invite.activation_accepted_at) return jsonError('Undangan ini sudah digunakan and tidak bisa dikirim ulang.', 409)
 
   // Generate new token & expiry
   const newToken = createActivationToken()
@@ -110,7 +114,6 @@ export async function POST(request: NextRequest) {
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString()
 
   const { error: updateError } = await auth.client
-    .schema('app')
     .from('admin_registry')
     .update({
       activation_token_hash: newTokenHash,
@@ -121,7 +124,8 @@ export async function POST(request: NextRequest) {
     })
     .eq('email', email)
 
-  if (updateError) return jsonError('Gagal memperbarui undangan.', 500)
+  if (updateError) return jsonError(`Gagal memperbarui undangan: ${updateError.message}`, 500)
+
 
   const activationLink = `${getRequestOrigin(request)}/portal-admin?invite=${encodeURIComponent(newToken)}`
 
