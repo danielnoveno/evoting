@@ -12,7 +12,6 @@ import {
   Building2,
   ArrowLeft,
   Mail,
-  UserPlus,
   RefreshCw,
   X,
   Copy,
@@ -21,7 +20,7 @@ import { ConnectWallet } from '@coinbase/onchainkit/wallet'
 import { useAccount, useDisconnect } from 'wagmi'
 import { AuthField } from '@/components/auth/auth-shell'
 import { useToast } from '@/components/ui/toast-provider'
-import { useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useEmailPasswordLogin, useEmailPasswordSignUp, useResetPassword } from '@/hooks/use-auth-session'
+import { useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useEmailPasswordLogin, useResetPassword } from '@/hooks/use-auth-session'
 import { useBindCurrentWallet, useCurrentProfile, useProfileByWallet } from '@/hooks/use-profile'
 import { ScrollReveal, FloatingShape } from '@/components/public/parallax'
 import { AsciiBackground } from '@/components/public/ascii-background'
@@ -47,7 +46,6 @@ function PortalAdminContent() {
   const microsoftLoginMutation = useMicrosoftCampusLogin()
   const googleLoginMutation = useGoogleLogin()
   const emailLoginMutation = useEmailPasswordLogin()
-  const emailSignUpMutation = useEmailPasswordSignUp()
   const resetPasswordMutation = useResetPassword()
 
   const [mounted, setMounted] = useState(false)
@@ -55,7 +53,7 @@ function PortalAdminContent() {
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState('')
   const [bindError, setBindError] = useState('')
-  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot'>('login')
+  const [authMode, setAuthMode] = useState<'login' | 'forgot'>('login')
   const [redirectState, setRedirectState] = useState<{
     target: string
     label: string
@@ -174,18 +172,6 @@ function PortalAdminContent() {
         {
           onSuccess: () => {
             showToast({ tone: 'success', title: 'Login Berhasil', description: 'Identitas kampus Anda telah terverifikasi.' })
-          },
-          onError: (err) => {
-            setFormError(getRepositoryErrorMessage(err))
-          }
-        }
-      )
-    } else if (authMode === 'signup') {
-      emailSignUpMutation.mutate(
-        { email, password },
-        {
-          onSuccess: () => {
-            showToast({ tone: 'success', title: 'Pendaftaran Berhasil', description: 'Akun baru telah dibuat. Silakan lanjut ke langkah penautan.' })
           },
           onError: (err) => {
             setFormError(getRepositoryErrorMessage(err))
@@ -391,6 +377,13 @@ function PortalAdminContent() {
                           <div className="relative flex justify-center text-[10px] font-semibold uppercase tracking-widest"><span className="bg-white px-3 text-slate-400">Opsi Manual</span></div>
                         </div>
 
+                        <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                          <p className="text-[12px] font-semibold text-blue-700">Akun admin tidak dibuat mandiri</p>
+                          <p className="mt-2 text-[12px] leading-5 text-blue-700">
+                            Superadmin dan admin hanya dapat masuk setelah aksesnya dibuat oleh superadmin utama. Jika belum punya akses, hubungi pengelola platform.
+                          </p>
+                        </div>
+
                         <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
                           <AuthField
                             label="Email Staf"
@@ -425,27 +418,22 @@ function PortalAdminContent() {
 
                           <button
                             type="submit"
-                            disabled={emailLoginMutation.isPending || emailSignUpMutation.isPending || resetPasswordMutation.isPending}
+                            disabled={emailLoginMutation.isPending || resetPasswordMutation.isPending}
                             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
                           >
-                            {emailLoginMutation.isPending || emailSignUpMutation.isPending || resetPasswordMutation.isPending ? (
+                            {emailLoginMutation.isPending || resetPasswordMutation.isPending ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : authMode === 'login' ? (
                               <Mail className="h-4 w-4" />
-                            ) : authMode === 'signup' ? (
-                              <UserPlus className="h-4 w-4" />
                             ) : (
                               <RefreshCw className="h-4 w-4" />
                             )}
-                            {authMode === 'login' ? 'Masuk ke Sistem' : authMode === 'signup' ? 'Daftar Akun' : 'Kirim Link Reset'}
+                            {authMode === 'login' ? 'Masuk ke Sistem' : 'Kirim Link Reset'}
                           </button>
 
                           <p className="text-center text-[12px] text-slate-500">
                             {authMode === 'login' && (
-                              <>Belum punya akun? <button type="button" onClick={() => setAuthMode('signup')} className="font-semibold text-blue-600 hover:underline">Daftar</button></>
-                            )}
-                            {authMode === 'signup' && (
-                              <>Sudah punya akun? <button type="button" onClick={() => setAuthMode('login')} className="font-semibold text-blue-600 hover:underline">Masuk</button></>
+                              <>Belum punya akses? Hubungi superadmin utama untuk dibuatkan akun.</>
                             )}
                             {authMode === 'forgot' && (
                               <button type="button" onClick={() => setAuthMode('login')} className="font-semibold text-blue-600 hover:underline">Kembali Login</button>
