@@ -216,8 +216,13 @@ function ConnectWalletContent() {
       emailSignUpMutation.mutate(
         { email, password },
         {
-          onSuccess: () => {
-            showToast({ tone: 'success', title: 'Pendaftaran Berhasil', description: 'Akun baru telah dibuat. Silakan lanjut ke langkah penautan.' })
+          onSuccess: (session) => {
+            if (session) {
+              showToast({ tone: 'success', title: 'Pendaftaran Berhasil', description: 'Identitas kampus Anda telah terverifikasi dan Anda telah masuk.' })
+            } else {
+              showToast({ tone: 'success', title: 'Pendaftaran Berhasil', description: 'Akun baru telah dibuat. Silakan cek email kampus Anda untuk aktivasi sebelum masuk.' })
+              setAuthMode('login')
+            }
           },
           onError: (err) => {
             setFormError(getRepositoryErrorMessage(err))

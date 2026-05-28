@@ -23,7 +23,17 @@ export async function signInWithEmailPassword(email: string, password: string) {
     if (error.status === 429) {
       throw new RepositoryError('Terlalu banyak percobaan. Silakan tunggu sebentar.')
     }
-    throw new RepositoryError('Email kampus atau password tidak cocok. Coba lagi.')
+    
+    // Check for unconfirmed email which often returns 400
+    if (error.message.toLowerCase().includes('confirm') || error.message.toLowerCase().includes('verified')) {
+      throw new RepositoryError('Email Anda belum dikonfirmasi. Silakan cek inbox email kampus Anda untuk aktivasi.')
+    }
+
+    if (error.status === 400) {
+      throw new RepositoryError('Email kampus atau password tidak cocok. Pastikan akun sudah aktif.')
+    }
+    
+    throw new RepositoryError(error.message || 'Gagal masuk ke sistem. Coba lagi.')
   }
 
   return data.session
