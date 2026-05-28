@@ -49,6 +49,7 @@ function SuperadminManagementContent() {
   const [formData, setFormData] = useState(initialFormData)
   const [activationLink, setActivationLink] = useState('')
   const [lastEmailStatus, setLastEmailStatus] = useState<'sent' | 'skipped' | 'failed' | null>(null)
+  const [lastEmailError, setLastEmailError] = useState<string | null>(null)
   const createAdminInviteMutation = useCreateAdminInvite()
   const resendInviteMutation = useResendAdminInvite()
 
@@ -97,6 +98,7 @@ function SuperadminManagementContent() {
         onSuccess: (invite) => {
           if (invite.activationLink) setActivationLink(invite.activationLink)
           setLastEmailStatus(invite.emailStatus ?? 'skipped')
+          setLastEmailError(invite.emailError ?? null)
 
           const emailMsg = invite.emailStatus === 'sent'
             ? 'Email aktivasi sudah dikirim.'
@@ -252,7 +254,7 @@ function SuperadminManagementContent() {
                 </p>
                 {lastEmailStatus === 'failed' && (
                   <p className="mt-2 text-[12px] leading-5 text-red-600 font-semibold">
-                    Email gagal dikirim. Periksa konfigurasi RESEND_API_KEY di server.
+                    Email gagal dikirim: {lastEmailError ?? 'Periksa konfigurasi RESEND_API_KEY di server.'}
                   </p>
                 )}
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row">
