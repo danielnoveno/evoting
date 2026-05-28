@@ -1,6 +1,6 @@
 'use client'
 
-import { Copy, Loader2, UserPlus, ShieldAlert, CheckCircle2, Clock3 } from 'lucide-react'
+import { Copy, Loader2, Mail, RefreshCw, UserPlus, ShieldAlert, CheckCircle2, Clock3 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -21,7 +21,7 @@ import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useQuery } from '@tanstack/react-query'
 import { listAdminDirectory } from '@/lib/repositories/profileRepository'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
-import { useCreateSuperadminInvite } from '@/hooks/use-admin-invite'
+import { useCreateAdminInvite, useResendAdminInvite } from '@/hooks/use-admin-invite'
 
 type TabKey = 'daftar' | 'tambah'
 
@@ -48,7 +48,9 @@ function SuperadminManagementContent() {
   const [activeTab, setActiveTab] = useState<TabKey>('daftar')
   const [formData, setFormData] = useState(initialFormData)
   const [activationLink, setActivationLink] = useState('')
-  const createSuperadminInviteMutation = useCreateSuperadminInvite()
+  const [lastEmailStatus, setLastEmailStatus] = useState<'sent' | 'skipped' | 'failed' | null>(null)
+  const createAdminInviteMutation = useCreateAdminInvite()
+  const resendInviteMutation = useResendAdminInvite()
 
   const { data: superadmins = [], isLoading, error } = useQuery({
     queryKey: ['superadmins'],
@@ -84,19 +86,28 @@ function SuperadminManagementContent() {
       return
     }
 
-    createSuperadminInviteMutation.mutate(
+    createAdminInviteMutation.mutate(
       {
         displayName: formData.name,
         email: formData.email,
         walletAddress: formData.walletAddress,
+        role: 'super_admin',
       },
       {
         onSuccess: (invite) => {
-          setActivationLink(invite.activationLink)
+          if (invite.activationLink) setActivationLink(invite.activationLink)
+          setLastEmailStatus(invite.emailStatus ?? 'skipped')
+
+          const emailMsg = invite.emailStatus === 'sent'
+            ? 'Email aktivasi sudah dikirim.'
+            : invite.emailStatus === 'failed'
+              ? `Email gagal dikirim: ${invite.emailError ?? ''}`
+              : 'Link tersedia untuk disalin (email belum dikirim).'
+
           showToast({
-            tone: 'success',
+            tone: invite.emailStatus === 'sent' ? 'success' : 'info',
             title: 'Undangan Aktivasi Dibuat',
-            description: `${formData.name} dapat membuat password lewat link aktivasi yang disiapkan.`,
+            description: `${formData.name} — ${emailMsg}`,
           })
           setFormData(initialFormData)
         },
@@ -182,8 +193,36 @@ function SuperadminManagementContent() {
                       {isActive ? 'Super Admin Aktif' : 'Menunggu Aktivasi'}
                     </span>
                   </div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500">
-                    {isActive ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Clock3 className="h-5 w-5 text-amber-500" />}
+                  <div className="flex items-center gap-2">
+                    {!isActive && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          resendInviteMutation.mutate(admin.email, {
+                            onSuccess: (result) => {
+                              showToast({
+                                tone: result.emailStatus === 'sent' ? 'success' : 'info',
+                                title: result.emailStatus === 'sent' ? 'Email Terkirim' : 'Email Gagal',
+                                description: result.emailStatus === 'sent'
+                                  ? 'Link aktivasi sudah dikirim ulang.'
+                                  : result.emailError ?? 'Coba lagi nanti.',
+                              })
+                            },
+                            onError: (err) => {
+                              showToast({ tone: 'error', title: 'Kirim Ulang Gagal', description: getRepositoryErrorMessage(err) })
+                            },
+                          })
+                        }}
+                        disabled={resendInviteMutation.isPending}
+                        title="Kirim ulang email aktivasi"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700"
+                      >
+                        {resendInviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                      </button>
+                    )}
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${isActive ? 'text-emerald-500' : 'text-amber-500'}`}>
+                      {isActive ? <CheckCircle2 className="h-5 w-5" /> : <Clock3 className="h-5 w-5" />}
+                    </div>
                   </div>
                 </div>
                 )
@@ -207,8 +246,15 @@ function SuperadminManagementContent() {
               <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                 <p className="text-[12px] font-semibold text-emerald-700">Link aktivasi siap digunakan</p>
                 <p className="mt-2 text-[12px] leading-5 text-emerald-700">
-                  Kirimkan link ini ke email superadmin baru. Sistem belum mengirim email otomatis dari halaman ini.
+                  {lastEmailStatus === 'sent'
+                    ? 'Email aktivasi sudah dikirim ke email superadmin baru.'
+                    : 'Kirimkan link ini ke email superadmin baru. Jika email tidak terkirim, salin link dan kirim manual.'}
                 </p>
+                {lastEmailStatus === 'failed' && (
+                  <p className="mt-2 text-[12px] leading-5 text-red-600 font-semibold">
+                    Email gagal dikirim. Periksa konfigurasi RESEND_API_KEY di server.
+                  </p>
+                )}
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                   <input
                     value={activationLink}
@@ -271,9 +317,9 @@ function SuperadminManagementContent() {
             >
               Batal
             </button>
-            <SuperadminToolbarButton variant="primary" onClick={handleCreateSuperAdmin} disabled={createSuperadminInviteMutation.isPending}>
-              {createSuperadminInviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {createSuperadminInviteMutation.isPending ? 'Menyiapkan Undangan' : 'Kirim Undangan Otoritas'}
+            <SuperadminToolbarButton variant="primary" onClick={handleCreateSuperAdmin} disabled={createAdminInviteMutation.isPending}>
+              {createAdminInviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {createAdminInviteMutation.isPending ? 'Menyiapkan Undangan' : 'Kirim Undangan Otoritas'}
             </SuperadminToolbarButton>
           </section>
         </StaggerContainer>

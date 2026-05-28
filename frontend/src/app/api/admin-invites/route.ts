@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
+import { sendSuperadminActivationEmail } from '@/lib/email/send'
 
 export const runtime = 'nodejs'
 
@@ -122,10 +123,14 @@ export async function POST(request: NextRequest) {
   const displayName = typeof payload.displayName === 'string' ? payload.displayName.trim() : ''
   const email = typeof payload.email === 'string' ? normalizeEmail(payload.email) : ''
   const walletAddress = typeof payload.walletAddress === 'string' ? payload.walletAddress.trim() : ''
+  const assignedRole = payload.role === 'admin' ? 'admin' as const : 'super_admin' as const
+  const organizationName = typeof payload.organizationName === 'string' ? payload.organizationName.trim() : null
+  const accessScope = payload.accessScope === 'specific' ? 'specific' as const : 'all' as const
 
-  if (!displayName || !email || !walletAddress) return jsonError('Lengkapi nama, email, dan wallet address.', 400)
+  if (!displayName || !email) return jsonError('Nama dan email wajib diisi.', 400)
+  if (assignedRole === 'super_admin' && !walletAddress) return jsonError('Wallet address wajib diisi untuk superadmin.', 400)
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError('Format email institusi tidak valid.', 400)
-  if (!/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) return jsonError('Wallet address tidak valid.', 400)
+  if (walletAddress && !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) return jsonError('Wallet address tidak valid.', 400)
 
   const { data: existingProfile, error: profileError } = await auth.client
     .schema('app')
@@ -137,35 +142,104 @@ export async function POST(request: NextRequest) {
 
   if (profileError) return jsonError('Gagal memeriksa profil yang sudah ada.', 500)
   if (existingProfile?.role === 'super_admin') return jsonError('Email ini sudah aktif sebagai superadmin.', 409)
+  if (existingProfile?.role && assignedRole === 'super_admin' && existingProfile.role === 'admin') {
+    return jsonError('Email ini sudah terdaftar sebagai admin organisasi. Hapus akses dulu sebelum menjadikan superadmin.', 409)
+  }
 
   const token = createActivationToken()
   const tokenHash = hashToken(token)
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString()
 
+  const payloadRow: Record<string, unknown> = {
+    email,
+    assigned_role: assignedRole,
+    display_name: displayName,
+    organization_name: organizationName,
+    access_scope: accessScope,
+    status: 'pending',
+    description: assignedRole === 'super_admin'
+      ? 'Undangan superadmin dari portal utama admin.'
+      : 'Undangan admin organisasi.',
+    activation_token_hash: tokenHash,
+    activation_sent_at: new Date().toISOString(),
+    activation_expires_at: expiresAt,
+    activation_accepted_at: null,
+    created_by: auth.profileId,
+    updated_by: auth.profileId,
+  }
+
+  if (walletAddress) {
+    payloadRow.wallet_address = walletAddress
+  }
+
   const { data, error } = await auth.client
     .schema('app')
     .from('admin_registry')
-    .upsert({
-      email,
-      assigned_role: 'super_admin',
-      display_name: displayName,
-      organization_name: null,
-      access_scope: 'all',
-      status: 'pending',
-      description: 'Undangan superadmin dari portal utama admin.',
-      wallet_address: walletAddress,
-      activation_token_hash: tokenHash,
-      activation_sent_at: new Date().toISOString(),
-      activation_expires_at: expiresAt,
-      activation_accepted_at: null,
-      created_by: auth.profileId,
-      updated_by: auth.profileId,
-    }, { onConflict: 'email' })
+    .upsert(payloadRow, { onConflict: 'email' })
     .select('email,assigned_role,display_name,wallet_address,activation_expires_at,activation_accepted_at,status')
     .single()
 
-  if (error) return jsonError('Gagal menyimpan undangan superadmin.', 500)
+  if (error) return jsonError('Gagal menyimpan undangan.', 500)
+
+  // For admins without wallet, skip email — they use OAuth login instead
+  if (assignedRole === 'admin' && !walletAddress) {
+    // Also sync profile role if exists
+    await auth.client
+      .schema('app')
+      .from('app_profiles')
+      .update({ role: 'admin' })
+      .ilike('email', email)
+      .then(() => {})
+
+    return NextResponse.json({
+      invite: toInviteResponse(data as InviteRow),
+      activationLink: null,
+      emailStatus: 'skipped',
+      emailError: 'Admin tanpa wallet — tidak perlu aktivasi via email. Admin dapat login via OAuth dan bind wallet sendiri.',
+    })
+  }
 
   const activationLink = `${getRequestOrigin(request)}/portal-admin?invite=${encodeURIComponent(token)}`
-  return NextResponse.json({ invite: toInviteResponse(data as InviteRow), activationLink })
+
+  // Attempt to send activation email — non-blocking; invite is saved regardless
+  let emailStatus: 'sent' | 'skipped' | 'failed' = 'skipped'
+  let emailError: string | undefined
+
+  if (assignedRole === 'admin') {
+    // For admins without wallet, we skip email (handled above). Those with wallet get email.
+    if (walletAddress) {
+      const emailResult = await sendSuperadminActivationEmail({
+        displayName,
+        email,
+        activationLink,
+      })
+
+      if (emailResult.success) {
+        emailStatus = 'sent'
+      } else if (emailResult.error) {
+        emailStatus = 'failed'
+        emailError = emailResult.error
+      }
+    }
+  } else {
+    const emailResult = await sendSuperadminActivationEmail({
+      displayName,
+      email,
+      activationLink,
+    })
+
+    if (emailResult.success) {
+      emailStatus = 'sent'
+    } else if (emailResult.error) {
+      emailStatus = 'failed'
+      emailError = emailResult.error
+    }
+  }
+
+  return NextResponse.json({
+    invite: toInviteResponse(data as InviteRow),
+    activationLink,
+    emailStatus,
+    emailError,
+  })
 }

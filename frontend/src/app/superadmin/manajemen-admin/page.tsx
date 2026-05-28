@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, EllipsisVertical, UserPlus } from 'lucide-react'
+import { Copy, Download, EllipsisVertical, Loader2, Mail, UserPlus } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -20,6 +20,7 @@ import {
 } from '@/components/superadmin/superadmin-shell'
 import { superadminAdminStatuses, superadminAdminTabs } from '@/lib/superadmin-data'
 import { useCreateAdminRegistry, useSuperadminAdminDirectory } from '@/hooks/use-profile'
+import { useCreateAdminInvite } from '@/hooks/use-admin-invite'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -35,6 +36,7 @@ const initialFormData = {
   email: '',
   organizationName: '',
   scope: 'all' as AdminScope,
+  walletAddress: '',
 }
 
 function SuperadminAdminManagementContent() {
@@ -45,7 +47,9 @@ function SuperadminAdminManagementContent() {
   const [activeStatus, setActiveStatus] = useState<(typeof superadminAdminStatuses)[number]>('Semua Status')
   const adminDirectoryQuery = useSuperadminAdminDirectory()
   const createAdminMutation = useCreateAdminRegistry()
+  const createAdminInviteMutation = useCreateAdminInvite()
   const [formData, setFormData] = useState(initialFormData)
+  const [activationLink, setActivationLink] = useState('')
 
   const admins = useMemo(() => {
     return (adminDirectoryQuery.data ?? [])
@@ -87,27 +91,73 @@ function SuperadminAdminManagementContent() {
       return
     }
 
-    createAdminMutation.mutate(
-      {
-        email: formData.email,
-        displayName: formData.name,
-        organizationName: formData.organizationName,
-        accessScope: formData.scope,
-        status: 'pending',
-        description: formData.scope === 'all' ? 'Semua Pemilihan' : 'Pemilihan Tertentu',
-      },
-      {
-        onSuccess: () => {
-          updateTab('daftar')
-          setActiveStatus('Semua Status')
-          setFormData(initialFormData)
-          showToast({ tone: 'success', title: 'Undangan admin dibuat', description: 'Email ini sekarang terdaftar sebagai admin organisasi. Admin dapat masuk lalu menautkan wallet sendiri.' })
+    const hasWallet = formData.walletAddress.trim().length > 0
+    if (hasWallet && !/^0x[a-fA-F0-9]{40}$/.test(formData.walletAddress)) {
+      showToast({ tone: 'error', title: 'Wallet tidak valid', description: 'Gunakan alamat wallet Ethereum (0x...) yang valid jika diisi.' })
+      return
+    }
+
+    if (hasWallet) {
+      // Use token activation flow with email
+      createAdminInviteMutation.mutate(
+        {
+          displayName: formData.name,
+          email: formData.email,
+          walletAddress: formData.walletAddress,
+          organizationName: formData.organizationName,
+          accessScope: formData.scope,
+          role: 'admin',
         },
-        onError: (error) => {
-          showToast({ tone: 'error', title: 'Gagal menambahkan admin', description: getRepositoryErrorMessage(error) })
+        {
+          onSuccess: (invite) => {
+            updateTab('daftar')
+            setActiveStatus('Semua Status')
+            if (invite.activationLink) {
+              setActivationLink(invite.activationLink)
+            }
+            setFormData(initialFormData)
+
+            const emailMsg = invite.emailStatus === 'sent'
+              ? 'Email aktivasi sudah dikirim.'
+              : invite.emailStatus === 'failed'
+                ? `Email gagal: ${invite.emailError ?? ''}`
+                : 'Link aktivasi tersedia untuk disalin.'
+
+            showToast({
+              tone: invite.emailStatus === 'sent' ? 'success' : 'info',
+              title: 'Undangan Admin Dibuat',
+              description: `${formData.name} — ${emailMsg}`,
+            })
+          },
+          onError: (error) => {
+            showToast({ tone: 'error', title: 'Gagal membuat undangan', description: getRepositoryErrorMessage(error) })
+          },
         },
-      },
-    )
+      )
+    } else {
+      // Traditional flow: admin registers via OAuth + wallet binding
+      createAdminMutation.mutate(
+        {
+          email: formData.email,
+          displayName: formData.name,
+          organizationName: formData.organizationName,
+          accessScope: formData.scope,
+          status: 'pending',
+          description: formData.scope === 'all' ? 'Semua Pemilihan' : 'Pemilihan Tertentu',
+        },
+        {
+          onSuccess: () => {
+            updateTab('daftar')
+            setActiveStatus('Semua Status')
+            setFormData(initialFormData)
+            showToast({ tone: 'success', title: 'Admin terdaftar', description: 'Admin dapat login via OAuth Microsoft/Google dan menautkan wallet sendiri.' })
+          },
+          onError: (error) => {
+            showToast({ tone: 'error', title: 'Gagal menambahkan admin', description: getRepositoryErrorMessage(error) })
+          },
+        },
+      )
+    }
   }
 
   return (
@@ -262,6 +312,18 @@ function SuperadminAdminManagementContent() {
                   placeholder="Contoh: HIMAFORKA FTI UAJY"
                 />
               </label>
+
+              <label className="block xl:col-span-2">
+                <SuperadminFieldLabel>Wallet Address <span className="text-slate-400 font-normal">(Opsional)</span></SuperadminFieldLabel>
+                <SuperadminTextInput
+                  value={formData.walletAddress}
+                  onChange={(event) => setFormData((current) => ({ ...current, walletAddress: event.target.value }))}
+                  placeholder="0x... — kosongkan jika admin akan bind wallet sendiri"
+                />
+                <p className="mt-2 text-[12px] text-slate-500 italic">
+                  Jika diisi, admin akan menerima email aktivasi dan harus menggunakan wallet yang sama.
+                </p>
+              </label>
             </div>
           </AppSectionCard>
 
@@ -297,8 +359,20 @@ function SuperadminAdminManagementContent() {
           <AppSectionCard>
             <SuperadminSectionHeading
               title="Aktivasi Akun"
-              description="Super admin hanya mendaftarkan email. Admin organisasi membuat atau masuk akun sendiri, lalu menautkan wallet pada halaman Hubungkan Wallet. Wallet tidak perlu diisi oleh super admin."
+              description="Admin bisa mendapat link aktivasi (jika wallet diisi) atau login via OAuth Microsoft/Google dan bind wallet sendiri."
             />
+            {activationLink && (
+              <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-[12px] font-semibold text-emerald-700">Link aktivasi siap</p>
+                <p className="mt-1 text-[12px] leading-5 text-emerald-700">
+                  Kirimkan link ini ke admin baru untuk membuat password dan menyambungkan wallet.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <input value={activationLink} readOnly className="h-10 min-w-0 flex-1 rounded-md border border-emerald-200 bg-white px-3 font-mono text-[12px] text-slate-900" />
+                  <button type="button" onClick={() => { navigator.clipboard.writeText(activationLink); showToast({ tone: 'success', title: 'Link Disalin' }) }} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-emerald-200 bg-white px-4 text-[13px] font-semibold text-emerald-700 hover:bg-emerald-50"><Copy className="h-4 w-4" /> Salin</button>
+                </div>
+              </div>
+            )}
           </AppSectionCard>
 
           <section className="flex flex-col gap-3 sm:flex-row sm:justify-end">

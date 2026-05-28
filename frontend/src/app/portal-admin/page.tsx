@@ -237,7 +237,11 @@ function PortalAdminContent() {
             { email: result.email, password: activationPassword },
             {
               onSuccess: () => {
-                showToast({ tone: 'success', title: 'Login Berhasil', description: 'Lanjutkan dengan menyambungkan wallet yang terdaftar.' })
+                showToast({ tone: 'success', title: 'Login Berhasil', description: 'Sambungkan wallet yang terdaftar untuk mengakses portal.' })
+                // Hapus invite token dari URL agar user tidak stuck di mode aktivasi
+                window.setTimeout(() => {
+                  router.replace('/portal-admin')
+                }, 400)
               },
               onError: (err) => {
                 setActivationError(getRepositoryErrorMessage(err, 'Akun aktif, tetapi login otomatis gagal. Silakan login manual dengan password baru.'))
@@ -370,6 +374,15 @@ function PortalAdminContent() {
                             <p className="mt-2 text-[12px] leading-5 text-red-600">
                               {getRepositoryErrorMessage(invitePreviewQuery.error, 'Undangan tidak valid atau sudah kedaluwarsa.')}
                             </p>
+                            <div className="mt-3">
+                              <button
+                                type="button"
+                                onClick={() => router.push('/portal-admin')}
+                                className="text-[12px] font-semibold text-blue-600 hover:underline"
+                              >
+                                Login dengan akun yang sudah aktif →
+                              </button>
+                            </div>
                           </div>
                         )}
 

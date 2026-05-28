@@ -11,14 +11,26 @@ export type AdminInvitePreview = {
   expiresAt: string
 }
 
-export type CreateSuperadminInviteInput = {
+export type CreateAdminInviteInput = {
   email: string
   displayName: string
-  walletAddress: string
+  walletAddress?: string
+  role?: 'admin' | 'super_admin'
+  organizationName?: string
+  accessScope?: 'all' | 'specific'
 }
 
-export type CreateSuperadminInviteResult = AdminInvitePreview & {
+export type CreateAdminInviteResult = AdminInvitePreview & {
+  activationLink: string | null
+  emailStatus?: 'sent' | 'skipped' | 'failed'
+  emailError?: string
+}
+
+export type ResendInviteResult = {
   activationLink: string
+  emailStatus: 'sent' | 'failed'
+  emailId?: string
+  emailError?: string
 }
 
 export type ActivateAdminInviteResult = {
@@ -77,12 +89,22 @@ export async function getAdminInvitePreview(token: string): Promise<AdminInviteP
   return parseInvitePreview(await response.json())
 }
 
-export async function createSuperadminInvite(input: CreateSuperadminInviteInput): Promise<CreateSuperadminInviteResult> {
+export async function createAdminInvite(input: CreateAdminInviteInput): Promise<CreateAdminInviteResult> {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend login belum dikonfigurasi.')
 
   const { data, error } = await client.auth.getSession()
   if (error || !data.session?.access_token) throw new RepositoryError('Sesi superadmin belum aktif. Silakan masuk ulang.')
+
+  const body: Record<string, unknown> = {
+    email: input.email,
+    displayName: input.displayName,
+  }
+
+  if (input.walletAddress) body.walletAddress = input.walletAddress
+  if (input.role) body.role = input.role
+  if (input.organizationName) body.organizationName = input.organizationName
+  if (input.accessScope) body.accessScope = input.accessScope
 
   const response = await fetch('/api/admin-invites', {
     method: 'POST',
@@ -90,19 +112,54 @@ export async function createSuperadminInvite(input: CreateSuperadminInviteInput)
       'Content-Type': 'application/json',
       Authorization: `Bearer ${data.session.access_token}`,
     },
-    body: JSON.stringify(input),
+    body: JSON.stringify(body),
   })
 
-  if (!response.ok) throw await readApiError(response, 'Gagal membuat undangan superadmin.')
+  if (!response.ok) throw await readApiError(response, 'Gagal membuat undangan.')
 
   const payload: unknown = await response.json()
-  if (!isRecord(payload) || typeof payload.activationLink !== 'string') {
-    throw new RepositoryError('Link aktivasi tidak tersedia dari server.')
-  }
+  if (!isRecord(payload)) throw new RepositoryError('Respons tidak valid dari server.')
+
+  const activationLink = typeof payload.activationLink === 'string' ? payload.activationLink : null
 
   return {
     ...parseInvitePreview(payload),
-    activationLink: payload.activationLink,
+    activationLink,
+    emailStatus: payload.emailStatus as 'sent' | 'skipped' | 'failed' | undefined,
+    emailError: typeof payload.emailError === 'string' ? payload.emailError : undefined,
+  }
+}
+
+export async function resendAdminInvite(email: string): Promise<ResendInviteResult> {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend login belum dikonfigurasi.')
+
+  const { data, error } = await client.auth.getSession()
+  if (error || !data.session?.access_token) throw new RepositoryError('Sesi superadmin belum aktif. Silakan masuk ulang.')
+
+  const response = await fetch('/api/admin-invites/resend', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${data.session.access_token}`,
+    },
+    body: JSON.stringify({ email }),
+  })
+
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null)
+    const message = (isRecord(payload) && typeof payload.error === 'string') ? payload.error : 'Gagal mengirim ulang undangan.'
+    throw new RepositoryError(message)
+  }
+
+  const payload: unknown = await response.json()
+  if (!isRecord(payload)) throw new RepositoryError('Respons tidak valid.')
+
+  return {
+    activationLink: typeof payload.activationLink === 'string' ? payload.activationLink : '',
+    emailStatus: payload.emailStatus === 'sent' ? 'sent' : 'failed',
+    emailId: typeof payload.emailId === 'string' ? payload.emailId : undefined,
+    emailError: typeof payload.emailError === 'string' ? payload.emailError : undefined,
   }
 }
 

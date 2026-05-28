@@ -3,9 +3,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   activateAdminInvite,
-  createSuperadminInvite,
+  createAdminInvite,
   getAdminInvitePreview,
-  type CreateSuperadminInviteInput,
+  resendAdminInvite,
+  type CreateAdminInviteInput,
 } from '@/lib/repositories/adminInviteRepository'
 import { profileQueryKeys } from '@/hooks/use-profile'
 
@@ -24,13 +25,24 @@ export function useAdminInvitePreview(token: string | null | undefined) {
   })
 }
 
-export function useCreateSuperadminInvite() {
+export function useCreateAdminInvite() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: CreateSuperadminInviteInput) => createSuperadminInvite(input),
+    mutationFn: (input: CreateAdminInviteInput) => createAdminInvite(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+      void queryClient.invalidateQueries({ queryKey: ['superadmins'] })
+    },
+  })
+}
+
+export function useResendAdminInvite() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (email: string) => resendAdminInvite(email),
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['superadmins'] })
     },
   })
