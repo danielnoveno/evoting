@@ -18,9 +18,11 @@ import {
 } from 'lucide-react'
 import { ConnectWallet } from '@coinbase/onchainkit/wallet'
 import { useAccount, useDisconnect } from 'wagmi'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { signOutCurrentSession } from '@/lib/repositories/authRepository'
 import { AuthField } from '@/components/auth/auth-shell'
 import { useToast } from '@/components/ui/toast-provider'
-import { useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useEmailPasswordLogin, useEmailPasswordSignUp } from '@/hooks/use-auth-session'
+import { authSessionQueryKey, useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useEmailPasswordLogin, useEmailPasswordSignUp } from '@/hooks/use-auth-session'
 import { useBindCurrentWallet, useCurrentProfile, useProfileByWallet } from '@/hooks/use-profile'
 import { ScrollReveal, FloatingShape } from '@/components/public/parallax'
 import { AsciiBackground } from '@/components/public/ascii-background'
@@ -45,6 +47,7 @@ function ConnectWalletContent() {
   const { showToast } = useToast()
   const { address, isConnected } = useAccount()
   const { disconnect } = useDisconnect()
+  const queryClient = useQueryClient()
   const authSessionQuery = useAuthSession()
   const currentProfileQuery = useCurrentProfile()
   const connectedWalletProfileQuery = useProfileByWallet(address)
@@ -53,6 +56,14 @@ function ConnectWalletContent() {
   const googleLoginMutation = useGoogleLogin()
   const emailLoginMutation = useEmailPasswordLogin()
   const emailSignUpMutation = useEmailPasswordSignUp()
+
+  const signOutMutation = useMutation({
+    mutationFn: signOutCurrentSession,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authSessionQueryKey })
+      queryClient.invalidateQueries({ queryKey: ['profile'] })
+    },
+  })
 
   const redirectParam = searchParams.get('redirect')
   const redirectTarget = useMemo(() => resolveRedirectTarget(redirectParam), [redirectParam])
@@ -128,6 +139,25 @@ function ConnectWalletContent() {
       return () => clearTimeout(timer)
     }
   }, [mounted, isConnected, authSession, isWalletBound, router, redirectTarget, currentProfile?.role])
+
+  const handleBack = () => {
+    // If on step 3 (wallet connected, user logged in, but not bound)
+    if (isConnected && authSession && !isWalletBound) {
+      // Go back to step 2 by signing out.
+      signOutMutation.mutate()
+      return
+    }
+
+    // If on step 2 (wallet connected, but user not logged in)
+    if (isConnected && !authSession) {
+      // Go back to step 1 by disconnecting wallet.
+      disconnect()
+      return
+    }
+    
+    // If on step 1 (wallet not connected), or if flow is complete, go to home.
+    router.push('/')
+  }
 
   const handleBind = () => {
     if (!address || !authSession?.user?.email) return
@@ -510,7 +540,7 @@ function ConnectWalletContent() {
                   <div className="mt-8 flex w-full items-center justify-between gap-3 border-t border-slate-100 pt-5">
                     <button
                       type="button"
-                      onClick={() => router.push('/')}
+                      onClick={handleBack}
                       className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
                       aria-label="Kembali"
                     >
