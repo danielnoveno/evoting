@@ -31,30 +31,48 @@ function getRequestOrigin(request: NextRequest) {
   return request.nextUrl.origin.replace(/\/$/, '')
 }
 
-function requireSuperadmin(request: NextRequest) {
-  return (async () => {
-    const client = getSupabaseServiceRoleClient()
-    if (!client) return { error: jsonError('Service role Supabase belum dikonfigurasi.', 503), profileId: null, client: null }
+async function requireSuperadmin(request: NextRequest) {
+  const client = getSupabaseServiceRoleClient()
+  if (!client) {
+    console.error('[Admin Resend] Service role client is missing')
+    return { error: jsonError('Service role Supabase belum dikonfigurasi.', 503), profileId: null, client: null }
+  }
 
-    const authorization = request.headers.get('authorization')
-    const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1]
-    if (!token) return { error: jsonError('Sesi superadmin tidak ditemukan.', 401), profileId: null, client }
+  const authorization = request.headers.get('authorization')
+  const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1]
+  if (!token) return { error: jsonError('Sesi superadmin tidak ditemukan.', 401), profileId: null, client }
 
-    const { data: userData, error: userError } = await client.auth.getUser(token)
-    if (userError || !userData.user) return { error: jsonError('Sesi superadmin tidak valid atau sudah berakhir.', 401), profileId: null, client }
+  const { data: userData, error: userError } = await client.auth.getUser(token)
+  if (userError || !userData.user) {
+    console.error('[Admin Resend] Auth user check failed:', userError)
+    return { error: jsonError('Sesi superadmin tidak valid atau sudah berakhir.', 401), profileId: null, client }
+  }
 
-    const { data: profile, error: profileError } = await client
-      .schema('app')
-      .from('app_profiles')
-      .select('id,role')
-      .eq('user_id', userData.user.id)
-      .maybeSingle()
+  const userId = userData.user.id
 
-    if (profileError) return { error: jsonError('Gagal memeriksa otoritas superadmin.', 500), profileId: null, client }
-    if (!profile || profile.role !== 'super_admin') return { error: jsonError('Hanya superadmin aktif yang dapat mengirim ulang undangan.', 403), profileId: null, client }
+  const { data: profile, error: profileError } = await client
+    .schema('app')
+    .from('app_profiles')
+    .select('id, role, email')
+    .eq('user_id', userId)
+    .maybeSingle()
 
-    return { error: null, profileId: profile.id, client }
-  })()
+  if (profileError) {
+    console.error('[Admin Resend] Profile query error for user:', userId, profileError)
+    return { error: jsonError('Gagal memeriksa otoritas superadmin.', 500), profileId: null, client }
+  }
+
+  if (!profile) {
+    console.warn('[Admin Resend] No profile found for authenticated user:', userId)
+    return { error: jsonError('Profil superadmin tidak ditemukan.', 403), profileId: null, client }
+  }
+
+  if (profile.role !== 'super_admin') {
+    console.warn('[Admin Resend] Unauthorized role access attempt:', profile.role, 'by user:', profile.email)
+    return { error: jsonError('Hanya superadmin aktif yang dapat mengirim ulang undangan.', 403), profileId: null, client }
+  }
+
+  return { error: null, profileId: profile.id, client }
 }
 
 export async function POST(request: NextRequest) {

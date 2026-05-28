@@ -56,24 +56,45 @@ function toInviteResponse(row: InviteRow) {
 
 async function requireSuperadmin(request: NextRequest) {
   const client = getSupabaseServiceRoleClient()
-  if (!client) return { error: jsonError('Service role Supabase belum dikonfigurasi.', 503), profileId: null, client: null }
+  if (!client) {
+    console.error('[Admin Invites] Service role client is missing')
+    return { error: jsonError('Service role Supabase belum dikonfigurasi.', 503), profileId: null, client: null }
+  }
 
   const authorization = request.headers.get('authorization')
   const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1]
   if (!token) return { error: jsonError('Sesi superadmin tidak ditemukan.', 401), profileId: null, client }
 
   const { data: userData, error: userError } = await client.auth.getUser(token)
-  if (userError || !userData.user) return { error: jsonError('Sesi superadmin tidak valid atau sudah berakhir.', 401), profileId: null, client }
+  if (userError || !userData.user) {
+    console.error('[Admin Invites] Auth user check failed:', userError)
+    return { error: jsonError('Sesi superadmin tidak valid atau sudah berakhir.', 401), profileId: null, client }
+  }
 
+  const userId = userData.user.id
+
+  // Query app_profiles via the client (schema is already set to 'app' in client config, but we keep .schema() for safety)
   const { data: profile, error: profileError } = await client
     .schema('app')
     .from('app_profiles')
-    .select('id,role')
-    .eq('user_id', userData.user.id)
+    .select('id, role, email')
+    .eq('user_id', userId)
     .maybeSingle()
 
-  if (profileError) return { error: jsonError('Gagal memeriksa otoritas superadmin.', 500), profileId: null, client }
-  if (!profile || profile.role !== 'super_admin') return { error: jsonError('Hanya superadmin aktif yang dapat membuat undangan.', 403), profileId: null, client }
+  if (profileError) {
+    console.error('[Admin Invites] Profile query error for user:', userId, profileError)
+    return { error: jsonError('Gagal memeriksa otoritas superadmin.', 500), profileId: null, client }
+  }
+
+  if (!profile) {
+    console.warn('[Admin Invites] No profile found for authenticated user:', userId)
+    return { error: jsonError('Profil superadmin tidak ditemukan.', 403), profileId: null, client }
+  }
+
+  if (profile.role !== 'super_admin') {
+    console.warn('[Admin Invites] Unauthorized role access attempt:', profile.role, 'by user:', profile.email)
+    return { error: jsonError('Hanya superadmin aktif yang dapat membuat undangan.', 403), profileId: null, client }
+  }
 
   return { error: null, profileId: profile.id, client }
 }
