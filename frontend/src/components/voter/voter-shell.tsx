@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, CircleHelp, Home, Menu, Search, ShieldCheck, UserCircle2, X } from 'lucide-react'
+import { Bell, CircleHelp, Copy, Home, Menu, Search, ShieldCheck, UserCircle2, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { ReactNode, useMemo, useState } from 'react'
@@ -15,8 +15,10 @@ import { useCurrentProfile } from '@/hooks/use-profile'
 import { useLogoutSession } from '@/hooks/use-auth-session'
 import { NotificationModal } from '@/components/public/notification-modal'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
+import { OnboardingTour } from './onboarding-tour'
 
 const sidebarItems = [
+
   { href: '/pemilih', label: 'Beranda', icon: Home },
   { href: '/pemilih/bukti-saya', label: 'Bukti Saya', icon: ShieldCheck },
   { href: '/pemilih/bantuan', label: 'Bantuan', icon: CircleHelp },
@@ -114,8 +116,28 @@ export function VoterShell({ children }: { children: ReactNode }) {
                 </button>
                 <div className="hidden items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 sm:flex md:text-[13px]">
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                  {profile ? formatWallet(profile.wallet) : 'Belum terhubung'}
+                  <span className="truncate max-w-[120px] md:max-w-none">
+                    {profile ? formatWallet(profile.wallet) : 'Belum terhubung'}
+                  </span>
+                  {profile?.wallet && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(profile.wallet)
+                        showToast({
+                          tone: 'success',
+                          title: 'Alamat Disalin',
+                          description: 'Alamat dompet disalin ke clipboard.',
+                        })
+                      }}
+                      className="ml-1 rounded p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-colors"
+                      title="Salin alamat dompet"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
+
                 <button type="button" onClick={() => setNotifOpen(true)} className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2" aria-label="Notifikasi pemilih">
                   <Bell className="h-4 w-4" />
                   {hasUnread && (
@@ -175,8 +197,11 @@ export function VoterShell({ children }: { children: ReactNode }) {
       />
 
       <CommandPalette role="voter" open={searchOpen} onOpenChange={setSearchOpen} />
+
+      <OnboardingTour />
     </main>
     </RoleGate>
+
   )
 }
 

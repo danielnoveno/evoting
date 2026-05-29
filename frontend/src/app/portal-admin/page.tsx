@@ -517,76 +517,32 @@ function PortalAdminContent() {
                           </button>
                         </div>
 
-                        <div className="relative my-5">
-                          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100" /></div>
-                          <div className="relative flex justify-center text-[10px] font-semibold uppercase tracking-widest"><span className="bg-white px-3 text-slate-400">Opsi Manual</span></div>
-                        </div>
-
-                        <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                          <p className="text-[12px] font-semibold text-blue-700">Akun admin tidak dibuat mandiri</p>
-                          <p className="mt-2 text-[12px] leading-5 text-blue-700">
-                            Superadmin dan admin hanya dapat masuk setelah aksesnya dibuat oleh superadmin utama. Jika belum punya akses, hubungi pengelola platform.
-                          </p>
-                        </div>
-
-                        <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
-                          <AuthField
-                            label="Email Staf"
-                            type="email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            placeholder="nama@uajy.ac.id"
-                          />
-
-                          {authMode !== 'forgot' && (
-                            <div className="flex flex-col gap-2">
-                              <AuthField
-                                label="Password"
-                                type="password"
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                              />
-                              {authMode === 'login' && (
-                                <div className="text-right">
-                                  <button type="button" onClick={() => setAuthMode('forgot')} className="text-[11px] font-semibold text-blue-600 hover:text-blue-700">Lupa Password?</button>
-                                </div>
-                              )}
+                        <div className="mt-8 rounded-xl border border-blue-100 bg-blue-50/50 p-5">
+                          <div className="flex gap-3">
+                            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                              <Building2 className="h-3 w-3" />
                             </div>
-                          )}
+                            <div className="space-y-3">
+                              <h3 className="text-[13px] font-bold text-blue-900">Penting untuk Admin</h3>
+                              <p className="text-[12px] leading-5 text-blue-800/80">
+                                Akses portal admin memerlukan penautan antara akun institusi <span className="font-bold">@uajy.ac.id</span> dan alamat dompet digital yang sudah didaftarkan oleh Superadmin.
+                              </p>
+                              <div className="rounded-lg bg-white/60 p-3 text-[11px] leading-relaxed text-blue-900/70 border border-blue-100/50">
+                                <span className="font-bold text-blue-900 block mb-1">Catatan:</span>
+                                Kami telah menonaktifkan login manual untuk menjaga integritas kredensial. Gunakan OAuth Microsoft/Google yang terhubung dengan akun kampus Anda.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
 
-                          {formError && (
-                            <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-[12px] leading-5 text-red-600">
-                              {formError}
-                            </p>
-                          )}
-
-                          <button
-                            type="submit"
-                            disabled={emailLoginMutation.isPending || resetPasswordMutation.isPending}
-                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
-                          >
-                            {emailLoginMutation.isPending || resetPasswordMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : authMode === 'login' ? (
-                              <Mail className="h-4 w-4" />
-                            ) : (
-                              <RefreshCw className="h-4 w-4" />
-                            )}
-                            {authMode === 'login' ? 'Masuk ke Sistem' : 'Kirim Link Reset'}
-                          </button>
-
-                          <p className="text-center text-[12px] text-slate-500">
-                            {authMode === 'login' && (
-                              <>Belum punya akses? Hubungi superadmin utama untuk dibuatkan akun.</>
-                            )}
-                            {authMode === 'forgot' && (
-                              <button type="button" onClick={() => setAuthMode('login')} className="font-semibold text-blue-600 hover:underline">Kembali Login</button>
-                            )}
-                          </p>
-                        </form>
+                        {formError && (
+                          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-[12px] leading-5 text-red-600">
+                            {formError}
+                          </div>
+                        )}
                       </div>
                     )}
+
 
                     {isConnected && authSession && !isWalletBound && (
                       <div className="mt-8 w-full">

@@ -75,7 +75,7 @@ export default function VoterDashboardPage() {
     <VoterShell>
       <ScrollReveal variant="fade-up" duration={800}>
         <section>
-          <h1 className="mt-3 text-[28px] font-semibold text-slate-900 sm:text-[34px] md:text-[40px]">Ruang Voting Saya</h1>
+          <h1 id="tour-voter-home-title" className="mt-3 text-[28px] font-semibold text-slate-900 sm:text-[34px] md:text-[40px]">Ruang Voting Saya</h1>
           <p className="mt-3 max-w-3xl text-[14px] leading-7 text-slate-800 md:text-[16px] md:leading-8">
             Pantau ruang voting yang sedang aktif, pilihan yang sudah disimpan, dan langkah berikutnya sampai suaramu selesai dihitung.
           </p>
@@ -84,7 +84,8 @@ export default function VoterDashboardPage() {
 
       <ScrollReveal variant="fade-up" delay={100} duration={800}>
         <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.72fr)]">
-        <article className="rounded-xl border border-slate-200 bg-white p-6 transition-colors duration-300 hover:border-slate-300">
+        <article id="tour-voter-featured-election" className="rounded-xl border border-slate-200 bg-white p-6 transition-colors duration-300 hover:border-slate-300">
+
           {(() => {
             const isCommitPhase = featuredViewState.nextAction === 'commit'
             const isRevealPhase = featuredViewState.nextAction === 'reveal'
@@ -312,8 +313,9 @@ export default function VoterDashboardPage() {
           </div>
         </article>
 
-        <article className="rounded-xl border border-slate-100 bg-slate-50 p-6">
+        <article id="tour-voter-participation-stats" className="rounded-xl border border-slate-100 bg-slate-50 p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">Partisipasi Anda</p>
+
           <div className="mt-6 flex items-end gap-3">
             <p className="text-[52px] font-semibold leading-none tracking-[-0.05em] text-slate-900 sm:text-[64px]">{participationRate}%</p>
             <p className="pb-2 text-[16px] font-semibold text-emerald-600 sm:text-[18px]">+12%</p>

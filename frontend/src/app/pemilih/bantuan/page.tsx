@@ -73,12 +73,12 @@ export default function VoterHelpPage() {
     <VoterShell>
       <ScrollReveal variant="fade-up" duration={800}>
       <section className="max-w-4xl">
-        <h1 className="text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[42px] md:text-[56px]">Pusat Bantuan Voter</h1>
+        <h1 id="tour-voter-help-title" className="text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[42px] md:text-[56px]">Pusat Bantuan Voter</h1>
         <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
           Semua hal penting tentang proses voting dijelaskan dengan bahasa sederhana, aman, dan mudah diikuti.
         </p>
 
-        <div className="mt-8 flex h-16 items-center gap-4 rounded-[24px] bg-slate-100 px-4 sm:px-5">
+        <div id="tour-voter-help-search" className="mt-8 flex h-16 items-center gap-4 rounded-[24px] bg-slate-100 px-4 sm:px-5">
           <Search className="h-5 w-5 text-slate-500" />
           <input
             value={query}
@@ -89,6 +89,7 @@ export default function VoterHelpPage() {
         </div>
       </section>
       </ScrollReveal>
+
 
       <StaggerContainer stagger={120} variant="fade-up" className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.6fr)_minmax(260px,0.6fr)]">
         {categories.map((category, index) => {
@@ -125,8 +126,9 @@ export default function VoterHelpPage() {
       </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={150} duration={800}>
-      <section className="mt-6 rounded-[32px] bg-[#161f35] p-8 text-white">
+      <section id="tour-voter-help-flow" className="mt-6 rounded-[32px] bg-[#161f35] p-8 text-white">
           <h3 className="text-[26px] font-semibold text-white sm:text-[32px]">Alur Memilih yang Mudah Diikuti</h3>
+
         <p className="mt-4 text-[16px] leading-8 text-slate-300">Intinya: pilih dulu, simpan aman, datang lagi untuk konfirmasi, lalu lihat hasil.</p>
         <div className="mt-10 grid gap-8 md:grid-cols-2 xl:grid-cols-4">
           {[
@@ -163,10 +165,11 @@ export default function VoterHelpPage() {
           </div>
           <h3 className="mt-6 text-[24px] font-semibold text-slate-900 sm:text-[28px]">Live Chat 24/7</h3>
           <p className="mt-4 text-[15px] leading-8 text-slate-800">Bicara langsung dengan tim dukungan teknis saat Anda perlu bantuan cepat ketika proses voting sedang berjalan.</p>
-          <button type="button" onClick={() => showToast({ tone: 'success', title: 'Tim bantuan siap membantu', description: 'Jika diperlukan, lanjutkan melalui email bantuan untuk pendampingan lebih lanjut.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-blue-600 px-6 text-[14px] font-semibold text-white hover:bg-blue-700 sm:w-auto">
+          <button id="tour-voter-help-chat-btn" type="button" onClick={() => showToast({ tone: 'success', title: 'Tim bantuan siap membantu', description: 'Jika diperlukan, lanjutkan melalui email bantuan untuk pendampingan lebih lanjut.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-blue-600 px-6 text-[14px] font-semibold text-white hover:bg-blue-700 sm:w-auto">
             Mulai Chat Sekarang
           </button>
         </article>
+
       </StaggerContainer>
 
       <ScrollReveal variant="fade-up" delay={200} duration={800}>

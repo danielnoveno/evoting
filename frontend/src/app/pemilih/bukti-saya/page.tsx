@@ -62,7 +62,7 @@ export default function VoterProofPage() {
       <ScrollReveal variant="fade-up" duration={800}>
         <section className="max-w-4xl">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Arsip digital</p>
-          <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Bukti Saya</h1>
+          <h1 id="tour-voter-proof-title" className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Bukti Saya</h1>
           <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
             Riwayat pemilihan yang akan, sedang, dan sudah Anda ikuti beserta bukti transaksi yang dapat ditinjau secara publik.
           </p>
@@ -71,8 +71,9 @@ export default function VoterProofPage() {
 
       <ScrollReveal variant="fade-up" delay={100} duration={800}>
       <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(320px,0.7fr)_minmax(0,1.3fr)]">
-          <article className="rounded-[32px] bg-[#161f35] p-6 text-white md:p-8">
+          <article id="tour-voter-participation-total" className="rounded-[32px] bg-[#161f35] p-6 text-white md:p-8">
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total partisipasi</p>
+
           <p className="mt-6 text-[64px] font-semibold leading-none tracking-[-0.05em] text-white sm:text-[86px]">{String(store.elections.filter((election) => election.commitProof || election.revealProof).length).padStart(2, '0')}</p>
           <p className="mt-6 max-w-[18ch] text-[16px] leading-7 text-slate-300 md:text-[18px] md:leading-8">Pemilihan yang telah Anda ikuti sejak bergabung.</p>
         </article>
@@ -98,7 +99,7 @@ export default function VoterProofPage() {
                       </div>
                     </div>
                   </div>
-                  <button type="button" onClick={() => actions.selectProofElection(election.id)} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[13px] font-semibold uppercase tracking-[0.06em] text-slate-900 hover:bg-slate-200 md:w-auto">
+                  <button id="tour-voter-view-proof-btn" type="button" onClick={() => actions.selectProofElection(election.id)} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[13px] font-semibold uppercase tracking-[0.06em] text-slate-900 hover:bg-slate-200 md:w-auto">
                     Lihat Bukti
                     <ArrowRight className="h-4 w-4" />
                   </button>
@@ -107,7 +108,7 @@ export default function VoterProofPage() {
             )
           })}
 
-          <article className="rounded-[32px] border border-slate-100 bg-white p-7 md:p-8">
+          <article id="tour-voter-proof-detail" className="rounded-[32px] border border-slate-100 bg-white p-7 md:p-8">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="flex items-center gap-3">
@@ -116,10 +117,11 @@ export default function VoterProofPage() {
                 <h2 className="mt-5 text-[24px] font-semibold text-slate-900 sm:text-[28px] md:text-[40px]">{selectedElection.title}</h2>
                 <p className="mt-3 text-[15px] leading-8 text-slate-800">Dilaksanakan pada {formatDateShort(selectedElection.deadlineIso)} · {selectedElection.lastTransactionLabel}</p>
               </div>
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduhan dimulai', description: 'Sertifikat bukti sedang disiapkan.' })} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[13px] font-semibold uppercase tracking-[0.06em] text-white hover:bg-slate-900 sm:w-auto">
+              <button id="tour-voter-download-cert-btn" type="button" onClick={() => showToast({ tone: 'info', title: 'Unduhan dimulai', description: 'Sertifikat bukti sedang disiapkan.' })} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[13px] font-semibold uppercase tracking-[0.06em] text-white hover:bg-slate-900 sm:w-auto">
                 <Download className="h-4 w-4" />
                 Unduh Sertifikat
               </button>
+
             </div>
 
             <div className="mt-8 rounded-[24px] bg-slate-100 p-5">
