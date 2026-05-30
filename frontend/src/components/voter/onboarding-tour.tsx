@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { Joyride, CallBackProps, STATUS, Step } from 'react-joyride'
+import { Joyride, EventData, STATUS, Step } from 'react-joyride'
 import { usePathname } from 'next/navigation'
 import { HelpCircle, PlayCircle, X } from 'lucide-react'
 
@@ -28,7 +28,7 @@ export function OnboardingTour({ forceStart = false, onComplete }: OnboardingTou
     }
   }, [forceStart])
 
-  const handleJoyrideCallback = (data: CallBackProps) => {
+  const handleJoyrideCallback = (data: EventData) => {
     const { status } = data
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED]
 
@@ -128,9 +128,10 @@ export function OnboardingTour({ forceStart = false, onComplete }: OnboardingTou
   return (
     <>
       <Joyride
-        callback={handleJoyrideCallback}
+        onEvent={handleJoyrideCallback}
         continuous
         hideCloseButton
+
         run={run}
         scrollToFirstStep
         showProgress
