@@ -48,7 +48,7 @@ export function OnboardingTour({ forceStart = false, onComplete }: OnboardingTou
         target: '#tour-voter-home-title',
         content: 'Selamat datang di Ruang Voting Anda! Di sini Anda dapat memantau pemilihan yang sedang berlangsung.',
         placement: 'bottom',
-        disableBeacon: true,
+        skipBeacon: true,
       },
       {
         target: '#tour-voter-featured-election',
@@ -70,7 +70,7 @@ export function OnboardingTour({ forceStart = false, onComplete }: OnboardingTou
         target: '#tour-voter-proof-title',
         content: 'Halaman Bukti Saya menyimpan semua riwayat pemilihan Anda secara transparan.',
         placement: 'bottom',
-        disableBeacon: true,
+        skipBeacon: true,
       },
       {
         target: '#tour-voter-participation-total',
@@ -102,7 +102,7 @@ export function OnboardingTour({ forceStart = false, onComplete }: OnboardingTou
         target: '#tour-voter-help-title',
         content: 'Pusat Bantuan menyediakan panduan lengkap untuk memudahkan Anda dalam memberikan suara.',
         placement: 'bottom',
-        disableBeacon: true,
+        skipBeacon: true,
       },
       {
         target: '#tour-voter-help-search',
@@ -130,22 +130,20 @@ export function OnboardingTour({ forceStart = false, onComplete }: OnboardingTou
       <Joyride
         onEvent={handleJoyrideCallback}
         continuous
-        hideCloseButton
-
         run={run}
         scrollToFirstStep
-        showProgress
-        showSkipButton
         steps={steps}
+        options={{
+          showProgress: true,
+          buttons: ['back', 'primary', 'skip'],
+          primaryColor: '#0F172A',
+          zIndex: 1000,
+        }}
         styles={{
-          options: {
-            primaryColor: '#0F172A',
-            zIndex: 1000,
-          },
           tooltipContainer: {
             textAlign: 'left',
           },
-          buttonNext: {
+          buttonPrimary: {
             fontSize: '13px',
             padding: '8px 16px',
             borderRadius: '8px',
