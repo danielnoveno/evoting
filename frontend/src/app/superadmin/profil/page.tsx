@@ -1,16 +1,19 @@
 'use client'
 
-import { Building2, KeyRound, Laptop, Smartphone, Upload } from 'lucide-react'
+import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { useToast } from '@/components/ui/toast-provider'
 import { superadminPlatformData } from '@/lib/superadmin-data'
 import { useSuperadminPlatformStore } from '@/lib/superadmin-store'
+import { useCurrentProfile } from '@/hooks/use-profile'
+import { getAdminInitials } from '@/lib/superadmin-admin-mapper'
 
 export default function SuperadminProfilePage() {
   const { showToast } = useToast()
   const { platform, setPlatform } = useSuperadminPlatformStore()
+  const { data: profile, isLoading: isProfileLoading } = useCurrentProfile()
 
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(platform.twoFactorEnabled)
   const [platformName, setPlatformName] = useState(platform.platformName)
@@ -21,6 +24,8 @@ export default function SuperadminProfilePage() {
     setPlatformName(platform.platformName)
     setLanguage(platform.defaultLanguage)
   }, [platform])
+
+  const initials = profile?.displayName ? getAdminInitials(profile.displayName) : 'SA'
 
   return (
     <SuperadminShell>
@@ -40,35 +45,62 @@ export default function SuperadminProfilePage() {
           <SuperadminSectionCard>
             <h2 className="text-[18px] font-semibold text-slate-900">Profil Saya</h2>
             <div className="mt-10 flex flex-col items-center text-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full border border-white bg-[#0f172a] text-[30px] font-semibold text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)]">
-                SA
+              <div className="relative group">
+                <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-white bg-[#0f172a] text-[42px] font-semibold text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)] transition-transform group-hover:scale-105 overflow-hidden">
+                  {profile?.avatarUrl ? (
+                    <img src={profile.avatarUrl} alt={profile.displayName || 'Avatar'} className="h-full w-full object-cover" />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                <button 
+                  onClick={() => showToast({ tone: 'info', title: 'Fitur unggah segera hadir', description: 'Penyimpanan foto profil sedang disiapkan.' })}
+                  className="absolute bottom-0 right-0 h-10 w-10 rounded-full bg-white border border-slate-200 shadow-lg flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                </button>
               </div>
-              <h3 className="mt-6 text-[22px] font-semibold text-slate-900">{superadminPlatformData.profile.name}</h3>
-              <p className="mt-2 font-mono text-[15px] text-slate-500">{superadminPlatformData.profile.email}</p>
+              
+              {isProfileLoading ? (
+                <div className="mt-6 h-8 w-48 animate-pulse bg-slate-200 rounded-lg" />
+              ) : (
+                <>
+                  <h3 className="mt-6 text-[24px] font-semibold text-slate-900">{profile?.displayName || 'Super Admin'}</h3>
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[12px] font-semibold text-emerald-700">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Otoritas Superadmin
+                  </div>
+                  <p className="mt-3 font-mono text-[14px] text-slate-500">{profile?.email}</p>
+                </>
+              )}
             </div>
 
             <div className="mt-8 space-y-4">
-              <div className="rounded-[20px] bg-slate-200 px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Nama Lengkap</p>
-                <p className="mt-2 text-[18px] text-slate-900">{superadminPlatformData.profile.fullName}</p>
+              <div className="rounded-[24px] bg-slate-200/50 border border-slate-200 px-5 py-5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Nama Lengkap</p>
+                <p className="mt-2 text-[17px] font-semibold text-slate-900">{profile?.displayName || '-'}</p>
               </div>
-              <div className="rounded-[20px] bg-slate-200 px-4 py-4">
-                <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Email</p>
-                <p className="mt-2 text-[18px] text-slate-900">{superadminPlatformData.profile.email}</p>
+              <div className="rounded-[24px] bg-slate-200/50 border border-slate-200 px-5 py-5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Email Institusi</p>
+                <p className="mt-2 text-[17px] font-semibold text-slate-900">{profile?.email || '-'}</p>
+              </div>
+              <div className="rounded-[24px] bg-slate-900 px-5 py-5 text-white">
+                <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Blockchain Identity</p>
+                <p className="mt-2 font-mono text-[14px] break-all text-slate-100">{profile?.walletAddress || '-'}</p>
               </div>
               <button
                 type="button"
-                onClick={() => showToast({ tone: 'success', title: 'Reset password diproses', description: 'Permintaan reset password berhasil dibuat.' })}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[20px] bg-slate-200 text-[15px] font-medium text-slate-900 transition hover:bg-slate-300"
+                onClick={() => showToast({ tone: 'success', title: 'Reset password diproses', description: 'Silakan cek email Anda untuk instruksi selanjutnya.' })}
+                className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-[24px] bg-slate-200 text-[15px] font-semibold text-slate-900 transition hover:bg-slate-300"
               >
-                <KeyRound className="h-4 w-4" />
+                <KeyRound className="h-5 w-5" />
                 Ganti Kata Sandi
               </button>
             </div>
           </SuperadminSectionCard>
 
           <SuperadminSectionCard>
-            <h2 className="text-[18px] font-semibold text-slate-900">Keamanan</h2>
+            <h2 className="text-[18px] font-semibold text-slate-900">Keamanan Sesi</h2>
             <div className="mt-8 rounded-[24px] bg-white p-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -188,32 +220,6 @@ export default function SuperadminProfilePage() {
                   className="mt-3 h-14 w-full rounded-[20px] bg-slate-200 px-4 text-[18px] text-slate-900 outline-none transition focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </label>
-
-              <div>
-                <span className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Logo Institusi</span>
-                <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-[16px] border border-slate-200 bg-white text-slate-900 shadow-sm">
-                      <Building2 className="h-8 w-8" />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        showToast({
-                          tone: 'success',
-                          title: 'Unggah logo diproses',
-                          description: 'Penyimpanan logo sedang disiapkan. Gunakan logo saat ini untuk sementara.',
-                        })
-                      }
-                      className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-200 px-5 text-[15px] font-medium text-slate-900 transition hover:bg-slate-300"
-                    >
-                      <Upload className="h-4 w-4" />
-                      Unggah Logo Baru
-                    </button>
-                  </div>
-                  <p className="text-[14px] text-slate-500">{superadminPlatformData.system.uploadNote}</p>
-                </div>
-              </div>
 
               <label className="block">
                 <span className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Bahasa Default</span>

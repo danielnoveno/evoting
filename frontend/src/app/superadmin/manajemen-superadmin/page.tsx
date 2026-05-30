@@ -175,9 +175,10 @@ function SuperadminManagementContent() {
                 const isActive = Boolean(admin.profile) || admin.registryStatus === 'active'
 
                 return (
-                <div
+                <SuperadminTableRowLink
                   key={admin.email}
-                  className="grid gap-4 border-b border-slate-100 px-6 py-5 lg:grid-cols-[1.5fr_1.5fr_1fr_56px] lg:items-center"
+                  href={`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`}
+                  className="lg:grid-cols-[1.5fr_1.5fr_1fr_56px]"
                 >
                   <div className="flex items-center gap-4">
                     <SuperadminAvatar initials={getInitials(admin.displayName || 'SA')} />
@@ -199,7 +200,9 @@ function SuperadminManagementContent() {
                     {!isActive && (
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
                           resendInviteMutation.mutate(admin.email, {
                             onSuccess: (result) => {
                               showToast({
@@ -226,7 +229,7 @@ function SuperadminManagementContent() {
                       {isActive ? <CheckCircle2 className="h-5 w-5" /> : <Clock3 className="h-5 w-5" />}
                     </div>
                   </div>
-                </div>
+                </SuperadminTableRowLink>
                 )
               }) : (
                 <div className="p-10">
