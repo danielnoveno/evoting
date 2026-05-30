@@ -4,7 +4,9 @@ import type { Database } from '@/lib/supabase/database.types'
 import { getSupabaseBrowserConfig, isSupabaseConfigured } from '@/lib/supabase/config'
 
 export async function GET(request: NextRequest) {
-  const fallbackUrl = new URL('/hubungkan-dompet', request.url)
+  const nextParam = request.nextUrl.searchParams.get('next')
+  const isAuthAdminInitial = nextParam?.startsWith('/portal-admin') || nextParam?.startsWith('/superadmin') || nextParam?.startsWith('/admin')
+  const fallbackUrl = new URL(isAuthAdminInitial ? '/portal-admin' : '/hubungkan-dompet', request.url)
 
   if (!isSupabaseConfigured()) {
     fallbackUrl.searchParams.set('authError', 'backend_not_configured')
@@ -14,7 +16,9 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')
   const next = request.nextUrl.searchParams.get('next')
   const nextPath = next?.startsWith('/') ? next : '/pemilih'
-  const errorRedirectUrl = new URL('/hubungkan-dompet', request.url)
+  
+  const isAuthAdmin = nextPath.startsWith('/portal-admin') || nextPath.startsWith('/superadmin') || nextPath.startsWith('/admin')
+  const errorRedirectUrl = new URL(isAuthAdmin ? '/portal-admin' : '/hubungkan-dompet', request.url)
   errorRedirectUrl.searchParams.set('redirect', nextPath)
 
   if (!code) {
