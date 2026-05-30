@@ -15,9 +15,11 @@ import {
 } from '@/components/superadmin/superadmin-shell'
 import { useDeleteAdminRegistry, useSuperadminAdminDirectory, useUpdateAdminRegistry } from '@/hooks/use-profile'
 import { useResetPassword } from '@/hooks/use-auth-session'
+import { useResendAdminInvite } from '@/hooks/use-admin-invite'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
+import { Loader2 } from 'lucide-react'
 
 export default function SuperadminAdminDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -26,6 +28,12 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
   const updateAdminMutation = useUpdateAdminRegistry()
   const deleteAdminMutation = useDeleteAdminRegistry()
   const resetPasswordMutation = useResetPassword()
+  const resendInviteMutation = useResendAdminInvite()
+  
+  const [activationLink, setActivationLink] = useState('')
+  const [lastEmailStatus, setLastEmailStatus] = useState<'sent' | 'failed' | null>(null)
+  const [lastEmailError, setLastEmailError] = useState<string | null>(null)
+
   const directoryRecord = useMemo(() => adminDirectoryQuery.data?.find((admin) => admin.email === adminId && admin.role === 'admin') ?? null, [adminDirectoryQuery.data, adminId])
   const seedRecord = useMemo(() => directoryRecord ? mapDirectoryAdmin(directoryRecord) : null, [directoryRecord])
   const { showToast } = useToast()
@@ -172,6 +180,60 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
                 </button>
               </div>
             </div>
+
+            {activationLink && (
+              <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-[12px] font-semibold text-emerald-700">Link aktivasi siap digunakan</p>
+                <p className="mt-2 text-[12px] leading-5 text-emerald-700">
+                  {lastEmailStatus === 'sent'
+                    ? 'Email aktivasi sudah dikirim ke email admin organisasi.'
+                    : 'Kirimkan link ini ke admin organisasi. Jika email tidak terkirim, salin link dan kirim manual.'}
+                </p>
+                {lastEmailStatus === 'failed' && (
+                  <p className="mt-2 text-[12px] leading-5 text-red-600 font-semibold">
+                    Email gagal dikirim: {lastEmailError ?? 'Periksa konfigurasi SMTP/Email di server.'}
+                  </p>
+                )}
+                <div className="mt-3 flex flex-col gap-2">
+                  <input
+                    value={activationLink}
+                    readOnly
+                    className="h-10 min-w-0 flex-1 rounded-md border border-emerald-200 bg-white px-3 font-mono text-[12px] text-slate-900"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(activationLink)
+                      showToast({ tone: 'success', title: 'Link disalin', description: 'Silakan kirimkan ke admin terkait.' })
+                    }}
+                    className="h-10 rounded-md bg-emerald-600 px-4 text-[12px] font-semibold text-white hover:bg-emerald-700 transition"
+                  >
+                    Salin Link
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!directoryRecord.profile && (
+              <button
+                type="button"
+                disabled={resendInviteMutation.isPending}
+                onClick={() => {
+                  resendInviteMutation.mutate(seedRecord.email, {
+                    onSuccess: (data) => {
+                      setActivationLink(data.activationLink)
+                      setLastEmailStatus(data.emailStatus)
+                      setLastEmailError(data.emailError ?? null)
+                      showToast({ tone: 'success', title: 'Undangan dikirim', description: 'Link aktivasi baru telah dibuat.' })
+                    },
+                    onError: (error) => showToast({ tone: 'error', title: 'Gagal mengirim undangan', description: getRepositoryErrorMessage(error) }),
+                  })
+                }}
+                className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 text-[15px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {resendInviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                Kirim Undangan Aktivasi
+              </button>
+            )}
 
             <button
               type="button"

@@ -1,10 +1,13 @@
-export function buildSuperadminActivationEmail(params: {
+export function buildAdminActivationEmail(params: {
   displayName: string
   email: string
   activationLink: string
   expiresInDays: number
+  role: 'admin' | 'super_admin'
 }): { subject: string; html: string } {
-  const subject = 'Aktivasi Akun Superadmin — Votein Portal Admin'
+  const isSuperadmin = params.role === 'super_admin'
+  const roleName = isSuperadmin ? 'Superadmin' : 'Admin Organisasi'
+  const subject = `Aktivasi Akun ${roleName} — Votein Portal Admin`
 
   const html = `<div style="margin:0;padding:0;background:#F8FAFC;font-family:Inter,Arial,sans-serif;color:#0F172A;">
   <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
@@ -24,15 +27,15 @@ export function buildSuperadminActivationEmail(params: {
         Undangan Portal Admin
       </p>
       <h2 style="margin:0 0 12px;font-size:22px;line-height:1.3;font-weight:600;color:#0F172A;">
-        Aktivasi Akun Superadmin
+        Aktivasi Akun ${roleName}
       </h2>
       <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#475569;">
-        Halo <strong>${params.displayName}</strong>, kamu telah diundang untuk menjadi superadmin di platform Votein. 
+        Halo <strong>${params.displayName}</strong>, kamu telah diundang untuk menjadi <strong>${roleName.toLowerCase()}</strong> di platform Votein. 
         Silakan klik tombol di bawah ini untuk mengaktifkan akun dan membuat password kamu.
       </p>
       <a href="${params.activationLink}"
          style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;padding:12px 18px;background:#0F172A;color:#FFFFFF;text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;">
-        Aktifkan Akun Superadmin
+        Aktifkan Akun ${roleName}
       </a>
       <div style="margin-top:20px;padding:14px 16px;background:#F8FAFC;border:1px solid #F1F5F9;border-radius:8px;">
         <p style="margin:0;font-size:12px;line-height:1.6;color:#475569;">
@@ -59,4 +62,16 @@ export function buildSuperadminActivationEmail(params: {
 </div>`
 
   return { subject, html }
+}
+
+/**
+ * @deprecated Use buildAdminActivationEmail instead
+ */
+export function buildSuperadminActivationEmail(params: {
+  displayName: string
+  email: string
+  activationLink: string
+  expiresInDays: number
+}) {
+  return buildAdminActivationEmail({ ...params, role: 'super_admin' })
 }

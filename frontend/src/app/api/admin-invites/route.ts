@@ -219,10 +219,11 @@ export async function POST(request: NextRequest) {
       .then(() => {})
   }
 
-  const emailResult = await sendSuperadminActivationEmail({
+  const emailResult = await sendAdminActivationEmail({
     displayName,
     email,
     activationLink,
+    role: assignedRole,
   })
 
   if (emailResult.success) {

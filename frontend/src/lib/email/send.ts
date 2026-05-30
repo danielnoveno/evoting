@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer'
 import { getSmtpConfig } from '@/lib/email/smtp'
-import { buildSuperadminActivationEmail } from '@/lib/email/templates'
+import { buildAdminActivationEmail } from '@/lib/email/templates'
 
 export interface SendActivationEmailResult {
   success: boolean
@@ -8,10 +8,11 @@ export interface SendActivationEmailResult {
   error?: string
 }
 
-export async function sendSuperadminActivationEmail(params: {
+export async function sendAdminActivationEmail(params: {
   displayName: string
   email: string
   activationLink: string
+  role: 'admin' | 'super_admin'
 }): Promise<SendActivationEmailResult> {
   const config = getSmtpConfig()
   
@@ -30,11 +31,12 @@ export async function sendSuperadminActivationEmail(params: {
     },
   })
 
-  const { subject, html } = buildSuperadminActivationEmail({
+  const { subject, html } = buildAdminActivationEmail({
     displayName: params.displayName,
     email: params.email,
     activationLink: params.activationLink,
     expiresInDays: 7,
+    role: params.role,
   })
 
   try {
@@ -45,11 +47,22 @@ export async function sendSuperadminActivationEmail(params: {
       html,
     })
 
-    console.log('[Email] Activation email sent successfully:', info.messageId)
+    console.log(`[Email] ${params.role} activation email sent successfully:`, info.messageId)
     return { success: true, emailId: info.messageId }
   } catch (err) {
-    console.error('[Email] Failed to send activation email:', err)
+    console.error(`[Email] Failed to send ${params.role} activation email:`, err)
     const message = err instanceof Error ? err.message : 'Gagal mengirim email aktivasi via SMTP.'
     return { success: false, error: message }
   }
+}
+
+/**
+ * @deprecated Use sendAdminActivationEmail instead
+ */
+export async function sendSuperadminActivationEmail(params: {
+  displayName: string
+  email: string
+  activationLink: string
+}): Promise<SendActivationEmailResult> {
+  return sendAdminActivationEmail({ ...params, role: 'super_admin' })
 }

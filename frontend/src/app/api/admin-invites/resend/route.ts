@@ -129,10 +129,11 @@ export async function POST(request: NextRequest) {
 
   const activationLink = `${getRequestOrigin(request)}/portal-admin?invite=${encodeURIComponent(newToken)}`
 
-  const emailResult = await sendSuperadminActivationEmail({
+  const emailResult = await sendAdminActivationEmail({
     displayName: invite.display_name ?? email.split('@')[0],
     email: invite.email,
     activationLink,
+    role: invite.assigned_role,
   })
 
   if (!emailResult.success) {
