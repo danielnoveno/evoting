@@ -254,7 +254,7 @@ function SuperadminManagementContent() {
                 </p>
                 {lastEmailStatus === 'failed' && (
                   <p className="mt-2 text-[12px] leading-5 text-red-600 font-semibold">
-                    Email gagal dikirim: {lastEmailError ?? 'Periksa konfigurasi RESEND_API_KEY di server.'}
+                    Email gagal dikirim: {lastEmailError ?? 'Periksa konfigurasi SMTP/Email di server.'}
                   </p>
                 )}
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row">

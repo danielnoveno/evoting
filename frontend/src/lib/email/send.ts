@@ -1,5 +1,5 @@
-import { Resend } from 'resend'
-import { getResendConfig } from '@/lib/email/resend'
+import nodemailer from 'nodemailer'
+import { getSmtpConfig } from '@/lib/email/smtp'
 import { buildSuperadminActivationEmail } from '@/lib/email/templates'
 
 export interface SendActivationEmailResult {
@@ -13,12 +13,23 @@ export async function sendSuperadminActivationEmail(params: {
   email: string
   activationLink: string
 }): Promise<SendActivationEmailResult> {
-  const config = getResendConfig()
+  const config = getSmtpConfig()
+  
   if (!config) {
-    return { success: false, error: 'RESEND_API_KEY belum dikonfigurasi.' }
+    console.warn('[Email] SMTP is not configured. Email sending skipped.')
+    return { success: false, error: 'Konfigurasi SMTP (Gmail) belum lengkap.' }
   }
 
-  const resend = new Resend(config.apiKey)
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.port === 465, // true for 465, false for other ports
+    auth: {
+      user: config.user,
+      pass: config.pass,
+    },
+  })
+
   const { subject, html } = buildSuperadminActivationEmail({
     displayName: params.displayName,
     email: params.email,
@@ -27,20 +38,18 @@ export async function sendSuperadminActivationEmail(params: {
   })
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: `${config.fromName} <${config.fromEmail}>`,
+    const info = await transporter.sendMail({
+      from: `"${config.fromName}" <${config.fromEmail}>`,
       to: params.email,
       subject,
       html,
     })
 
-    if (error) {
-      return { success: false, error: error.message }
-    }
-
-    return { success: true, emailId: data?.id }
+    console.log('[Email] Activation email sent successfully:', info.messageId)
+    return { success: true, emailId: info.messageId }
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Gagal mengirim email aktivasi.'
+    console.error('[Email] Failed to send activation email:', err)
+    const message = err instanceof Error ? err.message : 'Gagal mengirim email aktivasi via SMTP.'
     return { success: false, error: message }
   }
 }
