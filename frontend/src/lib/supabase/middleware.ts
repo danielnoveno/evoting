@@ -33,7 +33,7 @@ export async function updateSupabaseSession(request: NextRequest) {
       },
       set(name: string, value: string, options) {
         // Update request cookies so subsequent client calls see them
-        request.cookies.set({ name, value, ...options })
+        request.cookies.set(name, value)
         // Create a new response to ensure cookies are included
         response = NextResponse.next({
           request: {
@@ -43,13 +43,13 @@ export async function updateSupabaseSession(request: NextRequest) {
         response.cookies.set({ name, value, ...options })
       },
       remove(name: string, options) {
-        request.cookies.set({ name, value: '', ...options, maxAge: 0 })
+        request.cookies.set(name, '')
         response = NextResponse.next({
           request: {
             headers: request.headers,
           },
         })
-        response.cookies.set({ name, value: '', ...options, maxAge: 0 })
+        response.cookies.set({ name, value: '', ...options })
       },
     },
   })
