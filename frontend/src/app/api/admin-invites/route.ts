@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
-import { sendSuperadminActivationEmail } from '@/lib/email/send'
+import { sendAdminActivationEmail } from '@/lib/email/send'
 
 export const runtime = 'nodejs'
 
