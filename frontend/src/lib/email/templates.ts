@@ -6,116 +6,57 @@ export function buildSuperadminActivationEmail(params: {
 }): { subject: string; html: string } {
   const subject = 'Aktivasi Akun Superadmin — Votein Portal Admin'
 
-  const html = `<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aktivasi Akun Superadmin</title>
-</head>
-<body style="margin:0;padding:0;background-color:#F8FAFC;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F8FAFC;">
-    <tr>
-      <td align="center" style="padding:40px 16px;">
-        <table width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;border:1px solid #E2E8F0;">
-          <!-- Logo -->
-          <tr>
-            <td align="center" style="padding:32px 32px 0 32px;">
-              <table cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="width:48px;height:48px;background-color:#0F172A;border-radius:14px;">
-                    <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:1px;">V</span>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Header -->
-          <tr>
-            <td align="center" style="padding:24px 32px 0 32px;">
-              <h1 style="margin:0;font-size:20px;font-weight:600;color:#0F172A;line-height:1.3;">
-                Aktivasi Akun Superadmin
-              </h1>
-              <p style="margin:8px 0 0 0;font-size:14px;line-height:1.6;color:#475569;">
-                Anda telah diundang sebagai superadmin di platform Votein.
-              </p>
-            </td>
-          </tr>
-
-          <!-- Info box -->
-          <tr>
-            <td align="center" style="padding:24px 32px 0 32px;">
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#EFF6FF;border-radius:8px;border:1px solid #BFDBFE;">
-                <tr>
-                  <td style="padding:16px 20px;">
-                    <p style="margin:0;font-size:12px;font-weight:600;color:#1D4ED8;text-transform:uppercase;letter-spacing:0.06em;">
-                      Penerima Undangan
-                    </p>
-                    <p style="margin:6px 0 0 0;font-size:14px;font-weight:600;color:#0F172A;">
-                      ${params.displayName}
-                    </p>
-                    <p style="margin:4px 0 0 0;font-size:13px;color:#475569;">
-                      ${params.email}
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- CTA -->
-          <tr>
-            <td align="center" style="padding:28px 32px 0 32px;">
-              <table cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="background-color:#0F172A;border-radius:8px;padding:0;">
-                    <a href="${params.activationLink}" target="_blank" style="display:inline-block;padding:14px 32px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;line-height:1;">
-                      Aktifkan Akun Superadmin
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Fallback link -->
-          <tr>
-            <td align="center" style="padding:16px 32px 0 32px;">
-              <p style="margin:0;font-size:12px;color:#94A3B8;">
-                Atau salin link ini ke browser:
-              </p>
-              <p style="margin:4px 0 0 0;font-size:11px;font-family:monospace;color:#64748B;word-break:break-all;">
-                ${params.activationLink}
-              </p>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td align="center" style="padding:24px 32px 32px 32px;border-top:1px solid #F1F5F9;margin-top:24px;">
-              <p style="margin:0;font-size:12px;color:#94A3B8;line-height:1.5;">
-                Link aktivasi berlaku selama ${params.expiresInDays} hari. Abaikan email ini jika Anda tidak merasa mendaftar.
-              </p>
-            </td>
-          </tr>
-        </table>
-
-        <!-- Brand footer -->
-        <table width="480" cellpadding="0" cellspacing="0">
-          <tr>
-            <td align="center" style="padding:16px 0;">
-              <p style="margin:0;font-size:11px;color:#94A3B8;">
-                Votein — Portal Admin HIMAFORKA FTI UAJY
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`
+  const html = `<div style="margin:0;padding:0;background:#F8FAFC;font-family:Inter,Arial,sans-serif;color:#0F172A;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
+    <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:28px;">
+      <div style="margin-bottom:24px;">
+        <div style="margin-bottom:24px;">
+          <img
+            src="https://votein-evoting.vercel.app/favicon.png"
+            alt="Votein"
+            width="44"
+            height="44"
+            style="display:block;width:44px;height:44px;border-radius:12px;background:#0F172A;"
+          />
+        </div>
+      </div>
+      <p style="margin:0 0 8px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#94A3B8;">
+        Undangan Portal Admin
+      </p>
+      <h2 style="margin:0 0 12px;font-size:22px;line-height:1.3;font-weight:600;color:#0F172A;">
+        Aktivasi Akun Superadmin
+      </h2>
+      <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#475569;">
+        Halo <strong>${params.displayName}</strong>, kamu telah diundang untuk menjadi superadmin di platform Votein. 
+        Silakan klik tombol di bawah ini untuk mengaktifkan akun dan membuat password kamu.
+      </p>
+      <a href="${params.activationLink}"
+         style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;padding:12px 18px;background:#0F172A;color:#FFFFFF;text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;">
+        Aktifkan Akun Superadmin
+      </a>
+      <div style="margin-top:20px;padding:14px 16px;background:#F8FAFC;border:1px solid #F1F5F9;border-radius:8px;">
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#475569;">
+          Jika tombol tidak bisa dibuka, salin tautan berikut ke browser:
+        </p>
+        <p style="margin:8px 0 0;font-size:12px;line-height:1.6;word-break:break-all;color:#3B82F6;">
+          ${params.activationLink}
+        </p>
+      </div>
+      <p style="margin:20px 0 0;font-size:12px;line-height:1.6;color:#64748B;">
+        Link aktivasi ini berlaku selama ${params.expiresInDays} hari. Jika kamu tidak merasa meminta akses ini, abaikan email ini.
+      </p>
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid #F1F5F9;">
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#94A3B8;">
+          Terima kasih,<br />
+          Tim Votein
+        </p>
+      </div>
+    </div>
+    <p style="margin:16px 0 0;text-align:center;font-size:11px;line-height:1.6;color:#94A3B8;">
+      Votein — Portal Admin HIMAFORKA FTI UAJY
+    </p>
+  </div>
+</div>`
 
   return { subject, html }
 }
