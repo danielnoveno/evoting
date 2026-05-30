@@ -130,15 +130,20 @@ function ConnectWalletContent() {
 
   // Auto-redirect if everything is ready
   useEffect(() => {
+    if (mounted && currentProfile) {
+      if (currentProfile.role === 'super_admin' || currentProfile.role === 'admin') {
+         router.replace('/portal-admin')
+         return
+      }
+    }
+
     if (mounted && isConnected && authSession && isWalletBound) {
       const timer = setTimeout(() => {
-         if (currentProfile?.role === 'super_admin') return router.push('/superadmin')
-         if (currentProfile?.role === 'admin') return router.push('/admin')
          router.push(redirectTarget)
       }, 1500)
       return () => clearTimeout(timer)
     }
-  }, [mounted, isConnected, authSession, isWalletBound, router, redirectTarget, currentProfile?.role])
+  }, [mounted, isConnected, authSession, isWalletBound, router, redirectTarget, currentProfile])
 
   const handleBack = () => {
     // If on step 3 (wallet connected, user logged in, but not bound)

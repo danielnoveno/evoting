@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
   let resolvedPath = nextPath
 
-  if (userId && nextPath === '/pemilih') {
+  if (userId) {
     const { data: profile } = await client
       .schema('app')
       .from('app_profiles')
@@ -58,9 +58,13 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
 
     if (profile?.role === 'super_admin') {
-      resolvedPath = '/superadmin'
+      if (!nextPath.startsWith('/superadmin') && !nextPath.startsWith('/portal-admin')) {
+        resolvedPath = '/portal-admin'
+      }
     } else if (profile?.role === 'admin') {
-      resolvedPath = '/admin'
+      if (!nextPath.startsWith('/admin') && !nextPath.startsWith('/portal-admin')) {
+        resolvedPath = '/portal-admin'
+      }
     }
   }
 

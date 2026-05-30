@@ -97,67 +97,42 @@ function SuperadminAdminManagementContent() {
       return
     }
 
-    if (hasWallet) {
-      // Use token activation flow with email
-      createAdminInviteMutation.mutate(
-        {
-          displayName: formData.name,
-          email: formData.email,
-          walletAddress: formData.walletAddress,
-          organizationName: formData.organizationName,
-          accessScope: formData.scope,
-          role: 'admin',
-        },
-        {
-          onSuccess: (invite) => {
-            updateTab('daftar')
-            setActiveStatus('Semua Status')
-            if (invite.activationLink) {
-              setActivationLink(invite.activationLink)
-            }
-            setFormData(initialFormData)
+    // Use token activation flow with email for all admins
+    createAdminInviteMutation.mutate(
+      {
+        displayName: formData.name,
+        email: formData.email,
+        walletAddress: formData.walletAddress, // this can be empty now
+        organizationName: formData.organizationName,
+        accessScope: formData.scope,
+        role: 'admin',
+      },
+      {
+        onSuccess: (invite) => {
+          updateTab('daftar')
+          setActiveStatus('Semua Status')
+          if (invite.activationLink) {
+            setActivationLink(invite.activationLink)
+          }
+          setFormData(initialFormData)
 
-            const emailMsg = invite.emailStatus === 'sent'
-              ? 'Email aktivasi sudah dikirim.'
-              : invite.emailStatus === 'failed'
-                ? `Email gagal: ${invite.emailError ?? ''}`
-                : 'Link aktivasi tersedia untuk disalin.'
+          const emailMsg = invite.emailStatus === 'sent'
+            ? 'Email aktivasi sudah dikirim.'
+            : invite.emailStatus === 'failed'
+              ? `Email gagal: ${invite.emailError ?? ''}`
+              : 'Link aktivasi tersedia untuk disalin.'
 
-            showToast({
-              tone: invite.emailStatus === 'sent' ? 'success' : 'info',
-              title: 'Undangan Admin Dibuat',
-              description: `${formData.name} — ${emailMsg}`,
-            })
-          },
-          onError: (error) => {
-            showToast({ tone: 'error', title: 'Gagal membuat undangan', description: getRepositoryErrorMessage(error) })
-          },
+          showToast({
+            tone: invite.emailStatus === 'sent' ? 'success' : 'info',
+            title: 'Undangan Admin Dibuat',
+            description: `${formData.name} — ${emailMsg}`,
+          })
         },
-      )
-    } else {
-      // Traditional flow: admin registers via OAuth + wallet binding
-      createAdminMutation.mutate(
-        {
-          email: formData.email,
-          displayName: formData.name,
-          organizationName: formData.organizationName,
-          accessScope: formData.scope,
-          status: 'pending',
-          description: formData.scope === 'all' ? 'Semua Pemilihan' : 'Pemilihan Tertentu',
+        onError: (error) => {
+          showToast({ tone: 'error', title: 'Gagal membuat undangan', description: getRepositoryErrorMessage(error) })
         },
-        {
-          onSuccess: () => {
-            updateTab('daftar')
-            setActiveStatus('Semua Status')
-            setFormData(initialFormData)
-            showToast({ tone: 'success', title: 'Admin terdaftar', description: 'Admin dapat login via OAuth Microsoft/Google dan menautkan wallet sendiri.' })
-          },
-          onError: (error) => {
-            showToast({ tone: 'error', title: 'Gagal menambahkan admin', description: getRepositoryErrorMessage(error) })
-          },
-        },
-      )
-    }
+      },
+    )
   }
 
   return (
@@ -318,10 +293,10 @@ function SuperadminAdminManagementContent() {
                 <SuperadminTextInput
                   value={formData.walletAddress}
                   onChange={(event) => setFormData((current) => ({ ...current, walletAddress: event.target.value }))}
-                  placeholder="0x... — kosongkan jika admin akan bind wallet sendiri"
+                  placeholder="0x... (Kosongkan jika admin akan menyambungkan dompetnya sendiri saat aktivasi)"
                 />
                 <p className="mt-2 text-[12px] text-slate-500 italic">
-                  Jika diisi, admin akan menerima email aktivasi dan harus menggunakan wallet yang sama.
+                  Jika dikosongkan, admin harus menyambungkan dompetnya sendiri saat pertama kali login.
                 </p>
               </label>
             </div>
@@ -386,8 +361,8 @@ function SuperadminAdminManagementContent() {
             >
               Batal
             </button>
-            <SuperadminToolbarButton variant="primary" onClick={handleCreateAdmin} disabled={createAdminMutation.isPending}>
-              {createAdminMutation.isPending ? 'Menyimpan...' : 'Simpan Admin'}
+            <SuperadminToolbarButton variant="primary" onClick={handleCreateAdmin} disabled={createAdminInviteMutation.isPending}>
+              {createAdminInviteMutation.isPending ? 'Menyimpan...' : 'Simpan Admin'}
             </SuperadminToolbarButton>
           </section>
         </StaggerContainer>

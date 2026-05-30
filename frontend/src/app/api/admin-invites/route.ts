@@ -204,58 +204,32 @@ export async function POST(request: NextRequest) {
   if (error) return jsonError(`Gagal menyimpan undangan: ${error.message}`, 500)
 
 
-  // For admins without wallet, skip email — they use OAuth login instead
-  if (assignedRole === 'admin' && !walletAddress) {
-    // Also sync profile role if exists
-    await auth.client
-      .from('app_profiles')
-      .update({ role: 'admin' })
-      .ilike('email', email)
-      .then(() => {})
-
-    return NextResponse.json({
-      invite: toInviteResponse(data as InviteRow),
-      activationLink: null,
-      emailStatus: 'skipped',
-      emailError: 'Admin tanpa wallet — tidak perlu aktivasi via email. Admin dapat login via OAuth dan bind wallet sendiri.',
-    })
-  }
-
   const activationLink = `${getRequestOrigin(request)}/portal-admin?invite=${encodeURIComponent(token)}`
 
   // Attempt to send activation email — non-blocking; invite is saved regardless
   let emailStatus: 'sent' | 'skipped' | 'failed' = 'skipped'
   let emailError: string | undefined
 
-  if (assignedRole === 'admin') {
-    // For admins without wallet, we skip email (handled above). Those with wallet get email.
-    if (walletAddress) {
-      const emailResult = await sendSuperadminActivationEmail({
-        displayName,
-        email,
-        activationLink,
-      })
+  // For admins without wallet, also sync profile role if exists
+  if (assignedRole === 'admin' && !walletAddress) {
+    await auth.client
+      .from('app_profiles')
+      .update({ role: 'admin' })
+      .ilike('email', email)
+      .then(() => {})
+  }
 
-      if (emailResult.success) {
-        emailStatus = 'sent'
-      } else if (emailResult.error) {
-        emailStatus = 'failed'
-        emailError = emailResult.error
-      }
-    }
-  } else {
-    const emailResult = await sendSuperadminActivationEmail({
-      displayName,
-      email,
-      activationLink,
-    })
+  const emailResult = await sendSuperadminActivationEmail({
+    displayName,
+    email,
+    activationLink,
+  })
 
-    if (emailResult.success) {
-      emailStatus = 'sent'
-    } else if (emailResult.error) {
-      emailStatus = 'failed'
-      emailError = emailResult.error
-    }
+  if (emailResult.success) {
+    emailStatus = 'sent'
+  } else if (emailResult.error) {
+    emailStatus = 'failed'
+    emailError = emailResult.error
   }
 
   return NextResponse.json({
