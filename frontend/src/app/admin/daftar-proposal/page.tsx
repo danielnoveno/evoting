@@ -83,7 +83,7 @@ export default function AdminProposalPage() {
   return (
     <AdminShell>
       {/* Header Section */}
-      <ScrollReveal variant="fade-up" duration={700}>
+      <ScrollReveal id="tour-admin-proposal-header" variant="fade-up" duration={700}>
         <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-[760px]">
             <h1 className="text-[32px] font-semibold tracking-[-0.04em] text-slate-900 md:text-[40px]">{header.title}</h1>
@@ -108,7 +108,7 @@ export default function AdminProposalPage() {
         </div>
       ) : null}
 
-      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <StaggerContainer id="tour-admin-proposal-stats" stagger={100} variant="fade-up" duration={600} className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, idx) => (
           <article key={idx} className="rounded-[24px] bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.04)] border border-slate-100 flex flex-col justify-between h-[140px]">
             <div className="flex items-center justify-between">
@@ -123,7 +123,7 @@ export default function AdminProposalPage() {
       </StaggerContainer>
 
       {/* Table Section */}
-      <ScrollReveal variant="fade-up" delay={150} duration={800}>
+      <ScrollReveal id="tour-admin-proposal-table" variant="fade-up" delay={150} duration={800}>
         <section className="mt-10 rounded-[28px] bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)] border border-slate-100 overflow-hidden">
           <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-50">
             <h2 className="text-[18px] font-semibold text-slate-900">Daftar Pengajuan Terbaru</h2>

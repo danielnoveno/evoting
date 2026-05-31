@@ -148,7 +148,7 @@ export default function AdminElectionManagementPage() {
 
   return (
     <AdminShell>
-      <ScrollReveal variant="fade-up" duration={700}>
+      <ScrollReveal id="tour-admin-election-header" variant="fade-up" duration={700}>
         <AppPageHeader
           title="Manajemen Pemilihan"
           description="Kelola dan pantau seluruh ruang pemilihan yang Anda pimpin"
@@ -182,11 +182,11 @@ export default function AdminElectionManagementPage() {
       </section>
 
 
-      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid auto-rows-fr gap-5 xl:grid-cols-2 2xl:grid-cols-3">
+      <StaggerContainer id="tour-admin-election-list" stagger={100} variant="fade-up" duration={600} className="mt-8 grid auto-rows-fr gap-5 xl:grid-cols-2 2xl:grid-cols-3">
         {electionsWithEmptyCard.map((entry) => {
           if (entry === 'create-new') {
             return (
-              <AppSectionCard dashed key="create-new" onClick={() => router.push('/admin/daftar-proposal/tambah')} className="flex h-full min-h-[388px] flex-col">
+              <AppSectionCard id="tour-admin-create-election" dashed key="create-new" onClick={() => router.push('/admin/daftar-proposal/tambah')} className="flex h-full min-h-[388px] flex-col">
                 <div className="flex h-full flex-1 flex-col items-center justify-center py-10 text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-700">
                     <Plus className="h-8 w-8" />

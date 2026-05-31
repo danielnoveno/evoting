@@ -46,7 +46,7 @@ export default function AdminPage() {
               <span className="rounded-full bg-black px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-white">
                 {adminDashboardContent.hero.badge}
               </span>
-              <h1 className="mt-8 max-w-[14ch] text-[44px] font-semibold leading-[1.02] tracking-[-0.04em] text-slate-900 md:text-[64px]">
+              <h1 id="tour-admin-hero-title" className="mt-8 max-w-[14ch] text-[44px] font-semibold leading-[1.02] tracking-[-0.04em] text-slate-900 md:text-[64px]">
                 {adminDashboardContent.hero.title}
               </h1>
               <p className="mt-6 max-w-[840px] text-[18px] leading-9 text-slate-800">
@@ -84,7 +84,7 @@ export default function AdminPage() {
           <p className="mt-2 text-[16px] text-slate-500">{adminDashboardContent.section.description}</p>
         </ScrollReveal>
 
-        <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <StaggerContainer id="tour-admin-modules" stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {visibleModules.map((module) => (
             <AdminModuleCard
               key={module.title}
@@ -101,7 +101,7 @@ export default function AdminPage() {
 
       <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_380px]">
         <ScrollReveal variant="fade-up" delay={200} duration={800} className="h-full">
-          <article className="rounded-[32px] bg-slate-100 p-6 md:p-8 h-full">
+          <article id="tour-admin-activities" className="rounded-[32px] bg-slate-100 p-6 md:p-8 h-full">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-[32px] font-semibold text-slate-900">{adminDashboardContent.activitySection.title}</h2>
@@ -131,7 +131,9 @@ export default function AdminPage() {
         </ScrollReveal>
 
         <ScrollReveal variant="fade-left" delay={300} duration={800} className="h-full">
-          <AdminMetricCard {...adminDashboardContent.metricCard} />
+          <div id="tour-admin-metrics">
+            <AdminMetricCard {...adminDashboardContent.metricCard} />
+          </div>
         </ScrollReveal>
       </section>
     </AdminShell>

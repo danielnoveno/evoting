@@ -6,6 +6,7 @@ import { ReactNode } from 'react'
 import { RoleGate } from '@/components/auth/role-gate'
 import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/console-shell'
 import { adminShellContent } from '@/lib/admin-content'
+import { OnboardingTour } from './onboarding-tour'
 
 const sidebarIconMap: Record<'layout-grid' | 'gauge' | 'file-text' | 'circle-help', LucideIcon> = {
   'layout-grid': LayoutGrid,
@@ -49,6 +50,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       >
         {children}
       </ConsoleShell>
+      <OnboardingTour />
     </RoleGate>
   )
 }
