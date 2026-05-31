@@ -112,6 +112,55 @@ export function OnboardingTour({ forceStart = false, onComplete }: OnboardingTou
     )
   }
 
+  // Steps for Bantuan Admin
+  if (pathname === '/admin/bantuan') {
+    steps.push(
+      {
+        target: 'h1',
+        content: 'Pusat Bantuan Admin. Temukan panduan operasional dan jawaban atas kendala teknis di sini.',
+        placement: 'bottom',
+        skipBeacon: true,
+      },
+      {
+        target: 'section:has(h2:contains("Panduan Cepat"))',
+        content: 'Gunakan panduan ini untuk memahami alur kerja dasar pemilihan dari awal hingga akhir.',
+        placement: 'top',
+      },
+      {
+        target: 'section:has(h2:contains("FAQ"))',
+        content: 'Pertanyaan yang sering diajukan mengenai teknis blockchain dan sinkronisasi data.',
+        placement: 'top',
+      }
+    )
+  }
+
+  // Steps for Profile Admin
+  if (pathname === '/admin/profil') {
+    steps.push(
+      {
+        target: 'h1',
+        content: 'Ini adalah pusat kendali identitas Anda. Di sini Anda dapat mengelola data profil dan memantau keamanan sesi.',
+        placement: 'bottom',
+        skipBeacon: true,
+      },
+      {
+        target: 'article:has(h2:contains("Foto Profil"))',
+        content: 'Perbarui foto profil Anda untuk mempermudah identifikasi dalam organisasi.',
+        placement: 'right',
+      },
+      {
+        target: 'article:has(h2:contains("INFORMASI PERSONAL"))',
+        content: 'Informasi personal Anda tersimpan di sini. Gunakan tombol "Edit Profil" untuk memperbarui nama tampilan atau bio.',
+        placement: 'left',
+      },
+      {
+        target: 'article:has(h2:contains("Sesi Aktif & Keamanan"))',
+        content: 'Pantau di perangkat mana saja akun Anda masuk. Anda dapat mengeluarkan sesi lain jika mendeteksi aktivitas mencurigakan.',
+        placement: 'top',
+      }
+    )
+  }
+
   if (!mounted || steps.length === 0) return null
 
   return (

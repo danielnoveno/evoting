@@ -43,6 +43,7 @@ export default function AdminProfilePage() {
   const [displayName, setDisplayName] = useState(fallbackProfile.displayName)
   const [bio, setBio] = useState(fallbackProfile.bio)
   const [photoUrl, setPhotoUrl] = useState(fallbackProfile.avatarUrl ?? '')
+  const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
     setDisplayName(fallbackProfile.displayName)
@@ -145,6 +146,7 @@ export default function AdminProfilePage() {
 
   return (
     <AdminShell>
+      <OnboardingTour />
       <ScrollReveal variant="fade-up" duration={700}>
         {/* Breadcrumb & Header */}
         <section className="mb-10">
@@ -431,6 +433,47 @@ export default function AdminProfilePage() {
           </div>
         </section>
       </ScrollReveal>
+
+    </AdminShell>
+  )
+}
+isCurrent))
+                    showToast({
+                      title: 'Keamanan Diperketat',
+                      description: 'Semua sesi lain telah berhasil dihentikan.',
+                      tone: 'success'
+                    })
+                  }}
+                  className="text-[14px] font-bold text-red-600 hover:text-red-700 transition-colors flex items-center gap-2"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Keluarkan dari Semua Perangkat Lain
+                </button>
+              </div>
+            </article>
+          </ScrollReveal>
+        </div>
+      </div>
+
+      {/* Bottom Privacy Note */}
+      <ScrollReveal variant="fade-up" delay={350} duration={700}>
+        <section className="mt-8 mb-8 rounded-[28px] bg-slate-50 border border-slate-100 p-6 flex items-start gap-4 max-w-[800px]">
+          <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm">
+            <Lock className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-[15px] font-semibold text-slate-900 mb-1">Kebijakan Privasi & Enkripsi</h3>
+            <p className="text-[13px] leading-6 text-slate-500">
+              Data Anda dilindungi dengan enkripsi end-to-end. Hanya nama tampilan yang akan muncul secara publik pada dashboard partisipasi pemilih. Identitas nasional Anda tetap anonim dalam blockchain.
+            </p>
+          </div>
+        </section>
+      </ScrollReveal>
+
+    </AdminShell>
+  )
+}
+  </ScrollReveal>
 
     </AdminShell>
   )

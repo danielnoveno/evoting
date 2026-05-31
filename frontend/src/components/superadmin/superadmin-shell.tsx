@@ -6,6 +6,7 @@ import { type InputHTMLAttributes, ReactNode, type SelectHTMLAttributes } from '
 import { RoleGate } from '@/components/auth/role-gate'
 import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/console-shell'
 import { superadminShellContent } from '@/lib/superadmin-data'
+import { usePlatformSettings } from '@/hooks/use-platform-settings'
 
 const sidebarItems: ConsoleNavItem[] = [
   { href: '/superadmin', label: 'Beranda', icon: LayoutGrid },
@@ -19,6 +20,8 @@ const sidebarItems: ConsoleNavItem[] = [
 ]
 
 export function SuperadminShell({ children }: { children: ReactNode }) {
+  const { data: settings } = usePlatformSettings()
+
   return (
     <RoleGate
       allowedRoles={['super_admin']}
@@ -27,7 +30,7 @@ export function SuperadminShell({ children }: { children: ReactNode }) {
     >
       <ConsoleShell
         role="superadmin"
-        headerLabel={superadminShellContent.headerLabel}
+        headerLabel={settings?.platform_name || superadminShellContent.headerLabel}
         searchPlaceholder={superadminShellContent.searchPlaceholder}
         sidebarItems={sidebarItems}
         profile={{
@@ -41,7 +44,7 @@ export function SuperadminShell({ children }: { children: ReactNode }) {
           confirmLabel: 'Keluar Sesi',
           successTitle: 'Sesi superadmin ditutup',
           successDescription: 'Anda diarahkan kembali ke halaman login.',
-          redirectTo: '/',
+          redirectTo: '/portal-admin',
         }}
       >
         {children}

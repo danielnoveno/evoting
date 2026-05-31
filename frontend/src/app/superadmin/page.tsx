@@ -4,6 +4,7 @@ import { Activity, CheckCircle2, Link2, TriangleAlert, Users, Vote } from 'lucid
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { SuperadminInteractiveCard, SuperadminShell } from '@/components/superadmin/superadmin-shell'
+import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'

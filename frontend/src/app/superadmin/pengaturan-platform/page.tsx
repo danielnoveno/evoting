@@ -190,6 +190,7 @@ export default function SuperadminPlatformSettingsPage() {
 
   return (
     <SuperadminShell>
+      <SuperadminOnboardingTour />
       <ScrollReveal variant="fade-up" duration={800}>
         <section>
           <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">

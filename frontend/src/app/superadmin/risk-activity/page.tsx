@@ -71,6 +71,7 @@ export default function SuperadminRiskActivityPage() {
 
   return (
     <SuperadminShell>
+      <SuperadminOnboardingTour />
       <ScrollReveal variant="fade-up" duration={800}>
         <AppPageHeader
           title={superadminRiskData.title}

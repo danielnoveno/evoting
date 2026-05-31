@@ -97,3 +97,58 @@ export async function signOutCurrentSession() {
   const { error } = await client.auth.signOut()
   if (error) throw new RepositoryError('Gagal mengakhiri sesi akun. Coba lagi.')
 }
+
+// MFA Functions
+export async function enrollMFA() {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const { data, error } = await client.auth.mfa.enroll({
+    factorType: 'totp',
+  })
+
+  if (error) throw new RepositoryError(error.message)
+  return data
+}
+
+export async function verifyMFA(factorId: string, code: string) {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const { data: challengeData, error: challengeError } = await client.auth.mfa.challenge({
+    factorId,
+  })
+
+  if (challengeError) throw new RepositoryError(challengeError.message)
+
+  const { data, error } = await client.auth.mfa.verify({
+    factorId,
+    challengeId: challengeData.id,
+    code,
+  })
+
+  if (error) throw new RepositoryError(error.message)
+  return data
+}
+
+export async function unenrollMFA(factorId: string) {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const { data, error } = await client.auth.mfa.unenroll({
+    factorId,
+  })
+
+  if (error) throw new RepositoryError(error.message)
+  return data
+}
+
+export async function getMFAFactors() {
+  const client = getSupabaseBrowserClient()
+  if (!client) return { totp: [] }
+
+  const { data, error } = await client.auth.mfa.listFactors()
+  if (error) throw new RepositoryError(error.message)
+
+  return data
+}

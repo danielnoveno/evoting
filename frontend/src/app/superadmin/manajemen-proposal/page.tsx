@@ -59,6 +59,7 @@ export default function SuperadminProposalManagementPage() {
 
   return (
     <SuperadminShell>
+      <SuperadminOnboardingTour />
       <ScrollReveal variant="fade-up" duration={800}>
         <AppPageHeader 
           title="Manajemen Proposal" 

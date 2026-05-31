@@ -137,6 +137,7 @@ function SuperadminAdminManagementContent() {
 
   return (
     <SuperadminShell>
+      <SuperadminOnboardingTour />
       <ScrollReveal variant="fade-up" duration={800}>
         <AppPageHeader title="Manajemen Admin" />
       </ScrollReveal>

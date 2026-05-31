@@ -16,6 +16,7 @@ import {
   SuperadminToolbarButton,
   SuperadminSectionHeading,
 } from '@/components/superadmin/superadmin-shell'
+import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useQuery } from '@tanstack/react-query'
@@ -122,6 +123,7 @@ function SuperadminManagementContent() {
 
   return (
     <SuperadminShell>
+      <SuperadminOnboardingTour />
       <ScrollReveal variant="fade-up" duration={800}>
         <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
           <div>

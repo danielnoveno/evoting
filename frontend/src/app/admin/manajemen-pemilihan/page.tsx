@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { AdminFilterPill, AdminShell } from '@/components/admin/admin-shell'
+import { OnboardingTour } from '@/components/admin/onboarding-tour'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { adminElectionFilters, AdminElectionRecord, AdminElectionStatus } from '@/lib/admin-election-data'
@@ -148,6 +149,7 @@ export default function AdminElectionManagementPage() {
 
   return (
     <AdminShell>
+      <OnboardingTour />
       <ScrollReveal id="tour-admin-election-header" variant="fade-up" duration={700}>
         <AppPageHeader
           title="Manajemen Pemilihan"

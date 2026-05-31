@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
+import { OnboardingTour } from '@/components/admin/onboarding-tour'
 import { adminProposalContent, ProposalStatus } from '@/lib/admin-proposal-data'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { BarChart2, CheckCircle2, ChevronLeft, ChevronRight, Eye, Hourglass, PlusCircle, Rocket, ShieldCheck, FileKey, Pencil } from 'lucide-react'
@@ -82,6 +83,7 @@ export default function AdminProposalPage() {
 
   return (
     <AdminShell>
+      <OnboardingTour />
       {/* Header Section */}
       <ScrollReveal id="tour-admin-proposal-header" variant="fade-up" duration={700}>
         <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">

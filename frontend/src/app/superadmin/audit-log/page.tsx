@@ -91,6 +91,7 @@ export default function SuperadminAuditLogPage() {
 
   return (
     <SuperadminShell>
+      <SuperadminOnboardingTour />
       <ScrollReveal variant="fade-up" duration={800}>
         <section className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="w-full max-w-[720px]">

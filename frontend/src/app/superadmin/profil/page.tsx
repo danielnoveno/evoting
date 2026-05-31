@@ -1,32 +1,171 @@
 'use client'
 
-import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck } from 'lucide-react'
+import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck, QrCode } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
+import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { useToast } from '@/components/ui/toast-provider'
+import { ModalShell } from '@/components/ui/modal-shell'
 import { superadminPlatformData } from '@/lib/superadmin-data'
 import { useSuperadminPlatformStore } from '@/lib/superadmin-store'
-import { useCurrentProfile } from '@/hooks/use-profile'
+import { useCurrentProfile, useSaveCurrentProfile } from '@/hooks/use-profile'
 import { getAdminInitials } from '@/lib/superadmin-admin-mapper'
 import { useProfileImageUpload } from '@/hooks/use-profile-upload'
+import { useMFAFactors, useEnrollMFA, useVerifyMFA, useUnenrollMFA } from '@/hooks/use-mfa'
+import { usePlatformSettings, useUpdatePlatformSettings } from '@/hooks/use-platform-settings'
 
 export default function SuperadminProfilePage() {
   const { showToast } = useToast()
   const { platform, setPlatform } = useSuperadminPlatformStore()
   const { data: profile, isLoading: isProfileLoading } = useCurrentProfile()
+  
+  const { data: mfaFactors, isLoading: isMfaLoading } = useMFAFactors()
+  const enrollMutation = useEnrollMFA()
+  const verifyMutation = useVerifyMFA()
+  const unenrollMutation = useUnenrollMFA()
+
+  const { data: platformSettings, isLoading: isPlatformSettingsLoading } = usePlatformSettings()
+  const updatePlatformMutation = useUpdatePlatformSettings()
+
   const uploadAvatarMutation = useProfileImageUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(platform.twoFactorEnabled)
-  const [platformName, setPlatformName] = useState(platform.platformName)
-  const [language, setLanguage] = useState(platform.defaultLanguage)
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
+  const [displayName, setDisplayName] = useState('')
+
+  const [platformName, setPlatformName] = useState('')
+  const [language, setLanguage] = useState('')
+  const [networkName, setNetworkName] = useState('')
+  const [gasLimit, setGasLimit] = useState(50)
+
+  const [mfaModalOpen, setMfaModalOpen] = useState(false)
+  const [mfaCode, setMfaCode] = useState('')
+  const [enrollData, setEnrollData] = useState<{ id: string; totp: { qr_code: string } } | null>(null)
+
+  const verifiedFactor = mfaFactors?.totp?.find((f: any) => f.status === 'verified')
+  const isMfaActive = !!verifiedFactor
 
   useEffect(() => {
-    setTwoFactorEnabled(platform.twoFactorEnabled)
-    setPlatformName(platform.platformName)
-    setLanguage(platform.defaultLanguage)
-  }, [platform])
+    setTwoFactorEnabled(isMfaActive)
+  }, [isMfaActive])
+
+  useEffect(() => {
+    if (profile?.displayName) {
+      setDisplayName(profile.displayName)
+    }
+  }, [profile])
+
+  useEffect(() => {
+    if (platformSettings) {
+      setPlatformName(platformSettings.platform_name)
+      setLanguage(platformSettings.default_language)
+      setNetworkName(platformSettings.network_name)
+      setGasLimit(platformSettings.gas_limit)
+    }
+  }, [platformSettings])
+
+  const saveProfileMutation = useSaveCurrentProfile()
+
+  const handleSaveProfile = () => {
+    if (!profile?.walletAddress) return
+
+    saveProfileMutation.mutate(
+      {
+        walletAddress: profile.walletAddress,
+        displayName,
+        email: profile.email || '',
+        avatarUrl: profile.avatarUrl || '',
+      },
+      {
+        onSuccess: () => {
+          showToast({ tone: 'success', title: 'Profil diperbarui', description: 'Perubahan nama profil berhasil disimpan.' })
+        },
+        onError: (error) => {
+          showToast({ tone: 'error', title: 'Gagal memperbarui profil', description: error instanceof Error ? error.message : 'Terjadi kesalahan.' })
+        },
+      }
+    )
+  }
+
+  const handleSavePlatform = () => {
+    if (!platformSettings?.id) return
+
+    updatePlatformMutation.mutate(
+      {
+        id: platformSettings.id,
+        platform_name: platformName,
+        default_language: language,
+        network_name: networkName,
+        gas_limit: gasLimit,
+      },
+      {
+        onSuccess: () => {
+          showToast({ tone: 'success', title: 'Konfigurasi disimpan', description: 'Pengaturan platform berhasil diperbarui.' })
+        },
+        onError: (error) => {
+          showToast({ tone: 'error', title: 'Gagal menyimpan', description: error instanceof Error ? error.message : 'Terjadi kesalahan.' })
+        },
+      }
+    )
+  }
+
+  const handleMfaToggle = async () => {
+    if (isMfaActive) {
+      if (!verifiedFactor) return
+      unenrollMutation.mutate(verifiedFactor.id, {
+        onSuccess: () => {
+          showToast({ tone: 'success', title: '2FA dinonaktifkan', description: 'Lapisan keamanan ekstra telah dihapus.' })
+        },
+        onError: (err) => {
+          showToast({ tone: 'error', title: 'Gagal menonaktifkan 2FA', description: err instanceof Error ? err.message : 'Terjadi kesalahan.' })
+        }
+      })
+    } else {
+      enrollMutation.mutate(undefined, {
+        onSuccess: (data) => {
+          setEnrollData(data as any)
+          setMfaModalOpen(true)
+        },
+        onError: (err) => {
+          showToast({ tone: 'error', title: 'Gagal memulai 2FA', description: err instanceof Error ? err.message : 'Terjadi kesalahan.' })
+        }
+      })
+    }
+  }
+
+  const handleVerifyMfa = () => {
+    if (!enrollData || !mfaCode) return
+
+    verifyMutation.mutate(
+      { factorId: enrollData.id, code: mfaCode },
+      {
+        onSuccess: () => {
+          setMfaModalOpen(false)
+          setMfaCode('')
+          setEnrollData(null)
+          showToast({ tone: 'success', title: '2FA Aktif', description: 'Autentikasi dua faktor berhasil dikonfigurasi.' })
+        },
+        onError: (err) => {
+          showToast({ tone: 'error', title: 'Kode salah', description: 'Kode yang Anda masukkan tidak valid atau sudah kedaluwarsa.' })
+        }
+      }
+    )
+  }
+
+  const resetPasswordMutation = useResetPassword()
+
+  const handleResetPassword = () => {
+    if (!profile?.email) return
+    resetPasswordMutation.mutate(profile.email, {
+      onSuccess: () => {
+        showToast({ tone: 'success', title: 'Reset password diproses', description: 'Silakan cek email Anda untuk instruksi selanjutnya.' })
+      },
+      onError: (err) => {
+        showToast({ tone: 'error', title: 'Gagal reset password', description: err instanceof Error ? err.message : 'Terjadi kesalahan.' })
+      }
+    })
+  }
 
   const initials = profile?.displayName ? getAdminInitials(profile.displayName) : 'SA'
 
@@ -54,6 +193,7 @@ export default function SuperadminProfilePage() {
 
   return (
     <SuperadminShell>
+      <SuperadminOnboardingTour />
       <ScrollReveal variant="fade-up" duration={800}>
         <section>
           <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">
@@ -113,26 +253,44 @@ export default function SuperadminProfilePage() {
             </div>
 
             <div className="mt-8 space-y-4">
-              <div className="rounded-[24px] bg-slate-200/50 border border-slate-200 px-5 py-5">
+              <div className="rounded-[24px] bg-white border border-slate-200 px-5 py-5 focus-within:border-slate-900 transition-colors">
                 <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Nama Lengkap</p>
-                <p className="mt-2 text-[17px] font-semibold text-slate-900">{profile?.displayName || '-'}</p>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Masukkan nama lengkap"
+                  className="mt-2 w-full text-[17px] font-semibold text-slate-900 bg-transparent border-none outline-none p-0"
+                />
               </div>
-              <div className="rounded-[24px] bg-slate-200/50 border border-slate-200 px-5 py-5">
-                <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Email Institusi</p>
-                <p className="mt-2 text-[17px] font-semibold text-slate-900">{profile?.email || '-'}</p>
+              <div className="rounded-[24px] bg-slate-100 border border-slate-200 px-5 py-5 opacity-70">
+                <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Email Institusi (Read Only)</p>
+                <p className="mt-2 text-[17px] font-semibold text-slate-600">{profile?.email || '-'}</p>
               </div>
               <div className="rounded-[24px] bg-slate-900 px-5 py-5 text-white">
                 <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Blockchain Identity</p>
                 <p className="mt-2 font-mono text-[14px] break-all text-slate-100">{profile?.walletAddress || '-'}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => showToast({ tone: 'success', title: 'Reset password diproses', description: 'Silakan cek email Anda untuk instruksi selanjutnya.' })}
-                className="inline-flex h-14 w-full items-center justify-center gap-2 rounded-[24px] bg-slate-200 text-[15px] font-semibold text-slate-900 transition hover:bg-slate-300"
-              >
-                <KeyRound className="h-5 w-5" />
-                Ganti Kata Sandi
-              </button>
+              
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleSaveProfile}
+                  disabled={saveProfileMutation.isPending || displayName === profile?.displayName}
+                  className="inline-flex h-14 flex-1 items-center justify-center gap-2 rounded-[24px] bg-slate-900 text-[15px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {saveProfileMutation.isPending ? 'Menyimpan...' : 'Simpan Profil'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetPassword}
+                  disabled={resetPasswordMutation.isPending}
+                  className="inline-flex h-14 w-14 items-center justify-center rounded-[24px] bg-slate-200 text-slate-900 transition hover:bg-slate-300 disabled:opacity-50"
+                  title="Ganti Kata Sandi"
+                >
+                  <KeyRound className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           </SuperadminSectionCard>
 
@@ -147,17 +305,9 @@ export default function SuperadminProfilePage() {
                 <button
                   type="button"
                   aria-pressed={twoFactorEnabled}
-                  onClick={() => {
-                    const nextValue = !twoFactorEnabled
-                    setTwoFactorEnabled(nextValue)
-                    setPlatform((current) => ({ ...current, twoFactorEnabled: nextValue }))
-                    showToast({
-                      tone: 'success',
-                      title: twoFactorEnabled ? '2FA dinonaktifkan' : '2FA diaktifkan',
-                      description: 'Perubahan keamanan berhasil disimpan.',
-                    })
-                  }}
-                  className={`relative h-8 w-14 rounded-full outline-none transition focus:outline-none focus:ring-2 focus:ring-black ${
+                  disabled={isMfaLoading || enrollMutation.isPending || unenrollMutation.isPending}
+                  onClick={handleMfaToggle}
+                  className={`relative h-8 w-14 rounded-full outline-none transition focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50 ${
                     twoFactorEnabled ? 'bg-black' : 'bg-slate-300'
                   }`}
                 >
@@ -165,6 +315,43 @@ export default function SuperadminProfilePage() {
                 </button>
               </div>
             </div>
+
+            <ModalShell
+              open={mfaModalOpen}
+              title="Konfigurasi 2FA"
+              description="Scan QR Code ini menggunakan aplikasi authenticator (Google Authenticator/Authy) lalu masukkan kode 6 digit."
+              onClose={() => {
+                setMfaModalOpen(false)
+                setEnrollData(null)
+                setMfaCode('')
+              }}
+            >
+              <div className="flex flex-col items-center gap-6">
+                {enrollData?.totp?.qr_code && (
+                  <div className="rounded-2xl border-2 border-slate-100 p-4 bg-white shadow-sm">
+                    <img src={enrollData.totp.qr_code} alt="MFA QR Code" className="h-48 w-48" />
+                  </div>
+                )}
+                
+                <div className="w-full space-y-3">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Kode Verifikasi</p>
+                  <SuperadminTextInput
+                    placeholder="Masukkan 6 digit kode"
+                    value={mfaCode}
+                    maxLength={6}
+                    onChange={(e) => setMfaCode(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    disabled={verifyMutation.isPending || mfaCode.length < 6}
+                    onClick={handleVerifyMfa}
+                    className="w-full h-14 rounded-[20px] bg-black text-white font-semibold transition hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    {verifyMutation.isPending ? 'Memverifikasi...' : 'Aktifkan 2FA'}
+                  </button>
+                </div>
+              </div>
+            </ModalShell>
 
             <div className="mt-8">
               <p className="text-[12px] uppercase tracking-[0.08em] text-slate-500">Sesi Aktif</p>
@@ -217,29 +404,43 @@ export default function SuperadminProfilePage() {
             <div className="mt-8 space-y-5">
               <div className="rounded-[24px] bg-white p-5">
                 <div className="flex items-center justify-between gap-4 border-l-4 border-blue-500 pl-4">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Status Jaringan</p>
-                    <p className="mt-2 text-[18px] font-semibold text-slate-900">{superadminPlatformData.blockchain.network}</p>
+                  <div className="flex-1">
+                    <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Jaringan (Network)</p>
+                    <input
+                      value={networkName}
+                      onChange={(e) => setNetworkName(e.target.value)}
+                      className="mt-2 w-full text-[18px] font-semibold text-slate-900 bg-transparent outline-none border-b border-transparent focus:border-slate-200 transition-colors"
+                    />
                   </div>
                   <span className="rounded-xl bg-blue-50 px-3 py-1 text-[13px] font-semibold text-blue-600">
-                    {superadminPlatformData.blockchain.networkStatus}
+                    Live
                   </span>
                 </div>
               </div>
 
               <div className="rounded-[24px] bg-white p-5">
                 <div className="border-l-4 border-black pl-4">
-                  <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Contract Owner Address</p>
-                  <div className="mt-4 break-all rounded-[16px] bg-slate-100 px-4 py-3 font-mono text-[15px] text-slate-700">
-                    {superadminPlatformData.blockchain.ownerAddress}
+                  <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Registry Address</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      value={platformSettings?.registry_address || ''}
+                      disabled
+                      className="flex-1 bg-transparent font-mono text-[14px] text-slate-500 outline-none"
+                    />
+                    <ShieldCheck className="h-4 w-4 text-emerald-500" />
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-[24px] bg-slate-200 px-4 py-5">
+              <div className="rounded-[24px] bg-slate-200 px-5 py-5">
                 <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Gas Price Limit (GWEI)</p>
                 <div className="mt-4 flex items-center justify-between gap-4 text-[16px] text-slate-900">
-                  <span className="text-[34px] font-semibold tracking-[-0.04em]">{superadminPlatformData.blockchain.gasLimit}</span>
+                  <input
+                    type="number"
+                    value={gasLimit}
+                    onChange={(e) => setGasLimit(Number(e.target.value))}
+                    className="w-24 bg-transparent text-[34px] font-semibold tracking-[-0.04em] outline-none"
+                  />
                   <span className="font-semibold text-slate-800">GWEI</span>
                 </div>
               </div>
@@ -254,7 +455,7 @@ export default function SuperadminProfilePage() {
                 <input
                   value={platformName}
                   onChange={(event) => setPlatformName(event.target.value)}
-                  className="mt-3 h-14 w-full rounded-[20px] bg-slate-200 px-4 text-[18px] text-slate-900 outline-none transition focus:outline-none focus:ring-2 focus:ring-black"
+                  className="mt-3 h-14 w-full rounded-[20px] bg-white border border-slate-200 px-4 text-[18px] text-slate-900 outline-none transition focus:border-slate-900"
                 />
               </label>
 
@@ -263,10 +464,10 @@ export default function SuperadminProfilePage() {
                 <select
                   value={language}
                   onChange={(event) => setLanguage(event.target.value)}
-                  className="mt-3 h-14 w-full rounded-[20px] bg-slate-200 px-4 text-[18px] text-slate-900 outline-none transition focus:outline-none focus:ring-2 focus:ring-black"
+                  className="mt-3 h-14 w-full rounded-[20px] bg-white border border-slate-200 px-4 text-[18px] text-slate-900 outline-none transition focus:border-slate-900"
                 >
-                  <option>Bahasa Indonesia</option>
-                  <option>English</option>
+                  <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                  <option value="English">English</option>
                 </select>
               </label>
             </div>
@@ -279,9 +480,12 @@ export default function SuperadminProfilePage() {
           <button
             type="button"
             onClick={() => {
-              setTwoFactorEnabled(platform.twoFactorEnabled)
-              setPlatformName(platform.platformName)
-              setLanguage(platform.defaultLanguage)
+              if (platformSettings) {
+                setPlatformName(platformSettings.platform_name)
+                setLanguage(platformSettings.default_language)
+                setNetworkName(platformSettings.network_name)
+                setGasLimit(platformSettings.gas_limit)
+              }
               showToast({
                 tone: 'info',
                 title: 'Perubahan dibatalkan',
@@ -294,19 +498,22 @@ export default function SuperadminProfilePage() {
           </button>
           <SuperadminToolbarButton
             variant="primary"
-            onClick={() => {
-              setPlatform((current) => ({ ...current, platformName, defaultLanguage: language }))
-              showToast({
-                tone: 'success',
-                title: 'Perubahan disimpan',
-                description: 'Pengaturan platform berhasil diperbarui.',
-              })
-            }}
+            disabled={updatePlatformMutation.isPending}
+            onClick={handleSavePlatform}
           >
-            Simpan Perubahan
+            {updatePlatformMutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan Platform'}
           </SuperadminToolbarButton>
         </section>
       </ScrollReveal>
+    </SuperadminShell>
+  )
+}
+ction>
+      </ScrollReveal>
+    </SuperadminShell>
+  )
+}
+   </ScrollReveal>
     </SuperadminShell>
   )
 }
