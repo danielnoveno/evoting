@@ -1,7 +1,7 @@
 'use client'
 
 import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { useToast } from '@/components/ui/toast-provider'
@@ -9,11 +9,14 @@ import { superadminPlatformData } from '@/lib/superadmin-data'
 import { useSuperadminPlatformStore } from '@/lib/superadmin-store'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { getAdminInitials } from '@/lib/superadmin-admin-mapper'
+import { useProfileImageUpload } from '@/hooks/use-profile-upload'
 
 export default function SuperadminProfilePage() {
   const { showToast } = useToast()
   const { platform, setPlatform } = useSuperadminPlatformStore()
   const { data: profile, isLoading: isProfileLoading } = useCurrentProfile()
+  const uploadAvatarMutation = useProfileImageUpload()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(platform.twoFactorEnabled)
   const [platformName, setPlatformName] = useState(platform.platformName)
@@ -26,6 +29,28 @@ export default function SuperadminProfilePage() {
   }, [platform])
 
   const initials = profile?.displayName ? getAdminInitials(profile.displayName) : 'SA'
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !profile?.userId) return
+
+    if (!file.type.startsWith('image/')) {
+      showToast({ tone: 'error', title: 'Format tidak didukung', description: 'Silakan pilih file gambar (JPG, PNG).' })
+      return
+    }
+
+    uploadAvatarMutation.mutate(
+      { file, userId: profile.userId },
+      {
+        onSuccess: () => {
+          showToast({ tone: 'success', title: 'Foto profil diperbarui', description: 'Perubahan foto profil berhasil disimpan.' })
+        },
+        onError: (error) => {
+          showToast({ tone: 'error', title: 'Gagal mengunggah foto', description: error instanceof Error ? error.message : 'Terjadi kesalahan.' })
+        },
+      }
+    )
+  }
 
   return (
     <SuperadminShell>
@@ -47,15 +72,27 @@ export default function SuperadminProfilePage() {
             <div className="mt-10 flex flex-col items-center text-center">
               <div className="relative group">
                 <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-white bg-[#0f172a] text-[42px] font-semibold text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)] transition-transform group-hover:scale-105 overflow-hidden">
-                  {profile?.avatarUrl ? (
+                  {uploadAvatarMutation.isPending ? (
+                    <div className="flex items-center justify-center bg-slate-900/50 w-full h-full">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+                    </div>
+                  ) : profile?.avatarUrl ? (
                     <img src={profile.avatarUrl} alt={profile.displayName || 'Avatar'} className="h-full w-full object-cover" />
                   ) : (
                     initials
                   )}
                 </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
                 <button 
-                  onClick={() => showToast({ tone: 'info', title: 'Fitur unggah segera hadir', description: 'Penyimpanan foto profil sedang disiapkan.' })}
-                  className="absolute bottom-0 right-0 h-10 w-10 rounded-full bg-white border border-slate-200 shadow-lg flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadAvatarMutation.isPending}
+                  className="absolute bottom-0 right-0 h-10 w-10 rounded-full bg-white border border-slate-200 shadow-lg flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors disabled:opacity-50"
                 >
                   <Upload className="h-4 w-4" />
                 </button>

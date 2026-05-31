@@ -8,6 +8,7 @@ import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useProfileByWallet, useSaveCurrentProfile } from '@/hooks/use-profile'
 import { mapProfileToViewModel } from '@/lib/mappers/profileMapper'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+import { useProfileImageUpload } from '@/hooks/use-profile-upload'
 
 import { useAccount } from 'wagmi'
 
@@ -18,6 +19,7 @@ export default function AdminProfilePage() {
 
   const profileQuery = useProfileByWallet(walletAddress)
   const saveProfile = useSaveCurrentProfile()
+  const uploadAvatarMutation = useProfileImageUpload()
 
   const [activeSessions, setActiveSessions] = useState<Array<{ id: string; device: string; location: string; time: string; status: string; isCurrent: boolean; icon: typeof Monitor }>>([])
 
@@ -70,9 +72,9 @@ export default function AdminProfilePage() {
     fileInputRef.current?.click()
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || !profileQuery.data?.userId) return
 
     if (!file.type.startsWith('image/')) {
       showToast({
@@ -83,14 +85,26 @@ export default function AdminProfilePage() {
       return
     }
 
-    const newPhotoUrl = URL.createObjectURL(file)
-    setPhotoUrl(newPhotoUrl)
-
-    showToast({
-      title: 'Foto Berhasil Dipilih',
-      description: 'Pratinjau foto profil Anda telah diperbarui.',
-      tone: 'success'
-    })
+    uploadAvatarMutation.mutate(
+      { file, userId: profileQuery.data.userId },
+      {
+        onSuccess: (newUrl) => {
+          setPhotoUrl(newUrl)
+          showToast({
+            title: 'Foto Berhasil Diunggah',
+            description: 'Foto profil Anda telah diperbarui.',
+            tone: 'success'
+          })
+        },
+        onError: (error) => {
+          showToast({
+            title: 'Gagal mengunggah foto',
+            description: error instanceof Error ? error.message : 'Terjadi kesalahan.',
+            tone: 'error'
+          })
+        },
+      }
+    )
   }
 
   const handleSaveChanges = () => {
@@ -165,17 +179,26 @@ export default function AdminProfilePage() {
           <ScrollReveal variant="fade-right" delay={150} duration={800}>
             <article className="rounded-[32px] bg-white border border-slate-100 p-8 flex flex-col items-center text-center shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
               <div className="relative mb-6">
-                <div className="h-[120px] w-[120px] rounded-full overflow-hidden bg-slate-200 ring-4 ring-white shadow-lg">
-                  <img 
-                    src={photoUrl} 
-                    alt="Profile" 
-                    className="h-full w-full object-cover"
-                  />
+                <div className="h-[120px] w-[120px] rounded-full overflow-hidden bg-slate-200 ring-4 ring-white shadow-lg flex items-center justify-center">
+                  {uploadAvatarMutation.isPending ? (
+                    <div className="flex items-center justify-center bg-slate-900/50 w-full h-full">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                    </div>
+                  ) : photoUrl ? (
+                    <img 
+                      src={photoUrl} 
+                      alt="Profile" 
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl font-bold text-slate-400">AD</span>
+                  )}
                 </div>
                 <button 
                   type="button"
                   onClick={handleChangePhoto}
-                  className="absolute bottom-0 right-0 h-10 w-10 flex items-center justify-center rounded-full bg-black text-white border-2 border-white hover:bg-slate-800 transition-colors"
+                  disabled={uploadAvatarMutation.isPending}
+                  className="absolute bottom-0 right-0 h-10 w-10 flex items-center justify-center rounded-full bg-black text-white border-2 border-white hover:bg-slate-800 transition-colors disabled:opacity-50"
                   aria-label="Ganti Foto"
                 >
                   <Camera className="h-4 w-4" />
@@ -197,9 +220,10 @@ export default function AdminProfilePage() {
               <button 
                 type="button"
                 onClick={handleChangePhoto}
-                className="w-full h-12 flex items-center justify-center rounded-2xl bg-slate-100 text-[14px] font-semibold text-slate-900 hover:bg-slate-200 transition-colors"
+                disabled={uploadAvatarMutation.isPending}
+                className="w-full h-12 flex items-center justify-center rounded-2xl bg-slate-100 text-[14px] font-semibold text-slate-900 hover:bg-slate-200 transition-colors disabled:opacity-50"
               >
-                Ganti Foto
+                {uploadAvatarMutation.isPending ? 'Mengunggah...' : 'Ganti Foto'}
               </button>
             </article>
           </ScrollReveal>

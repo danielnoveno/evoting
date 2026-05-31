@@ -9,6 +9,7 @@ import { useVoterStore } from '@/lib/voter-store'
 import { useProfileByWallet, useSaveCurrentProfile } from '@/hooks/use-profile'
 import { mapProfileToViewModel } from '@/lib/mappers/profileMapper'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+import { useProfileImageUpload } from '@/hooks/use-profile-upload'
 
 export default function VoterProfilePage() {
   const { showToast } = useToast()
@@ -18,6 +19,7 @@ export default function VoterProfilePage() {
   const [bio, setBio] = useState('')
   const saveProfile = useSaveCurrentProfile()
   const profileQuery = useProfileByWallet(store?.profile.wallet)
+  const uploadAvatarMutation = useProfileImageUpload()
 
   const resolvedProfile = mapProfileToViewModel(profileQuery.data ?? null, {
     displayName: store?.profile.name ?? 'Pemilih',
@@ -41,17 +43,31 @@ export default function VoterProfilePage() {
     showToast({ tone: 'success', title: 'Alamat berhasil disalin', description: 'Wallet pemilih sudah disalin ke clipboard.' })
   }
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file) return
+    if (!file || !profileQuery.data?.userId) return
+    
     if (!file.type.startsWith('image/')) {
       showToast({ tone: 'error', title: 'Format file tidak didukung', description: 'Silakan pilih file gambar JPG atau PNG.' })
       return
     }
 
-    const photoUrl = URL.createObjectURL(file)
-    actions.updateProfile({ avatarUrl: photoUrl })
-    showToast({ tone: 'success', title: 'Foto profil diperbarui', description: 'Pratinjau foto baru berhasil dimuat.' })
+    uploadAvatarMutation.mutate(
+      { file, userId: profileQuery.data.userId },
+      {
+        onSuccess: (newUrl) => {
+          actions.updateProfile({ avatarUrl: newUrl })
+          showToast({ tone: 'success', title: 'Foto profil diperbarui', description: 'Perubahan foto profil berhasil disimpan.' })
+        },
+        onError: (error) => {
+          showToast({ 
+            tone: 'error', 
+            title: 'Gagal mengunggah foto', 
+            description: error instanceof Error ? error.message : 'Terjadi kesalahan.' 
+          })
+        },
+      }
+    )
   }
 
   const handleSave = () => {
@@ -97,7 +113,7 @@ export default function VoterProfilePage() {
         <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
           <span>Portal Pemilih</span>
           <span>›</span>
-          <span>Keamanan</span>
+          <span>KEAMANAN</span>
           <span>›</span>
           <span className="text-slate-900">Pengaturan Profil</span>
         </div>
@@ -111,16 +127,36 @@ export default function VoterProfilePage() {
         <div className="space-y-6">
           <article className="rounded-[32px] border border-slate-100 bg-white p-8 text-center">
             <div className="relative mx-auto h-[136px] w-[136px]">
-              <img src={resolvedProfile.avatarUrl ?? store.profile.avatarUrl} alt={resolvedProfile.displayName} className="h-full w-full rounded-full object-cover ring-4 ring-white" />
-              <button type="button" onClick={() => fileRef.current?.click()} className="absolute bottom-1 right-1 flex h-11 w-11 items-center justify-center rounded-full bg-black text-white hover:bg-slate-900">
+              <div className="h-full w-full rounded-full overflow-hidden ring-4 ring-white flex items-center justify-center bg-slate-100">
+                {uploadAvatarMutation.isPending ? (
+                  <div className="flex items-center justify-center bg-slate-900/50 w-full h-full">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+                  </div>
+                ) : (resolvedProfile.avatarUrl ?? store.profile.avatarUrl) ? (
+                  <img src={resolvedProfile.avatarUrl ?? store.profile.avatarUrl} alt={resolvedProfile.displayName} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-3xl font-bold text-slate-300">VM</span>
+                )}
+              </div>
+              <button 
+                type="button" 
+                onClick={() => fileRef.current?.click()} 
+                disabled={uploadAvatarMutation.isPending}
+                className="absolute bottom-1 right-1 flex h-11 w-11 items-center justify-center rounded-full bg-black text-white hover:bg-slate-900 disabled:opacity-50"
+              >
                 <Camera className="h-4 w-4" />
               </button>
             </div>
             <h2 className="mt-6 text-[24px] font-semibold text-slate-900">Foto Profil</h2>
             <p className="mt-3 text-[15px] leading-8 text-slate-800">Gunakan foto yang jelas untuk mempermudah identifikasi saat proses voting berlangsung.</p>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-            <button type="button" onClick={() => fileRef.current?.click()} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-200">
-              Ganti Foto
+            <button 
+              type="button" 
+              onClick={() => fileRef.current?.click()} 
+              disabled={uploadAvatarMutation.isPending}
+              className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-200 disabled:opacity-50"
+            >
+              {uploadAvatarMutation.isPending ? 'Mengunggah...' : 'Ganti Foto'}
             </button>
           </article>
 
