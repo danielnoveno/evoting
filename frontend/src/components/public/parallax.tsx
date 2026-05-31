@@ -75,6 +75,7 @@ interface ScrollRevealProps {
   delay?: number      // ms
   duration?: number   // ms
   className?: string
+  id?: string
 }
 
 export function ScrollReveal({
@@ -83,6 +84,7 @@ export function ScrollReveal({
   delay = 0,
   duration = 700,
   className = '',
+  id,
 }: ScrollRevealProps) {
   const { ref, isVisible } = useScrollReveal()
   const styles = variantStyles[variant]
@@ -90,6 +92,7 @@ export function ScrollReveal({
   return (
     <div
       ref={ref}
+      id={id}
       className={className}
       style={{
         ...(isVisible ? styles.visible : styles.hidden),
@@ -161,6 +164,7 @@ interface StaggerContainerProps {
   variant?: RevealVariant
   duration?: number
   className?: string
+  id?: string
 }
 
 export function StaggerContainer({
@@ -169,13 +173,14 @@ export function StaggerContainer({
   variant = 'fade-up',
   duration = 700,
   className = '',
+  id,
 }: StaggerContainerProps) {
   const { ref, isVisible } = useScrollReveal()
   const styles = variantStyles[variant]
   const items = Array.isArray(children) ? children : [children]
 
   return (
-    <div ref={ref} className={className}>
+    <div ref={ref} id={id} className={className}>
       {items.map((child, i) => (
         <div
           key={i}
