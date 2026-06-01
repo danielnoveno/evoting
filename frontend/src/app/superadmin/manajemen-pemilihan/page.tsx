@@ -13,6 +13,7 @@ import {
   SuperadminInteractiveCard,
   SuperadminShell,
 } from '@/components/superadmin/superadmin-shell'
+import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { useSuperadminProposalDrafts } from '@/hooks/use-proposal-draft'
 import { SuperadminElectionState, superadminElectionFilters } from '@/lib/superadmin-data'
 

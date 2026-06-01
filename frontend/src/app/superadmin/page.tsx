@@ -43,6 +43,7 @@ export default function SuperadminDashboardPage() {
 
   return (
     <SuperadminShell>
+      <SuperadminOnboardingTour />
       <ScrollReveal variant="fade-up" duration={800}>
         <AppPageHeader
           title={superadminDashboardData.title}
@@ -50,7 +51,7 @@ export default function SuperadminDashboardPage() {
         />
       </ScrollReveal>
 
-      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-5 xl:grid-cols-4">
+      <StaggerContainer id="tour-superadmin-metrics" stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-5 xl:grid-cols-4">
         {metrics.map((metric) => {
           const Icon = metricIcons[metric.id as keyof typeof metricIcons]
 

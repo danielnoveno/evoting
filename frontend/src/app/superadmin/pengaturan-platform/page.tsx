@@ -4,6 +4,7 @@ import { AlertTriangle, Check, Database, FileText, Search, Upload, Users, X } fr
 import { type ChangeEvent, type DragEvent, useRef, useState } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { SuperadminSectionCard, SuperadminShell } from '@/components/superadmin/superadmin-shell'
+import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { useToast } from '@/components/ui/toast-provider'
 import { type SuperadminMasterVoter, useSuperadminMasterVotersStore } from '@/lib/superadmin-store'
 

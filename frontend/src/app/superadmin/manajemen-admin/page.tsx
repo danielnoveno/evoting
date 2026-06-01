@@ -18,6 +18,7 @@ import {
   SuperadminTextInput,
   SuperadminToolbarButton,
 } from '@/components/superadmin/superadmin-shell'
+import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { superadminAdminStatuses, superadminAdminTabs } from '@/lib/superadmin-data'
 import { useCreateAdminRegistry, useSuperadminAdminDirectory } from '@/hooks/use-profile'
 import { useCreateAdminInvite } from '@/hooks/use-admin-invite'
