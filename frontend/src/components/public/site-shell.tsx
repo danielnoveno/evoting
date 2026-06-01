@@ -10,7 +10,6 @@ import { NotificationModal } from './notification-modal'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
 import { useAuthSession } from '@/hooks/use-auth-session'
 import { useCurrentProfile } from '@/hooks/use-profile'
-import { formatWallet } from '@/lib/voter-store'
 import type { AppRole } from '@/lib/repositories/types'
 import type { LucideIcon } from 'lucide-react'
 
@@ -102,7 +101,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
   const profileHref = profile ? getProfileHref(profile.role) : '/hubungkan-dompet'
   const profileLabel = profile ? getRoleLabel(profile.role) : 'Akun'
   const profileName = profile?.displayName?.trim() || profileLabel
-  const profileMeta = profile?.walletAddress ? formatWallet(profile.walletAddress) : profile?.email?.trim() || 'Sesi aktif'
+  const profileMeta = profile?.walletAddress || profile?.email?.trim() || 'Sesi aktif'
   const profileInitial = profile ? getProfileInitial(profile.displayName, profile.role) : 'VT'
   const roleMenuItems = useMemo(() => (profile ? getRoleMenuItems(profile.role) : []), [profile])
 
@@ -191,14 +190,8 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                   <LayoutGrid className="h-4 w-4" />
                   Ke Dashboard
                 </Link>
-                <div className="relative hidden lg:block" ref={profileMenuRef}>
-                  <button
-                    type="button"
-                    onClick={() => setProfileOpen((value) => !value)}
-                    className="flex h-12 items-center gap-3 rounded-xl bg-white px-3 text-left transition-colors duration-150 hover:bg-slate-50"
-                    aria-label={`Buka menu profil ${profileName}`}
-                    aria-expanded={profileOpen}
-                  >
+                <div className="relative hidden lg:flex lg:items-center lg:gap-1" ref={profileMenuRef}>
+                  <div className="flex h-12 items-center gap-3 rounded-xl bg-white px-3 text-left">
                     <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[12px] font-semibold text-slate-700">
                       {profile?.avatarUrl ? (
                         <img src={profile.avatarUrl} alt={profileName} className="h-full w-full object-cover" />
@@ -212,7 +205,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                         <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{profileLabel}</span>
                       </div>
                       <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-slate-400">
-                        <span className="min-w-0 truncate rounded-md bg-slate-50 px-2 py-0.5 text-slate-500">{profileMeta}</span>
+                        <span className="min-w-0 rounded-md bg-slate-50 px-2 py-0.5 font-mono text-[10px] text-slate-500">{profileMeta}</span>
                         {profile?.walletAddress ? (
                           <span
                             onClick={(event) => {
@@ -238,6 +231,14 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                         ) : null}
                       </div>
                     </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setProfileOpen((value) => !value)}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-colors duration-150 hover:bg-slate-100 hover:text-slate-700"
+                    aria-label={`Buka menu profil ${profileName}`}
+                    aria-expanded={profileOpen}
+                  >
                     <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
                   </button>
 
