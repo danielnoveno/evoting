@@ -254,19 +254,19 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
               )}
             </button>
             {authLoading ? (
-              <div className="hidden h-12 w-[220px] animate-pulse rounded-xl border border-slate-200 bg-slate-100 md:block" />
+              <div className="hidden h-10 w-[220px] animate-pulse rounded-xl border border-slate-200 bg-slate-100 md:block" />
             ) : profileReady ? (
               <>
                 <Link
                   href={dashboardHref}
-                  className="hidden h-12 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-[#1E293B] md:inline-flex"
+                  className="hidden h-10 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-[#1E293B] md:inline-flex"
                 >
                   <LayoutGrid className="h-4 w-4" />
                   Ke Dashboard
                 </Link>
                 <div className="relative hidden min-w-0 max-w-[360px] lg:flex lg:items-center lg:gap-1 xl:max-w-[420px]" ref={profileMenuRef}>
-                  <div className="flex min-w-0 h-12 items-center gap-3 rounded-xl bg-white px-3 text-left">
-                    <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[12px] font-semibold text-slate-700">
+                  <div className="flex min-w-0 h-10 items-center gap-3 rounded-xl bg-white px-3 text-left">
+                    <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-700">
                       {profile?.avatarUrl ? (
                         <img src={profile.avatarUrl} alt={profileName} className="h-full w-full object-cover" />
                       ) : (
@@ -388,7 +388,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                 </div>
                 <Link
                   href={profileHref}
-                  className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-700 transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 lg:hidden"
+                  className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-700 transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 lg:hidden"
                   aria-label={`Buka profil ${profileName}`}
                 >
                   {profile?.avatarUrl ? (
@@ -401,7 +401,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
             ) : (
               <Link
                 href="/hubungkan-dompet"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-[#1E293B]"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-[#1E293B]"
               >
                 Masuk
               </Link>
