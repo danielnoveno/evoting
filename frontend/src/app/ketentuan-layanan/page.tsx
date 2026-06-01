@@ -1,16 +1,19 @@
 import { PublicPage, SectionTitle } from '@/components/public/site-shell'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 export default function KetentuanLayananPage() {
   return (
     <PublicPage activePath="/ketentuan-layanan">
       <section className="public-section">
         <div className="public-container">
-          <SectionTitle
-            title="Ketentuan Layanan"
-            body="Aturan penggunaan platform Votein untuk pelaksanaan e-voting organisasi mahasiswa berbasis blockchain."
-          />
+          <ScrollReveal>
+            <SectionTitle
+              title="Ketentuan Layanan"
+              body="Aturan penggunaan platform Votein untuk pelaksanaan e-voting organisasi mahasiswa berbasis blockchain."
+            />
+          </ScrollReveal>
 
-          <div className="mt-12 max-w-none text-gray-900">
+          <StaggerContainer className="mt-12 max-w-none text-gray-900" stagger={150}>
             <div className="mb-10">
               <h3 className="mb-4 text-xl font-bold text-black border-b border-gray-100 pb-2">1. Penerimaan Ketentuan</h3>
               <p className="leading-relaxed">
@@ -83,7 +86,7 @@ export default function KetentuanLayananPage() {
                 penelitian atau kebutuhan organisasi. Perubahan akan diinformasikan melalui platform.
               </p>
             </div>
-          </div>
+          </StaggerContainer>
         </div>
       </section>
     </PublicPage>

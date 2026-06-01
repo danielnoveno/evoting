@@ -1,16 +1,19 @@
 import { PublicPage, SectionTitle } from '@/components/public/site-shell'
+import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 export default function KebijakanPrivasiPage() {
   return (
     <PublicPage activePath="/kebijakan-privasi">
       <section className="public-section">
         <div className="public-container">
-          <SectionTitle
-            title="Kebijakan Privasi"
-            body="Halaman ini menjelaskan bagaimana Votein mengelola data Anda untuk mendukung proses pemungutan suara yang transparan dan aman berbasis blockchain."
-          />
+          <ScrollReveal>
+            <SectionTitle
+              title="Kebijakan Privasi"
+              body="Halaman ini menjelaskan bagaimana Votein mengelola data Anda untuk mendukung proses pemungutan suara yang transparan dan aman berbasis blockchain."
+            />
+          </ScrollReveal>
 
-          <div className="mt-12 max-w-none text-gray-900">
+          <StaggerContainer className="mt-12 max-w-none text-gray-900" stagger={150}>
             <div className="mb-10">
               <h3 className="mb-4 text-xl font-bold text-black border-b border-gray-100 pb-2">1. Pendahuluan</h3>
               <p className="leading-relaxed">
@@ -81,7 +84,7 @@ export default function KebijakanPrivasiPage() {
                 Anda dapat menghubungi pengembang melalui kanal komunikasi internal organisasi mahasiswa terkait.
               </p>
             </div>
-          </div>
+          </StaggerContainer>
         </div>
       </section>
     </PublicPage>
