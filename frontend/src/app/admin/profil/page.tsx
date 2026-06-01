@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
+import { OnboardingTour } from '@/components/admin/onboarding-tour'
 import { Camera, ShieldCheck, Copy, Lock, Pencil, Monitor, Smartphone, Globe, LogOut } from 'lucide-react'
 import { useToast } from '@/components/ui/toast-provider'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -254,7 +255,19 @@ export default function AdminProfilePage() {
         <div className="lg:col-span-8">
           <ScrollReveal variant="fade-left" delay={200} duration={800}>
             <article className="rounded-[32px] bg-white border border-slate-100 p-8 md:p-10 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
-              <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-slate-900 mb-8">INFORMASI PERSONAL</h2>
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-slate-900">INFORMASI PERSONAL</h2>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(!isEditing)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold transition-all ${
+                    isEditing ? 'bg-black text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <Pencil className="h-4 w-4" />
+                  {isEditing ? 'Sedang Mengedit' : 'Edit Profil'}
+                </button>
+              </div>
             
             <div className="space-y-8">
               {/* Display Name */}
@@ -267,11 +280,16 @@ export default function AdminProfilePage() {
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full h-14 pl-5 pr-12 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-slate-300 focus:ring-0 text-[16px] text-slate-900 font-medium transition-all outline-none"
+                    disabled={!isEditing}
+                    className={`w-full h-14 pl-5 pr-12 rounded-2xl text-[16px] font-medium transition-all outline-none ${
+                      isEditing ? 'bg-white border-slate-300 focus:border-slate-900' : 'bg-slate-50 border-transparent cursor-not-allowed opacity-70'
+                    }`}
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Pencil className="h-4 w-4" />
-                  </div>
+                  {!isEditing && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                      <Lock className="h-4 w-4" />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -284,7 +302,7 @@ export default function AdminProfilePage() {
                   type="email"
                   value={fallbackProfile.email}
                   disabled
-                  className="w-full h-14 px-5 rounded-2xl bg-slate-50 border-transparent text-[16px] text-slate-500 cursor-not-allowed outline-none"
+                  className="w-full h-14 px-5 rounded-2xl bg-slate-50 border-transparent text-[16px] text-slate-500 cursor-not-allowed outline-none opacity-70"
                 />
                 <p className="mt-3 text-[12px] text-slate-400">
                   Email dikunci untuk keamanan akun. Hubungi administrator untuk perubahan data vital.
@@ -296,7 +314,7 @@ export default function AdminProfilePage() {
                 <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 mb-3">
                   HASH IDENTITAS (WALLET ADDRESS)
                 </label>
-                <div className="relative flex items-center h-14 rounded-2xl bg-slate-50 overflow-hidden group">
+                <div className="relative flex items-center h-14 rounded-2xl bg-slate-50 overflow-hidden group opacity-70">
                   <div className="w-1.5 h-full bg-slate-800" />
                   <div className="flex-1 px-4 font-mono text-[14px] text-slate-800 truncate">
                     {walletAddress}
@@ -321,22 +339,43 @@ export default function AdminProfilePage() {
                 <textarea 
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
+                  disabled={!isEditing}
                   rows={4}
-                  className="w-full p-5 rounded-2xl bg-slate-50 border-transparent focus:bg-white focus:border-slate-300 focus:ring-0 text-[15px] text-slate-900 leading-7 transition-all outline-none resize-none"
+                  className={`w-full p-5 rounded-2xl text-[15px] leading-7 transition-all outline-none resize-none ${
+                    isEditing ? 'bg-white border-slate-300 focus:border-slate-900' : 'bg-slate-50 border-transparent cursor-not-allowed opacity-70'
+                  }`}
                 />
               </div>
             </div>
 
             {/* Footer Buttons */}
             <div className="mt-10 pt-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-end gap-4">
-                <button 
-                  type="button"
-                  onClick={handleSaveChanges}
-                  disabled={saveProfile.isPending}
-                  className="h-12 px-8 rounded-2xl bg-black text-[14px] font-semibold text-white hover:bg-slate-800 shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:-translate-y-px"
-                >
-                  {saveProfile.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
-                </button>
+              {isEditing && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(false)
+                      setDisplayName(fallbackProfile.displayName)
+                      setBio(fallbackProfile.bio)
+                    }}
+                    className="h-12 px-6 text-[14px] font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      handleSaveChanges()
+                      setIsEditing(false)
+                    }}
+                    disabled={saveProfile.isPending}
+                    className="h-12 px-8 rounded-2xl bg-black text-[14px] font-semibold text-white hover:bg-slate-800 shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all hover:shadow-[0_6px_16px_rgba(0,0,0,0.2)] hover:-translate-y-px"
+                  >
+                    {saveProfile.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
+                  </button>
+                </>
+              )}
             </div>
           </article>
           </ScrollReveal>
@@ -433,47 +472,6 @@ export default function AdminProfilePage() {
           </div>
         </section>
       </ScrollReveal>
-
-    </AdminShell>
-  )
-}
-isCurrent))
-                    showToast({
-                      title: 'Keamanan Diperketat',
-                      description: 'Semua sesi lain telah berhasil dihentikan.',
-                      tone: 'success'
-                    })
-                  }}
-                  className="text-[14px] font-bold text-red-600 hover:text-red-700 transition-colors flex items-center gap-2"
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  Keluarkan dari Semua Perangkat Lain
-                </button>
-              </div>
-            </article>
-          </ScrollReveal>
-        </div>
-      </div>
-
-      {/* Bottom Privacy Note */}
-      <ScrollReveal variant="fade-up" delay={350} duration={700}>
-        <section className="mt-8 mb-8 rounded-[28px] bg-slate-50 border border-slate-100 p-6 flex items-start gap-4 max-w-[800px]">
-          <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm">
-            <Lock className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-[15px] font-semibold text-slate-900 mb-1">Kebijakan Privasi & Enkripsi</h3>
-            <p className="text-[13px] leading-6 text-slate-500">
-              Data Anda dilindungi dengan enkripsi end-to-end. Hanya nama tampilan yang akan muncul secara publik pada dashboard partisipasi pemilih. Identitas nasional Anda tetap anonim dalam blockchain.
-            </p>
-          </div>
-        </section>
-      </ScrollReveal>
-
-    </AdminShell>
-  )
-}
-  </ScrollReveal>
 
     </AdminShell>
   )

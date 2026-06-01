@@ -3,7 +3,7 @@
 import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck, QrCode } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
+import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton, SuperadminTextInput } from '@/components/superadmin/superadmin-shell'
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { useToast } from '@/components/ui/toast-provider'
 import { ModalShell } from '@/components/ui/modal-shell'
@@ -14,6 +14,7 @@ import { getAdminInitials } from '@/lib/superadmin-admin-mapper'
 import { useProfileImageUpload } from '@/hooks/use-profile-upload'
 import { useMFAFactors, useEnrollMFA, useVerifyMFA, useUnenrollMFA } from '@/hooks/use-mfa'
 import { usePlatformSettings, useUpdatePlatformSettings } from '@/hooks/use-platform-settings'
+import { useResetPassword } from '@/hooks/use-auth-session'
 
 export default function SuperadminProfilePage() {
   const { showToast } = useToast()
@@ -505,15 +506,6 @@ export default function SuperadminProfilePage() {
           </SuperadminToolbarButton>
         </section>
       </ScrollReveal>
-    </SuperadminShell>
-  )
-}
-ction>
-      </ScrollReveal>
-    </SuperadminShell>
-  )
-}
-   </ScrollReveal>
     </SuperadminShell>
   )
 }
