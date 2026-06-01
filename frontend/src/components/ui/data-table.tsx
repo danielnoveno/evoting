@@ -100,7 +100,7 @@ export function DataTableFooter({
           type="button"
           onClick={() => onPageChange(Math.max(1, currentPage - 1))}
           disabled={currentPage === 1}
-          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-slate-100 px-4 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-200 disabled:opacity-50"
         >
           <ChevronLeft className="h-4 w-4" />
           Previous
@@ -111,8 +111,8 @@ export function DataTableFooter({
             type="button"
             onClick={() => onPageChange(item)}
             className={currentPage === item
-              ? 'inline-flex h-9 min-w-[36px] items-center justify-center rounded-xl bg-blue-600 px-3 text-[13px] font-semibold text-white'
-              : 'inline-flex h-9 min-w-[36px] items-center justify-center rounded-xl bg-slate-100 px-3 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-200'}
+              ? 'inline-flex h-9 min-w-[36px] items-center justify-center rounded-xl bg-[#0B1120] px-3 text-[13px] font-semibold text-white transition'
+              : 'inline-flex h-9 min-w-[36px] items-center justify-center rounded-xl bg-white border border-slate-200 px-3 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-50'}
           >
             {String(item).padStart(2, '0')}
           </button>
@@ -123,7 +123,7 @@ export function DataTableFooter({
           type="button"
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages}
-          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+          className="inline-flex h-9 items-center justify-center gap-1 rounded-xl bg-slate-100 px-4 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-200 disabled:opacity-50"
         >
           Next
           <ChevronRight className="h-4 w-4" />

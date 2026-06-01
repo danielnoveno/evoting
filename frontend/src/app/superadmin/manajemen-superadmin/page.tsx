@@ -268,13 +268,26 @@ function SuperadminManagementContent() {
           </div>
         </section>
 
-        <div className="mt-10 flex items-end gap-8 border-b border-slate-200">
-          <SuperadminTabButton active={activeTab === 'daftar'} onClick={() => updateTab('daftar')}>
-            Daftar Otoritas
-          </SuperadminTabButton>
-          <SuperadminTabButton active={activeTab === 'tambah'} onClick={() => updateTab('tambah')}>
-            Tambah Baru
-          </SuperadminTabButton>
+        <div className="mt-10 flex items-end justify-between border-b border-slate-200">
+          <div className="flex items-center gap-8">
+            <SuperadminTabButton active={activeTab === 'daftar'} onClick={() => updateTab('daftar')}>
+              Daftar Otoritas
+            </SuperadminTabButton>
+            <SuperadminTabButton active={activeTab === 'tambah'} onClick={() => updateTab('tambah')}>
+              Tambah Baru
+            </SuperadminTabButton>
+          </div>
+          {activeTab === 'daftar' && (
+            <div className="hidden items-center gap-4 pb-3 sm:flex">
+              <div className="h-4 w-px bg-slate-200" />
+              <div className="text-right">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Total Otoritas</p>
+                <p className="mt-0.5 text-[16px] font-semibold text-slate-900">
+                  {filteredSuperadmins.length} Akun
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </ScrollReveal>
 
@@ -316,34 +329,39 @@ function SuperadminManagementContent() {
             />
           )}
 
-          <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8">
-            <DataTableShell className="shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
-            <div className="border-b border-slate-100 px-6 py-4">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="relative max-w-xl flex-1">
-                  <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Cari nama superadmin, email, atau wallet address..."
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    className="h-12 w-full rounded-[20px] border border-slate-200 bg-white pl-12 pr-4 text-[15px] text-slate-900 outline-none focus:ring-2 focus:ring-black"
-                  />
-                </div>
-                <label className="text-[13px] text-slate-600">
-                  <span className="mr-2">Baris per halaman</span>
-                  <select
-                    value={pageSize}
-                    onChange={(event) => setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
-                    className="h-10 rounded-2xl border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-900"
-                  >
-                    {PAGE_SIZE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
+          <div className="mt-8 flex flex-col gap-4 rounded-[24px] border border-slate-200 bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative max-w-xl flex-1">
+              <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Cari nama superadmin, email, atau wallet address..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="h-12 w-full rounded-[20px] border border-slate-200 bg-white pl-12 pr-4 text-[15px] text-slate-900 outline-none focus:ring-2 focus:ring-black"
+              />
             </div>
+            <label className="text-[13px] text-slate-600">
+              <span className="mr-2">Baris per halaman</span>
+              <select
+                value={pageSize}
+                onChange={(event) => setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
+                className="h-10 rounded-2xl border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-900"
+              >
+                {PAGE_SIZE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-6">
+            <DataTableShell className="shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+            <DataTableToolbar>
+              <DataTableCount
+                title="Daftar Otoritas Superadmin"
+                description={`Menampilkan ${filteredSuperadmins.length} dari ${superadmins.length} akun dengan akses penuh blockchain.`}
+              />
+            </DataTableToolbar>
             <DataTableViewport>
               <DataTable>
                 <DataTableHead>
@@ -360,7 +378,7 @@ function SuperadminManagementContent() {
                     <DataTableHeaderCell>Profil Superadmin</DataTableHeaderCell>
                     <DataTableHeaderCell>Wallet Address</DataTableHeaderCell>
                     <DataTableHeaderCell>Status Otoritas</DataTableHeaderCell>
-                    <DataTableHeaderCell className="text-center">Action</DataTableHeaderCell>
+                    <DataTableHeaderCell className="text-center">Aksi</DataTableHeaderCell>
                   </DataTableHeaderRow>
                 </DataTableHead>
                 <DataTableBody>
@@ -403,8 +421,8 @@ function SuperadminManagementContent() {
                     <p className="font-mono text-[13px] text-slate-600 truncate">{admin.walletAddress || admin.profile?.walletAddress || 'Belum ditautkan'}</p>
                   </DataTableCell>
                   <DataTableCell>
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                      {isActive ? <ShieldAlert className="h-3 w-3" /> : <Clock3 className="h-3 w-3" />}
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                      {isActive ? <CheckCircle2 className="h-3 w-3" /> : <Clock3 className="h-3 w-3" />}
                       {isActive ? 'Super Admin Aktif' : 'Menunggu Aktivasi'}
                     </span>
                   </DataTableCell>
