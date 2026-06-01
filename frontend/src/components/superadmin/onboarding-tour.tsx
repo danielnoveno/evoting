@@ -131,7 +131,7 @@ export function SuperadminOnboardingTour({ forceStart = false, onComplete }: Onb
   }
 
   // Pengaturan Platform / Data Master Voter
-  if (pathname === '/superadmin/pengaturan-platform') {
+  if (pathname === '/superadmin/data-voter') {
     steps.push(
       {
         target: 'h1',

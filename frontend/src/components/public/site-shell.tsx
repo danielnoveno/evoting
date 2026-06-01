@@ -81,7 +81,7 @@ function getRoleMenuItems(role: AppRole): RoleMenuItem[] {
       { href: '/superadmin/manajemen-pemilihan', label: 'Manajemen Pemilihan', icon: Vote },
       { href: '/superadmin/manajemen-proposal', label: 'Manajemen Proposal', icon: FileCheck2 },
       { href: '/superadmin/audit-log', label: 'Audit Log', icon: ScrollText },
-      { href: '/superadmin/pengaturan-platform', label: 'Data Master Voter', icon: ShieldCheck },
+      { href: '/superadmin/data-voter', label: 'Data Master Voter', icon: ShieldCheck },
       { href: '/superadmin/risk-activity', label: 'Risk Activity', icon: TriangleAlert },
       { href: '/superadmin/profil', label: 'Profil', icon: UserCircle2 },
     ]

@@ -20,7 +20,7 @@ export function SuperadminShell({ children }: { children: ReactNode }) {
     { href: '/superadmin/manajemen-pemilihan', label: t.sidebar.election, icon: Vote },
     { href: '/superadmin/manajemen-proposal', label: t.sidebar.proposal, icon: FileCheck2 },
     { href: '/superadmin/audit-log', label: t.sidebar.audit, icon: ScrollText },
-    { href: '/superadmin/pengaturan-platform', label: t.sidebar.voter, icon: Database },
+    { href: '/superadmin/data-voter', label: t.sidebar.voter, icon: Database },
     { href: '/superadmin/risk-activity', label: t.sidebar.risk, icon: ShieldAlert },
   ]
 

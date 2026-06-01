@@ -22,7 +22,7 @@ function resolveTitle(pathname: string) {
   if (pathname.startsWith('/superadmin/manajemen-pemilihan')) return 'Votein - Manajemen Pemilihan Superadmin'
   if (pathname.startsWith('/superadmin/manajemen-proposal')) return 'Votein - Manajemen Proposal Superadmin'
   if (pathname === '/superadmin/risk-activity') return 'Votein - Risk Activity Superadmin'
-  if (pathname === '/superadmin/pengaturan-platform') return 'Votein - Data Master Voter Superadmin'
+  if (pathname === '/superadmin/data-voter') return 'Votein - Data Master Voter Superadmin'
   if (pathname === '/superadmin/profil') return 'Votein - Profil Superadmin'
   if (pathname === '/superadmin/audit-log') return 'Votein - Audit Log Superadmin'
 
