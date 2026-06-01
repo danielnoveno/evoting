@@ -25,7 +25,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const value = {
     locale,
     setLocale,
-    t: dictionaries[locale]
+    t: dictionaries[locale] as Dictionary
   }
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>

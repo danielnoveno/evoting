@@ -63,7 +63,7 @@ export const dictionaries = {
       cancel: 'Cancel',
     }
   }
-} as const
+}
 
 export type Locale = keyof typeof dictionaries
 export type Dictionary = typeof dictionaries['Bahasa Indonesia']
