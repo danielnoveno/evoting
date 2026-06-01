@@ -8,11 +8,7 @@ import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tou
 import { useToast } from '@/components/ui/toast-provider'
 import { type SuperadminMasterVoter, useSuperadminMasterVotersStore } from '@/lib/superadmin-store'
 
-const MASTER_VOTER_CSV_TEMPLATE = [
-  'nim,nama,email,fakultas',
-  '2207116630,Daniel Noveno,daniel.noveno@students.uajy.ac.id,Informatika',
-  '2207116631,Anita Putri,anita.putri@students.uajy.ac.id,Sistem Informasi',
-].join('\n')
+const MASTER_VOTER_CSV_HEADERS = ['nim', 'nama', 'email', 'fakultas'] as const
 
 export function SuperadminMasterVoterPage() {
   const { showToast } = useToast()
@@ -62,15 +58,7 @@ export function SuperadminMasterVoterPage() {
     }, 1500)
   }
 
-  const downloadCsvTemplate = () => {
-    const blob = new Blob([`\uFEFF${MASTER_VOTER_CSV_TEMPLATE}`], { type: 'text/csv;charset=utf-8' })
-    const url = window.URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = 'template-data-master-voter.csv'
-    anchor.click()
-    window.URL.revokeObjectURL(url)
-
+  const handleTemplateDownload = () => {
     showToast({
       tone: 'success',
       title: 'Template CSV diunduh',
@@ -82,6 +70,23 @@ export function SuperadminMasterVoterPage() {
     const lines = text.split(/\r?\n/)
     const tempVoters: SuperadminMasterVoter[] = []
     const tempErrors: string[] = []
+
+    const firstNonEmptyLine = lines.find((line) => line.trim())
+    if (firstNonEmptyLine) {
+      const headerColumns = firstNonEmptyLine.split(',').map((col) => col.trim().replace(/^["']|["']$/g, '').toLowerCase())
+      const hasHeader = MASTER_VOTER_CSV_HEADERS.some((header, index) => headerColumns[index] === header)
+
+      if (hasHeader) {
+        const isHeaderValid = MASTER_VOTER_CSV_HEADERS.every((header, index) => headerColumns[index] === header)
+        if (!isHeaderValid) {
+          setCsvErrors([
+            `Header CSV tidak sesuai template. Gunakan urutan kolom: ${MASTER_VOTER_CSV_HEADERS.join(', ')}.`,
+          ])
+          setParsedVoters([])
+          return
+        }
+      }
+    }
 
     for (let i = 0; i < lines.length; i += 1) {
       const line = lines[i].trim()
@@ -349,15 +354,17 @@ export function SuperadminMasterVoterPage() {
               <div>
                 <p className="text-[14px] font-semibold text-slate-900">Butuh format yang sesuai?</p>
                 <p className="mt-1 text-[13px] leading-6 text-slate-600">Unduh template CSV agar urutan kolom dan contoh isinya sesuai dengan validasi impor sistem.</p>
+                <p className="mt-1 text-[12px] text-slate-500">Header wajib: nim, nama, email, fakultas</p>
               </div>
-              <button
-                type="button"
-                onClick={downloadCsvTemplate}
+              <a
+                href="/template-data-master-voter.csv"
+                download="template-data-master-voter.csv"
+                onClick={handleTemplateDownload}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100"
               >
                 <Download className="h-4 w-4" />
                 Download Template CSV
-              </button>
+              </a>
             </div>
 
             <div
