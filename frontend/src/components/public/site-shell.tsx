@@ -1,14 +1,14 @@
 'use client'
 
-import { ArrowLeft, Bell, ChevronDown, Copy, CopyCheck, ExternalLink, FileCheck2, LayoutGrid, Menu, ScrollText, ShieldAlert, ShieldCheck, ShieldUser, TriangleAlert, UserCircle2, Vote, X } from 'lucide-react'
+import { ArrowLeft, Bell, ChevronDown, Copy, CopyCheck, ExternalLink, FileCheck2, LayoutGrid, LogOut, Menu, ScrollText, ShieldAlert, ShieldCheck, ShieldUser, TriangleAlert, UserCircle2, Vote, X } from 'lucide-react'
 import Link from 'next/link'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { AppNavbar, AppFooter } from '@/components/ui/app-bar'
 import { AuditShortcutModal } from './audit-shortcut-modal'
 import { NotificationModal } from './notification-modal'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
-import { useAuthSession } from '@/hooks/use-auth-session'
+import { useAuthSession, useLogoutSession } from '@/hooks/use-auth-session'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import type { AppRole } from '@/lib/repositories/types'
 import type { LucideIcon } from 'lucide-react'
@@ -101,7 +101,9 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
   const authSession = useAuthSession()
   const currentProfile = useCurrentProfile()
   const pathname = usePathname()
+  const router = useRouter()
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
+  const logoutSession = useLogoutSession()
 
   const hasSession = Boolean(authSession.data?.user)
   const profile = currentProfile.data
@@ -271,7 +273,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                               <span className="inline-flex rounded-md bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200">{profileLabel}</span>
                             </div>
                             <div className="mt-1 flex items-center gap-1.5 text-[12px] text-slate-500">
-                              <span className="truncate">{profileMeta}</span>
+                              <span className="truncate">{profile?.walletAddress ? truncateMiddle(profile.walletAddress, 25) : profileMeta}</span>
                               {profile?.walletAddress ? (
                                 <button
                                   type="button"
@@ -305,6 +307,21 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                             </Link>
                           )
                         })}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileOpen(false)
+                            logoutSession.mutate(undefined, {
+                              onSettled: () => {
+                                router.push('/')
+                              },
+                            })
+                          }}
+                          className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[13px] text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+                        >
+                          <LogOut className="h-4 w-4 shrink-0" />
+                          <span className="truncate">Keluar Sesi</span>
+                        </button>
                       </div>
                     </div>
                   ) : null}
