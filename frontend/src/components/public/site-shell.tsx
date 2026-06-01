@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Bell, CopyCheck, ExternalLink, LayoutGrid, Menu, UserCircle2, X } from 'lucide-react'
+import { ArrowLeft, Bell, ChevronDown, CopyCheck, ExternalLink, LayoutGrid, Menu, UserCircle2, X } from 'lucide-react'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
 import { AppNavbar, AppFooter } from '@/components/ui/app-bar'
@@ -124,10 +124,10 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
               <>
                 <Link
                   href={dashboardHref}
-                  className="hidden h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-900 transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 md:inline-flex"
+                  className="hidden h-10 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-[#1E293B] md:inline-flex"
                 >
                   <LayoutGrid className="h-4 w-4" />
-                  Dashboard
+                  Ke Dashboard
                 </Link>
                 <Link
                   href={profileHref}
@@ -143,8 +143,12 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-[13px] font-semibold text-slate-900">{profileName}</p>
-                    <p className="truncate text-[11px] uppercase tracking-[0.06em] text-slate-400">{profileLabel} · {profileMeta}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{profileLabel}</span>
+                      <span className="truncate text-[11px] text-slate-400">{profileMeta}</span>
+                    </div>
                   </div>
+                  <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
                 </Link>
                 <Link
                   href={profileHref}
