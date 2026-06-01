@@ -2,36 +2,6 @@
 -- This script drops all custom tables, types, functions, and policies.
 -- Run this only if you intend to reset your database and run a consolidated migration file afterward.
 
--- Drop all RLS policies from tables
-DROP POLICY IF EXISTS "profiles_select_self_or_admin" ON app.app_profiles;
-DROP POLICY IF EXISTS "profiles_insert_self" ON app.app_profiles;
-DROP POLICY IF EXISTS "profiles_update_self_or_admin" ON app.app_profiles;
-DROP POLICY IF EXISTS "profiles_update_self_or_superadmin" ON app.app_profiles;
-DROP POLICY IF EXISTS "proposal_drafts_select_owner_or_admin" ON app.proposal_drafts;
-DROP POLICY IF EXISTS "proposal_drafts_insert_admin" ON app.proposal_drafts;
-DROP POLICY IF EXISTS "proposal_drafts_update_owner_or_admin" ON app.proposal_drafts;
-DROP POLICY IF EXISTS "proposal_candidates_manage_parent_owner_or_admin" ON app.proposal_candidates;
-DROP POLICY IF EXISTS "whitelist_jobs_manage_parent_owner_or_admin" ON app.whitelist_import_jobs;
-DROP POLICY IF EXISTS "whitelist_entries_manage_parent_owner_or_admin" ON app.proposal_whitelist_entries;
-DROP POLICY IF EXISTS "metadata_versions_select_owner_or_admin" ON app.space_metadata_versions;
-DROP POLICY IF EXISTS "metadata_versions_insert_admin" ON app.space_metadata_versions;
-DROP POLICY IF EXISTS "space_registry_map_select_owner_or_admin" ON app.space_registry_map;
-DROP POLICY IF EXISTS "tx_audit_log_select_owner_or_admin" ON app.tx_audit_log;
-DROP POLICY IF EXISTS "tx_audit_log_insert_owner_or_admin" ON app.tx_audit_log;
-DROP POLICY IF EXISTS "proof_exports_select_owner_or_admin" ON app.proof_exports;
-DROP POLICY IF EXISTS "proof_exports_insert_owner_or_admin" ON app.proof_exports;
-DROP POLICY IF EXISTS "ops_audit_log_select_admin_only" ON app.ops_audit_log;
-DROP POLICY IF EXISTS "notification_jobs_select_target_or_admin" ON app.notification_jobs;
-DROP POLICY IF EXISTS "indexer_sync_status_select_authenticated" ON indexer.indexer_sync_status;
-DROP POLICY IF EXISTS "admin_registry_select_self_or_superadmin" ON app.admin_registry;
-DROP POLICY IF EXISTS "admin_registry_insert_superadmin" ON app.admin_registry;
-DROP POLICY IF EXISTS "admin_registry_update_superadmin" ON app.admin_registry;
-DROP POLICY IF EXISTS "admin_registry_delete_superadmin" ON app.admin_registry;
-DROP POLICY IF EXISTS "super_admin_all_risk_alerts" ON app.risk_alerts;
-DROP POLICY IF EXISTS "super_admin_all_blocked_entities" ON app.blocked_entities;
-DROP POLICY IF EXISTS "platform_settings_select_all" ON app.platform_settings;
-DROP POLICY IF EXISTS "platform_settings_manage_superadmin" ON app.platform_settings;
-
 -- Drop all tables in schema 'app' and 'indexer'
 DROP TABLE IF EXISTS app.platform_settings CASCADE;
 DROP TABLE IF EXISTS app.proposal_candidates CASCADE;
