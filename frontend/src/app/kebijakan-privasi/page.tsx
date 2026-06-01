@@ -10,9 +10,9 @@ export default function KebijakanPrivasiPage() {
             body="Halaman ini menjelaskan bagaimana Votein mengelola data Anda untuk mendukung proses pemungutan suara yang transparan dan aman berbasis blockchain."
           />
 
-          <div className="mt-12 max-w-none text-slate-800 dark:text-slate-200">
+          <div className="mt-12 max-w-none text-slate-900 dark:text-slate-50">
             <div className="mb-10">
-              <h3 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">1. Pendahuluan</h3>
+              <h3 className="mb-4 text-xl font-bold text-black dark:text-white">1. Pendahuluan</h3>
               <p className="leading-relaxed">
                 Votein berkomitmen untuk melindungi privasi Anda dalam pelaksanaan e-voting. Kebijakan ini menjelaskan 
                 bagaimana kami mengumpulkan, menggunakan, dan melindungi informasi Anda dalam konteks platform 
@@ -21,28 +21,28 @@ export default function KebijakanPrivasiPage() {
             </div>
 
             <div className="mb-10">
-              <h3 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">2. Data yang Kami Kumpulkan</h3>
+              <h3 className="mb-4 text-xl font-bold text-black dark:text-white">2. Data yang Kami Kumpulkan</h3>
               <p className="mb-4 leading-relaxed">Kami mengumpulkan informasi terbatas yang diperlukan untuk validasi hak pilih dan operasional sistem:</p>
-              <ul className="list-disc space-y-3 pl-6 leading-relaxed">
-                <li><strong className="text-slate-900 dark:text-white">Data Identitas:</strong> Alamat email institusi (UAJY) yang digunakan untuk proses login dan pengiriman notifikasi.</li>
-                <li><strong className="text-slate-900 dark:text-white">Data Blockchain:</strong> Alamat dompet digital (wallet address) yang dihasilkan secara otomatis untuk mewakili identitas Anda di jaringan blockchain.</li>
-                <li><strong className="text-slate-900 dark:text-white">Data Pemilihan:</strong> Bukti komitmen suara (*commit hash*) dan pilihan suara yang diungkapkan (*reveal data*) pada fase yang ditentukan.</li>
-                <li><strong className="text-slate-900 dark:text-white">Data Teknis:</strong> Informasi browser, alamat IP (untuk keamanan sesi), dan log aktivitas transaksi blockchain.</li>
+              <ul className="list-disc space-y-3 pl-6 leading-relaxed text-slate-900 dark:text-slate-50">
+                <li><strong className="text-black dark:text-white">Data Identitas:</strong> Alamat email institusi (UAJY) yang digunakan untuk proses login dan pengiriman notifikasi.</li>
+                <li><strong className="text-black dark:text-white">Data Blockchain:</strong> Alamat dompet digital (wallet address) yang dihasilkan secara otomatis untuk mewakili identitas Anda di jaringan blockchain.</li>
+                <li><strong className="text-black dark:text-white">Data Pemilihan:</strong> Bukti komitmen suara (*commit hash*) dan pilihan suara yang diungkapkan (*reveal data*) pada fase yang ditentukan.</li>
+                <li><strong className="text-black dark:text-white">Data Teknis:</strong> Informasi browser, alamat IP (untuk keamanan sesi), dan log aktivitas transaksi blockchain.</li>
               </ul>
             </div>
 
             <div className="mb-10">
-              <h3 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">3. Transparansi Blockchain</h3>
+              <h3 className="mb-4 text-xl font-bold text-black dark:text-white">3. Transparansi Blockchain</h3>
               <p className="leading-relaxed">
                 Penting untuk dipahami bahwa Votein menggunakan jaringan blockchain publik (Base Sepolia). Segala transaksi 
-                yang dikirimkan ke blockchain bersifat <span className="font-semibold text-slate-900 dark:text-white">permanen dan publik</span>. Alamat dompet Anda dan bukti transaksi 
+                yang dikirimkan ke blockchain bersifat <span className="font-semibold text-black dark:text-white">permanen dan publik</span>. Alamat dompet Anda dan bukti transaksi 
                 dapat dilihat oleh siapa saja melalui *block explorer*. Namun, identitas asli Anda (nama/email) tidak 
                 tersimpan secara publik di dalam *smart contract*.
               </p>
             </div>
 
             <div className="mb-10">
-              <h3 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">4. Kerahasiaan Pilihan (Mekanisme Commit-Reveal)</h3>
+              <h3 className="mb-4 text-xl font-bold text-black dark:text-white">4. Kerahasiaan Pilihan (Mekanisme Commit-Reveal)</h3>
               <p className="leading-relaxed">
                 Untuk menjamin prinsip kerahasiaan dalam pemungutan suara, Votein menerapkan mekanisme <span className="italic">commit-reveal</span>. 
                 Pada fase pemungutan suara, Anda hanya mengirimkan hash kriptografi dari pilihan Anda. Pilihan asli 
@@ -52,7 +52,7 @@ export default function KebijakanPrivasiPage() {
             </div>
 
             <div className="mb-10">
-              <h3 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">5. Penggunaan dan Penyimpanan Data</h3>
+              <h3 className="mb-4 text-xl font-bold text-black dark:text-white">5. Penggunaan dan Penyimpanan Data</h3>
               <p className="mb-4 leading-relaxed">Data Anda digunakan untuk:</p>
               <ul className="list-disc space-y-3 pl-6 leading-relaxed">
                 <li>Memverifikasi apakah Anda terdaftar dalam Daftar Pemilih Tetap (DPT).</li>
@@ -66,7 +66,7 @@ export default function KebijakanPrivasiPage() {
             </div>
 
             <div className="mb-10">
-              <h3 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">6. Hak Anda</h3>
+              <h3 className="mb-4 text-xl font-bold text-black dark:text-white">6. Hak Anda</h3>
               <p className="leading-relaxed">
                 Sebagai pemilih, Anda berhak untuk memverifikasi bahwa suara Anda telah tercatat dengan benar di blockchain 
                 melalui ID Transaksi yang diberikan. Karena sifat blockchain yang tidak dapat diubah (<span className="italic">immutable</span>), 
@@ -75,7 +75,7 @@ export default function KebijakanPrivasiPage() {
             </div>
 
             <div className="mb-10">
-              <h3 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">7. Kontak</h3>
+              <h3 className="mb-4 text-xl font-bold text-black dark:text-white">7. Kontak</h3>
               <p className="leading-relaxed">
                 Jika Anda memiliki pertanyaan mengenai kebijakan privasi ini atau implementasi teknis Votein dalam skripsi ini, 
                 Anda dapat menghubungi pengembang melalui kanal komunikasi internal organisasi mahasiswa terkait.
