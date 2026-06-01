@@ -7,6 +7,7 @@ import { RoleGate } from '@/components/auth/role-gate'
 import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/console-shell'
 import { superadminShellContent } from '@/lib/superadmin-data'
 import { usePlatformSettings } from '@/hooks/use-platform-settings'
+import { useLanguage } from '@/lib/contexts/language-context'
 
 export function SuperadminShell({ children }: { children: ReactNode }) {
   const { data: settings } = usePlatformSettings()
