@@ -43,6 +43,16 @@ function getProfileInitial(name: string | null | undefined, role: AppRole) {
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || 'VT'
 }
 
+function truncateMiddle(value: string, maxLength = 33) {
+  if (value.length <= maxLength) return value
+
+  const visibleChars = maxLength - 3
+  const startLength = Math.ceil(visibleChars / 2)
+  const endLength = Math.floor(visibleChars / 2)
+
+  return `${value.slice(0, startLength)}...${value.slice(-endLength)}`
+}
+
 type RoleMenuItem = {
   href: string
   label: string
@@ -101,7 +111,9 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
   const profileHref = profile ? getProfileHref(profile.role) : '/hubungkan-dompet'
   const profileLabel = profile ? getRoleLabel(profile.role) : 'Akun'
   const profileName = profile?.displayName?.trim() || profileLabel
-  const profileMeta = profile?.walletAddress || profile?.email?.trim() || 'Sesi aktif'
+  const profileMeta = profile?.walletAddress
+    ? truncateMiddle(profile.walletAddress, 33)
+    : profile?.email?.trim() || 'Sesi aktif'
   const profileInitial = profile ? getProfileInitial(profile.displayName, profile.role) : 'VT'
   const roleMenuItems = useMemo(() => (profile ? getRoleMenuItems(profile.role) : []), [profile])
 
