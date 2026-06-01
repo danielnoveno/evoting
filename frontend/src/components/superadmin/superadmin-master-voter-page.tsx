@@ -1,38 +1,107 @@
 'use client'
 
-import { AlertTriangle, Check, Database, Download, FileText, Search, Upload, Users, X } from 'lucide-react'
-import { type ChangeEvent, type DragEvent, useRef, useState } from 'react'
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Database, Download, FileText, Loader2, Mail, Search, Trash2, Upload, Users, X } from 'lucide-react'
+import { type ChangeEvent, type DragEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { SuperadminSectionCard, SuperadminShell } from '@/components/superadmin/superadmin-shell'
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableCount,
+  DataTableEmpty,
+  DataTableFooter,
+  DataTableHead,
+  DataTableHeaderCell,
+  DataTableHeaderRow,
+  DataTableRow,
+  DataTableShell,
+  DataTableToolbar,
+  DataTableViewport,
+  RowActionMenu,
+  SelectedCounter,
+} from '@/components/ui/data-table'
 import { useToast } from '@/components/ui/toast-provider'
+import { useSendVoterActivationEmails } from '@/hooks/use-voter-activation'
 import { type SuperadminMasterVoter, useSuperadminMasterVotersStore } from '@/lib/superadmin-store'
 
 const MASTER_VOTER_CSV_HEADERS = ['nim', 'nama', 'email', 'fakultas'] as const
+const PAGE_SIZE_OPTIONS = [5, 10, 20] as const
 
 export function SuperadminMasterVoterPage() {
   const { showToast } = useToast()
   const { voters, setVoters } = useSuperadminMasterVotersStore()
+  const sendVoterActivationEmailsMutation = useSendVoterActivationEmails()
 
   const [searchTerm, setSearchTerm] = useState('')
+  const [activeFilter, setActiveFilter] = useState<'semua' | 'belum-sinkron' | 'tersinkronisasi' | 'terpilih'>('semua')
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10)
+  const [currentPage, setCurrentPage] = useState(1)
   const [showCsvModal, setShowCsvModal] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [csvErrors, setCsvErrors] = useState<string[]>([])
   const [parsedVoters, setParsedVoters] = useState<SuperadminMasterVoter[]>([])
   const [isSyncing, setIsSyncing] = useState(false)
+  const [selectedVoterNims, setSelectedVoterNims] = useState<string[]>([])
+  const [deleteSelectedDialogOpen, setDeleteSelectedDialogOpen] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const filteredVoters = voters.filter((voter) => {
     const term = searchTerm.toLowerCase().trim()
-    return (
+    const matchesSearch = (
       voter.nim.includes(term) ||
       voter.name.toLowerCase().includes(term) ||
       voter.email.toLowerCase().includes(term) ||
       voter.faculty.toLowerCase().includes(term)
     )
+
+    const matchesFilter = activeFilter === 'semua'
+      ? true
+      : activeFilter === 'belum-sinkron'
+        ? voter.syncStatus === 'Belum Sinkron'
+        : activeFilter === 'tersinkronisasi'
+          ? voter.syncStatus === 'Tersinkronisasi'
+          : selectedVoterNims.includes(voter.nim)
+
+    return matchesSearch && matchesFilter
   })
+
+  const selectedVoters = useMemo(
+    () => voters.filter((voter) => selectedVoterNims.includes(voter.nim)),
+    [selectedVoterNims, voters],
+  )
+
+  const selectedFilteredCount = filteredVoters.filter((voter) => selectedVoterNims.includes(voter.nim)).length
+  const totalPages = Math.max(1, Math.ceil(filteredVoters.length / pageSize))
+  const paginatedVoters = filteredVoters.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const allFilteredSelected = filteredVoters.length > 0 && filteredVoters.every((voter) => selectedVoterNims.includes(voter.nim))
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, activeFilter, pageSize])
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, totalPages])
+
+  const toggleSelectAllFiltered = () => {
+    if (allFilteredSelected) {
+      setSelectedVoterNims((current) => current.filter((nim) => !filteredVoters.some((voter) => voter.nim === nim)))
+      return
+    }
+
+    setSelectedVoterNims((current) => Array.from(new Set([...current, ...filteredVoters.map((voter) => voter.nim)])))
+  }
+
+  const toggleSelectedVoter = (nim: string) => {
+    setSelectedVoterNims((current) => current.includes(nim)
+      ? current.filter((item) => item !== nim)
+      : [...current, nim])
+  }
 
   const handleSyncToContract = () => {
     const unsyncedCount = voters.filter((voter) => voter.syncStatus === 'Belum Sinkron').length
@@ -64,6 +133,96 @@ export function SuperadminMasterVoterPage() {
       title: 'Template CSV diunduh',
       description: 'Gunakan template ini agar format impor sesuai dengan kolom yang diterima sistem.',
     })
+  }
+
+  const handleBulkSyncSelected = () => {
+    if (selectedVoters.length === 0) {
+      showToast({ tone: 'info', title: 'Belum ada voter dipilih', description: 'Pilih voter terlebih dahulu untuk sinkronisasi massal.' })
+      return
+    }
+
+    const unsyncedSelected = selectedVoters.filter((voter) => voter.syncStatus === 'Belum Sinkron')
+    if (unsyncedSelected.length === 0) {
+      showToast({ tone: 'info', title: 'Data terpilih sudah sinkron', description: 'Tidak ada voter terpilih yang perlu disinkronkan.' })
+      return
+    }
+
+    setIsSyncing(true)
+    setTimeout(() => {
+      const selectedSet = new Set(unsyncedSelected.map((voter) => voter.nim))
+      setVoters((current) => current.map((voter) => selectedSet.has(voter.nim)
+        ? { ...voter, syncStatus: 'Tersinkronisasi' }
+        : voter))
+      setIsSyncing(false)
+      showToast({
+        tone: 'success',
+        title: 'Sinkronisasi voter terpilih berhasil',
+        description: `${unsyncedSelected.length} voter terpilih telah ditandai tersinkronisasi ke smart contract.`,
+      })
+    }, 1200)
+  }
+
+  const handleBulkSendActivationEmails = () => {
+    if (selectedVoters.length === 0) {
+      showToast({ tone: 'info', title: 'Belum ada voter dipilih', description: 'Pilih voter terlebih dahulu untuk mengirim email aktivasi.' })
+      return
+    }
+
+    sendVoterActivationEmailsMutation.mutate(
+      {
+        recipients: selectedVoters.map((voter) => ({
+          email: voter.email,
+          name: voter.name,
+          nim: voter.nim,
+        })),
+      },
+      {
+        onSuccess: (result) => {
+          showToast({
+            tone: result.failedCount === 0 ? 'success' : 'info',
+            title: 'Email aktivasi voter diproses',
+            description: result.failedCount === 0
+              ? `${result.sentCount} email aktivasi voter berhasil dikirim.`
+              : `${result.sentCount} berhasil, ${result.failedCount} gagal. Periksa email voter yang belum valid atau konfigurasi SMTP.`,
+          })
+        },
+        onError: (error) => {
+          showToast({ tone: 'error', title: 'Gagal mengirim email aktivasi voter', description: error.message })
+        },
+      },
+    )
+  }
+
+  const handleBulkDeleteSelected = () => {
+    if (selectedVoters.length === 0) {
+      showToast({ tone: 'info', title: 'Belum ada voter dipilih', description: 'Pilih voter yang ingin dihapus dari data master.' })
+      return
+    }
+
+    const selectedSet = new Set(selectedVoterNims)
+    setVoters((current) => current.filter((voter) => !selectedSet.has(voter.nim)))
+    setSelectedVoterNims([])
+    setDeleteSelectedDialogOpen(false)
+    showToast({ tone: 'success', title: 'Voter terpilih dihapus', description: `${selectedSet.size} data voter berhasil dihapus dari daftar master.` })
+  }
+
+  const handleRowSendActivationEmail = (voter: SuperadminMasterVoter) => {
+    sendVoterActivationEmailsMutation.mutate(
+      { recipients: [{ email: voter.email, name: voter.name, nim: voter.nim }] },
+      {
+        onSuccess: () => {
+          showToast({ tone: 'success', title: 'Email aktivasi dikirim', description: `Link aktivasi voter berhasil dikirim ke ${voter.email}.` })
+        },
+        onError: (error) => {
+          showToast({ tone: 'error', title: 'Gagal mengirim email', description: error.message })
+        },
+      },
+    )
+  }
+
+  const handleRowSync = (nim: string) => {
+    setVoters((current) => current.map((voter) => voter.nim === nim ? { ...voter, syncStatus: 'Tersinkronisasi' } : voter))
+    showToast({ tone: 'success', title: 'Voter disinkronkan', description: `Data voter ${nim} ditandai sudah tersinkronisasi.` })
   }
 
   const handleCSVParsing = (text: string) => {
@@ -264,34 +423,132 @@ export function SuperadminMasterVoterPage() {
           </div>
         </div>
 
-        <SuperadminSectionCard>
-          <div className="mb-6 flex items-center justify-between border-b border-slate-200 pb-4">
-            <div>
-              <h2 className="text-[18px] font-semibold text-slate-900">Registrasi Mahasiswa & Dosen (DPT Platform)</h2>
-              <p className="mt-1 text-[14px] text-slate-500">Total terdaftar: {filteredVoters.length} dari {voters.length} data master.</p>
-            </div>
-          </div>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: 'semua', label: 'Semua' },
+            { key: 'belum-sinkron', label: 'Belum Sinkron' },
+            { key: 'tersinkronisasi', label: 'Tersinkronisasi' },
+            { key: 'terpilih', label: 'Terpilih' },
+          ].map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setActiveFilter(item.key as typeof activeFilter)}
+              className={activeFilter === item.key
+                ? 'inline-flex h-10 items-center justify-center rounded-2xl bg-slate-900 px-4 text-[13px] font-semibold text-white'
+                : 'inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50'}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                  <th className="pb-3 pl-4">NIM / Identitas</th>
-                  <th className="pb-3">Nama Lengkap</th>
-                  <th className="pb-3">Email Institusi</th>
-                  <th className="pb-3">Fakultas / Program</th>
-                  <th className="pb-3 pr-4">Status Sinkronisasi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredVoters.length > 0 ? (
-                  filteredVoters.map((voter) => (
-                    <tr key={voter.nim} className="group transition hover:bg-slate-50/50">
-                      <td className="py-4 pl-4 font-mono text-[14px] font-medium text-slate-900">{voter.nim}</td>
-                      <td className="py-4 text-[15px] font-semibold text-slate-900">{voter.name}</td>
-                      <td className="py-4 font-mono text-[13px] text-slate-500">{voter.email}</td>
-                      <td className="py-4 text-[15px] text-slate-700">{voter.faculty}</td>
-                      <td className="py-4 pr-4">
+        <div className="flex flex-col gap-3 rounded-[24px] border border-slate-200 bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-[14px] font-semibold text-slate-900">Pencarian & Navigasi Data</p>
+            <p className="mt-1 text-[13px] leading-6 text-slate-600">Menampilkan {filteredVoters.length} hasil filter dari {voters.length} data master voter.</p>
+          </div>
+          <label className="text-[13px] text-slate-600">
+            <span className="mr-2">Baris per halaman</span>
+            <select
+              value={pageSize}
+              onChange={(event) => setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
+              className="h-10 rounded-2xl border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-900"
+            >
+              {PAGE_SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {selectedVoters.length > 0 ? (
+          <SelectedCounter
+            title={`${selectedVoters.length} voter dipilih`}
+            description={`${selectedFilteredCount} dari ${filteredVoters.length} voter hasil filter sedang dipilih. Total data master: ${voters.length}.`}
+            onClear={() => setSelectedVoterNims([])}
+            actions={(
+              <>
+              <button
+                type="button"
+                onClick={handleBulkSendActivationEmails}
+                disabled={sendVoterActivationEmailsMutation.isPending}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
+              >
+                {sendVoterActivationEmailsMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                Kirim Email Aktivasi
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkSyncSelected}
+                disabled={isSyncing}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-[13px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+              >
+                {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+                Sinkronkan Terpilih
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteSelectedDialogOpen(true)}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-4 text-[13px] font-semibold text-red-600 transition hover:bg-red-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                Hapus Terpilih
+              </button>
+              </>
+            )}
+          />
+        ) : null}
+
+        <DataTableShell>
+          <DataTableToolbar>
+            <DataTableCount
+              title="Registrasi Mahasiswa & Dosen (DPT Platform)"
+              description={`Total terdaftar: ${filteredVoters.length} dari ${voters.length} data master.`}
+            />
+          </DataTableToolbar>
+
+          <DataTableViewport>
+            <DataTable>
+              <DataTableHead>
+                <DataTableHeaderRow>
+                  <DataTableHeaderCell className="w-[56px]">
+                    <input
+                      type="checkbox"
+                      checked={allFilteredSelected}
+                      onChange={toggleSelectAllFiltered}
+                      aria-label="Pilih semua voter yang tampil"
+                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                    />
+                  </DataTableHeaderCell>
+                  <DataTableHeaderCell>NIM / Identitas</DataTableHeaderCell>
+                  <DataTableHeaderCell>Nama Lengkap</DataTableHeaderCell>
+                  <DataTableHeaderCell>Email Institusi</DataTableHeaderCell>
+                  <DataTableHeaderCell>Fakultas / Program</DataTableHeaderCell>
+                  <DataTableHeaderCell>Status Sinkronisasi</DataTableHeaderCell>
+                  <DataTableHeaderCell className="text-center">Action</DataTableHeaderCell>
+                </DataTableHeaderRow>
+              </DataTableHead>
+              <DataTableBody>
+                {paginatedVoters.length > 0 ? (
+                  paginatedVoters.map((voter) => (
+                    <DataTableRow key={voter.nim}>
+                      <DataTableCell className="w-[56px]">
+                        <input
+                          type="checkbox"
+                          checked={selectedVoterNims.includes(voter.nim)}
+                          onChange={() => toggleSelectedVoter(voter.nim)}
+                          aria-label={`Pilih voter ${voter.name}`}
+                          className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                        />
+                      </DataTableCell>
+                      <DataTableCell className="font-mono text-[14px] font-medium text-slate-900">{voter.nim}</DataTableCell>
+                      <DataTableCell>
+                        <div className="font-semibold text-slate-900">{voter.name}</div>
+                      </DataTableCell>
+                      <DataTableCell className="font-mono text-[13px] text-slate-500">{voter.email}</DataTableCell>
+                      <DataTableCell>{voter.faculty}</DataTableCell>
+                      <DataTableCell>
                         <span
                           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                             voter.syncStatus === 'Tersinkronisasi'
@@ -311,26 +568,38 @@ export function SuperadminMasterVoterPage() {
                             </>
                           )}
                         </span>
-                      </td>
-                    </tr>
+                      </DataTableCell>
+                      <DataTableCell className="text-center">
+                        <RowActionMenu
+                          buttonLabel={`Aksi untuk ${voter.name}`}
+                          items={[
+                            { label: 'Kirim Email Aktivasi', onClick: () => handleRowSendActivationEmail(voter) },
+                            { label: 'Sinkronkan Voter', onClick: () => handleRowSync(voter.nim) },
+                            { label: 'Pilih Data Ini', onClick: () => toggleSelectedVoter(voter.nim) },
+                          ]}
+                        />
+                      </DataTableCell>
+                    </DataTableRow>
                   ))
                 ) : (
-                  <tr>
-                    <td colSpan={5} className="py-12 text-center">
-                      <div className="flex flex-col items-center justify-center text-slate-400">
-                        <Users className="h-12 w-12 stroke-[1.5]" />
-                        <p className="mt-4 text-[16px] font-semibold text-slate-700">Data Master Voter kosong</p>
-                        <p className="mt-1 max-w-sm text-[14px] text-slate-500">
-                          {searchTerm ? 'Tidak ada hasil pencarian yang cocok.' : 'Silakan gunakan tombol Impor Data Master via CSV di atas untuk memuat data.'}
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
+                  <DataTableEmpty
+                    colSpan={7}
+                    title="Data Master Voter kosong"
+                    description={searchTerm ? 'Tidak ada hasil pencarian yang cocok.' : 'Silakan gunakan tombol Impor Data Master via CSV di atas untuk memuat data.'}
+                  />
                 )}
-              </tbody>
-            </table>
-          </div>
-        </SuperadminSectionCard>
+              </DataTableBody>
+            </DataTable>
+          </DataTableViewport>
+          <DataTableFooter
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredVoters.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            label="data voter"
+          />
+        </DataTableShell>
       </StaggerContainer>
 
       {showCsvModal ? (
@@ -482,6 +751,17 @@ export function SuperadminMasterVoterPage() {
           </ScrollReveal>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={deleteSelectedDialogOpen}
+        title="Hapus voter terpilih?"
+        description={`Tindakan ini akan menghapus ${selectedVoters.length} data voter dari daftar master platform.`}
+        confirmLabel="Ya, Hapus"
+        cancelLabel="Batal"
+        tone="danger"
+        onConfirm={handleBulkDeleteSelected}
+        onCancel={() => setDeleteSelectedDialogOpen(false)}
+      />
     </SuperadminShell>
   )
 }

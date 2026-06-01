@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer'
 import { getSmtpConfig } from '@/lib/email/smtp'
-import { buildAdminActivationEmail } from '@/lib/email/templates'
+import { buildAdminActivationEmail, buildVoterActivationEmail } from '@/lib/email/templates'
 
 export interface SendActivationEmailResult {
   success: boolean
@@ -52,6 +52,47 @@ export async function sendAdminActivationEmail(params: {
   } catch (err) {
     console.error(`[Email] Failed to send ${params.role} activation email:`, err)
     const message = err instanceof Error ? err.message : 'Gagal mengirim email aktivasi via SMTP.'
+    return { success: false, error: message }
+  }
+}
+
+export async function sendVoterActivationEmail(params: {
+  displayName: string
+  email: string
+  activationLink: string
+}): Promise<SendActivationEmailResult> {
+  const config = getSmtpConfig()
+
+  if (!config) {
+    console.warn('[Email] SMTP is not configured. Voter email sending skipped.')
+    return { success: false, error: 'Konfigurasi SMTP (Gmail) belum lengkap.' }
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.port === 465,
+    auth: {
+      user: config.user,
+      pass: config.pass,
+    },
+  })
+
+  const { subject, html } = buildVoterActivationEmail(params)
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"${config.fromName}" <${config.fromEmail}>`,
+      to: params.email,
+      subject,
+      html,
+    })
+
+    console.log('[Email] voter activation email sent successfully:', info.messageId)
+    return { success: true, emailId: info.messageId }
+  } catch (err) {
+    console.error('[Email] Failed to send voter activation email:', err)
+    const message = err instanceof Error ? err.message : 'Gagal mengirim email aktivasi voter via SMTP.'
     return { success: false, error: message }
   }
 }

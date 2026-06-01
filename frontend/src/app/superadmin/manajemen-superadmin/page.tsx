@@ -1,6 +1,6 @@
 'use client'
 
-import { Copy, Loader2, Mail, RefreshCw, UserPlus, ShieldAlert, CheckCircle2, Clock3 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Copy, Loader2, Mail, Power, Search, UserPlus, ShieldAlert, CheckCircle2, Clock3 } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -18,11 +18,28 @@ import {
 } from '@/components/superadmin/superadmin-shell'
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { AppSectionCard } from '@/components/ui/app-section-card'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableEmpty,
+  DataTableFooter,
+  DataTableHead,
+  DataTableHeaderCell,
+  DataTableHeaderRow,
+  DataTableRow,
+  DataTableShell,
+  DataTableViewport,
+  RowActionMenu,
+  SelectedCounter,
+} from '@/components/ui/data-table'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { useQuery } from '@tanstack/react-query'
-import { listAdminDirectory } from '@/lib/repositories/profileRepository'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { listAdminDirectory, updateDirectoryRegistryStatus } from '@/lib/repositories/profileRepository'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { useCreateAdminInvite, useResendAdminInvite } from '@/hooks/use-admin-invite'
+import { useCurrentProfile } from '@/hooks/use-profile'
 
 type TabKey = 'daftar' | 'tambah'
 
@@ -31,6 +48,8 @@ const initialFormData = {
   email: '',
   walletAddress: '',
 }
+
+const PAGE_SIZE_OPTIONS = [5, 10, 20] as const
 
 function getInitials(name: string) {
   return name
@@ -45,14 +64,22 @@ function getInitials(name: string) {
 function SuperadminManagementContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
   const { showToast } = useToast()
   const [activeTab, setActiveTab] = useState<TabKey>('daftar')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10)
+  const [currentPage, setCurrentPage] = useState(1)
   const [formData, setFormData] = useState(initialFormData)
   const [activationLink, setActivationLink] = useState('')
   const [lastEmailStatus, setLastEmailStatus] = useState<'sent' | 'skipped' | 'failed' | null>(null)
   const [lastEmailError, setLastEmailError] = useState<string | null>(null)
+  const [selectedEmails, setSelectedEmails] = useState<string[]>([])
+  const [bulkActionLoading, setBulkActionLoading] = useState<'send' | 'deactivate' | null>(null)
+  const [bulkDeactivateDialogOpen, setBulkDeactivateDialogOpen] = useState(false)
   const createAdminInviteMutation = useCreateAdminInvite()
   const resendInviteMutation = useResendAdminInvite()
+  const currentProfileQuery = useCurrentProfile()
 
   const { data: superadmins = [], isLoading, error } = useQuery({
     queryKey: ['superadmins'],
@@ -75,6 +102,105 @@ function SuperadminManagementContent() {
       params.delete('tab')
     }
     router.replace(`/superadmin/manajemen-superadmin?${params.toString()}`)
+  }
+
+  const selectedSuperadmins = useMemo(
+    () => superadmins.filter((admin) => selectedEmails.includes(admin.email)),
+    [selectedEmails, superadmins],
+  )
+
+  const filteredSuperadmins = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase()
+    return superadmins.filter((admin) => {
+      if (!normalizedSearch) return true
+      return (admin.displayName ?? 'super admin').toLowerCase().includes(normalizedSearch)
+        || admin.email.toLowerCase().includes(normalizedSearch)
+        || (admin.walletAddress ?? admin.profile?.walletAddress ?? 'belum ditautkan').toLowerCase().includes(normalizedSearch)
+    })
+  }, [searchTerm, superadmins])
+
+  const selectedFilteredCount = filteredSuperadmins.filter((admin) => selectedEmails.includes(admin.email)).length
+  const totalPages = Math.max(1, Math.ceil(filteredSuperadmins.length / pageSize))
+  const paginatedSuperadmins = filteredSuperadmins.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const allSelected = filteredSuperadmins.length > 0 && filteredSuperadmins.every((admin) => selectedEmails.includes(admin.email))
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, pageSize])
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, totalPages])
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedEmails((current) => current.filter((email) => !filteredSuperadmins.some((admin) => admin.email === email)))
+      return
+    }
+
+    setSelectedEmails((current) => Array.from(new Set([...current, ...filteredSuperadmins.map((admin) => admin.email)])))
+  }
+
+  const toggleSelected = (email: string) => {
+    setSelectedEmails((current) => current.includes(email)
+      ? current.filter((item) => item !== email)
+      : [...current, email])
+  }
+
+  const handleBulkSendActivation = async () => {
+    if (selectedSuperadmins.length === 0) {
+      showToast({ tone: 'info', title: 'Belum ada superadmin dipilih', description: 'Pilih superadmin yang ingin dikirimi email aktivasi.' })
+      return
+    }
+
+    const pendingItems = selectedSuperadmins.filter((admin) => !(Boolean(admin.profile) || admin.registryStatus === 'active'))
+    if (pendingItems.length === 0) {
+      showToast({ tone: 'info', title: 'Tidak ada superadmin menunggu aktivasi', description: 'Email aktivasi hanya dikirim ke akun yang masih menunggu aktivasi.' })
+      return
+    }
+
+    setBulkActionLoading('send')
+    const results = await Promise.allSettled(pendingItems.map((admin) => resendInviteMutation.mutateAsync(admin.email)))
+    const successCount = results.filter((result) => result.status === 'fulfilled' && result.value.emailStatus === 'sent').length
+    const failedCount = results.length - successCount
+    setBulkActionLoading(null)
+
+    showToast({
+      tone: failedCount === 0 ? 'success' : 'info',
+      title: 'Bulk email superadmin diproses',
+      description: failedCount === 0
+        ? `${successCount} email aktivasi superadmin berhasil dikirim.`
+        : `${successCount} berhasil, ${failedCount} gagal. Periksa email tujuan atau SMTP.`,
+    })
+  }
+
+  const handleBulkDeactivate = async () => {
+    const currentEmail = currentProfileQuery.data?.email?.trim().toLowerCase() ?? ''
+    const candidates = selectedSuperadmins.filter((admin) => admin.email.toLowerCase() !== currentEmail && (Boolean(admin.profile) || admin.registryStatus !== 'inactive'))
+
+    if (candidates.length === 0) {
+      showToast({ tone: 'info', title: 'Tidak ada superadmin yang bisa dinonaktifkan', description: 'Akun milik Anda sendiri tidak akan ikut dinonaktifkan.' })
+      setBulkDeactivateDialogOpen(false)
+      return
+    }
+
+    setBulkActionLoading('deactivate')
+    const results = await Promise.allSettled(candidates.map((admin) => updateDirectoryRegistryStatus(admin.email, 'inactive')))
+    const successCount = results.filter((result) => result.status === 'fulfilled').length
+    const failedCount = results.length - successCount
+    await queryClient.invalidateQueries({ queryKey: ['superadmins'] })
+    await currentProfileQuery.refetch()
+    setBulkActionLoading(null)
+    setBulkDeactivateDialogOpen(false)
+    setSelectedEmails([])
+
+    showToast({
+      tone: failedCount === 0 ? 'success' : 'info',
+      title: 'Bulk nonaktif superadmin diproses',
+      description: failedCount === 0
+        ? `${successCount} superadmin berhasil dinonaktifkan.`
+        : `${successCount} berhasil, ${failedCount} gagal. Coba ulang untuk sisanya.`,
+    })
   }
 
   const handleCreateSuperAdmin = () => {
@@ -160,85 +286,172 @@ function SuperadminManagementContent() {
             </div>
           )}
 
-          <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
-            <div className="hidden grid-cols-[1.5fr_1.5fr_1fr_56px] gap-4 border-b border-slate-100 px-6 py-5 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500 lg:grid">
-              <span>Profil Superadmin</span>
-              <span>Wallet Address</span>
-              <span>Status Otoritas</span>
-              <span />
-            </div>
+          {selectedSuperadmins.length > 0 && (
+            <SelectedCounter
+              title={`${selectedSuperadmins.length} superadmin dipilih`}
+              description={`${selectedFilteredCount} dari ${filteredSuperadmins.length} hasil pencarian sedang dipilih. Total superadmin: ${superadmins.length}.`}
+              onClear={() => setSelectedEmails([])}
+              actions={(
+                <>
+                <button
+                  type="button"
+                  onClick={() => { void handleBulkSendActivation() }}
+                  disabled={bulkActionLoading !== null}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  {bulkActionLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  Kirim Email Aktivasi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBulkDeactivateDialogOpen(true)}
+                  disabled={bulkActionLoading !== null}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-[13px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+                >
+                  {bulkActionLoading === 'deactivate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
+                  Nonaktifkan Akses
+                </button>
+                </>
+              )}
+            />
+          )}
 
-            <div>
+          <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8">
+            <DataTableShell className="shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+            <div className="border-b border-slate-100 px-6 py-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="relative max-w-xl flex-1">
+                  <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari nama superadmin, email, atau wallet address..."
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    className="h-12 w-full rounded-[20px] border border-slate-200 bg-white pl-12 pr-4 text-[15px] text-slate-900 outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+                <label className="text-[13px] text-slate-600">
+                  <span className="mr-2">Baris per halaman</span>
+                  <select
+                    value={pageSize}
+                    onChange={(event) => setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
+                    className="h-10 rounded-2xl border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-900"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </div>
+            <DataTableViewport>
+              <DataTable>
+                <DataTableHead>
+                  <DataTableHeaderRow>
+                    <DataTableHeaderCell className="w-[56px]">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleSelectAll}
+                        aria-label="Pilih semua superadmin"
+                        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                      />
+                    </DataTableHeaderCell>
+                    <DataTableHeaderCell>Profil Superadmin</DataTableHeaderCell>
+                    <DataTableHeaderCell>Wallet Address</DataTableHeaderCell>
+                    <DataTableHeaderCell>Status Otoritas</DataTableHeaderCell>
+                    <DataTableHeaderCell className="text-center">Action</DataTableHeaderCell>
+                  </DataTableHeaderRow>
+                </DataTableHead>
+                <DataTableBody>
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-20 w-full animate-pulse border-b border-slate-50" />
+                  <DataTableRow key={i}>
+                    <DataTableCell colSpan={5}>
+                      <div className="h-10 animate-pulse rounded-2xl bg-slate-100" />
+                    </DataTableCell>
+                  </DataTableRow>
                 ))
-              ) : superadmins.length > 0 ? superadmins.map((admin) => {
+              ) : paginatedSuperadmins.length > 0 ? paginatedSuperadmins.map((admin) => {
                 const isActive = Boolean(admin.profile) || admin.registryStatus === 'active'
 
                 return (
-                <SuperadminTableRowLink
+                <DataTableRow
                   key={admin.email}
-                  href={`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`}
-                  className="lg:grid-cols-[1.5fr_1.5fr_1fr_56px]"
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`)}
                 >
-                  <div className="flex items-center gap-4">
+                  <DataTableCell className="w-[56px]" onClick={(event) => { event.preventDefault(); event.stopPropagation() }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedEmails.includes(admin.email)}
+                      onChange={() => toggleSelected(admin.email)}
+                      aria-label={`Pilih superadmin ${admin.displayName || admin.email}`}
+                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                    />
+                  </DataTableCell>
+                  <DataTableCell>
+                    <div className="flex items-center gap-4">
                     <SuperadminAvatar initials={getInitials(admin.displayName || 'SA')} />
                     <div>
                       <p className="text-[16px] font-semibold text-slate-900">{admin.displayName || 'Super Admin'}</p>
                       <p className="mt-1 font-mono text-[13px] text-slate-500">{admin.email}</p>
                     </div>
-                  </div>
-                  <div>
+                    </div>
+                  </DataTableCell>
+                  <DataTableCell>
                     <p className="font-mono text-[13px] text-slate-600 truncate">{admin.walletAddress || admin.profile?.walletAddress || 'Belum ditautkan'}</p>
-                  </div>
-                  <div>
+                  </DataTableCell>
+                  <DataTableCell>
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                       {isActive ? <ShieldAlert className="h-3 w-3" /> : <Clock3 className="h-3 w-3" />}
                       {isActive ? 'Super Admin Aktif' : 'Menunggu Aktivasi'}
                     </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!isActive && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          resendInviteMutation.mutate(admin.email, {
-                            onSuccess: (result) => {
-                              showToast({
-                                tone: result.emailStatus === 'sent' ? 'success' : 'info',
-                                title: result.emailStatus === 'sent' ? 'Email Terkirim' : 'Email Gagal',
-                                description: result.emailStatus === 'sent'
-                                  ? 'Link aktivasi sudah dikirim ulang.'
-                                  : result.emailError ?? 'Coba lagi nanti.',
-                              })
-                            },
-                            onError: (err) => {
-                              showToast({ tone: 'error', title: 'Kirim Ulang Gagal', description: getRepositoryErrorMessage(err) })
-                            },
-                          })
-                        }}
-                        disabled={resendInviteMutation.isPending}
-                        title="Kirim ulang email aktivasi"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700"
-                      >
-                        {resendInviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                      </button>
-                    )}
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${isActive ? 'text-emerald-500' : 'text-amber-500'}`}>
-                      {isActive ? <CheckCircle2 className="h-5 w-5" /> : <Clock3 className="h-5 w-5" />}
-                    </div>
-                  </div>
-                </SuperadminTableRowLink>
+                  </DataTableCell>
+                  <DataTableCell className="text-center" onClick={(event) => { event.preventDefault(); event.stopPropagation() }}>
+                    <RowActionMenu
+                      buttonLabel={`Aksi untuk ${admin.displayName || admin.email}`}
+                      items={[
+                        { label: 'Lihat Detail', onClick: () => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`) },
+                        ...(!isActive ? [{
+                          label: 'Kirim Ulang Email Aktivasi',
+                          onClick: () => {
+                            resendInviteMutation.mutate(admin.email, {
+                              onSuccess: (result) => {
+                                showToast({
+                                  tone: result.emailStatus === 'sent' ? 'success' : 'info',
+                                  title: result.emailStatus === 'sent' ? 'Email Terkirim' : 'Email Gagal',
+                                  description: result.emailStatus === 'sent' ? 'Link aktivasi sudah dikirim ulang.' : result.emailError ?? 'Coba lagi nanti.',
+                                })
+                              },
+                              onError: (err) => {
+                                showToast({ tone: 'error', title: 'Kirim Ulang Gagal', description: getRepositoryErrorMessage(err) })
+                              },
+                            })
+                          },
+                          disabled: resendInviteMutation.isPending,
+                        }] : []),
+                        { label: 'Pilih Superadmin', onClick: () => toggleSelected(admin.email) },
+                      ]}
+                    />
+                  </DataTableCell>
+                </DataTableRow>
                 )
               }) : (
-                <div className="p-10">
-                  <SuperadminEmptyState title="Belum ada superadmin lain" description="Hanya akun Anda yang terdaftar sebagai otoritas tertinggi saat ini." />
-                </div>
+                <DataTableEmpty colSpan={5} title="Belum ada superadmin lain" description="Hanya akun Anda yang terdaftar sebagai otoritas tertinggi saat ini." />
               )}
-            </div>
+                </DataTableBody>
+              </DataTable>
+            </DataTableViewport>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredSuperadmins.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              label="superadmin"
+            />
+            </DataTableShell>
           </StaggerContainer>
         </>
       ) : (
@@ -331,6 +544,17 @@ function SuperadminManagementContent() {
           </section>
         </StaggerContainer>
       )}
+
+      <ConfirmDialog
+        open={bulkDeactivateDialogOpen}
+        title="Nonaktifkan superadmin terpilih?"
+        description="Akses superadmin terpilih akan dinonaktifkan dari registry. Akun Anda sendiri tidak akan ikut diproses."
+        confirmLabel="Ya, Nonaktifkan"
+        cancelLabel="Batal"
+        tone="default"
+        onConfirm={() => { void handleBulkDeactivate() }}
+        onCancel={() => setBulkDeactivateDialogOpen(false)}
+      />
     </SuperadminShell>
   )
 }

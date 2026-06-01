@@ -218,10 +218,10 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
       </section>
 
       <section className="mt-8 overflow-hidden rounded-[30px] bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
+        <div className="overflow-x-auto rounded-[24px] border border-slate-100 bg-white">
+          <table className="min-w-full border-separate border-spacing-0">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+              <tr className="bg-slate-50 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                 <th className="px-6 py-5">Waktu</th>
                 <th className="px-6 py-5">Aktor</th>
                 <th className="px-6 py-5">Aksi</th>
@@ -232,7 +232,7 @@ export default function AdminElectionMonitoringPage({ params }: { params: { id: 
             </thead>
             <tbody>
               {paginatedRows.map((row) => (
-                <tr key={`${row.time}-${row.hash}`} className="border-b border-slate-100 text-[15px] text-slate-700">
+                <tr key={`${row.time}-${row.hash}`} className="text-[15px] text-slate-700 transition hover:bg-slate-50/70">
                   <td className="px-6 py-5">
                     <p className="font-semibold text-slate-900">{row.time}</p>
                     <p className="mt-1 text-[12px] text-slate-400">{row.timeMeta}</p>

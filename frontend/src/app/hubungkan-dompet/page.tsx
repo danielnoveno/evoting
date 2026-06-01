@@ -66,6 +66,7 @@ function ConnectWalletContent() {
   })
 
   const redirectParam = searchParams.get('redirect')
+  const activationMode = searchParams.get('activate') === '1'
   const redirectTarget = useMemo(() => resolveRedirectTarget(redirectParam), [redirectParam])
 
   const [mounted, setMounted] = useState(false)
@@ -121,12 +122,12 @@ function ConnectWalletContent() {
       : ''
   const completedSteps = (isConnected ? 1 : 0) + (authSession ? 1 : 0) + (isWalletBound ? 1 : 0)
   const currentStepLabel = !isConnected
-    ? '1. Sambungkan dompet digital'
+    ? activationMode ? 'Aktivasi voter · tahap 1 dari 3' : '1. Sambungkan dompet digital'
     : !authSession
-      ? '2. Masuk dengan akun kampus'
+      ? activationMode ? 'Aktivasi voter · tahap 2 dari 3' : '2. Masuk dengan akun kampus'
       : !isWalletBound
-        ? '3. Aktifkan hak suara'
-        : 'Selesai, akses siap'
+        ? activationMode ? 'Aktivasi voter · tahap 3 dari 3' : '3. Aktifkan hak suara'
+        : activationMode ? 'Aktivasi voter selesai' : 'Selesai, akses siap'
 
   // Auto-redirect if everything is ready
   useEffect(() => {
@@ -271,9 +272,9 @@ function ConnectWalletContent() {
                         <ArrowLeft className="h-3.5 w-3.5" />
                         Kembali ke Beranda
                       </Link>
-                      <h1 className="text-[24px] font-semibold leading-tight text-slate-900">Masuk ke Votein</h1>
+                      <h1 className="text-[24px] font-semibold leading-tight text-slate-900">{activationMode ? 'Aktivasi Hak Suara Voter' : 'Masuk ke Votein'}</h1>
                       <p className="mt-1 text-[13px] leading-6 text-slate-400">
-                        Ikuti 3 langkah pendek. Untuk mulai menggunakan Votein.
+                        {activationMode ? 'Ikuti 3 tahap aktivasi singkat untuk membuka akses memilih di Votein.' : 'Ikuti 3 langkah pendek. Untuk mulai menggunakan Votein.'}
                       </p>
                     </div>
 
@@ -346,10 +347,23 @@ function ConnectWalletContent() {
 
                     {!isConnected && (
                       <div className="mt-8 w-full">
-                        <h2 className="text-[20px] font-semibold text-slate-900">Sambungkan dompet digital</h2>
+                        <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? 'Tahap 1 — Sambungkan dompet digital' : 'Sambungkan dompet digital'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                          Dompet digital itu seperti kartu pengenal untuk voting. Klik tombol sambungkan, lalu setujui dari aplikasi dompet yang muncul.
+                          {activationMode
+                            ? 'Mulai aktivasi dengan menyambungkan dompet digital milikmu sendiri. Dompet ini akan dipakai sebagai identitas saat proses voting.'
+                            : 'Dompet digital itu seperti kartu pengenal untuk voting. Klik tombol sambungkan, lalu setujui dari aplikasi dompet yang muncul.'}
                         </p>
+
+                        {activationMode && (
+                          <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50/60 p-5">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">Model Aktivasi Pemilih</p>
+                            <div className="mt-3 space-y-2 text-[13px] leading-6 text-blue-900/80">
+                              <p><strong>Tahap 1.</strong> Sambungkan dompet digital yang akan dipakai sampai voting selesai.</p>
+                              <p><strong>Tahap 2.</strong> Verifikasi akun kampus UAJY agar sistem mengenali identitas pemilih.</p>
+                              <p><strong>Tahap 3.</strong> Aktifkan hak suara dengan menautkan akun kampus dan dompet digital.</p>
+                            </div>
+                          </div>
+                        )}
 
                         <div className="mt-8 space-y-4">
                           {[
@@ -368,7 +382,7 @@ function ConnectWalletContent() {
 
                     {isConnected && !authSession && (
                       <div className="mt-8 w-full">
-                        <h2 className="text-[20px] font-semibold text-slate-900">Masuk dengan akun kampus</h2>
+                        <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? 'Tahap 2 — Verifikasi akun kampus' : 'Masuk dengan akun kampus'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           Setelah dompet tersambung, masuk dengan akun kampus. Ini membantu sistem memastikan hak pilih diberikan ke mahasiswa yang benar.
                         </p>
@@ -460,7 +474,7 @@ function ConnectWalletContent() {
 
                     {isConnected && authSession && !isWalletBound && (
                       <div className="mt-8 w-full">
-                          <h2 className="text-[20px] font-semibold text-slate-900">Aktifkan hak suara</h2>
+                          <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? 'Tahap 3 — Aktifkan hak suara' : 'Aktifkan hak suara'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           Tinggal satu klik lagi. Kami akan memasangkan akun kampus dengan dompet digitalmu supaya hak memilih aktif.
                         </p>

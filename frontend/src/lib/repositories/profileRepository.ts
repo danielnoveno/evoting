@@ -483,3 +483,38 @@ export async function deleteAdminRegistry(email: string): Promise<void> {
 
   await syncProfileRoleForEmail(normalizedEmail, 'voter')
 }
+
+export async function updateDirectoryRegistryStatus(email: string, status: 'pending' | 'active' | 'inactive'): Promise<void> {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const normalizedEmail = normalizeEmail(email)
+  if (!normalizedEmail) throw new RepositoryError('Email akses wajib diisi.')
+
+  const { data: current, error: fetchError } = await client
+    .schema('app')
+    .from('admin_registry')
+    .select('*')
+    .eq('email', normalizedEmail)
+    .maybeSingle()
+
+  if (fetchError) throw new RepositoryError('Gagal memuat registry akses. Coba lagi.')
+  if (!current) throw new RepositoryError('Registry akses tidak ditemukan untuk email ini.')
+
+  const actorProfileId = await getCurrentProfileId()
+  const payload: Database['app']['Tables']['admin_registry']['Update'] = {
+    status,
+    updated_by: actorProfileId,
+  }
+
+  const { error } = await client
+    .schema('app')
+    .from('admin_registry')
+    .update(payload)
+    .eq('email', normalizedEmail)
+
+  if (error) throw new RepositoryError('Gagal memperbarui status akses. Coba lagi.')
+
+  const nextRole = status === 'inactive' ? 'voter' : current.assigned_role
+  await syncProfileRoleForEmail(normalizedEmail, nextRole, current.display_name)
+}

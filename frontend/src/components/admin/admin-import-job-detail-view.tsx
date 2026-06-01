@@ -157,10 +157,10 @@ export function AdminImportJobDetailView({
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
+              <div className="overflow-x-auto rounded-[24px] border border-slate-100 bg-white">
+                <table className="min-w-full border-separate border-spacing-0">
                   <thead>
-                    <tr className="border-b border-slate-100 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                    <tr className="bg-slate-50 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                       <th className="px-6 py-4">No</th>
                       <th className="px-6 py-4">Alamat Wallet</th>
                       <th className="px-6 py-4">Nama (Opsional)</th>
@@ -187,7 +187,7 @@ export function AdminImportJobDetailView({
                     ) : null}
 
                     {filteredEntries.map((record, idx) => (
-                      <tr key={record.id} className="border-b border-slate-100 text-[15px] text-slate-700">
+                      <tr key={record.id} className="text-[15px] text-slate-700 transition hover:bg-slate-50/70">
                         <td className="px-6 py-5 text-slate-400">{idx + 1}</td>
                         <td className="px-6 py-5 font-mono">{record.walletAddress}</td>
                         <td className="px-6 py-5">{record.voterName || '-'}</td>
