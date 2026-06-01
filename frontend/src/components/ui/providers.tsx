@@ -8,6 +8,7 @@ import { baseSepolia } from 'wagmi/chains'
 import { wagmiConfig } from '@/lib/wagmi'
 import { DynamicPageTitle } from '@/components/ui/dynamic-page-title'
 import { ToastProvider } from '@/components/ui/toast-provider'
+import { LanguageProvider } from '@/lib/contexts/language-context'
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
@@ -19,10 +20,12 @@ export function AppProviders({ children }: { children: ReactNode }) {
           chain={baseSepolia}
           apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
         >
-          <ToastProvider>
-            <DynamicPageTitle />
-            {children}
-          </ToastProvider>
+          <LanguageProvider>
+            <ToastProvider>
+              <DynamicPageTitle />
+              {children}
+            </ToastProvider>
+          </LanguageProvider>
         </OnchainKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

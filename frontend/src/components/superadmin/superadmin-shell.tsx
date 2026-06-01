@@ -8,19 +8,20 @@ import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/consol
 import { superadminShellContent } from '@/lib/superadmin-data'
 import { usePlatformSettings } from '@/hooks/use-platform-settings'
 
-const sidebarItems: ConsoleNavItem[] = [
-  { href: '/superadmin', label: 'Beranda', icon: LayoutGrid },
-  { href: '/superadmin/manajemen-superadmin', label: 'Manajemen Superadmin', icon: ShieldAlert },
-  { href: '/superadmin/manajemen-admin', label: 'Manajemen Admin', icon: ShieldUser },
-  { href: '/superadmin/manajemen-pemilihan', label: 'Manajemen Pemilihan', icon: Vote },
-  { href: '/superadmin/manajemen-proposal', label: 'Manajemen Proposal', icon: FileCheck2 },
-  { href: '/superadmin/audit-log', label: 'Audit Log', icon: ScrollText },
-  { href: '/superadmin/pengaturan-platform', label: 'Data Master Voter', icon: Database },
-  { href: '/superadmin/risk-activity', label: 'Risk Activity', icon: ShieldAlert },
-]
-
 export function SuperadminShell({ children }: { children: ReactNode }) {
   const { data: settings } = usePlatformSettings()
+  const { t, locale } = useLanguage()
+
+  const sidebarItems: ConsoleNavItem[] = [
+    { href: '/superadmin', label: t.sidebar.dashboard, icon: LayoutGrid },
+    { href: '/superadmin/manajemen-superadmin', label: t.sidebar.superadmin, icon: ShieldAlert },
+    { href: '/superadmin/manajemen-admin', label: t.sidebar.admin, icon: ShieldUser },
+    { href: '/superadmin/manajemen-pemilihan', label: t.sidebar.election, icon: Vote },
+    { href: '/superadmin/manajemen-proposal', label: t.sidebar.proposal, icon: FileCheck2 },
+    { href: '/superadmin/audit-log', label: t.sidebar.audit, icon: ScrollText },
+    { href: '/superadmin/pengaturan-platform', label: t.sidebar.voter, icon: Database },
+    { href: '/superadmin/risk-activity', label: t.sidebar.risk, icon: ShieldAlert },
+  ]
 
   return (
     <RoleGate
@@ -31,19 +32,25 @@ export function SuperadminShell({ children }: { children: ReactNode }) {
       <ConsoleShell
         role="superadmin"
         headerLabel={settings?.platform_name || superadminShellContent.headerLabel}
-        searchPlaceholder={superadminShellContent.searchPlaceholder}
+        searchPlaceholder={t.header.search}
         sidebarItems={sidebarItems}
         profile={{
           ...superadminShellContent.profile,
+          editLabel: t.sidebar.profile,
+          logoutLabel: t.header.logout,
           editHref: '/superadmin/profil',
         }}
         footer={superadminShellContent.footer}
         logoutConfig={{
-          title: 'Keluar dari sesi superadmin?',
-          description: 'Anda akan keluar dari panel superadmin dan kembali ke halaman masuk.',
-          confirmLabel: 'Keluar Sesi',
-          successTitle: 'Sesi superadmin ditutup',
-          successDescription: 'Anda diarahkan kembali ke halaman login.',
+          title: t.header.logout + '?',
+          description: locale === 'Bahasa Indonesia'
+            ? 'Anda akan keluar dari panel superadmin dan kembali ke halaman masuk.'
+            : 'You will log out from the superadmin panel and return to the login page.',
+          confirmLabel: t.header.logout,
+          successTitle: locale === 'Bahasa Indonesia' ? 'Sesi superadmin ditutup' : 'Superadmin session closed',
+          successDescription: locale === 'Bahasa Indonesia'
+            ? 'Anda diarahkan kembali ke halaman login.'
+            : 'You are being redirected back to the login page.',
           redirectTo: '/portal-admin',
         }}
       >

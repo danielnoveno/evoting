@@ -8,6 +8,8 @@ import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/consol
 import { adminShellContent } from '@/lib/admin-content'
 import { OnboardingTour } from './onboarding-tour'
 
+import { useLanguage } from '@/lib/contexts/language-context'
+
 const sidebarIconMap: Record<'layout-grid' | 'gauge' | 'file-text' | 'circle-help', LucideIcon> = {
   'layout-grid': LayoutGrid,
   gauge: Gauge,
@@ -15,13 +17,16 @@ const sidebarIconMap: Record<'layout-grid' | 'gauge' | 'file-text' | 'circle-hel
   'circle-help': CircleHelp,
 }
 
-const sidebarItems: ConsoleNavItem[] = adminShellContent.sidebarItems.map((item) => ({
-  href: item.href,
-  label: item.label,
-  icon: sidebarIconMap[item.iconKey],
-}))
-
 export function AdminShell({ children }: { children: ReactNode }) {
+  const { t, locale } = useLanguage()
+
+  const sidebarItems: ConsoleNavItem[] = [
+    { href: '/admin', label: t.sidebar.dashboard, icon: LayoutGrid },
+    { href: '/admin/manajemen-pemilihan', label: t.sidebar.election, icon: Gauge },
+    { href: '/admin/daftar-proposal', label: t.sidebar.proposal, icon: FileText },
+    { href: '/admin/bantuan', label: t.sidebar.help, icon: CircleHelp },
+  ]
+
   return (
     <RoleGate
       allowedRoles={['admin', 'super_admin']}
@@ -32,19 +37,25 @@ export function AdminShell({ children }: { children: ReactNode }) {
         role="admin"
         headerLabel={adminShellContent.headerLabel}
         brandTagline={adminShellContent.brandTagline}
-        searchPlaceholder={adminShellContent.searchPlaceholder}
+        searchPlaceholder={t.header.search}
         sidebarItems={sidebarItems}
         profile={{
           ...adminShellContent.profile,
+          editLabel: t.sidebar.profile,
+          logoutLabel: t.header.logout,
           editHref: '/admin/profil',
         }}
         footer={adminShellContent.footer}
         logoutConfig={{
-          title: 'Keluar dari sesi admin?',
-          description: 'Anda akan keluar dari panel admin dan kembali ke halaman login. Pastikan semua perubahan penting sudah disimpan.',
-          confirmLabel: 'Keluar Sesi',
-          successTitle: 'Keluar berhasil',
-          successDescription: 'Sesi admin telah diakhiri dan Anda diarahkan ke halaman login.',
+          title: t.header.logout + '?',
+          description: locale === 'Bahasa Indonesia' 
+            ? 'Anda akan keluar dari panel admin dan kembali ke halaman login.'
+            : 'You will log out from the admin panel and return to the login page.',
+          confirmLabel: t.header.logout,
+          successTitle: locale === 'Bahasa Indonesia' ? 'Keluar berhasil' : 'Logout successful',
+          successDescription: locale === 'Bahasa Indonesia' 
+            ? 'Sesi admin telah diakhiri.'
+            : 'Admin session has been terminated.',
           redirectTo: '/',
         }}
       >
