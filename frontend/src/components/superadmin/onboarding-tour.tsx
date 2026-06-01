@@ -29,7 +29,8 @@ export function SuperadminOnboardingTour({ forceStart = false, onComplete }: Onb
 
   const handleJoyrideCallback = (data: EventData) => {
     const { status } = data
-    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED]
+    if (finishedStatuses.includes(status)) {
       setRun(false)
       localStorage.setItem(TOUR_STORAGE_KEY, 'true')
       if (onComplete) onComplete()
