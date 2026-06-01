@@ -16,13 +16,7 @@ import { useLogoutSession } from '@/hooks/use-auth-session'
 import { NotificationModal } from '@/components/public/notification-modal'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
 import { OnboardingTour } from './onboarding-tour'
-
-const sidebarItems = [
-
-  { href: '/pemilih', label: 'Beranda', icon: Home },
-  { href: '/pemilih/bukti-saya', label: 'Bukti Saya', icon: ShieldCheck },
-  { href: '/pemilih/bantuan', label: 'Bantuan', icon: CircleHelp },
-] as const
+import { useLanguage } from '@/lib/contexts/language-context'
 
 export function VoterShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -38,6 +32,13 @@ export function VoterShell({ children }: { children: ReactNode }) {
   const { data: currentProfile } = useCurrentProfile()
   const logoutSession = useLogoutSession()
   const { hasUnread } = useNotificationBadge()
+  const { t, locale } = useLanguage()
+
+  const sidebarItems = [
+    { href: '/pemilih', label: t.sidebar.dashboard, icon: Home },
+    { href: '/pemilih/bukti-saya', label: t.sidebar.voter_history, icon: ShieldCheck },
+    { href: '/pemilih/bantuan', label: t.sidebar.help, icon: CircleHelp },
+  ] as const
 
   const profile = currentProfile
     ? {
@@ -55,8 +56,10 @@ export function VoterShell({ children }: { children: ReactNode }) {
       onSettled: () => {
         showToast({
           tone: 'success',
-          title: 'Keluar berhasil',
-          description: 'Sesi pemilih ditutup. Anda diarahkan kembali ke halaman utama.',
+          title: locale === 'Bahasa Indonesia' ? 'Keluar berhasil' : 'Logout successful',
+          description: locale === 'Bahasa Indonesia' 
+            ? 'Sesi pemilih ditutup. Anda diarahkan kembali ke halaman utama.'
+            : 'Voter session closed. You are being redirected to the home page.',
         })
         window.setTimeout(() => router.push('/'), 400)
       },
@@ -64,12 +67,13 @@ export function VoterShell({ children }: { children: ReactNode }) {
   }
 
   const topLabel = useMemo(() => {
-    if (pathname === '/pemilih/bukti-saya') return 'Arsip digital pemilih'
-    if (pathname === '/pemilih/bantuan') return 'Pusat bantuan pemilih'
-    if (pathname === '/pemilih/profil') return 'Pengaturan profil'
-    if (pathname.includes('/pemilih/pemilihan/')) return 'Alur voting pemilih'
-    return 'Dashboard utama pemilih'
-  }, [pathname])
+    const isIndo = locale === 'Bahasa Indonesia'
+    if (pathname === '/pemilih/bukti-saya') return isIndo ? 'Arsip digital pemilih' : 'Voter digital archive'
+    if (pathname === '/pemilih/bantuan') return isIndo ? 'Pusat bantuan pemilih' : 'Voter help center'
+    if (pathname === '/pemilih/profil') return isIndo ? 'Pengaturan profil' : 'Profile settings'
+    if (pathname.includes('/pemilih/pemilihan/')) return isIndo ? 'Alur voting pemilih' : 'Voter voting flow'
+    return isIndo ? 'Dashboard utama pemilih' : 'Voter main dashboard'
+  }, [pathname, locale])
 
   return (
     <RoleGate
@@ -83,11 +87,11 @@ export function VoterShell({ children }: { children: ReactNode }) {
           items={[...sidebarItems]}
           profile={{
             name: profile?.name ?? 'Pemilih',
-            wallet: profile ? formatWallet(profile.wallet) : 'Belum terhubung',
+            wallet: profile ? formatWallet(profile.wallet) : (locale === 'Bahasa Indonesia' ? 'Belum terhubung' : 'Not connected'),
             avatarUrl: profile?.avatarUrl,
-            editLabel: 'Sunting Profil',
+            editLabel: t.sidebar.profile,
             editHref: '/pemilih/profil',
-            logoutLabel: 'Keluar Sesi',
+            logoutLabel: t.header.logout,
           }}
           rootPaths={['/pemilih']}
           mobileOpen={mobileOpen}
@@ -109,7 +113,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
                 </button>
                 <button type="button" onClick={() => setSearchOpen(true)} className="hidden h-10 items-center gap-3 rounded-md border border-slate-200 bg-white px-4 text-left transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:flex md:w-[280px]" aria-label="Cari kandidat atau pemilihan">
                   <Search className="h-4 w-4 shrink-0 text-slate-400" />
-                  <span className="flex-1 truncate text-[13px] text-slate-400">Cari kandidat, pemilihan...</span>
+                  <span className="flex-1 truncate text-[13px] text-slate-400">{t.header.search}</span>
                   <kbd className="hidden h-5 items-center gap-1 rounded border border-slate-300 bg-white px-1.5 font-mono text-[10px] font-medium text-slate-500 md:inline-flex">
                     <span className="text-[12px]">⌘</span>K
                   </kbd>
@@ -117,7 +121,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
                 <div className="hidden items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 sm:flex md:text-[13px]">
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
                   <span className="truncate max-w-[120px] md:max-w-none">
-                    {profile ? formatWallet(profile.wallet) : 'Belum terhubung'}
+                    {profile ? formatWallet(profile.wallet) : (locale === 'Bahasa Indonesia' ? 'Belum terhubung' : 'Not connected')}
                   </span>
                   {profile?.wallet && (
                     <button
@@ -126,8 +130,8 @@ export function VoterShell({ children }: { children: ReactNode }) {
                         navigator.clipboard.writeText(profile.wallet)
                         showToast({
                           tone: 'success',
-                          title: 'Alamat Disalin',
-                          description: 'Alamat dompet disalin ke clipboard.',
+                          title: locale === 'Bahasa Indonesia' ? 'Alamat Disalin' : 'Address Copied',
+                          description: locale === 'Bahasa Indonesia' ? 'Alamat dompet disalin ke clipboard.' : 'Wallet address copied to clipboard.',
                         })
                       }}
                       className="ml-1 rounded p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-900 transition-colors"
@@ -170,10 +174,10 @@ export function VoterShell({ children }: { children: ReactNode }) {
 
           <AppFooter className="px-4 py-4 md:px-6 lg:px-8">
             <div className="flex flex-col gap-3 text-[10px] uppercase tracking-[0.06em] text-slate-400 sm:text-[11px] md:flex-row md:items-center md:justify-between">
-              <p>© 2026 Votein · Portal pemilih</p>
+              <p>© 2026 Votein · {locale === 'Bahasa Indonesia' ? 'Portal pemilih' : 'Voter portal'}</p>
               <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                <Link href="/kebijakan-privasi" className="hover:text-slate-800">Kebijakan Privasi</Link>
-                <Link href="/ketentuan-layanan" className="hover:text-slate-800">Ketentuan Layanan</Link>
+                <Link href="/kebijakan-privasi" className="hover:text-slate-800">{locale === 'Bahasa Indonesia' ? 'Kebijakan Privasi' : 'Privacy Policy'}</Link>
+                <Link href="/ketentuan-layanan" className="hover:text-slate-800">{locale === 'Bahasa Indonesia' ? 'Ketentuan Layanan' : 'Terms of Service'}</Link>
               </div>
             </div>
           </AppFooter>
@@ -182,9 +186,11 @@ export function VoterShell({ children }: { children: ReactNode }) {
 
       <ConfirmDialog
         open={logoutConfirmOpen}
-        title="Keluar dari sesi pemilih?"
-        description="Anda akan kembali ke halaman login. Pastikan bukti atau detail transaksi yang masih dibutuhkan sudah tersimpan."
-        confirmLabel="Keluar Sesi"
+        title={t.header.logout + '?'}
+        description={locale === 'Bahasa Indonesia' 
+          ? 'Anda akan kembali ke halaman login. Pastikan bukti atau detail transaksi yang masih dibutuhkan sudah tersimpan.'
+          : 'You will return to the login page. Ensure any necessary proofs or transaction details are saved.'}
+        confirmLabel={t.header.logout}
         onCancel={() => setLogoutConfirmOpen(false)}
         onConfirm={handleConfirmLogout}
       />
