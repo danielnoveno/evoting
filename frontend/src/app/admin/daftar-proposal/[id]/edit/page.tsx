@@ -24,7 +24,18 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
   const candidateQuery = useProposalCandidates(params.id)
   const whitelistQuery = useProposalWhitelistEntries(params.id)
   
-  if (!proposal && !proposalQuery.data) {
+  if (proposalQuery.isLoading) {
+    return (
+      <AdminShell>
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+        </div>
+      </AdminShell>
+    )
+  }
+
+  // Only call notFound if we are not loading, have no error, and both static and live data are missing
+  if (!proposalQuery.isError && !proposal && !proposalQuery.data) {
     notFound()
   }
 

@@ -1,14 +1,26 @@
+'use client'
+
 import { notFound } from 'next/navigation'
 import { AdminCandidateFormView } from '@/components/admin/admin-candidate-form-view'
-import { getAdminElectionById, getAdminElectionCandidateById } from '@/lib/admin-election-data'
+import { useAdminElectionList } from '@/hooks/use-admin-proposal-list'
+import { Loader2 } from 'lucide-react'
 
 export default function AdminElectionEditCandidatePage({
   params,
 }: {
   params: { id: string; candidateId: string }
 }) {
-  const election = getAdminElectionById(params.id)
-  const candidate = getAdminElectionCandidateById(params.id, params.candidateId)
+  const electionListQuery = useAdminElectionList()
+  const election = electionListQuery.elections.find(e => e.id === params.id)
+  const candidate = election?.detail.candidates.find(c => c.id === params.candidateId)
+
+  if (electionListQuery.isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-slate-400" />
+      </div>
+    )
+  }
 
   if (!election || !candidate) {
     notFound()

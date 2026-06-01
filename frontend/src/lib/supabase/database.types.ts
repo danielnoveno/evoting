@@ -427,6 +427,38 @@ export type Database = {
           updated_at?: string
         }
       }
+      platform_settings: {
+        Row: {
+          id: string
+          platform_name: string
+          default_language: string
+          network_name: string
+          rpc_url: string | null
+          registry_address: string | null
+          gas_limit: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          platform_name?: string
+          default_language?: string
+          network_name?: string
+          rpc_url?: string | null
+          registry_address?: string | null
+          gas_limit?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          platform_name?: string
+          default_language?: string
+          network_name?: string
+          rpc_url?: string | null
+          registry_address?: string | null
+          gas_limit?: number
+          updated_at?: string
+        }
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
