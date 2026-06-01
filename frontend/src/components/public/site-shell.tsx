@@ -1,8 +1,9 @@
 'use client'
 
-import { ArrowLeft, Bell, ChevronDown, CopyCheck, ExternalLink, LayoutGrid, Menu, UserCircle2, X } from 'lucide-react'
+import { ArrowLeft, Bell, ChevronDown, Copy, CopyCheck, ExternalLink, FileCheck2, LayoutGrid, Menu, ScrollText, ShieldAlert, ShieldCheck, ShieldUser, TriangleAlert, UserCircle2, Vote, X } from 'lucide-react'
 import Link from 'next/link'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { AppNavbar, AppFooter } from '@/components/ui/app-bar'
 import { AuditShortcutModal } from './audit-shortcut-modal'
 import { NotificationModal } from './notification-modal'
@@ -11,6 +12,7 @@ import { useAuthSession } from '@/hooks/use-auth-session'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { formatWallet } from '@/lib/voter-store'
 import type { AppRole } from '@/lib/repositories/types'
+import type { LucideIcon } from 'lucide-react'
 
 const navItems = [
   { href: '/', label: 'Beranda' },
@@ -42,13 +44,55 @@ function getProfileInitial(name: string | null | undefined, role: AppRole) {
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || 'VT'
 }
 
+type RoleMenuItem = {
+  href: string
+  label: string
+  icon: LucideIcon
+}
+
+function getRoleMenuItems(role: AppRole): RoleMenuItem[] {
+  if (role === 'super_admin') {
+    return [
+      { href: '/superadmin', label: 'Beranda', icon: LayoutGrid },
+      { href: '/superadmin/manajemen-superadmin', label: 'Manajemen Superadmin', icon: ShieldAlert },
+      { href: '/superadmin/manajemen-admin', label: 'Manajemen Admin', icon: ShieldUser },
+      { href: '/superadmin/manajemen-pemilihan', label: 'Manajemen Pemilihan', icon: Vote },
+      { href: '/superadmin/manajemen-proposal', label: 'Manajemen Proposal', icon: FileCheck2 },
+      { href: '/superadmin/audit-log', label: 'Audit Log', icon: ScrollText },
+      { href: '/superadmin/pengaturan-platform', label: 'Data Master Voter', icon: ShieldCheck },
+      { href: '/superadmin/risk-activity', label: 'Risk Activity', icon: TriangleAlert },
+      { href: '/superadmin/profil', label: 'Profil', icon: UserCircle2 },
+    ]
+  }
+
+  if (role === 'admin') {
+    return [
+      { href: '/admin', label: 'Beranda', icon: LayoutGrid },
+      { href: '/admin/manajemen-pemilihan', label: 'Manajemen Pemilihan', icon: Vote },
+      { href: '/admin/daftar-proposal', label: 'Daftar Proposal', icon: FileCheck2 },
+      { href: '/admin/bantuan', label: 'Pusat Bantuan', icon: ShieldCheck },
+      { href: '/admin/profil', label: 'Profil', icon: UserCircle2 },
+    ]
+  }
+
+  return [
+    { href: '/pemilih', label: 'Beranda', icon: LayoutGrid },
+    { href: '/pemilih/bukti-saya', label: 'Riwayat Suara', icon: FileCheck2 },
+    { href: '/pemilih/bantuan', label: 'Pusat Bantuan', icon: ShieldCheck },
+    { href: '/pemilih/profil', label: 'Profil', icon: UserCircle2 },
+  ]
+}
+
 export function PublicNavbar({ activePath, minimal = false }: { activePath: string; minimal?: boolean }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [auditOpen, setAuditOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const { hasUnread } = useNotificationBadge()
   const authSession = useAuthSession()
   const currentProfile = useCurrentProfile()
+  const pathname = usePathname()
+  const profileMenuRef = useRef<HTMLDivElement | null>(null)
 
   const hasSession = Boolean(authSession.data?.user)
   const profile = currentProfile.data
@@ -60,6 +104,24 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
   const profileName = profile?.displayName?.trim() || profileLabel
   const profileMeta = profile?.walletAddress ? formatWallet(profile.walletAddress) : profile?.email?.trim() || 'Sesi aktif'
   const profileInitial = profile ? getProfileInitial(profile.displayName, profile.role) : 'VT'
+  const roleMenuItems = useMemo(() => (profile ? getRoleMenuItems(profile.role) : []), [profile])
+
+  useEffect(() => {
+    if (!profileOpen) return
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!profileMenuRef.current?.contains(event.target as Node)) {
+        setProfileOpen(false)
+      }
+    }
+
+    window.addEventListener('mousedown', handlePointerDown)
+    return () => window.removeEventListener('mousedown', handlePointerDown)
+  }, [profileOpen])
+
+  useEffect(() => {
+    setProfileOpen(false)
+  }, [pathname])
 
   return (
     <AppNavbar className="sticky top-0 z-40">
@@ -129,27 +191,111 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                   <LayoutGrid className="h-4 w-4" />
                   Ke Dashboard
                 </Link>
-                <Link
-                  href={profileHref}
-                  className="hidden items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 lg:inline-flex"
-                  aria-label={`Buka profil ${profileName}`}
-                >
-                  <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[12px] font-semibold text-slate-700">
-                    {profile?.avatarUrl ? (
-                      <img src={profile.avatarUrl} alt={profileName} className="h-full w-full object-cover" />
-                    ) : (
-                      profileInitial
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-semibold text-slate-900">{profileName}</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{profileLabel}</span>
-                      <span className="truncate text-[11px] text-slate-400">{profileMeta}</span>
+                <div className="relative hidden lg:block" ref={profileMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setProfileOpen((value) => !value)}
+                    className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50"
+                    aria-label={`Buka menu profil ${profileName}`}
+                    aria-expanded={profileOpen}
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[12px] font-semibold text-slate-700">
+                      {profile?.avatarUrl ? (
+                        <img src={profile.avatarUrl} alt={profileName} className="h-full w-full object-cover" />
+                      ) : (
+                        profileInitial
+                      )}
                     </div>
-                  </div>
-                  <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
-                </Link>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="max-w-[140px] truncate text-[13px] font-semibold text-slate-900">{profileName}</p>
+                        <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{profileLabel}</span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400">
+                        <span className="truncate">{profileMeta}</span>
+                        {profile?.walletAddress ? (
+                          <span
+                            onClick={(event) => {
+                              event.preventDefault()
+                              event.stopPropagation()
+                              void navigator.clipboard.writeText(profile.walletAddress)
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault()
+                                event.stopPropagation()
+                                void navigator.clipboard.writeText(profile.walletAddress)
+                              }
+                            }}
+                            className="inline-flex h-5 w-5 cursor-pointer items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                            aria-label="Salin alamat wallet"
+                            title="Salin alamat wallet"
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {profileOpen ? (
+                    <div className="absolute right-0 top-[calc(100%+12px)] w-[320px] rounded-2xl border border-slate-200 bg-white p-3">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-[13px] font-semibold text-slate-700">
+                            {profile?.avatarUrl ? (
+                              <img src={profile.avatarUrl} alt={profileName} className="h-full w-full object-cover" />
+                            ) : (
+                              profileInitial
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-[14px] font-semibold text-slate-900">{profileName}</p>
+                              <span className="inline-flex rounded-md bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200">{profileLabel}</span>
+                            </div>
+                            <div className="mt-1 flex items-center gap-1.5 text-[12px] text-slate-500">
+                              <span className="truncate">{profileMeta}</span>
+                              {profile?.walletAddress ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void navigator.clipboard.writeText(profile.walletAddress)}
+                                  className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-white hover:text-slate-700"
+                                  aria-label="Salin alamat wallet"
+                                  title="Salin alamat wallet"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 space-y-1">
+                        {roleMenuItems.map((item) => {
+                          const Icon = item.icon
+                          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => setProfileOpen(false)}
+                              className={`flex items-center gap-3 rounded-xl px-3 py-3 text-[13px] transition-colors ${isActive ? 'bg-slate-100 text-slate-900' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'}`}
+                            >
+                              <Icon className="h-4 w-4 shrink-0" />
+                              <span className="truncate">{item.label}</span>
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
                 <Link
                   href={profileHref}
                   className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-700 transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 lg:hidden"
