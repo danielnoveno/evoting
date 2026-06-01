@@ -195,7 +195,7 @@ export function SuperadminOnboardingTour({ forceStart = false, onComplete }: Onb
         options={{
           showProgress: true,
           buttons: ['back', 'primary', 'skip'],
-          primaryColor: '#6366f1',
+          primaryColor: '#0F172A',
           zIndex: 1000,
         }}
         locale={{
@@ -225,7 +225,7 @@ export function SuperadminOnboardingTour({ forceStart = false, onComplete }: Onb
                   setRun(true)
                   setShowConfirm(false)
                 }}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2 text-[12px] font-semibold text-white hover:bg-indigo-700"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#0F172A] py-2 text-[12px] font-semibold text-white hover:bg-slate-800"
               >
                 <PlayCircle className="h-3.5 w-3.5" />
                 Mulai Tur
@@ -236,7 +236,7 @@ export function SuperadminOnboardingTour({ forceStart = false, onComplete }: Onb
         
         <button
           onClick={() => setShowConfirm(!showConfirm)}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition-transform hover:scale-110"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0F172A] text-white shadow-lg transition-transform hover:scale-110"
           aria-label="Bantuan Superadmin"
         >
           <HelpCircle className="h-6 w-6" />
