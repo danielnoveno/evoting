@@ -195,7 +195,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                   <button
                     type="button"
                     onClick={() => setProfileOpen((value) => !value)}
-                    className="flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 text-left transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50"
+                    className="flex h-12 items-center gap-3 rounded-xl bg-white px-3 text-left transition-colors duration-150 hover:bg-slate-50"
                     aria-label={`Buka menu profil ${profileName}`}
                     aria-expanded={profileOpen}
                   >
@@ -206,13 +206,13 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                         profileInitial
                       )}
                     </div>
-                    <div className="min-w-0 leading-tight">
+                    <div className="min-w-0 flex-1 leading-tight">
                       <div className="flex items-center gap-2">
                         <p className="max-w-[140px] truncate text-[13px] font-semibold text-slate-900">{profileName}</p>
                         <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{profileLabel}</span>
                       </div>
-                      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-400">
-                        <span className="truncate">{profileMeta}</span>
+                      <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-slate-400">
+                        <span className="min-w-0 truncate rounded-md bg-slate-50 px-2 py-0.5 text-slate-500">{profileMeta}</span>
                         {profile?.walletAddress ? (
                           <span
                             onClick={(event) => {
