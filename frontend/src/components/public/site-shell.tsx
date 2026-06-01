@@ -1,14 +1,16 @@
 'use client'
 
-import { ArrowLeft, Bell, CopyCheck, ExternalLink, Menu, X } from 'lucide-react'
+import { ArrowLeft, Bell, CopyCheck, ExternalLink, LayoutGrid, Menu, UserCircle2, X } from 'lucide-react'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
 import { AppNavbar, AppFooter } from '@/components/ui/app-bar'
-import { useToast } from '@/components/ui/toast-provider'
-import { ConnectWalletButton } from '@/components/wallet/ConnectWalletButton'
 import { AuditShortcutModal } from './audit-shortcut-modal'
 import { NotificationModal } from './notification-modal'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
+import { useAuthSession } from '@/hooks/use-auth-session'
+import { useCurrentProfile } from '@/hooks/use-profile'
+import { formatWallet } from '@/lib/voter-store'
+import type { AppRole } from '@/lib/repositories/types'
 
 const navItems = [
   { href: '/', label: 'Beranda' },
@@ -16,12 +18,48 @@ const navItems = [
   { href: '/pemilihan', label: 'Pemilihan' },
 ]
 
+function getDashboardHref(role: AppRole) {
+  if (role === 'super_admin') return '/superadmin'
+  if (role === 'admin') return '/admin'
+  return '/pemilih'
+}
+
+function getProfileHref(role: AppRole) {
+  if (role === 'super_admin') return '/superadmin/profil'
+  if (role === 'admin') return '/admin/profil'
+  return '/pemilih/profil'
+}
+
+function getRoleLabel(role: AppRole) {
+  if (role === 'super_admin') return 'Superadmin'
+  if (role === 'admin') return 'Admin'
+  return 'Pemilih'
+}
+
+function getProfileInitial(name: string | null | undefined, role: AppRole) {
+  const source = name?.trim() || getRoleLabel(role)
+  const parts = source.split(/\s+/).filter(Boolean)
+  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || 'VT'
+}
+
 export function PublicNavbar({ activePath, minimal = false }: { activePath: string; minimal?: boolean }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [auditOpen, setAuditOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
-  const { showToast } = useToast()
   const { hasUnread } = useNotificationBadge()
+  const authSession = useAuthSession()
+  const currentProfile = useCurrentProfile()
+
+  const hasSession = Boolean(authSession.data?.user)
+  const profile = currentProfile.data
+  const profileReady = hasSession && Boolean(profile)
+  const authLoading = authSession.isLoading || (hasSession && currentProfile.isLoading)
+  const dashboardHref = profile ? getDashboardHref(profile.role) : '/hubungkan-dompet'
+  const profileHref = profile ? getProfileHref(profile.role) : '/hubungkan-dompet'
+  const profileLabel = profile ? getRoleLabel(profile.role) : 'Akun'
+  const profileName = profile?.displayName?.trim() || profileLabel
+  const profileMeta = profile?.walletAddress ? formatWallet(profile.walletAddress) : profile?.email?.trim() || 'Sesi aktif'
+  const profileInitial = profile ? getProfileInitial(profile.displayName, profile.role) : 'VT'
 
   return (
     <AppNavbar className="sticky top-0 z-40">
@@ -80,7 +118,54 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                 </span>
               )}
             </button>
-            <ConnectWalletButton />
+            {authLoading ? (
+              <div className="hidden h-10 w-[220px] animate-pulse rounded-xl border border-slate-200 bg-slate-100 md:block" />
+            ) : profileReady ? (
+              <>
+                <Link
+                  href={dashboardHref}
+                  className="hidden h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-900 transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 md:inline-flex"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                  Dashboard
+                </Link>
+                <Link
+                  href={profileHref}
+                  className="hidden items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 lg:inline-flex"
+                  aria-label={`Buka profil ${profileName}`}
+                >
+                  <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[12px] font-semibold text-slate-700">
+                    {profile?.avatarUrl ? (
+                      <img src={profile.avatarUrl} alt={profileName} className="h-full w-full object-cover" />
+                    ) : (
+                      profileInitial
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-semibold text-slate-900">{profileName}</p>
+                    <p className="truncate text-[11px] uppercase tracking-[0.06em] text-slate-400">{profileLabel} · {profileMeta}</p>
+                  </div>
+                </Link>
+                <Link
+                  href={profileHref}
+                  className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-slate-700 transition-colors duration-150 hover:border-slate-300 hover:bg-slate-50 lg:hidden"
+                  aria-label={`Buka profil ${profileName}`}
+                >
+                  {profile?.avatarUrl ? (
+                    <img src={profile.avatarUrl} alt={profileName} className="h-full w-full object-cover" />
+                  ) : (
+                    <UserCircle2 className="h-5 w-5" />
+                  )}
+                </Link>
+              </>
+            ) : (
+              <Link
+                href="/hubungkan-dompet"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-5 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-[#1E293B]"
+              >
+                Masuk
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => setMobileOpen((v) => !v)}
@@ -94,12 +179,40 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
       </div>
 
       <AuditShortcutModal open={auditOpen} onClose={() => setAuditOpen(false)} />
-      <NotificationModal open={notifOpen} onClose={() => setNotifOpen(false)} />
+      <NotificationModal
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        profileId={profile?.id}
+        walletAddress={profile?.walletAddress}
+      />
 
       {/* Mobile navigation menu */}
       {!minimal && mobileOpen ? (
         <nav className="border-t border-slate-100 bg-white px-4 pb-4 pt-3 md:hidden">
           <div className="flex flex-col gap-1">
+            {profileReady ? (
+              <div className="mb-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-[13px] font-semibold text-slate-900">{profileName}</p>
+                <p className="mt-1 text-[11px] uppercase tracking-[0.06em] text-slate-400">{profileLabel}</p>
+                <p className="mt-2 text-[12px] text-slate-600">{profileMeta}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Link
+                    href={dashboardHref}
+                    onClick={() => setMobileOpen(false)}
+                    className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-900"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    href={profileHref}
+                    onClick={() => setMobileOpen(false)}
+                    className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-900"
+                  >
+                    Profil
+                  </Link>
+                </div>
+              </div>
+            ) : null}
             {navItems.map((item) => {
               const isActive = activePath === item.href
               return (
