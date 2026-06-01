@@ -21,12 +21,16 @@ export function OnboardingTour({ forceStart = false, onComplete }: OnboardingTou
   useEffect(() => {
     setMounted(true)
     const isCompleted = localStorage.getItem(TOUR_STORAGE_KEY)
-    if (!isCompleted || forceStart) {
+
+    // Auto-start ONLY on dashboard (/admin) if not completed
+    const shouldAutoStart = !isCompleted && pathname === '/admin'
+
+    if (shouldAutoStart || forceStart) {
       // Delay to ensure components are rendered
       const timer = setTimeout(() => setRun(true), 1500)
       return () => clearTimeout(timer)
     }
-  }, [forceStart])
+  }, [forceStart, pathname])
 
   const handleJoyrideCallback = (data: EventData) => {
     const { status } = data

@@ -21,11 +21,15 @@ export function SuperadminOnboardingTour({ forceStart = false, onComplete }: Onb
   useEffect(() => {
     setMounted(true)
     const isCompleted = localStorage.getItem(TOUR_STORAGE_KEY)
-    if (!isCompleted || forceStart) {
+    
+    // Auto-start ONLY on dashboard (/superadmin) if not completed
+    const shouldAutoStart = !isCompleted && pathname === '/superadmin'
+
+    if (shouldAutoStart || forceStart) {
       const timer = setTimeout(() => setRun(true), 1500)
       return () => clearTimeout(timer)
     }
-  }, [forceStart])
+  }, [forceStart, pathname])
 
   const handleJoyrideCallback = (data: EventData) => {
     const { status } = data
