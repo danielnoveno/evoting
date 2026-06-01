@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Copy, Loader2, Mail, Power, Search, UserPlus, ShieldAlert, CheckCircle2, Clock3 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Copy, Loader2, Mail, Power, Search, UserPlus, ShieldAlert, CheckCircle2, Clock3, ChevronsUpDown, ChevronUp, ChevronDown } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -45,6 +45,9 @@ import { useCurrentProfile } from '@/hooks/use-profile'
 
 type TabKey = 'daftar' | 'tambah'
 
+type SortField = 'name' | 'email' | 'wallet' | 'status'
+type SortDirection = 'asc' | 'desc' | null
+
 const initialFormData = {
   name: '',
   email: '',
@@ -78,6 +81,8 @@ function SuperadminManagementContent() {
   const [lastEmailError, setLastEmailError] = useState<string | null>(null)
   const [selectedEmails, setSelectedEmails] = useState<string[]>([])
   const [bulkActionLoading, setBulkActionLoading] = useState<'send' | 'deactivate' | null>(null)
+  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null)
   const [bulkDeactivateDialogOpen, setBulkDeactivateDialogOpen] = useState(false)
   const createAdminInviteMutation = useCreateAdminInvite()
   const resendInviteMutation = useResendAdminInvite()
@@ -113,13 +118,58 @@ function SuperadminManagementContent() {
 
   const filteredSuperadmins = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()
-    return superadmins.filter((admin) => {
+    const filtered = superadmins.filter((admin) => {
       if (!normalizedSearch) return true
       return (admin.displayName ?? 'super admin').toLowerCase().includes(normalizedSearch)
         || admin.email.toLowerCase().includes(normalizedSearch)
         || (admin.walletAddress ?? admin.profile?.walletAddress ?? 'belum ditautkan').toLowerCase().includes(normalizedSearch)
     })
-  }, [searchTerm, superadmins])
+
+    if (!sortField || !sortDirection) return filtered
+
+    return [...filtered].sort((a, b) => {
+      let aVal = ''
+      let bVal = ''
+      if (sortField === 'name') {
+        aVal = (a.displayName ?? 'super admin').toLowerCase()
+        bVal = (b.displayName ?? 'super admin').toLowerCase()
+      } else if (sortField === 'email') {
+        aVal = a.email.toLowerCase()
+        bVal = b.email.toLowerCase()
+      } else if (sortField === 'wallet') {
+        aVal = (a.walletAddress ?? a.profile?.walletAddress ?? '').toLowerCase()
+        bVal = (b.walletAddress ?? b.profile?.walletAddress ?? '').toLowerCase()
+      } else if (sortField === 'status') {
+        const aActive = Boolean(a.profile) || a.registryStatus === 'active'
+        const bActive = Boolean(b.profile) || b.registryStatus === 'active'
+        aVal = aActive ? 'aktif' : 'menunggu'
+        bVal = bActive ? 'aktif' : 'menunggu'
+      }
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [searchTerm, superadmins, sortField, sortDirection])
+
+  const handleSort = (field: SortField) => {
+    if (sortField !== field) {
+      setSortField(field)
+      setSortDirection('asc')
+    } else if (sortDirection === 'asc') {
+      setSortDirection('desc')
+    } else if (sortDirection === 'desc') {
+      setSortField(null)
+      setSortDirection(null)
+    } else {
+      setSortDirection('asc')
+    }
+  }
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field || !sortDirection) return <ChevronsUpDown className="h-3.5 w-3.5 text-slate-400" />
+    if (sortDirection === 'asc') return <ChevronUp className="h-3.5 w-3.5 text-slate-700" />
+    return <ChevronDown className="h-3.5 w-3.5 text-slate-700" />
+  }
 
   const selectedFilteredCount = filteredSuperadmins.filter((admin) => selectedEmails.includes(admin.email)).length
   const totalPages = Math.max(1, Math.ceil(filteredSuperadmins.length / pageSize))
@@ -377,9 +427,36 @@ function SuperadminManagementContent() {
                         className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                       />
                     </DataTableHeaderCell>
-                    <DataTableHeaderCell>Profil Superadmin</DataTableHeaderCell>
-                    <DataTableHeaderCell>Wallet Address</DataTableHeaderCell>
-                    <DataTableHeaderCell>Status Otoritas</DataTableHeaderCell>
+                    <DataTableHeaderCell>
+                      <button
+                        type="button"
+                        onClick={() => handleSort('name')}
+                        className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                      >
+                        Profil Superadmin
+                        <SortIcon field="name" />
+                      </button>
+                    </DataTableHeaderCell>
+                    <DataTableHeaderCell>
+                      <button
+                        type="button"
+                        onClick={() => handleSort('wallet')}
+                        className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                      >
+                        Wallet Address
+                        <SortIcon field="wallet" />
+                      </button>
+                    </DataTableHeaderCell>
+                    <DataTableHeaderCell>
+                      <button
+                        type="button"
+                        onClick={() => handleSort('status')}
+                        className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                      >
+                        Status Otoritas
+                        <SortIcon field="status" />
+                      </button>
+                    </DataTableHeaderCell>
                     <DataTableHeaderCell className="text-center">Aksi</DataTableHeaderCell>
                   </DataTableHeaderRow>
                 </DataTableHead>
