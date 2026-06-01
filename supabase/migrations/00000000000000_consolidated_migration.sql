@@ -893,3 +893,77 @@ grant execute on all functions in schema app to authenticated;
 
 grant usage on all sequences in schema app to anon;
 grant execute on all functions in schema app to anon;
+
+grant select, insert, update, delete on all tables in schema app to anon, authenticated;
+grant usage, select on all sequences in schema app to anon, authenticated;
+grant select on all tables in schema indexer to anon, authenticated;
+grant usage, select on all sequences in schema indexer to anon, authenticated;
+
+--
+-- Consolidated follow-up migrations
+-- Includes former 20260531000001_create_platform_settings.sql
+-- and 20260531000002_activation_notification.sql
+--
+
+create table if not exists app.platform_settings (
+    id uuid primary key default gen_random_uuid(),
+    platform_name text not null default 'VoteIn e-Voting',
+    default_language text not null default 'Bahasa Indonesia',
+    network_name text not null default 'Base Sepolia',
+    rpc_url text,
+    registry_address text,
+    gas_limit integer not null default 50,
+    updated_at timestamptz default timezone('utc', now())
+);
+
+alter table app.platform_settings enable row level security;
+
+drop policy if exists "platform_settings_select_all" on app.platform_settings;
+create policy "platform_settings_select_all" on app.platform_settings
+    for select using (true);
+
+drop policy if exists "platform_settings_manage_superadmin" on app.platform_settings;
+create policy "platform_settings_manage_superadmin" on app.platform_settings
+    for all using (
+        app.has_role(array['super_admin'::app.app_role])
+    );
+
+grant select, insert, update, delete on app.platform_settings to anon, authenticated;
+
+drop trigger if exists set_platform_settings_updated_at on app.platform_settings;
+create trigger set_platform_settings_updated_at
+before update on app.platform_settings
+for each row execute function app.set_updated_at();
+
+insert into app.platform_settings (platform_name, default_language, network_name, gas_limit)
+values ('VoteIn e-Voting', 'Bahasa Indonesia', 'Base Sepolia', 50)
+on conflict do nothing;
+
+create or replace function app.on_profile_activation_notify()
+returns trigger as $$
+begin
+    insert into app.notification_jobs (
+        target_profile_id,
+        channel,
+        template_key,
+        payload
+    ) values (
+        new.id,
+        'in_app',
+        'ACCOUNT_ACTIVATED',
+        jsonb_build_object(
+            'title', 'Akun Berhasil Diaktifkan',
+            'display_name', new.display_name,
+            'email', new.email,
+            'message', 'Akun Anda telah berhasil diaktifkan. Anda kini dapat berpartisipasi dalam ekosistem e-voting dan mengelola data pemilihan.'
+        )
+    );
+    return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_profile_activated on app.app_profiles;
+create trigger on_profile_activated
+after insert on app.app_profiles
+for each row
+execute function app.on_profile_activation_notify();

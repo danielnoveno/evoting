@@ -29,8 +29,11 @@ DROP POLICY IF EXISTS "admin_registry_update_superadmin" ON app.admin_registry;
 DROP POLICY IF EXISTS "admin_registry_delete_superadmin" ON app.admin_registry;
 DROP POLICY IF EXISTS "super_admin_all_risk_alerts" ON app.risk_alerts;
 DROP POLICY IF EXISTS "super_admin_all_blocked_entities" ON app.blocked_entities;
+DROP POLICY IF EXISTS "platform_settings_select_all" ON app.platform_settings;
+DROP POLICY IF EXISTS "platform_settings_manage_superadmin" ON app.platform_settings;
 
 -- Drop all tables in schema 'app' and 'indexer'
+DROP TABLE IF EXISTS app.platform_settings CASCADE;
 DROP TABLE IF EXISTS app.proposal_candidates CASCADE;
 DROP TABLE IF EXISTS app.proposal_whitelist_entries CASCADE;
 DROP TABLE IF EXISTS app.whitelist_import_jobs CASCADE;
