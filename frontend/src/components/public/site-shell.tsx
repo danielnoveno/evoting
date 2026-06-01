@@ -53,6 +53,19 @@ function truncateMiddle(value: string, maxLength = 33) {
   return `${value.slice(0, startLength)}...${value.slice(-endLength)}`
 }
 
+function getResponsiveAddress(value: string, width: number) {
+  if (!value) return value
+
+  if (!width || width <= 0) return truncateMiddle(value, 33)
+
+  const reservedPixels = 28
+  const estimatedCharWidth = 6.2
+  const rawMaxChars = Math.floor((width - reservedPixels) / estimatedCharWidth)
+  const safeMaxChars = Math.max(18, Math.min(value.length, rawMaxChars))
+
+  return truncateMiddle(value, safeMaxChars)
+}
+
 type RoleMenuItem = {
   href: string
   label: string
@@ -97,12 +110,16 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
   const [auditOpen, setAuditOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [navbarAddressWidth, setNavbarAddressWidth] = useState(0)
+  const [mobileAddressWidth, setMobileAddressWidth] = useState(0)
   const { hasUnread } = useNotificationBadge()
   const authSession = useAuthSession()
   const currentProfile = useCurrentProfile()
   const pathname = usePathname()
   const router = useRouter()
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
+  const navbarAddressRef = useRef<HTMLSpanElement | null>(null)
+  const mobileAddressRef = useRef<HTMLSpanElement | null>(null)
   const logoutSession = useLogoutSession()
 
   const hasSession = Boolean(authSession.data?.user)
@@ -114,7 +131,10 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
   const profileLabel = profile ? getRoleLabel(profile.role) : 'Akun'
   const profileName = profile?.displayName?.trim() || profileLabel
   const profileMeta = profile?.walletAddress
-    ? truncateMiddle(profile.walletAddress, 33)
+    ? getResponsiveAddress(profile.walletAddress, navbarAddressWidth)
+    : profile?.email?.trim() || 'Sesi aktif'
+  const mobileProfileMeta = profile?.walletAddress
+    ? getResponsiveAddress(profile.walletAddress, mobileAddressWidth)
     : profile?.email?.trim() || 'Sesi aktif'
   const profileInitial = profile ? getProfileInitial(profile.displayName, profile.role) : 'VT'
   const roleMenuItems = useMemo(() => (profile ? getRoleMenuItems(profile.role) : []), [profile])
@@ -135,6 +155,46 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
   useEffect(() => {
     setProfileOpen(false)
   }, [pathname])
+
+  useEffect(() => {
+    const element = navbarAddressRef.current
+    if (!element) return
+
+    const updateWidth = () => {
+      setNavbarAddressWidth(element.clientWidth)
+    }
+
+    updateWidth()
+
+    const observer = new ResizeObserver(() => updateWidth())
+    observer.observe(element)
+
+    window.addEventListener('resize', updateWidth)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updateWidth)
+    }
+  }, [profileReady, profileName, profileLabel])
+
+  useEffect(() => {
+    const element = mobileAddressRef.current
+    if (!element) return
+
+    const updateWidth = () => {
+      setMobileAddressWidth(element.clientWidth)
+    }
+
+    updateWidth()
+
+    const observer = new ResizeObserver(() => updateWidth())
+    observer.observe(element)
+
+    window.addEventListener('resize', updateWidth)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updateWidth)
+    }
+  }, [profileReady, mobileOpen, profileName, profileLabel])
 
   return (
     <AppNavbar className="sticky top-0 z-40">
@@ -170,7 +230,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
         </div>
 
         {!minimal ? (
-          <div className="flex items-center gap-2 border-l border-slate-100 pl-3 md:gap-3 md:pl-5">
+          <div className="flex min-w-0 items-center gap-2 border-l border-slate-100 pl-3 md:gap-3 md:pl-5">
             <button
               type="button"
               onClick={() => setAuditOpen(true)}
@@ -204,8 +264,8 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                   <LayoutGrid className="h-4 w-4" />
                   Ke Dashboard
                 </Link>
-                <div className="relative hidden lg:flex lg:items-center lg:gap-1" ref={profileMenuRef}>
-                  <div className="flex h-12 items-center gap-3 rounded-xl bg-white px-3 text-left">
+                <div className="relative hidden min-w-0 max-w-[360px] lg:flex lg:items-center lg:gap-1 xl:max-w-[420px]" ref={profileMenuRef}>
+                  <div className="flex min-w-0 h-12 items-center gap-3 rounded-xl bg-white px-3 text-left">
                     <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-[12px] font-semibold text-slate-700">
                       {profile?.avatarUrl ? (
                         <img src={profile.avatarUrl} alt={profileName} className="h-full w-full object-cover" />
@@ -214,12 +274,12 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                       )}
                     </div>
                     <div className="min-w-0 flex-1 leading-tight">
-                      <div className="flex items-center gap-2">
-                        <p className="max-w-[140px] truncate text-[13px] font-semibold text-slate-900">{profileName}</p>
-                        <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{profileLabel}</span>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <p className="min-w-0 flex-1 truncate text-[13px] font-semibold text-slate-900">{profileName}</p>
+                        <span className="inline-flex shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{profileLabel}</span>
                       </div>
                       <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-slate-400">
-                        <span className="min-w-0 rounded-md bg-slate-50 px-2 py-0.5 font-mono text-[10px] text-slate-500">{profileMeta}</span>
+                        <span ref={navbarAddressRef} className="min-w-0 flex-1 font-mono text-[10px] text-slate-500">{profileMeta}</span>
                         {profile?.walletAddress ? (
                           <span
                             onClick={(event) => {
@@ -374,7 +434,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
               <div className="mb-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <p className="text-[13px] font-semibold text-slate-900">{profileName}</p>
                 <p className="mt-1 text-[11px] uppercase tracking-[0.06em] text-slate-400">{profileLabel}</p>
-                <p className="mt-2 text-[12px] text-slate-600">{profileMeta}</p>
+                <span ref={mobileAddressRef} className="mt-2 block min-w-0 font-mono text-[12px] text-slate-600">{mobileProfileMeta}</span>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <Link
                     href={dashboardHref}
