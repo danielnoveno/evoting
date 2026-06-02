@@ -491,7 +491,7 @@ function SuperadminManagementContent() {
                             <RowActionMenu
                               buttonLabel={`Aksi untuk ${admin.displayName || admin.email}`}
                               items={[
-                                { label: 'Lihat Detail', onClick: () => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`) },
+                                { label: 'Detail', onClick: () => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`) },
                                 ...(!isActive ? [{
                                   label: 'Kirim Ulang Email Aktivasi',
                                   onClick: () => {
@@ -510,7 +510,7 @@ function SuperadminManagementContent() {
                                   },
                                   disabled: resendInviteMutation.isPending,
                                 }] : []),
-                                { label: 'Edit Superadmin', onClick: () => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}/edit`) },
+                                { label: 'Edit', onClick: () => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}/edit`) },
                               ]}
                             />
                           </DataTableCell>

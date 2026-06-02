@@ -171,12 +171,14 @@ export function RowActionMenu({ items, buttonLabel }: { items: RowActionItem[]; 
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null)
 
   useEffect(() => {
     if (!open) return
     const handlePointer = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false)
+      const target = event.target as Node
+      if (!containerRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false)
     }
     window.addEventListener('mousedown', handlePointer)
     return () => window.removeEventListener('mousedown', handlePointer)
@@ -218,6 +220,7 @@ export function RowActionMenu({ items, buttonLabel }: { items: RowActionItem[]; 
       </button>
       {open && menuPosition ? createPortal(
         <div
+          ref={menuRef}
           className="fixed z-[100] min-w-[180px] rounded-2xl border border-slate-200 bg-white p-2"
           style={{ top: menuPosition.top, left: menuPosition.left }}
         >
