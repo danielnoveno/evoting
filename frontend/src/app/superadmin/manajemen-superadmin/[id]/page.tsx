@@ -89,6 +89,10 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
+              <SuperadminToolbarButton variant="secondary" onClick={() => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(seedRecord.email)}/edit`)}>
+                <Pencil className="h-4 w-4" />
+                Edit Superadmin
+              </SuperadminToolbarButton>
               <SuperadminToolbarButton variant="primary" onClick={() => showToast({ tone: 'success', title: 'Fitur log segera hadir', description: 'Log aktivitas on-chain sedang dalam pengembangan.' })}>
                 <ShieldCheck className="h-4 w-4" />
                 Audit Log

@@ -510,7 +510,7 @@ function SuperadminManagementContent() {
                                   },
                                   disabled: resendInviteMutation.isPending,
                                 }] : []),
-                                { label: 'Pilih Superadmin', onClick: () => toggleSelected(admin.email) },
+                                { label: 'Edit Superadmin', onClick: () => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}/edit`) },
                               ]}
                             />
                           </DataTableCell>
@@ -586,7 +586,7 @@ function SuperadminManagementContent() {
               </label>
 
               <label className="block">
-                <SuperadminFieldLabel>Email Institusi</SuperadminFieldLabel>
+               <SuperadminFieldLabel>Email Institusi</SuperadminFieldLabel>
                 <SuperadminTextInput
                   value={formData.email}
                   onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
@@ -602,25 +602,25 @@ function SuperadminManagementContent() {
                   placeholder="0x..."
                 />
                 <p className="mt-2 text-[12px] text-slate-500 italic">
-                  * Alamat ini akan digunakan untuk menandatangani transaksi blockchain penting.
-                </p>
-              </label>
-            </div>
-          </AppSectionCard>
+                   * Alamat ini akan digunakan untuk menandatangani transaksi blockchain penting.
+                 </p>
+               </label>
+             </div>
+           </AppSectionCard>
 
-          <section className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={() => updateTab('daftar')}
-              className="inline-flex h-12 items-center justify-center rounded-2xl px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-100"
-            >
-              Batal
-            </button>
-            <SuperadminToolbarButton variant="primary" onClick={handleCreateSuperAdmin} disabled={createAdminInviteMutation.isPending}>
-              {createAdminInviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {createAdminInviteMutation.isPending ? 'Menyiapkan Undangan' : 'Kirim Undangan Otoritas'}
-            </SuperadminToolbarButton>
-          </section>
+           <section className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+             <button
+                type="button"
+                onClick={() => updateTab('daftar')}
+                className="inline-flex h-12 items-center justify-center rounded-2xl px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-100"
+              >
+                Batal
+              </button>
+              <SuperadminToolbarButton variant="primary" onClick={handleCreateSuperAdmin} disabled={createAdminInviteMutation.isPending}>
+                {createAdminInviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {createAdminInviteMutation.isPending ? 'Menyiapkan Undangan' : 'Kirim Undangan Otoritas'}
+              </SuperadminToolbarButton>
+            </section>
         </StaggerContainer>
       )}
 

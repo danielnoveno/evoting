@@ -434,10 +434,18 @@ export async function updateAdminRegistry(currentEmail: string, input: AdminRegi
   const nextEmail = normalizeEmail(input.email)
   if (!oldEmail || !nextEmail) throw new RepositoryError('Email admin wajib diisi.')
 
+  const { data: currentRecord, error: currentError } = await client
+    .schema('app')
+    .from('admin_registry')
+    .select('*')
+    .eq('email', oldEmail)
+    .single()
+
+  if (currentError || !currentRecord) throw new RepositoryError('Data admin yang ingin diperbarui tidak ditemukan.')
+
   const actorProfileId = await getCurrentProfileId()
   const payload: Database['app']['Tables']['admin_registry']['Update'] = {
     email: nextEmail,
-    assigned_role: 'admin',
     display_name: input.displayName?.trim() || null,
     organization_name: input.organizationName?.trim() || null,
     access_scope: input.accessScope ?? 'all',
@@ -461,7 +469,7 @@ export async function updateAdminRegistry(currentEmail: string, input: AdminRegi
     await syncProfileRoleForEmail(oldEmail, 'voter')
   }
 
-  await syncProfileRoleForEmail(nextEmail, payload.status === 'inactive' ? 'voter' : 'admin', payload.display_name)
+  await syncProfileRoleForEmail(nextEmail, payload.status === 'inactive' ? 'voter' : currentRecord.assigned_role, payload.display_name)
 
   return mapAdminRegistryRow(data)
 }
