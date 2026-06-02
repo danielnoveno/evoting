@@ -354,10 +354,11 @@ function SuperadminAdminManagementContent() {
                 ))}
               </div>
             </div>
-          )}
-        </ScrollReveal>
+          </div>
+        )}
+      </ScrollReveal>
 
-      {activeTab === 'daftar' && selectedAdmins.length > 0 ? (
+      {activeTab === 'daftar' && selectedAdmins.length > 0 && (
         <SelectedCounter
           title={`${selectedAdmins.length} admin dipilih`}
           description={`${selectedFilteredCount} dari ${filteredAdmins.length} hasil pencarian/filter sedang dipilih. Total admin: ${admins.length}.`}
@@ -394,8 +395,10 @@ function SuperadminAdminManagementContent() {
             </>
           )}
         />
-      ) : null}
+      )}
 
+      {activeTab === 'daftar' ? (
+        <>
           <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8">
             <DataTableShell className="shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
             <DataTableToolbar className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

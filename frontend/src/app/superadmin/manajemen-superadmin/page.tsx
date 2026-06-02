@@ -383,198 +383,198 @@ function SuperadminManagementContent() {
 
           <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8">
             <DataTableShell className="shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
-            <DataTableToolbar className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <DataTableCount
-                title="Daftar Otoritas Superadmin"
-                description={`Menampilkan ${filteredSuperadmins.length} dari ${superadmins.length} akun.`}
-              />
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Cari superadmin..."
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black lg:w-64"
-                  />
-                </div>
-                
-                <div className="h-8 w-px bg-slate-100 hidden sm:block" />
-
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px] text-slate-500">Baris:</span>
-                  <select
-                    value={pageSize}
-                    onChange={(event) => setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
-                    className="h-10 rounded-xl border border-slate-200 bg-white px-2 text-[13px] font-semibold text-slate-900 focus:outline-none"
-                  >
-                    {PAGE_SIZE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="h-8 w-px bg-slate-100 hidden sm:block" />
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <div className="flex flex-col items-center min-w-[48px]">
-                    <span className="text-[11px] font-bold text-slate-900 leading-none">{currentPage}</span>
-                    <span className="mt-1 text-[10px] text-slate-400 leading-none">dari {totalPages}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </DataTableToolbar>
-            <DataTableViewport>
-              <DataTable>
-                <DataTableHead>
-                  <DataTableHeaderRow>
-                    <DataTableHeaderCell className="w-[56px]">
-                      <input
-                        type="checkbox"
-                        checked={allSelected}
-                        onChange={toggleSelectAll}
-                        aria-label="Pilih semua superadmin"
-                        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                      />
-                    </DataTableHeaderCell>
-                    <DataTableHeaderCell>
-                      <button
-                        type="button"
-                        onClick={() => handleSort('name')}
-                        className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors"
-                      >
-                        Profil Superadmin
-                        <SortIcon field="name" />
-                      </button>
-                    </DataTableHeaderCell>
-                    <DataTableHeaderCell>
-                      <button
-                        type="button"
-                        onClick={() => handleSort('wallet')}
-                        className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors"
-                      >
-                        Wallet Address
-                        <SortIcon field="wallet" />
-                      </button>
-                    </DataTableHeaderCell>
-                    <DataTableHeaderCell>
-                      <button
-                        type="button"
-                        onClick={() => handleSort('status')}
-                        className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors"
-                      >
-                        Status Otoritas
-                        <SortIcon field="status" />
-                      </button>
-                    </DataTableHeaderCell>
-                    <DataTableHeaderCell className="text-center">Aksi</DataTableHeaderCell>
-                  </DataTableHeaderRow>
-                </DataTableHead>
-                <DataTableBody>
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <DataTableRow key={i}>
-                    <DataTableCell colSpan={5}>
-                      <div className="h-10 animate-pulse rounded-2xl bg-slate-100" />
-                    </DataTableCell>
-                  </DataTableRow>
-                ))
-              ) : paginatedSuperadmins.length > 0 ? paginatedSuperadmins.map((admin) => {
-                const isActive = Boolean(admin.profile) || admin.registryStatus === 'active'
-
-                return (
-                <DataTableRow
-                  key={admin.email}
-                  className="cursor-pointer"
-                  onClick={() => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`)}
-                >
-                  <DataTableCell className="w-[56px]" onClick={(event) => { event.preventDefault(); event.stopPropagation() }}>
+              <DataTableToolbar className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <DataTableCount
+                  title="Daftar Otoritas Superadmin"
+                  description={`Menampilkan ${filteredSuperadmins.length} dari ${superadmins.length} akun.`}
+                />
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
-                      type="checkbox"
-                      checked={selectedEmails.includes(admin.email)}
-                      onChange={() => toggleSelected(admin.email)}
-                      aria-label={`Pilih superadmin ${admin.displayName || admin.email}`}
-                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                      type="text"
+                      placeholder="Cari superadmin..."
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black lg:w-64"
                     />
-                  </DataTableCell>
-                  <DataTableCell>
-                    <div className="flex items-center gap-4">
-                    <SuperadminAvatar initials={getInitials(admin.displayName || 'SA')} />
-                    <div>
-                      <p className="text-[16px] font-semibold text-slate-900">{admin.displayName || 'Super Admin'}</p>
-                      <p className="mt-1 font-mono text-[13px] text-slate-500">{admin.email}</p>
+                  </div>
+                  
+                  <div className="h-8 w-px bg-slate-100 hidden sm:block" />
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] text-slate-500">Baris:</span>
+                    <select
+                      value={pageSize}
+                      onChange={(event) => setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
+                      className="h-10 rounded-xl border border-slate-200 bg-white px-2 text-[13px] font-semibold text-slate-900 focus:outline-none"
+                    >
+                      {PAGE_SIZE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="h-8 w-px bg-slate-100 hidden sm:block" />
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <div className="flex flex-col items-center min-w-[48px]">
+                      <span className="text-[11px] font-bold text-slate-900 leading-none">{currentPage}</span>
+                      <span className="mt-1 text-[10px] text-slate-400 leading-none">dari {totalPages}</span>
                     </div>
-                    </div>
-                  </DataTableCell>
-                  <DataTableCell>
-                    <p className="font-mono text-[13px] text-slate-600 truncate">{admin.walletAddress || admin.profile?.walletAddress || 'Belum ditautkan'}</p>
-                  </DataTableCell>
-                  <DataTableCell>
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                      {isActive ? <CheckCircle2 className="h-3 w-3" /> : <Clock3 className="h-3 w-3" />}
-                      {isActive ? 'Super Admin Aktif' : 'Menunggu Aktivasi'}
-                    </span>
-                  </DataTableCell>
-                  <DataTableCell className="text-center" onClick={(event) => { event.preventDefault(); event.stopPropagation() }}>
-                    <RowActionMenu
-                      buttonLabel={`Aksi untuk ${admin.displayName || admin.email}`}
-                      items={[
-                        { label: 'Lihat Detail', onClick: () => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`) },
-                        ...(!isActive ? [{
-                          label: 'Kirim Ulang Email Aktivasi',
-                          onClick: () => {
-                            resendInviteMutation.mutate(admin.email, {
-                              onSuccess: (result) => {
-                                showToast({
-                                  tone: result.emailStatus === 'sent' ? 'success' : 'info',
-                                  title: result.emailStatus === 'sent' ? 'Email Terkirim' : 'Email Gagal',
-                                  description: result.emailStatus === 'sent' ? 'Link aktivasi sudah dikirim ulang.' : result.emailError ?? 'Coba lagi nanti.',
-                                })
-                              },
-                              onError: (err) => {
-                                showToast({ tone: 'error', title: 'Kirim Ulang Gagal', description: getRepositoryErrorMessage(err) })
-                              },
-                            })
-                          },
-                          disabled: resendInviteMutation.isPending,
-                        }] : []),
-                        { label: 'Pilih Superadmin', onClick: () => toggleSelected(admin.email) },
-                      ]}
-                    />
-                  </DataTableCell>
-                </DataTableRow>
-                )
-              }) : (
-                <DataTableEmpty colSpan={5} title="Belum ada superadmin lain" description="Hanya akun Anda yang terdaftar sebagai otoritas tertinggi saat ini." />
-              )}
-                </DataTableBody>
-              </DataTable>
-            </DataTableViewport>
-            <DataTableFooter
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={filteredSuperadmins.length}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              label="superadmin"
-            />
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </DataTableToolbar>
+              <DataTableViewport>
+                <DataTable>
+                  <DataTableHead>
+                    <DataTableHeaderRow>
+                      <DataTableHeaderCell className="w-[56px]">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={toggleSelectAll}
+                          aria-label="Pilih semua superadmin"
+                          className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                        />
+                      </DataTableHeaderCell>
+                      <DataTableHeaderCell>
+                        <button
+                          type="button"
+                          onClick={() => handleSort('name')}
+                          className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                        >
+                          Profil Superadmin
+                          <SortIcon field="name" />
+                        </button>
+                      </DataTableHeaderCell>
+                      <DataTableHeaderCell>
+                        <button
+                          type="button"
+                          onClick={() => handleSort('wallet')}
+                          className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                        >
+                          Wallet Address
+                          <SortIcon field="wallet" />
+                        </button>
+                      </DataTableHeaderCell>
+                      <DataTableHeaderCell>
+                        <button
+                          type="button"
+                          onClick={() => handleSort('status')}
+                          className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                        >
+                          Status Otoritas
+                          <SortIcon field="status" />
+                        </button>
+                      </DataTableHeaderCell>
+                      <DataTableHeaderCell className="text-center">Aksi</DataTableHeaderCell>
+                    </DataTableHeaderRow>
+                  </DataTableHead>
+                  <DataTableBody>
+                    {isLoading ? (
+                      Array.from({ length: 3 }).map((_, i) => (
+                        <DataTableRow key={i}>
+                          <DataTableCell colSpan={5}>
+                            <div className="h-10 animate-pulse rounded-2xl bg-slate-100" />
+                          </DataTableCell>
+                        </DataTableRow>
+                      ))
+                    ) : paginatedSuperadmins.length > 0 ? paginatedSuperadmins.map((admin) => {
+                      const isActive = Boolean(admin.profile) || admin.registryStatus === 'active'
+
+                      return (
+                        <DataTableRow
+                          key={admin.email}
+                          className="cursor-pointer"
+                          onClick={() => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`)}
+                        >
+                          <DataTableCell className="w-[56px]" onClick={(event) => { event.preventDefault(); event.stopPropagation() }}>
+                            <input
+                              type="checkbox"
+                              checked={selectedEmails.includes(admin.email)}
+                              onChange={() => toggleSelected(admin.email)}
+                              aria-label={`Pilih superadmin ${admin.displayName || admin.email}`}
+                              className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                            />
+                          </DataTableCell>
+                          <DataTableCell>
+                            <div className="flex items-center gap-4">
+                              <SuperadminAvatar initials={getInitials(admin.displayName || 'SA')} />
+                              <div>
+                                <p className="text-[16px] font-semibold text-slate-900">{admin.displayName || 'Super Admin'}</p>
+                                <p className="mt-1 font-mono text-[13px] text-slate-500">{admin.email}</p>
+                              </div>
+                            </div>
+                          </DataTableCell>
+                          <DataTableCell>
+                            <p className="font-mono text-[13px] text-slate-600 truncate">{admin.walletAddress || admin.profile?.walletAddress || 'Belum ditautkan'}</p>
+                          </DataTableCell>
+                          <DataTableCell>
+                            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                              {isActive ? <CheckCircle2 className="h-3 w-3" /> : <Clock3 className="h-3 w-3" />}
+                              {isActive ? 'Super Admin Aktif' : 'Menunggu Aktivasi'}
+                            </span>
+                          </DataTableCell>
+                          <DataTableCell className="text-center" onClick={(event) => { event.preventDefault(); event.stopPropagation() }}>
+                            <RowActionMenu
+                              buttonLabel={`Aksi untuk ${admin.displayName || admin.email}`}
+                              items={[
+                                { label: 'Lihat Detail', onClick: () => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`) },
+                                ...(!isActive ? [{
+                                  label: 'Kirim Ulang Email Aktivasi',
+                                  onClick: () => {
+                                    resendInviteMutation.mutate(admin.email, {
+                                      onSuccess: (result) => {
+                                        showToast({
+                                          tone: result.emailStatus === 'sent' ? 'success' : 'info',
+                                          title: result.emailStatus === 'sent' ? 'Email Terkirim' : 'Email Gagal',
+                                          description: result.emailStatus === 'sent' ? 'Link aktivasi sudah dikirim ulang.' : result.emailError ?? 'Coba lagi nanti.',
+                                        })
+                                      },
+                                      onError: (err) => {
+                                        showToast({ tone: 'error', title: 'Kirim Ulang Gagal', description: getRepositoryErrorMessage(err) })
+                                      },
+                                    })
+                                  },
+                                  disabled: resendInviteMutation.isPending,
+                                }] : []),
+                                { label: 'Pilih Superadmin', onClick: () => toggleSelected(admin.email) },
+                              ]}
+                            />
+                          </DataTableCell>
+                        </DataTableRow>
+                      )
+                    }) : (
+                      <DataTableEmpty colSpan={5} title="Belum ada superadmin lain" description="Hanya akun Anda yang terdaftar sebagai otoritas tertinggi saat ini." />
+                    )}
+                  </DataTableBody>
+                </DataTable>
+              </DataTableViewport>
+              <DataTableFooter
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredSuperadmins.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                label="superadmin"
+              />
             </DataTableShell>
           </StaggerContainer>
         </>
