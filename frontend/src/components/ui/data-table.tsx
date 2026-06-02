@@ -33,11 +33,11 @@ export function DataTableHead({ children }: { children: ReactNode }) {
 }
 
 export function DataTableHeaderRow({ children }: { children: ReactNode }) {
-  return <tr className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{children}</tr>
+  return <tr className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">{children}</tr>
 }
 
 export function DataTableHeaderCell({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <th className={`px-5 py-4 ${className}`}>{children}</th>
+  return <th className={`border-none px-5 py-4 ${className}`}>{children}</th>
 }
 
 export function DataTableBody({ children }: { children: ReactNode }) {
@@ -49,7 +49,7 @@ export function DataTableRow({ children, className = '', ...props }: HTMLAttribu
 }
 
 export function DataTableCell({ children, className = '', ...props }: TdHTMLAttributes<HTMLTableCellElement> & { children: ReactNode; className?: string }) {
-  return <td className={`px-5 py-4 align-middle ${className}`} {...props}>{children}</td>
+  return <td className={`border-none px-5 py-4 align-middle ${className}`} {...props}>{children}</td>
 }
 
 export function DataTableEmpty({ colSpan, title, description }: { colSpan: number; title: string; description: string }) {

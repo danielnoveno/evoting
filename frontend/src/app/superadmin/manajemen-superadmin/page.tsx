@@ -381,66 +381,21 @@ function SuperadminManagementContent() {
             />
           )}
 
-          <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8">
+          <div className="mt-8 flex justify-end">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Cari superadmin..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black lg:w-64"
+              />
+            </div>
+          </div>
+
+          <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-4">
             <DataTableShell className="shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
-              <DataTableToolbar className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <DataTableCount
-                  title="Daftar Otoritas Superadmin"
-                  description={`Menampilkan ${filteredSuperadmins.length} dari ${superadmins.length} akun.`}
-                />
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Cari superadmin..."
-                      value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black lg:w-64"
-                    />
-                  </div>
-                  
-                  <div className="h-8 w-px bg-slate-100 hidden sm:block" />
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12px] text-slate-500">Baris:</span>
-                    <select
-                      value={pageSize}
-                      onChange={(event) => setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
-                      className="h-10 rounded-xl border border-slate-200 bg-white px-2 text-[13px] font-semibold text-slate-900 focus:outline-none"
-                    >
-                      {PAGE_SIZE_OPTIONS.map((option) => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="h-8 w-px bg-slate-100 hidden sm:block" />
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <div className="flex flex-col items-center min-w-[48px]">
-                      <span className="text-[11px] font-bold text-slate-900 leading-none">{currentPage}</span>
-                      <span className="mt-1 text-[10px] text-slate-400 leading-none">dari {totalPages}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </DataTableToolbar>
               <DataTableViewport>
                 <DataTable>
                   <DataTableHead>
@@ -458,7 +413,7 @@ function SuperadminManagementContent() {
                         <button
                           type="button"
                           onClick={() => handleSort('name')}
-                          className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                          className="group inline-flex items-center gap-1.5 border-none bg-transparent p-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 outline-none transition-colors hover:text-slate-700"
                         >
                           Profil Superadmin
                           <SortIcon field="name" />
@@ -468,7 +423,7 @@ function SuperadminManagementContent() {
                         <button
                           type="button"
                           onClick={() => handleSort('wallet')}
-                          className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                          className="group inline-flex items-center gap-1.5 border-none bg-transparent p-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 outline-none transition-colors hover:text-slate-700"
                         >
                           Wallet Address
                           <SortIcon field="wallet" />
@@ -478,7 +433,7 @@ function SuperadminManagementContent() {
                         <button
                           type="button"
                           onClick={() => handleSort('status')}
-                          className="inline-flex items-center gap-1.5 hover:text-slate-700 transition-colors"
+                          className="group inline-flex items-center gap-1.5 border-none bg-transparent p-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 outline-none transition-colors hover:text-slate-700"
                         >
                           Status Otoritas
                           <SortIcon field="status" />
