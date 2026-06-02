@@ -381,38 +381,65 @@ function SuperadminManagementContent() {
             />
           )}
 
-          <div className="mt-8 flex flex-col gap-4 rounded-[24px] border border-slate-200 bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative max-w-xl flex-1">
-              <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Cari nama superadmin, email, atau wallet address..."
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                className="h-12 w-full rounded-[20px] border border-slate-200 bg-white pl-12 pr-4 text-[15px] text-slate-900 outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
-            <label className="text-[13px] text-slate-600">
-              <span className="mr-2">Baris per halaman</span>
-              <select
-                value={pageSize}
-                onChange={(event) => setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
-                className="h-10 rounded-2xl border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-900"
-              >
-                {PAGE_SIZE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-6">
+          <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8">
             <DataTableShell className="shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
-            <DataTableToolbar>
+            <DataTableToolbar className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <DataTableCount
                 title="Daftar Otoritas Superadmin"
-                description={`Menampilkan ${filteredSuperadmins.length} dari ${superadmins.length} akun dengan akses penuh blockchain.`}
+                description={`Menampilkan ${filteredSuperadmins.length} dari ${superadmins.length} akun.`}
               />
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari superadmin..."
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black lg:w-64"
+                  />
+                </div>
+                
+                <div className="h-8 w-px bg-slate-100 hidden sm:block" />
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] text-slate-500">Baris:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(event) => setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])}
+                    className="h-10 rounded-xl border border-slate-200 bg-white px-2 text-[13px] font-semibold text-slate-900 focus:outline-none"
+                  >
+                    {PAGE_SIZE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="h-8 w-px bg-slate-100 hidden sm:block" />
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <div className="flex flex-col items-center min-w-[48px]">
+                    <span className="text-[11px] font-bold text-slate-900 leading-none">{currentPage}</span>
+                    <span className="mt-1 text-[10px] text-slate-400 leading-none">dari {totalPages}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             </DataTableToolbar>
             <DataTableViewport>
               <DataTable>
