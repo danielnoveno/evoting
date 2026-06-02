@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Ellipsis, CheckSquare2 } from 'lucide-react'
 import { type HTMLAttributes, type ReactNode, type TdHTMLAttributes, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export function DataTableShell({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <section className={`overflow-hidden rounded-[28px] border border-slate-200 bg-white ${className}`}>{children}</section>
@@ -169,6 +170,8 @@ type RowActionItem = {
 export function RowActionMenu({ items, buttonLabel }: { items: RowActionItem[]; buttonLabel: string }) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -179,9 +182,33 @@ export function RowActionMenu({ items, buttonLabel }: { items: RowActionItem[]; 
     return () => window.removeEventListener('mousedown', handlePointer)
   }, [open])
 
+  useEffect(() => {
+    if (!open) return
+
+    const updateMenuPosition = () => {
+      if (!buttonRef.current) return
+
+      const rect = buttonRef.current.getBoundingClientRect()
+      setMenuPosition({
+        top: rect.bottom + 8,
+        left: rect.right - 180,
+      })
+    }
+
+    updateMenuPosition()
+    window.addEventListener('resize', updateMenuPosition)
+    window.addEventListener('scroll', updateMenuPosition, true)
+
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition)
+      window.removeEventListener('scroll', updateMenuPosition, true)
+    }
+  }, [open])
+
   return (
     <div ref={containerRef} className="relative flex items-center justify-center">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-label={buttonLabel}
@@ -189,8 +216,11 @@ export function RowActionMenu({ items, buttonLabel }: { items: RowActionItem[]; 
       >
         <Ellipsis className="h-4 w-4" />
       </button>
-      {open ? (
-        <div className="absolute right-0 top-11 z-20 min-w-[180px] rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
+      {open && menuPosition ? createPortal(
+        <div
+          className="fixed z-[100] min-w-[180px] rounded-2xl border border-slate-200 bg-white p-2"
+          style={{ top: menuPosition.top, left: menuPosition.left }}
+        >
           {items.map((item) => (
             <button
               key={item.label}
@@ -207,7 +237,8 @@ export function RowActionMenu({ items, buttonLabel }: { items: RowActionItem[]; 
               {item.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </div>
   )
