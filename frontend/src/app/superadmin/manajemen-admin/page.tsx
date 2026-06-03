@@ -358,50 +358,6 @@ function SuperadminAdminManagementContent() {
         )}
       </ScrollReveal>
 
-      {activeTab === 'daftar' && selectedAdmins.length > 0 && (
-        <div className="sticky top-24 z-20 mt-6 flex justify-center px-4">
-          <SelectedCounter
-            compact
-            className="w-full max-w-[calc(100vw-32px)] overflow-x-auto lg:w-auto lg:max-w-max"
-            title={`${selectedAdmins.length} admin dipilih`}
-            description={`${selectedFilteredCount} dari ${filteredAdmins.length} hasil filter dipilih`}
-            onClear={() => setSelectedAdminEmails([])}
-            onDismiss={() => setSelectedAdminEmails([])}
-            actions={(
-              <>
-                <button
-                  type="button"
-                  onClick={handleBulkSendActivation}
-                  disabled={bulkActionLoading !== null}
-                  className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
-                >
-                  {bulkActionLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                  Kirim Email Aktivasi
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBulkDeactivateDialogOpen(true)}
-                  disabled={bulkActionLoading !== null}
-                  className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-amber-200 bg-amber-50 px-3.5 text-[13px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
-                >
-                  {bulkActionLoading === 'deactivate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
-                  Nonaktifkan Akses
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBulkDeleteDialogOpen(true)}
-                  disabled={bulkActionLoading !== null}
-                  className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-red-200 bg-white px-3.5 text-[13px] font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
-                >
-                  {bulkActionLoading === 'delete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                  Hapus Akses
-                </button>
-              </>
-            )}
-          />
-        </div>
-      )}
-
       {activeTab === 'daftar' ? (
         <>
           <div className="mt-8 flex justify-end">
@@ -418,7 +374,7 @@ function SuperadminAdminManagementContent() {
           </div>
 
           <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-4">
-            <DataTableShell className="rounded-[32px] border border-slate-200 bg-slate-50 p-3">
+            <DataTableShell className="relative rounded-[32px] border border-slate-200 bg-slate-50 p-3 pb-24">
             <DataTableViewport>
               <DataTable className="[border-spacing:0_10px]">
                 <DataTableHead className="bg-transparent">
@@ -509,6 +465,49 @@ function SuperadminAdminManagementContent() {
                 </DataTableBody>
               </DataTable>
             </DataTableViewport>
+            {selectedAdmins.length > 0 && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-16 z-20 flex justify-center px-4">
+                <SelectedCounter
+                  compact
+                  className="pointer-events-auto w-full max-w-[720px] overflow-x-auto"
+                  title={`${selectedAdmins.length} admin dipilih`}
+                  hideLeadingIcon
+                  onClear={() => setSelectedAdminEmails([])}
+                  onDismiss={() => setSelectedAdminEmails([])}
+                  actions={(
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleBulkSendActivation}
+                        disabled={bulkActionLoading !== null}
+                        className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
+                      >
+                        {bulkActionLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                        Kirim Email Aktivasi
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBulkDeactivateDialogOpen(true)}
+                        disabled={bulkActionLoading !== null}
+                        className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-amber-200 bg-amber-50 px-3 text-[13px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+                      >
+                        {bulkActionLoading === 'deactivate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
+                        Nonaktifkan Akses
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBulkDeleteDialogOpen(true)}
+                        disabled={bulkActionLoading !== null}
+                        className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-red-200 bg-white px-3 text-[13px] font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                      >
+                        {bulkActionLoading === 'delete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        Hapus Akses
+                      </button>
+                    </>
+                  )}
+                />
+              </div>
+            )}
             <DataTableFooter
               currentPage={currentPage}
               totalPages={totalPages}

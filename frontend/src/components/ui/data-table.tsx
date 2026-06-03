@@ -141,32 +141,36 @@ export function SelectedCounter({
   onDismiss,
   actions,
   compact = false,
+  hideLeadingIcon = false,
   className = '',
 }: {
   title: string
-  description: string
+  description?: string
   onClear: () => void
   onDismiss?: () => void
   actions?: ReactNode
   compact?: boolean
+  hideLeadingIcon?: boolean
   className?: string
 }) {
   return (
-    <div className={`flex flex-col gap-3 border border-slate-200 bg-white ${compact ? 'rounded-2xl px-4 py-3 lg:flex-row lg:items-center lg:justify-between' : 'rounded-[24px] p-4 lg:flex-row lg:items-center lg:justify-between'} ${className}`}>
-      <div className={`flex items-start ${compact ? 'gap-2.5' : 'gap-3'}`}>
-        <div className={`${compact ? 'mt-0 rounded-xl p-1.5' : 'mt-0.5 rounded-2xl p-2'} bg-slate-100 text-slate-700`}>
-          <CheckSquare2 className="h-4 w-4" />
-        </div>
+    <div className={`flex flex-col gap-2 border border-slate-200 bg-white ${compact ? 'rounded-2xl px-3 py-2.5 lg:flex-row lg:items-center lg:justify-between' : 'rounded-[24px] p-4 lg:flex-row lg:items-center lg:justify-between'} ${className}`}>
+      <div className={`flex items-start ${hideLeadingIcon ? 'gap-0' : compact ? 'gap-2.5' : 'gap-3'}`}>
+        {!hideLeadingIcon ? (
+          <div className={`${compact ? 'mt-0 rounded-xl p-1.5' : 'mt-0.5 rounded-2xl p-2'} bg-slate-100 text-slate-700`}>
+            <CheckSquare2 className="h-4 w-4" />
+          </div>
+        ) : null}
         <div>
           <p className="text-[14px] font-semibold text-slate-900">{title}</p>
-          <p className={`text-[13px] text-slate-600 ${compact ? 'mt-0.5 leading-5 lg:whitespace-nowrap' : 'mt-1 leading-6'}`}>{description}</p>
+          {description ? <p className={`text-[13px] text-slate-600 ${compact ? 'mt-0.5 leading-5 lg:whitespace-nowrap' : 'mt-1 leading-6'}`}>{description}</p> : null}
         </div>
       </div>
-      <div className={`flex flex-wrap items-center ${compact ? 'gap-2' : 'gap-3'}`}>
+      <div className={`flex flex-wrap items-center ${compact ? 'gap-1.5' : 'gap-3'}`}>
         <button
           type="button"
           onClick={onClear}
-          className={`inline-flex items-center justify-center border border-slate-200 bg-white text-[13px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 ${compact ? 'h-9 rounded-xl px-3.5' : 'h-11 rounded-2xl px-4'}`}
+          className={`inline-flex items-center justify-center border border-slate-200 bg-white text-[13px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 ${compact ? 'h-8 rounded-xl px-3' : 'h-11 rounded-2xl px-4'}`}
         >
           Bersihkan Pilihan
         </button>
@@ -176,7 +180,7 @@ export function SelectedCounter({
             type="button"
             onClick={onDismiss}
             aria-label="Tutup pilihan"
-            className={`inline-flex items-center justify-center text-slate-400 transition hover:text-slate-700 ${compact ? 'h-9 w-9 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-100' : 'h-11 w-11 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-100'}`}
+            className={`inline-flex items-center justify-center text-slate-400 transition hover:text-slate-700 ${compact ? 'h-8 w-8 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-100' : 'h-11 w-11 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-100'}`}
           >
             <X className="h-4 w-4" />
           </button>
