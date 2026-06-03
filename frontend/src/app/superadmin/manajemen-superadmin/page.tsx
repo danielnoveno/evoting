@@ -513,9 +513,10 @@ function SuperadminManagementContent() {
                 <div className="pointer-events-none absolute inset-x-0 bottom-12 z-20 flex justify-center px-4">
                   <SelectedCounter
                     compact
-                    className="pointer-events-auto w-full max-w-[680px] overflow-x-auto border-slate-300"
+                    className="pointer-events-auto w-full max-w-[700px] overflow-x-auto border-slate-300"
                     title={`${selectedSuperadmins.length} superadmin dipilih`}
                     hideLeadingIcon
+                    hideClearButton
                     onClear={() => setSelectedEmails([])}
                     onDismiss={() => setSelectionBarDismissed(true)}
                     actions={(
@@ -524,7 +525,7 @@ function SuperadminManagementContent() {
                           type="button"
                           onClick={() => { void handleBulkSendActivation() }}
                           disabled={bulkActionLoading !== null}
-                          className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
+                          className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
                         >
                           {bulkActionLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                           Kirim Email Aktivasi
@@ -533,7 +534,7 @@ function SuperadminManagementContent() {
                           type="button"
                           onClick={() => setBulkDeactivateDialogOpen(true)}
                           disabled={bulkActionLoading !== null}
-                          className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-amber-200 bg-amber-50 px-3 text-[13px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+                          className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-amber-200 bg-amber-50 px-3.5 text-[13px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
                         >
                           {bulkActionLoading === 'deactivate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
                           Nonaktifkan Akses
