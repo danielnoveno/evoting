@@ -445,7 +445,7 @@ function SuperadminManagementContent() {
                           className="cursor-pointer [&>td]:border-y [&>td]:border-slate-200 [&>td]:bg-white [&>td:first-child]:rounded-l-[20px] [&>td:first-child]:border-l [&>td:last-child]:rounded-r-[20px] [&>td:last-child]:border-r hover:[&>td]:border-slate-300 hover:[&>td]:bg-slate-50/80"
                           onClick={() => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`)}
                         >
-                          <DataTableCell className="w-[56px]" onClick={(event) => { event.preventDefault(); event.stopPropagation() }}>
+                          <DataTableCell className="w-[56px]" onClick={(event) => event.stopPropagation()}>
                             <input
                               type="checkbox"
                               checked={selectedEmails.includes(admin.email)}
@@ -474,7 +474,7 @@ function SuperadminManagementContent() {
                               {isActive ? 'Super Admin Aktif' : 'Menunggu Aktivasi'}
                             </span>
                           </DataTableCell>
-                          <DataTableCell className="text-center" onClick={(event) => { event.preventDefault(); event.stopPropagation() }}>
+                          <DataTableCell className="text-center" onClick={(event) => event.stopPropagation()}>
                             <RowActionMenu
                               buttonLabel={`Aksi untuk ${admin.displayName || admin.email}`}
                               items={[

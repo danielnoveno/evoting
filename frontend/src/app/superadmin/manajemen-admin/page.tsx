@@ -422,7 +422,7 @@ function SuperadminAdminManagementContent() {
                   className="cursor-pointer [&>td]:border-y [&>td]:border-slate-200 [&>td]:bg-white [&>td:first-child]:rounded-l-[20px] [&>td:first-child]:border-l [&>td:last-child]:rounded-r-[20px] [&>td:last-child]:border-r hover:[&>td]:border-slate-300 hover:[&>td]:bg-slate-50/80"
                   onClick={() => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}`) as never}
                 >
-                  <DataTableCell className="w-[56px]" onClick={(event) => { event.preventDefault(); event.stopPropagation() }}>
+                  <DataTableCell className="w-[56px]" onClick={(event) => event.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedAdminEmails.includes(admin.email)}
@@ -453,7 +453,7 @@ function SuperadminAdminManagementContent() {
                     <p className="text-[15px] text-slate-900">{admin.lastSeen}</p>
                     <p className="mt-1 text-[13px] text-slate-500">{admin.lastLoginRelative}</p>
                   </DataTableCell>
-                  <DataTableCell className="text-center" onClick={(event) => { event.preventDefault(); event.stopPropagation() }}>
+                  <DataTableCell className="text-center" onClick={(event) => event.stopPropagation()}>
                     <RowActionMenu
                       buttonLabel={`Aksi untuk ${admin.name}`}
                       items={[
