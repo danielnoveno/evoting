@@ -80,6 +80,7 @@ function SuperadminManagementContent() {
   const [lastEmailStatus, setLastEmailStatus] = useState<'sent' | 'skipped' | 'failed' | null>(null)
   const [lastEmailError, setLastEmailError] = useState<string | null>(null)
   const [selectedEmails, setSelectedEmails] = useState<string[]>([])
+  const [selectionBarDismissed, setSelectionBarDismissed] = useState(false)
   const [bulkActionLoading, setBulkActionLoading] = useState<'send' | 'deactivate' | null>(null)
   const [sortField, setSortField] = useState<SortField | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>(null)
@@ -183,6 +184,10 @@ function SuperadminManagementContent() {
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages)
   }, [currentPage, totalPages])
+
+  useEffect(() => {
+    setSelectionBarDismissed(false)
+  }, [selectedEmails])
 
   const toggleSelectAll = () => {
     if (allSelected) {
@@ -504,7 +509,7 @@ function SuperadminManagementContent() {
                   </DataTableBody>
                 </DataTable>
               </DataTableViewport>
-              {selectedSuperadmins.length > 0 && (
+              {selectedSuperadmins.length > 0 && !selectionBarDismissed && (
                 <div className="pointer-events-none absolute inset-x-0 bottom-12 z-20 flex justify-center px-4">
                   <SelectedCounter
                     compact
@@ -512,7 +517,7 @@ function SuperadminManagementContent() {
                     title={`${selectedSuperadmins.length} superadmin dipilih`}
                     hideLeadingIcon
                     onClear={() => setSelectedEmails([])}
-                    onDismiss={() => setSelectedEmails([])}
+                    onDismiss={() => setSelectionBarDismissed(true)}
                     actions={(
                       <>
                         <button

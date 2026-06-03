@@ -80,6 +80,7 @@ function SuperadminAdminManagementContent() {
   const [formData, setFormData] = useState(initialFormData)
   const [activationLink, setActivationLink] = useState('')
   const [selectedAdminEmails, setSelectedAdminEmails] = useState<string[]>([])
+  const [selectionBarDismissed, setSelectionBarDismissed] = useState(false)
   const [bulkActionLoading, setBulkActionLoading] = useState<'send' | 'deactivate' | 'delete' | null>(null)
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
   const [bulkDeactivateDialogOpen, setBulkDeactivateDialogOpen] = useState(false)
@@ -131,6 +132,10 @@ function SuperadminAdminManagementContent() {
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages)
   }, [currentPage, totalPages])
+
+  useEffect(() => {
+    setSelectionBarDismissed(false)
+  }, [selectedAdminEmails])
 
   const updateTab = (tab: AdminTabKey) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -465,7 +470,7 @@ function SuperadminAdminManagementContent() {
                 </DataTableBody>
               </DataTable>
             </DataTableViewport>
-            {selectedAdmins.length > 0 && (
+            {selectedAdmins.length > 0 && !selectionBarDismissed && (
               <div className="pointer-events-none absolute inset-x-0 bottom-12 z-20 flex justify-center px-4">
                 <SelectedCounter
                   compact
@@ -473,7 +478,7 @@ function SuperadminAdminManagementContent() {
                   title={`${selectedAdmins.length} admin dipilih`}
                   hideLeadingIcon
                   onClear={() => setSelectedAdminEmails([])}
-                  onDismiss={() => setSelectedAdminEmails([])}
+                  onDismiss={() => setSelectionBarDismissed(true)}
                   actions={(
                     <>
                       <button
