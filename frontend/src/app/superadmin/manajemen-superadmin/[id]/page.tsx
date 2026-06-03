@@ -89,7 +89,7 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <SuperadminToolbarButton variant="secondary" onClick={() => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(seedRecord.email)}/edit`)}>
+              <SuperadminToolbarButton variant="secondary" onClick={() => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(seedRecord.email)}/edit?from=detail`)}>
                 <Pencil className="h-4 w-4" />
                 Edit Superadmin
               </SuperadminToolbarButton>

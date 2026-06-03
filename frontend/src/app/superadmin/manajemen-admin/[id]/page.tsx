@@ -96,7 +96,7 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <SuperadminToolbarButton onClick={() => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(seedRecord.id)}/edit`)}>
+              <SuperadminToolbarButton onClick={() => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(seedRecord.id)}/edit?from=detail`)}>
                 <Pencil className="h-4 w-4" />
                 Edit Profil
               </SuperadminToolbarButton>

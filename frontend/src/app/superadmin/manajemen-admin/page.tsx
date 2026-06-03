@@ -359,42 +359,47 @@ function SuperadminAdminManagementContent() {
       </ScrollReveal>
 
       {activeTab === 'daftar' && selectedAdmins.length > 0 && (
-        <SelectedCounter
-          title={`${selectedAdmins.length} admin dipilih`}
-          description={`${selectedFilteredCount} dari ${filteredAdmins.length} hasil pencarian/filter sedang dipilih. Total admin: ${admins.length}.`}
-          onClear={() => setSelectedAdminEmails([])}
-          actions={(
-            <>
-            <button
-              type="button"
-              onClick={handleBulkSendActivation}
-              disabled={bulkActionLoading !== null}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
-            >
-              {bulkActionLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-              Kirim Email Aktivasi
-            </button>
-            <button
-              type="button"
-              onClick={() => setBulkDeactivateDialogOpen(true)}
-              disabled={bulkActionLoading !== null}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-[13px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
-            >
-              {bulkActionLoading === 'deactivate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
-              Nonaktifkan Akses
-            </button>
-            <button
-              type="button"
-              onClick={() => setBulkDeleteDialogOpen(true)}
-              disabled={bulkActionLoading !== null}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-4 text-[13px] font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
-            >
-              {bulkActionLoading === 'delete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              Hapus Akses
-            </button>
-            </>
-          )}
-        />
+        <div className="sticky top-24 z-20 mt-6 flex justify-center px-4">
+          <SelectedCounter
+            compact
+            className="w-full max-w-[calc(100vw-32px)] overflow-x-auto lg:w-auto lg:max-w-max"
+            title={`${selectedAdmins.length} admin dipilih`}
+            description={`${selectedFilteredCount} dari ${filteredAdmins.length} hasil filter dipilih`}
+            onClear={() => setSelectedAdminEmails([])}
+            onDismiss={() => setSelectedAdminEmails([])}
+            actions={(
+              <>
+                <button
+                  type="button"
+                  onClick={handleBulkSendActivation}
+                  disabled={bulkActionLoading !== null}
+                  className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  {bulkActionLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  Kirim Email Aktivasi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBulkDeactivateDialogOpen(true)}
+                  disabled={bulkActionLoading !== null}
+                  className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-amber-200 bg-amber-50 px-3.5 text-[13px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+                >
+                  {bulkActionLoading === 'deactivate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
+                  Nonaktifkan Akses
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBulkDeleteDialogOpen(true)}
+                  disabled={bulkActionLoading !== null}
+                  className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-red-200 bg-white px-3.5 text-[13px] font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                >
+                  {bulkActionLoading === 'delete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  Hapus Akses
+                </button>
+              </>
+            )}
+          />
+        </div>
       )}
 
       {activeTab === 'daftar' ? (
@@ -413,10 +418,10 @@ function SuperadminAdminManagementContent() {
           </div>
 
           <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-4">
-            <DataTableShell className="shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+            <DataTableShell className="rounded-[32px] border border-slate-200 bg-slate-50 p-3">
             <DataTableViewport>
-              <DataTable>
-                <DataTableHead>
+              <DataTable className="[border-spacing:0_10px]">
+                <DataTableHead className="bg-transparent">
                   <DataTableHeaderRow>
                     <DataTableHeaderCell className="w-[56px]">
                       <input
@@ -428,31 +433,32 @@ function SuperadminAdminManagementContent() {
                       />
                     </DataTableHeaderCell>
                     <DataTableHeaderCell>Profil Admin</DataTableHeaderCell>
+                    <DataTableHeaderCell>Email</DataTableHeaderCell>
                     <DataTableHeaderCell>Akses Space</DataTableHeaderCell>
                     <DataTableHeaderCell>Status</DataTableHeaderCell>
                     <DataTableHeaderCell>Aktivitas Terakhir</DataTableHeaderCell>
                     <DataTableHeaderCell className="text-center">Action</DataTableHeaderCell>
                   </DataTableHeaderRow>
                 </DataTableHead>
-                <DataTableBody>
+                <DataTableBody className="bg-transparent">
               {adminDirectoryQuery.isLoading && admins.length === 0 ? (
                 Array.from({ length: 4 }).map((_, index) => (
-                  <DataTableRow key={`admin-loading-${index}`}>
-                    <DataTableCell colSpan={6} className="px-6 py-5">
+                  <DataTableRow key={`admin-loading-${index}`} className="[&>td]:rounded-[20px] [&>td]:border [&>td]:border-slate-200 [&>td]:bg-white">
+                    <DataTableCell colSpan={7} className="px-6 py-5">
                       <div className="h-10 animate-pulse rounded-2xl bg-slate-100" />
                     </DataTableCell>
                   </DataTableRow>
                 ))
                 ) : adminDirectoryQuery.error ? (
                 <DataTableRow>
-                  <DataTableCell colSpan={6} className="px-6 py-8 text-center text-[14px] text-slate-500">
+                  <DataTableCell colSpan={7} className="px-6 py-8 text-center text-[14px] text-slate-500">
                     Daftar admin belum dapat dimuat. Terjadi kendala saat mengambil data app_profiles atau admin_registry.
                   </DataTableCell>
                 </DataTableRow>
-              ) : paginatedAdmins.length > 0 ? paginatedAdmins.map((admin) => (
+                ) : paginatedAdmins.length > 0 ? paginatedAdmins.map((admin) => (
                 <DataTableRow
                   key={admin.id}
-                  className="cursor-pointer"
+                  className="cursor-pointer [&>td]:border-y [&>td]:border-slate-200 [&>td]:bg-white [&>td:first-child]:rounded-l-[20px] [&>td:first-child]:border-l [&>td:last-child]:rounded-r-[20px] [&>td:last-child]:border-r hover:[&>td]:border-slate-300 hover:[&>td]:bg-slate-50/80"
                   onClick={() => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}`) as never}
                 >
                   <DataTableCell className="w-[56px]" onClick={(event) => { event.preventDefault(); event.stopPropagation() }}>
@@ -469,9 +475,11 @@ function SuperadminAdminManagementContent() {
                     <SuperadminAvatar initials={admin.initials} />
                     <div>
                       <p className="text-[16px] font-semibold text-slate-900">{admin.name}</p>
-                      <p className="mt-1 font-mono text-[13px] text-slate-500">{admin.email}</p>
                     </div>
                     </div>
+                  </DataTableCell>
+                  <DataTableCell>
+                    <p className="mt-1 font-mono text-[13px] text-slate-500 break-all">{admin.email}</p>
                   </DataTableCell>
                   <DataTableCell>
                     <p className="text-[16px] font-medium text-slate-900">{admin.accessLabel}</p>
@@ -488,15 +496,15 @@ function SuperadminAdminManagementContent() {
                     <RowActionMenu
                       buttonLabel={`Aksi untuk ${admin.name}`}
                       items={[
-                        { label: 'Lihat Detail', onClick: () => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}`) },
-                        { label: 'Edit Admin', onClick: () => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}/edit`) },
+                        { label: 'Detail', onClick: () => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}`) },
+                        { label: 'Edit', onClick: () => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}/edit?from=list`) },
                         { label: 'Pilih Admin', onClick: () => toggleSelectedAdmin(admin.email) },
                       ]}
                     />
                   </DataTableCell>
                 </DataTableRow>
               )) : (
-                <DataTableEmpty colSpan={6} title="Tidak ada admin yang cocok" description="Coba ganti filter status atau tambahkan admin baru untuk melihat hasil lainnya." />
+                <DataTableEmpty colSpan={7} title="Tidak ada admin yang cocok" description="Coba ganti filter status atau tambahkan admin baru untuk melihat hasil lainnya." />
               )}
                 </DataTableBody>
               </DataTable>

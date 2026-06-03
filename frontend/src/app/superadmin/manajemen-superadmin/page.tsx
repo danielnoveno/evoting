@@ -352,33 +352,38 @@ function SuperadminManagementContent() {
           )}
 
           {selectedSuperadmins.length > 0 && (
-            <SelectedCounter
-              title={`${selectedSuperadmins.length} superadmin dipilih`}
-              description={`${selectedFilteredCount} dari ${filteredSuperadmins.length} hasil pencarian sedang dipilih. Total superadmin: ${superadmins.length}.`}
-              onClear={() => setSelectedEmails([])}
-              actions={(
-                <>
-                <button
-                  type="button"
-                  onClick={() => { void handleBulkSendActivation() }}
-                  disabled={bulkActionLoading !== null}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
-                >
-                  {bulkActionLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                  Kirim Email Aktivasi
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBulkDeactivateDialogOpen(true)}
-                  disabled={bulkActionLoading !== null}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-[13px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
-                >
-                  {bulkActionLoading === 'deactivate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
-                  Nonaktifkan Akses
-                </button>
-                </>
-              )}
-            />
+            <div className="sticky top-24 z-20 mt-6 flex justify-center px-4">
+              <SelectedCounter
+                compact
+                className="w-full max-w-[calc(100vw-32px)] overflow-x-auto lg:w-auto lg:max-w-max"
+                title={`${selectedSuperadmins.length} superadmin dipilih`}
+                description={`${selectedFilteredCount} dari ${filteredSuperadmins.length} hasil pencarian dipilih`}
+                onClear={() => setSelectedEmails([])}
+                onDismiss={() => setSelectedEmails([])}
+                actions={(
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => { void handleBulkSendActivation() }}
+                      disabled={bulkActionLoading !== null}
+                      className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
+                    >
+                      {bulkActionLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                      Kirim Email Aktivasi
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBulkDeactivateDialogOpen(true)}
+                      disabled={bulkActionLoading !== null}
+                      className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-amber-200 bg-amber-50 px-3.5 text-[13px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+                    >
+                      {bulkActionLoading === 'deactivate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
+                      Nonaktifkan Akses
+                    </button>
+                  </>
+                )}
+              />
+            </div>
           )}
 
           <div className="mt-8 flex justify-end">
@@ -395,10 +400,10 @@ function SuperadminManagementContent() {
           </div>
 
           <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-4">
-            <DataTableShell className="shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
+            <DataTableShell className="rounded-[32px] border border-slate-200 bg-slate-50 p-3">
               <DataTableViewport>
-                <DataTable>
-                  <DataTableHead>
+                <DataTable className="[border-spacing:0_10px]">
+                  <DataTableHead className="bg-transparent">
                     <DataTableHeaderRow>
                       <DataTableHeaderCell className="w-[56px]">
                         <input
@@ -417,6 +422,16 @@ function SuperadminManagementContent() {
                         >
                           Profil Superadmin
                           <SortIcon field="name" />
+                        </button>
+                      </DataTableHeaderCell>
+                      <DataTableHeaderCell>
+                        <button
+                          type="button"
+                          onClick={() => handleSort('email')}
+                          className="group inline-flex items-center gap-1.5 border-none bg-transparent p-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 outline-none transition-colors hover:text-slate-700"
+                        >
+                          Email
+                          <SortIcon field="email" />
                         </button>
                       </DataTableHeaderCell>
                       <DataTableHeaderCell>
@@ -442,11 +457,11 @@ function SuperadminManagementContent() {
                       <DataTableHeaderCell className="text-center">Aksi</DataTableHeaderCell>
                     </DataTableHeaderRow>
                   </DataTableHead>
-                  <DataTableBody>
+                  <DataTableBody className="bg-transparent">
                     {isLoading ? (
                       Array.from({ length: 3 }).map((_, i) => (
-                        <DataTableRow key={i}>
-                          <DataTableCell colSpan={5}>
+                        <DataTableRow key={i} className="[&>td]:rounded-[20px] [&>td]:border [&>td]:border-slate-200 [&>td]:bg-white">
+                          <DataTableCell colSpan={6}>
                             <div className="h-10 animate-pulse rounded-2xl bg-slate-100" />
                           </DataTableCell>
                         </DataTableRow>
@@ -457,7 +472,7 @@ function SuperadminManagementContent() {
                       return (
                         <DataTableRow
                           key={admin.email}
-                          className="cursor-pointer"
+                          className="cursor-pointer [&>td]:border-y [&>td]:border-slate-200 [&>td]:bg-white [&>td:first-child]:rounded-l-[20px] [&>td:first-child]:border-l [&>td:last-child]:rounded-r-[20px] [&>td:last-child]:border-r hover:[&>td]:border-slate-300 hover:[&>td]:bg-slate-50/80"
                           onClick={() => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`)}
                         >
                           <DataTableCell className="w-[56px]" onClick={(event) => { event.preventDefault(); event.stopPropagation() }}>
@@ -474,9 +489,11 @@ function SuperadminManagementContent() {
                               <SuperadminAvatar initials={getInitials(admin.displayName || 'SA')} />
                               <div>
                                 <p className="text-[16px] font-semibold text-slate-900">{admin.displayName || 'Super Admin'}</p>
-                                <p className="mt-1 font-mono text-[13px] text-slate-500">{admin.email}</p>
                               </div>
                             </div>
+                          </DataTableCell>
+                          <DataTableCell>
+                            <p className="font-mono text-[13px] text-slate-600 break-all">{admin.email}</p>
                           </DataTableCell>
                           <DataTableCell>
                             <p className="font-mono text-[13px] text-slate-600 truncate">{admin.walletAddress || admin.profile?.walletAddress || 'Belum ditautkan'}</p>
@@ -510,14 +527,14 @@ function SuperadminManagementContent() {
                                   },
                                   disabled: resendInviteMutation.isPending,
                                 }] : []),
-                                { label: 'Edit', onClick: () => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}/edit`) },
+                                { label: 'Edit', onClick: () => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}/edit?from=list`) },
                               ]}
                             />
                           </DataTableCell>
                         </DataTableRow>
                       )
                     }) : (
-                      <DataTableEmpty colSpan={5} title="Belum ada superadmin lain" description="Hanya akun Anda yang terdaftar sebagai otoritas tertinggi saat ini." />
+                      <DataTableEmpty colSpan={6} title="Belum ada superadmin lain" description="Hanya akun Anda yang terdaftar sebagai otoritas tertinggi saat ini." />
                     )}
                   </DataTableBody>
                 </DataTable>

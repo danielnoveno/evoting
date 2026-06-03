@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Ellipsis, CheckSquare2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Ellipsis, CheckSquare2, X } from 'lucide-react'
 import { type HTMLAttributes, type ReactNode, type TdHTMLAttributes, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -21,16 +21,16 @@ export function DataTableCount({ title, description }: { title: string; descript
   )
 }
 
-export function DataTableViewport({ children }: { children: ReactNode }) {
-  return <div className="overflow-x-auto"><div className="min-w-full">{children}</div></div>
+export function DataTableViewport({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <div className={`overflow-x-auto ${className}`}><div className="min-w-full">{children}</div></div>
 }
 
-export function DataTable({ children }: { children: ReactNode }) {
-  return <table className="min-w-full border-separate border-spacing-0 text-left">{children}</table>
+export function DataTable({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <table className={`min-w-full border-separate border-spacing-0 text-left ${className}`}>{children}</table>
 }
 
-export function DataTableHead({ children }: { children: ReactNode }) {
-  return <thead className="bg-slate-50">{children}</thead>
+export function DataTableHead({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <thead className={`bg-slate-50 ${className}`}>{children}</thead>
 }
 
 export function DataTableHeaderRow({ children }: { children: ReactNode }) {
@@ -41,8 +41,8 @@ export function DataTableHeaderCell({ children, className = '' }: { children: Re
   return <th className={`border-none px-5 py-4 ${className}`}>{children}</th>
 }
 
-export function DataTableBody({ children }: { children: ReactNode }) {
-  return <tbody className="divide-y divide-slate-100 bg-white">{children}</tbody>
+export function DataTableBody({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <tbody className={`divide-y divide-slate-100 bg-white ${className}`}>{children}</tbody>
 }
 
 export function DataTableRow({ children, className = '', ...props }: HTMLAttributes<HTMLTableRowElement>) {
@@ -134,27 +134,53 @@ export function DataTableFooter({
   )
 }
 
-export function SelectedCounter({ title, description, onClear, actions }: { title: string; description: string; onClear: () => void; actions?: ReactNode }) {
+export function SelectedCounter({
+  title,
+  description,
+  onClear,
+  onDismiss,
+  actions,
+  compact = false,
+  className = '',
+}: {
+  title: string
+  description: string
+  onClear: () => void
+  onDismiss?: () => void
+  actions?: ReactNode
+  compact?: boolean
+  className?: string
+}) {
   return (
-    <div className="flex flex-col gap-3 rounded-[24px] border border-slate-200 bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 rounded-2xl bg-slate-100 p-2 text-slate-700">
+    <div className={`flex flex-col gap-3 border border-slate-200 bg-white ${compact ? 'rounded-2xl px-4 py-3 lg:flex-row lg:items-center lg:justify-between' : 'rounded-[24px] p-4 lg:flex-row lg:items-center lg:justify-between'} ${className}`}>
+      <div className={`flex items-start ${compact ? 'gap-2.5' : 'gap-3'}`}>
+        <div className={`${compact ? 'mt-0 rounded-xl p-1.5' : 'mt-0.5 rounded-2xl p-2'} bg-slate-100 text-slate-700`}>
           <CheckSquare2 className="h-4 w-4" />
         </div>
         <div>
           <p className="text-[14px] font-semibold text-slate-900">{title}</p>
-          <p className="mt-1 text-[13px] leading-6 text-slate-600">{description}</p>
+          <p className={`text-[13px] text-slate-600 ${compact ? 'mt-0.5 leading-5 lg:whitespace-nowrap' : 'mt-1 leading-6'}`}>{description}</p>
         </div>
       </div>
-      <div className="flex flex-wrap gap-3">
+      <div className={`flex flex-wrap items-center ${compact ? 'gap-2' : 'gap-3'}`}>
         <button
           type="button"
           onClick={onClear}
-          className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+          className={`inline-flex items-center justify-center border border-slate-200 bg-white text-[13px] font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 ${compact ? 'h-9 rounded-xl px-3.5' : 'h-11 rounded-2xl px-4'}`}
         >
           Bersihkan Pilihan
         </button>
         {actions}
+        {onDismiss ? (
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Tutup pilihan"
+            className={`inline-flex items-center justify-center text-slate-400 transition hover:text-slate-700 ${compact ? 'h-9 w-9 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-100' : 'h-11 w-11 rounded-2xl border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-100'}`}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : null}
       </div>
     </div>
   )

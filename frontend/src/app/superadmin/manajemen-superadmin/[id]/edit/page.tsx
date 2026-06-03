@@ -1,7 +1,7 @@
 'use client'
 
 import { ShieldAlert, ShieldCheck } from 'lucide-react'
-import { notFound, useRouter } from 'next/navigation'
+import { notFound, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import {
   SuperadminFieldLabel,
@@ -25,6 +25,7 @@ type SuperadminStatus = 'Aktif' | 'Menunggu' | 'Nonaktif'
 
 export default function SuperadminEditPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { showToast } = useToast()
   const superadminId = decodeURIComponent(params.id)
   const adminDirectoryQuery = useSuperadminAdminDirectory()
@@ -51,6 +52,11 @@ export default function SuperadminEditPage({ params }: { params: { id: string } 
   }), [directoryRecord])
 
   const [formData, setFormData] = useState(initialForm)
+  const editSource = searchParams.get('from')
+  const backHref = editSource === 'list'
+    ? '/superadmin/manajemen-superadmin'
+    : `/superadmin/manajemen-superadmin/${encodeURIComponent(directoryRecord?.email ?? superadminId)}`
+  const backLabel = editSource === 'list' ? 'Kembali ke Manajemen Superadmin' : 'Kembali ke Detail Superadmin'
 
   useEffect(() => {
     setFormData(initialForm)
@@ -108,7 +114,9 @@ export default function SuperadminEditPage({ params }: { params: { id: string } 
         onSuccess: (updated) => {
           setConfirmOpen(false)
           showToast({ tone: 'success', title: 'Perubahan superadmin berhasil disimpan', description: 'Data otoritas sudah diperbarui pada registry.' })
-          router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(updated.email)}`)
+          router.push(editSource === 'list'
+            ? '/superadmin/manajemen-superadmin'
+            : `/superadmin/manajemen-superadmin/${encodeURIComponent(updated.email)}`)
         },
         onError: (error) => {
           setConfirmOpen(false)
@@ -120,7 +128,7 @@ export default function SuperadminEditPage({ params }: { params: { id: string } 
 
   const handleCancel = () => {
     if (!isDirty) {
-      router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(directoryRecord.email)}`)
+      router.push(backHref)
       return
     }
 
@@ -131,8 +139,8 @@ export default function SuperadminEditPage({ params }: { params: { id: string } 
     <SuperadminShell>
       <ScrollReveal variant="fade-up" duration={800}>
         <SuperadminPageHeader
-          backHref={`/superadmin/manajemen-superadmin/${encodeURIComponent(directoryRecord.email)}`}
-          backLabel="Kembali ke Detail Superadmin"
+          backHref={backHref}
+          backLabel={backLabel}
           title="Edit Superadmin"
           description="Perbarui data identitas superadmin yang dipilih tanpa mengubah klaim akses di luar registry yang tersedia."
           actions={(
@@ -244,11 +252,13 @@ export default function SuperadminEditPage({ params }: { params: { id: string } 
       <ConfirmDialog
         open={cancelConfirmOpen}
         title="Batalkan perubahan?"
-        description="Perubahan yang belum disimpan akan hilang jika Anda kembali ke halaman detail." 
+        description={editSource === 'list'
+          ? 'Perubahan yang belum disimpan akan hilang jika Anda kembali ke halaman manajemen superadmin.'
+          : 'Perubahan yang belum disimpan akan hilang jika Anda kembali ke halaman detail.'}
         confirmLabel="Ya, Batalkan"
         cancelLabel="Lanjut Edit"
         tone="default"
-        onConfirm={() => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(directoryRecord.email)}`)}
+        onConfirm={() => router.push(backHref)}
         onCancel={() => setCancelConfirmOpen(false)}
       />
     </SuperadminShell>
