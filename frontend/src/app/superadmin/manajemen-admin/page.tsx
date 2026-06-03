@@ -474,7 +474,7 @@ function SuperadminAdminManagementContent() {
               <div className="pointer-events-none absolute inset-x-0 bottom-12 z-20 flex justify-center px-4">
                 <SelectedCounter
                   compact
-                  className="pointer-events-auto w-fit max-w-[calc(100%-32px)] overflow-x-auto border-slate-300"
+                  className="pointer-events-auto w-fit max-w-[calc(100%-32px)] overflow-x-auto border-slate-300 shadow-[0_14px_36px_rgba(15,23,42,0.20)]"
                   title={`${selectedAdmins.length} admin dipilih`}
                   hideLeadingIcon
                   hideClearButton
