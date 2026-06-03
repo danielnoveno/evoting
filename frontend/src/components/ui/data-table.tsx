@@ -154,7 +154,7 @@ export function SelectedCounter({
   className?: string
 }) {
   return (
-    <div className={`border border-slate-200 bg-white ${compact ? 'rounded-2xl px-3 py-2.5' : 'rounded-[24px] p-4'} ${className}`}>
+    <div className={`border border-slate-300 bg-white ${compact ? 'rounded-2xl px-3 py-2.5' : 'rounded-[24px] p-4'} ${className}`}>
       <div className={`flex flex-nowrap items-center ${compact ? 'gap-1.5' : 'gap-3'}`}>
         {!hideLeadingIcon ? (
           <div className={`${compact ? 'rounded-xl p-1.5' : 'mt-0.5 rounded-2xl p-2'} bg-slate-100 text-slate-700`}>

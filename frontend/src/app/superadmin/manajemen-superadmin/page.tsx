@@ -365,7 +365,7 @@ function SuperadminManagementContent() {
           </div>
 
           <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-4">
-            <DataTableShell className="relative rounded-[32px] border border-slate-200 bg-slate-50 p-3 pb-24">
+            <DataTableShell className="relative rounded-[32px] border border-slate-200 bg-slate-50 p-3">
               <DataTableViewport>
                 <DataTable className="[border-spacing:0_10px]">
                   <DataTableHead className="bg-transparent">
@@ -505,10 +505,10 @@ function SuperadminManagementContent() {
                 </DataTable>
               </DataTableViewport>
               {selectedSuperadmins.length > 0 && (
-                <div className="pointer-events-none absolute inset-x-0 bottom-16 z-20 flex justify-center px-4">
+                <div className="pointer-events-none absolute inset-x-0 bottom-12 z-20 flex justify-center px-4">
                   <SelectedCounter
                     compact
-                    className="pointer-events-auto w-full max-w-[680px] overflow-x-auto"
+                    className="pointer-events-auto w-full max-w-[680px] overflow-x-auto border-slate-300"
                     title={`${selectedSuperadmins.length} superadmin dipilih`}
                     hideLeadingIcon
                     onClear={() => setSelectedEmails([])}
