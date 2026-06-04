@@ -24,6 +24,8 @@ contract ElectionSpace {
     uint256 public immutable spaceId;
     uint256 public immutable candidateCount;
 
+    string public title;
+    string public metadataURI;
     Phase public currentPhase;
     ElectionStatus public status;
 
@@ -38,6 +40,7 @@ contract ElectionSpace {
     event Committed(uint256 indexed spaceId, address indexed voter, bytes32 indexed commitment);
     event Revealed(uint256 indexed spaceId, address indexed voter, uint256 indexed candidateId, uint256 newVoteCount);
     event ElectionStatusChanged(uint256 indexed spaceId, ElectionStatus indexed status, address indexed actor, string reasonCode);
+    event ElectionMetadataUpdated(uint256 indexed spaceId, string title, string metadataURI, address actor);
 
     error NotAuthorized();
     error NotRegistry();
@@ -53,7 +56,14 @@ contract ElectionSpace {
     error ElectionSuspended();
     error ElectionTerminated();
 
-    constructor(address _registry, address _spaceAdmin, uint256 _spaceId, uint256 _candidateCount) {
+    constructor(
+        address _registry,
+        address _spaceAdmin,
+        uint256 _spaceId,
+        uint256 _candidateCount,
+        string memory _title,
+        string memory _metadataURI
+    ) {
         if (_registry == address(0) || _spaceAdmin == address(0)) revert NotAuthorized();
         if (_candidateCount == 0) revert InvalidCandidate();
 
@@ -61,6 +71,8 @@ contract ElectionSpace {
         spaceAdmin = _spaceAdmin;
         spaceId = _spaceId;
         candidateCount = _candidateCount;
+        title = _title;
+        metadataURI = _metadataURI;
 
         currentPhase = Phase.Registration;
         status = ElectionStatus.Active;
@@ -175,5 +187,11 @@ contract ElectionSpace {
     function terminate(address actor, string calldata reasonCode) external onlyRegistry {
         status = ElectionStatus.Terminated;
         emit ElectionStatusChanged(spaceId, status, actor, reasonCode);
+    }
+
+    function updateMetadata(string calldata _title, string calldata _metadataURI, address actor) external onlyRegistry {
+        title = _title;
+        metadataURI = _metadataURI;
+        emit ElectionMetadataUpdated(spaceId, _title, _metadataURI, actor);
     }
 }

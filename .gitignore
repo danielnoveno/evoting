@@ -6,6 +6,9 @@
 .env.development.local
 .env.test.local
 .env.production.local
+.gemini
+GEMINI.md
+.geminiignore
 
 # Dependencies
 node_modules

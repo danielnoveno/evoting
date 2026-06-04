@@ -21,18 +21,30 @@ contract VoteChainRegistry {
         uint256 reviewedAt;
     }
 
+    struct ChangeProposal {
+        uint256 spaceId;
+        string title;
+        string metadataURI;
+        ProposalStatus status;
+        address proposer;
+    }
+
     address public immutable superAdmin;
 
     uint256 public nextProposalId = 1;
+    uint256 public nextChangeProposalId = 1;
     uint256 public nextSpaceId = 1;
 
     mapping(address => bool) public isPlatformAdmin;
     mapping(uint256 => Proposal) public proposals;
+    mapping(uint256 => ChangeProposal) public changeProposals;
     mapping(uint256 => address) public spaceById;
 
     event AdminUpserted(address indexed admin, bool isActive);
     event ProposalSubmitted(uint256 indexed proposalId, address indexed proposer, uint256 candidateCount);
     event ProposalReviewed(uint256 indexed proposalId, ProposalStatus indexed decision, address indexed reviewer);
+    event ChangeProposalSubmitted(uint256 indexed changeId, uint256 indexed spaceId, address proposer);
+    event ChangeProposalReviewed(uint256 indexed changeId, ProposalStatus indexed decision, address indexed reviewer);
     event ElectionSpaceCreated(
         uint256 indexed spaceId,
         address indexed space,
@@ -123,13 +135,59 @@ contract VoteChainRegistry {
         spaceId = nextSpaceId;
         nextSpaceId += 1;
 
-        ElectionSpace space = new ElectionSpace(address(this), proposal.proposer, spaceId, proposal.candidateCount);
+        ElectionSpace space = new ElectionSpace(
+            address(this),
+            proposal.proposer,
+            spaceId,
+            proposal.candidateCount,
+            proposal.title,
+            proposal.metadataURI
+        );
         spaceAddress = address(space);
         spaceById[spaceId] = spaceAddress;
 
         proposal.status = ProposalStatus.Deployed;
 
         emit ElectionSpaceCreated(spaceId, spaceAddress, proposalId, proposal.proposer, proposal.candidateCount);
+    }
+
+    function proposeSpaceUpdate(uint256 spaceId, string calldata title, string calldata metadataURI)
+        external
+        onlyPlatformAdminOrSuper
+        returns (uint256 changeId)
+    {
+        if (spaceById[spaceId] == address(0)) revert SpaceNotFound();
+
+        changeId = nextChangeProposalId;
+        nextChangeProposalId += 1;
+
+        changeProposals[changeId] = ChangeProposal({
+            spaceId: spaceId,
+            title: title,
+            metadataURI: metadataURI,
+            status: ProposalStatus.Submitted,
+            proposer: msg.sender
+        });
+
+        emit ChangeProposalSubmitted(changeId, spaceId, msg.sender);
+    }
+
+    function reviewSpaceUpdate(uint256 changeId, bool approve) external onlySuperAdmin {
+        ChangeProposal storage cp = changeProposals[changeId];
+        if (cp.proposer == address(0)) revert ProposalNotFound();
+        if (cp.status != ProposalStatus.Submitted) {
+            revert InvalidProposalStatus(cp.status, ProposalStatus.Submitted);
+        }
+
+        if (approve) {
+            cp.status = ProposalStatus.Approved;
+            address target = spaceById[cp.spaceId];
+            ElectionSpace(target).updateMetadata(cp.title, cp.metadataURI, msg.sender);
+        } else {
+            cp.status = ProposalStatus.Rejected;
+        }
+
+        emit ChangeProposalReviewed(changeId, cp.status, msg.sender);
     }
 
     function suspendSpace(uint256 spaceId, string calldata reasonCode) external onlySuperAdmin {

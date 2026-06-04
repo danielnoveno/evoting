@@ -34,6 +34,8 @@ export const election = schema.table("elections", (t) => ({
   proposalId: t.bigint().notNull(),
   owner: t.hex().notNull(),
   candidateCount: t.integer().notNull(),
+  title: t.text().notNull(),
+  metadataURI: t.text().notNull(),
   phase: t.integer().notNull(),
   status: t.integer().notNull(),
   whitelistedCount: t.integer().notNull(),
@@ -45,6 +47,19 @@ export const election = schema.table("elections", (t) => ({
   lastUpdatedAt: t.bigint().notNull(),
   lastUpdatedBlock: t.bigint().notNull(),
   lastUpdatedTx: t.hex().notNull(),
+}));
+
+export const changeProposal = schema.table("change_proposals", (t) => ({
+  id: t.bigint().primaryKey(),
+  spaceId: t.bigint().notNull(),
+  spaceAddress: t.hex().notNull(),
+  title: t.text().notNull(),
+  metadataURI: t.text().notNull(),
+  status: t.integer().notNull(),
+  proposer: t.hex().notNull(),
+  submittedAt: t.bigint().notNull(),
+  updatedAtBlock: t.bigint().notNull(),
+  updatedAtTx: t.hex().notNull(),
 }));
 
 export const voteCommit = schema.table("vote_commits", (t) => ({
