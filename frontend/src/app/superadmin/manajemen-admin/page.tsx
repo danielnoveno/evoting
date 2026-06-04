@@ -558,11 +558,11 @@ function SuperadminAdminManagementContent() {
             />
             <div className="mt-8 grid gap-5 xl:grid-cols-2">
               <label className="block">
-                <SuperadminFieldLabel>Nama Lengkap</SuperadminFieldLabel>
+                <SuperadminFieldLabel>Nama Organisasi Admin</SuperadminFieldLabel>
                 <SuperadminTextInput
-                  value={formData.name}
-                  onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
-                  placeholder="Masukkan nama lengkap"
+                  value={formData.organizationName}
+                  onChange={(event) => setFormData((current) => ({ ...current, organizationName: event.target.value }))}
+                  placeholder="Contoh: HIMAFORKA FTI UAJY"
                 />
               </label>
 
@@ -572,15 +572,6 @@ function SuperadminAdminManagementContent() {
                   value={formData.email}
                   onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
                   placeholder="nama@institusi.edu"
-                />
-              </label>
-
-              <label className="block xl:col-span-2">
-                <SuperadminFieldLabel>Nama Organisasi</SuperadminFieldLabel>
-                <SuperadminTextInput
-                  value={formData.organizationName}
-                  onChange={(event) => setFormData((current) => ({ ...current, organizationName: event.target.value }))}
-                  placeholder="Contoh: HIMAFORKA FTI UAJY"
                 />
               </label>
 
@@ -741,5 +732,25 @@ export default function SuperadminAdminManagementPage() {
     }>
       <SuperadminAdminManagementContent />
     </Suspense>
+  )
+}
+Shell>
+  )
+}
+
+export default function SuperadminAdminManagementPage() {
+  return (
+    <Suspense fallback={
+      <SuperadminShell>
+        <div className="flex h-[50vh] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-black" />
+        </div>
+      </SuperadminShell>
+    }>
+      <SuperadminAdminManagementContent />
+    </Suspense>
+  )
+}
+nse>
   )
 }

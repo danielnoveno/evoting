@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     email: invite.email,
-    displayName: invite.display_name,
+    displayName: invite.organization_name,
     role: invite.assigned_role,
   })
 }

@@ -1,10 +1,12 @@
 'use client'
 
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Database, Download, FileText, Loader2, Mail, Search, Trash2, Upload, Users, X, ChevronsUpDown } from 'lucide-react'
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Database, Download, FileText, Loader2, Mail, Search, Trash2, Upload, Users, X, ChevronsUpDown, UserPlus } from 'lucide-react'
 import { type ChangeEvent, type DragEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { SuperadminSectionCard, SuperadminShell, SuperadminAvatar } from '@/components/superadmin/superadmin-shell'
+import { SuperadminSectionCard, SuperadminShell, SuperadminAvatar, SuperadminTabButton, SuperadminSectionHeading, SuperadminTextInput, SuperadminFieldLabel, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
+import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   DataTable,
@@ -30,6 +32,15 @@ import { type SuperadminMasterVoter, useSuperadminMasterVotersStore } from '@/li
 const MASTER_VOTER_CSV_HEADERS = ['nim', 'nama', 'email', 'fakultas'] as const
 const PAGE_SIZE_OPTIONS = [5, 10, 20] as const
 
+type TabKey = 'daftar' | 'tambah'
+
+const initialFormData = {
+  nim: '',
+  name: '',
+  email: '',
+  faculty: '',
+}
+
 function getInitials(name: string) {
   return name
     .split(' ')
@@ -41,10 +52,14 @@ function getInitials(name: string) {
 }
 
 export function SuperadminMasterVoterPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { showToast } = useToast()
   const { voters, setVoters } = useSuperadminMasterVotersStore()
   const sendVoterActivationEmailsMutation = useSendVoterActivationEmails()
 
+  const [activeTab, setActiveTab] = useState<TabKey>('daftar')
+  const [formData, setFormData] = useState(initialFormData)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeFilter, setActiveFilter] = useState<'semua' | 'belum-sinkron' | 'tersinkronisasi' | 'terpilih'>('semua')
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10)
@@ -59,6 +74,21 @@ export function SuperadminMasterVoterPage() {
   const [deleteSelectedDialogOpen, setDeleteSelectedDialogOpen] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    setActiveTab(tab === 'tambah' ? 'tambah' : 'daftar')
+  }, [searchParams])
+
+  const updateTab = (tab: TabKey) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (tab === 'tambah') {
+      params.set('tab', 'tambah')
+    } else {
+      params.delete('tab')
+    }
+    router.replace(`/superadmin/data-voter?${params.toString()}`)
+  }
 
   const filteredVoters = voters.filter((voter) => {
     const term = searchTerm.toLowerCase().trim()
@@ -235,6 +265,48 @@ export function SuperadminMasterVoterPage() {
     showToast({ tone: 'success', title: 'Voter disinkronkan', description: `Data voter ${nim} ditandai sudah tersinkronisasi.` })
   }
 
+  const handleCreateManualVoter = () => {
+    const { nim, name, email, faculty } = formData
+
+    if (!nim.trim() || !name.trim() || !email.trim() || !faculty.trim()) {
+      showToast({ tone: 'error', title: 'Data belum lengkap', description: 'Lengkapi semua kolom formulir.' })
+      return
+    }
+
+    if (!/^\d{10}$/.test(nim)) {
+      showToast({ tone: 'error', title: 'NIM tidak valid', description: 'NIM harus berupa 10 digit angka.' })
+      return
+    }
+
+    if (!/^[a-zA-Z\s]+$/.test(name)) {
+      showToast({ tone: 'error', title: 'Nama tidak valid', description: 'Nama hanya boleh berisi huruf dan spasi.' })
+      return
+    }
+
+    if (!/^[a-zA-Z0-9._%+-]+@(students\.uajy\.ac\.id|uajy\.ac\.id)$/.test(email)) {
+      showToast({ tone: 'error', title: 'Email tidak valid', description: 'Gunakan email resmi institusi UAJY.' })
+      return
+    }
+
+    if (voters.some((v) => v.nim === nim)) {
+      showToast({ tone: 'error', title: 'NIM sudah ada', description: 'Mahasiswa dengan NIM ini sudah terdaftar.' })
+      return
+    }
+
+    const newVoter: SuperadminMasterVoter = {
+      nim,
+      name,
+      email,
+      faculty,
+      syncStatus: 'Belum Sinkron',
+    }
+
+    setVoters([newVoter, ...voters])
+    setFormData(initialFormData)
+    showToast({ tone: 'success', title: 'Mahasiswa ditambahkan', description: `${name} berhasil ditambahkan ke data master.` })
+    updateTab('daftar')
+  }
+
   const handleCSVParsing = (text: string) => {
     const lines = text.split(/\r?\n/)
     const tempVoters: SuperadminMasterVoter[] = []
@@ -389,232 +461,326 @@ export function SuperadminMasterVoterPage() {
     <SuperadminShell>
       <SuperadminOnboardingTour />
       <ScrollReveal variant="fade-up" duration={800}>
-        <section>
-          <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">
-            Data Master Voter Platform
-          </h1>
-          <p className="mt-3 max-w-3xl text-[16px] leading-8 text-slate-800">
-            Kelola daftar induk voter platform, impor data kampus melalui CSV, dan sinkronisasikan pembaruan ke smart contract.
-          </p>
+        <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+          <div>
+            <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">
+              Data Master Voter Platform
+            </h1>
+            <p className="mt-3 max-w-3xl text-[16px] leading-8 text-slate-800">
+              Kelola daftar induk voter platform, impor data kampus melalui CSV, dan sinkronisasikan pembaruan ke smart contract.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            {activeTab === 'daftar' && (
+              <SuperadminToolbarButton variant="primary" onClick={() => updateTab('tambah')}>
+                <UserPlus className="h-4 w-4" />
+                Tambah Manual
+              </SuperadminToolbarButton>
+            )}
+          </div>
         </section>
+
+        <div className="mt-10 flex items-end justify-between border-b border-slate-200">
+          <div className="flex items-center gap-8">
+            <SuperadminTabButton active={activeTab === 'daftar'} onClick={() => updateTab('daftar')}>
+              Daftar Voter
+            </SuperadminTabButton>
+            <SuperadminTabButton active={activeTab === 'tambah'} onClick={() => updateTab('tambah')}>
+              Tambah Baru
+            </SuperadminTabButton>
+          </div>
+          {activeTab === 'daftar' && (
+            <div className="hidden items-center gap-4 pb-3 sm:flex">
+              <div className="h-4 w-px bg-slate-200" />
+              <div className="text-right">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Total Voter</p>
+                <p className="mt-0.5 text-[16px] font-semibold text-slate-900">
+                  {voters.length} Mahasiswa
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </ScrollReveal>
 
-      <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 space-y-6">
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => setShowCsvModal(true)}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-[20px] bg-slate-900 px-6 text-[15px] font-semibold text-white transition hover:bg-slate-800"
-          >
-            <Upload className="h-4 w-4" />
-            Impor Data Master via CSV
-          </button>
-          <button
-            type="button"
-            disabled={isSyncing}
-            onClick={handleSyncToContract}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-[20px] bg-emerald-600 px-6 text-[15px] font-semibold text-white transition hover:bg-emerald-700 disabled:bg-emerald-300"
-          >
-            <Database className="h-4 w-4" />
-            {isSyncing ? 'Sinkronisasi...' : 'Sinkronisasikan ke Smart Contract'}
-          </button>
-        </div>
-
-        <ScrollReveal variant="fade-up" delay={200} duration={800}>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
-              {[
-                { key: 'semua', label: 'Semua Status' },
-                { key: 'belum-sinkron', label: 'Belum Sinkron' },
-                { key: 'tersinkronisasi', label: 'Tersinkronisasi' },
-                { key: 'terpilih', label: 'Terpilih' },
-              ].map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setActiveFilter(item.key as typeof activeFilter)}
-                  className={activeFilter === item.key
-                    ? 'inline-flex h-10 items-center justify-center rounded-2xl bg-white px-5 text-[15px] font-semibold text-slate-900 shadow-sm'
-                    : 'inline-flex h-10 items-center justify-center rounded-2xl px-5 text-[15px] text-slate-800 hover:bg-white/70'}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Cari voter..."
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black md:w-64"
-              />
-            </div>
+      {activeTab === 'daftar' ? (
+        <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 space-y-6">
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setShowCsvModal(true)}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-[20px] bg-slate-900 px-6 text-[15px] font-semibold text-white transition hover:bg-slate-800"
+            >
+              <Upload className="h-4 w-4" />
+              Impor Data Master via CSV
+            </button>
+            <button
+              type="button"
+              disabled={isSyncing}
+              onClick={handleSyncToContract}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-[20px] bg-emerald-600 px-6 text-[15px] font-semibold text-white transition hover:bg-emerald-700 disabled:bg-emerald-300"
+            >
+              <Database className="h-4 w-4" />
+              {isSyncing ? 'Sinkronisasi...' : 'Sinkronisasikan ke Smart Contract'}
+            </button>
           </div>
-        </ScrollReveal>
 
-        {selectedVoters.length > 0 ? (
-          <SelectedCounter
-            title={`${selectedVoters.length} voter dipilih`}
-            description={`${selectedFilteredCount} dari ${filteredVoters.length} voter hasil filter sedang dipilih. Total data master: ${voters.length}.`}
-            onClear={() => setSelectedVoterNims([])}
-            actions={(
-              <>
-              <button
-                type="button"
-                onClick={handleBulkSendActivationEmails}
-                disabled={sendVoterActivationEmailsMutation.isPending}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
-              >
-                {sendVoterActivationEmailsMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                Kirim Email Aktivasi
-              </button>
-              <button
-                type="button"
-                onClick={handleBulkSyncSelected}
-                disabled={isSyncing}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-[13px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
-              >
-                {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
-                Sinkronkan Terpilih
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeleteSelectedDialogOpen(true)}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-4 text-[13px] font-semibold text-red-600 transition hover:bg-red-50"
-              >
-                <Trash2 className="h-4 w-4" />
-                Hapus Terpilih
-              </button>
-              </>
-            )}
-          />
-        ) : null}
+          <ScrollReveal variant="fade-up" delay={200} duration={800}>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
+                {[
+                  { key: 'semua', label: 'Semua Status' },
+                  { key: 'belum-sinkron', label: 'Belum Sinkron' },
+                  { key: 'tersinkronisasi', label: 'Tersinkronisasi' },
+                  { key: 'terpilih', label: 'Terpilih' },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setActiveFilter(item.key as typeof activeFilter)}
+                    className={activeFilter === item.key
+                      ? 'inline-flex h-10 items-center justify-center rounded-2xl bg-white px-5 text-[15px] font-semibold text-slate-900 shadow-sm'
+                      : 'inline-flex h-10 items-center justify-center rounded-2xl px-5 text-[15px] text-slate-800 hover:bg-white/70'}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
 
-        <DataTableShell className="relative rounded-[32px] border border-slate-200 bg-slate-50 p-3">
-          <DataTableViewport>
-            <DataTable className="[border-spacing:0_10px]">
-              <DataTableHead className="bg-transparent">
-                <DataTableHeaderRow>
-                  <DataTableHeaderCell className="w-[56px]">
-                    <input
-                      type="checkbox"
-                      checked={allFilteredSelected}
-                      onChange={toggleSelectAllFiltered}
-                      aria-label="Pilih semua voter yang tampil"
-                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                    />
-                  </DataTableHeaderCell>
-                  <DataTableHeaderCell>
-                    <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
-                      NIM / Identitas
-                      <ChevronsUpDown className="h-3.5 w-3.5" />
-                    </div>
-                  </DataTableHeaderCell>
-                  <DataTableHeaderCell>
-                    <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
-                      Nama Lengkap
-                      <ChevronsUpDown className="h-3.5 w-3.5" />
-                    </div>
-                  </DataTableHeaderCell>
-                  <DataTableHeaderCell>
-                    <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
-                      Email Institusi
-                    </div>
-                  </DataTableHeaderCell>
-                  <DataTableHeaderCell>
-                    <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
-                      Status Sinkronisasi
-                    </div>
-                  </DataTableHeaderCell>
-                  <DataTableHeaderCell className="text-center uppercase tracking-[0.08em] text-slate-400">Aksi</DataTableHeaderCell>
-                </DataTableHeaderRow>
-              </DataTableHead>
-              <DataTableBody className="bg-transparent">
-                {paginatedVoters.length > 0 ? (
-                  paginatedVoters.map((voter) => (
-                    <DataTableRow 
-                      key={voter.nim}
-                      className="[&>td]:border-y [&>td]:border-slate-200 [&>td]:bg-white [&>td:first-child]:rounded-l-[20px] [&>td:first-child]:border-l [&>td:last-child]:rounded-r-[20px] [&>td:last-child]:border-r hover:[&>td]:border-slate-300 hover:[&>td]:bg-slate-50/80"
-                    >
-                      <DataTableCell className="w-[56px]">
-                        <input
-                          type="checkbox"
-                          checked={selectedVoterNims.includes(voter.nim)}
-                          onChange={() => toggleSelectedVoter(voter.nim)}
-                          aria-label={`Pilih voter ${voter.name}`}
-                          className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
-                        />
-                      </DataTableCell>
-                      <DataTableCell>
-                        <div className="font-mono text-[14px] font-medium text-slate-900">{voter.nim}</div>
-                        <div className="mt-0.5 text-[12px] text-slate-500">{voter.faculty}</div>
-                      </DataTableCell>
-                      <DataTableCell>
-                        <div className="flex items-center gap-4">
-                          <SuperadminAvatar initials={getInitials(voter.name)} />
-                          <div>
-                            <div className="font-semibold text-slate-900">{voter.name}</div>
-                            <div className="mt-0.5 text-[12px] text-slate-500">Mahasiswa Aktif</div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Cari voter..."
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black md:w-64"
+                />
+              </div>
+            </div>
+          </ScrollReveal>
+
+          {selectedVoters.length > 0 ? (
+            <SelectedCounter
+              title={`${selectedVoters.length} voter dipilih`}
+              description={`${selectedFilteredCount} dari ${filteredVoters.length} voter hasil filter sedang dipilih. Total data master: ${voters.length}.`}
+              onClear={() => setSelectedVoterNims([])}
+              actions={(
+                <>
+                <button
+                  type="button"
+                  onClick={handleBulkSendActivationEmails}
+                  disabled={sendVoterActivationEmailsMutation.isPending}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
+                >
+                  {sendVoterActivationEmailsMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  Kirim Email Aktivasi
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkSyncSelected}
+                  disabled={isSyncing}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 text-[13px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+                >
+                  {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
+                  Sinkronkan Terpilih
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteSelectedDialogOpen(true)}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-4 text-[13px] font-semibold text-red-600 transition hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Hapus Terpilih
+                </button>
+                </>
+              )}
+            />
+          ) : null}
+
+          <DataTableShell className="relative rounded-[32px] border border-slate-200 bg-slate-50 p-3">
+            <DataTableViewport>
+              <DataTable className="[border-spacing:0_10px]">
+                <DataTableHead className="bg-transparent">
+                  <DataTableHeaderRow>
+                    <DataTableHeaderCell className="w-[56px]">
+                      <input
+                        type="checkbox"
+                        checked={allFilteredSelected}
+                        onChange={toggleSelectAllFiltered}
+                        aria-label="Pilih semua voter yang tampil"
+                        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                      />
+                    </DataTableHeaderCell>
+                    <DataTableHeaderCell>
+                      <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
+                        NIM / Identitas
+                        <ChevronsUpDown className="h-3.5 w-3.5" />
+                      </div>
+                    </DataTableHeaderCell>
+                    <DataTableHeaderCell>
+                      <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
+                        Nama Lengkap
+                        <ChevronsUpDown className="h-3.5 w-3.5" />
+                      </div>
+                    </DataTableHeaderCell>
+                    <DataTableHeaderCell>
+                      <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
+                        Email Institusi
+                      </div>
+                    </DataTableHeaderCell>
+                    <DataTableHeaderCell>
+                      <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
+                        Status Sinkronisasi
+                      </div>
+                    </DataTableHeaderCell>
+                    <DataTableHeaderCell className="text-center uppercase tracking-[0.08em] text-slate-400">Aksi</DataTableHeaderCell>
+                  </DataTableHeaderRow>
+                </DataTableHead>
+                <DataTableBody className="bg-transparent">
+                  {paginatedVoters.length > 0 ? (
+                    paginatedVoters.map((voter) => (
+                      <DataTableRow 
+                        key={voter.nim}
+                        className="[&>td]:border-y [&>td]:border-slate-200 [&>td]:bg-white [&>td:first-child]:rounded-l-[20px] [&>td:first-child]:border-l [&>td:last-child]:rounded-r-[20px] [&>td:last-child]:border-r hover:[&>td]:border-slate-300 hover:[&>td]:bg-slate-50/80"
+                      >
+                        <DataTableCell className="w-[56px]">
+                          <input
+                            type="checkbox"
+                            checked={selectedVoterNims.includes(voter.nim)}
+                            onChange={() => toggleSelectedVoter(voter.nim)}
+                            aria-label={`Pilih voter ${voter.name}`}
+                            className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                          />
+                        </DataTableCell>
+                        <DataTableCell>
+                          <div className="font-mono text-[14px] font-medium text-slate-900">{voter.nim}</div>
+                          <div className="mt-0.5 text-[12px] text-slate-500">{voter.faculty}</div>
+                        </DataTableCell>
+                        <DataTableCell>
+                          <div className="flex items-center gap-4">
+                            <SuperadminAvatar initials={getInitials(voter.name)} />
+                            <div>
+                              <div className="font-semibold text-slate-900">{voter.name}</div>
+                              <div className="mt-0.5 text-[12px] text-slate-500">Mahasiswa Aktif</div>
+                            </div>
                           </div>
-                        </div>
-                      </DataTableCell>
-                      <DataTableCell className="font-mono text-[13px] text-slate-600">{voter.email}</DataTableCell>
-                      <DataTableCell>
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${
-                            voter.syncStatus === 'Tersinkronisasi'
-                              ? 'bg-emerald-50 text-emerald-600'
-                              : 'bg-amber-50 text-amber-600'
-                          }`}
-                        >
-                          {voter.syncStatus === 'Tersinkronisasi' ? (
-                            <>
-                              <Check className="h-3 w-3" />
-                              Tersinkronisasi
-                            </>
-                          ) : (
-                            <>
-                              <AlertTriangle className="h-3 w-3" />
-                              Belum Sinkron
-                            </>
-                          )}
-                        </span>
-                      </DataTableCell>
-                      <DataTableCell className="text-center">
-                        <RowActionMenu
-                          buttonLabel={`Aksi untuk ${voter.name}`}
-                          items={[
-                            { label: 'Kirim Email Aktivasi', onClick: () => handleRowSendActivationEmail(voter) },
-                            { label: 'Sinkronkan Voter', onClick: () => handleRowSync(voter.nim) },
-                            { label: 'Pilih Data Ini', onClick: () => toggleSelectedVoter(voter.nim) },
-                          ]}
-                        />
-                      </DataTableCell>
-                    </DataTableRow>
-                  ))
-                ) : (
-                  <DataTableEmpty
-                    colSpan={6}
-                    title="Data Master Voter kosong"
-                    description={searchTerm ? 'Tidak ada hasil pencarian yang cocok.' : 'Silakan gunakan tombol Impor Data Master via CSV di atas untuk memuat data.'}
-                  />
-                )}
-              </DataTableBody>
-            </DataTable>
-          </DataTableViewport>
-          <DataTableFooter
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filteredVoters.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            label="data voter"
-          />
-        </DataTableShell>
-      </StaggerContainer>
+                        </DataTableCell>
+                        <DataTableCell className="font-mono text-[13px] text-slate-600">{voter.email}</DataTableCell>
+                        <DataTableCell>
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${
+                              voter.syncStatus === 'Tersinkronisasi'
+                                ? 'bg-emerald-50 text-emerald-600'
+                                : 'bg-amber-50 text-amber-600'
+                            }`}
+                          >
+                            {voter.syncStatus === 'Tersinkronisasi' ? (
+                              <>
+                                <Check className="h-3 w-3" />
+                                Tersinkronisasi
+                              </>
+                            ) : (
+                              <>
+                                <AlertTriangle className="h-3 w-3" />
+                                Belum Sinkron
+                              </>
+                            )}
+                          </span>
+                        </DataTableCell>
+                        <DataTableCell className="text-center">
+                          <RowActionMenu
+                            buttonLabel={`Aksi untuk ${voter.name}`}
+                            items={[
+                              { label: 'Kirim Email Aktivasi', onClick: () => handleRowSendActivationEmail(voter) },
+                              { label: 'Sinkronkan Voter', onClick: () => handleRowSync(voter.nim) },
+                              { label: 'Pilih Data Ini', onClick: () => toggleSelectedVoter(voter.nim) },
+                            ]}
+                          />
+                        </DataTableCell>
+                      </DataTableRow>
+                    ))
+                  ) : (
+                    <DataTableEmpty
+                      colSpan={6}
+                      title="Data Master Voter kosong"
+                      description={searchTerm ? 'Tidak ada hasil pencarian yang cocok.' : 'Silakan gunakan tombol Impor Data Master via CSV di atas untuk memuat data.'}
+                    />
+                  )}
+                </DataTableBody>
+              </DataTable>
+            </DataTableViewport>
+            <DataTableFooter
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredVoters.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              label="data voter"
+            />
+          </DataTableShell>
+        </StaggerContainer>
+      ) : (
+        <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 space-y-6">
+          <AppSectionCard>
+            <SuperadminSectionHeading
+              title="Identitas Mahasiswa Baru"
+              description="Tambahkan data mahasiswa secara manual ke daftar master voter platform. Data ini harus diverifikasi sesuai database kampus."
+            />
+
+            <div className="mt-8 grid gap-5 xl:grid-cols-2">
+              <label className="block">
+                <SuperadminFieldLabel>NIM (Nomor Induk Mahasiswa)</SuperadminFieldLabel>
+                <SuperadminTextInput
+                  value={formData.nim}
+                  onChange={(event) => setFormData((current) => ({ ...current, nim: event.target.value }))}
+                  placeholder="Cth: 2207116630"
+                />
+              </label>
+
+              <label className="block">
+                <SuperadminFieldLabel>Nama Lengkap</SuperadminFieldLabel>
+                <SuperadminTextInput
+                  value={formData.name}
+                  onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
+                  placeholder="Cth: Alexander Graham"
+                />
+              </label>
+
+              <label className="block">
+                <SuperadminFieldLabel>Email Institusi (@students.uajy.ac.id)</SuperadminFieldLabel>
+                <SuperadminTextInput
+                  value={formData.email}
+                  onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
+                  placeholder="name@students.uajy.ac.id"
+                />
+              </label>
+
+              <label className="block">
+                <SuperadminFieldLabel>Fakultas / Program Studi</SuperadminFieldLabel>
+                <SuperadminTextInput
+                  value={formData.faculty}
+                  onChange={(event) => setFormData((current) => ({ ...current, faculty: event.target.value }))}
+                  placeholder="Cth: Informatika"
+                />
+              </label>
+            </div>
+          </AppSectionCard>
+
+          <section className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+             <button
+                type="button"
+                onClick={() => updateTab('daftar')}
+                className="inline-flex h-12 items-center justify-center rounded-2xl px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-100"
+              >
+                Batal
+              </button>
+              <SuperadminToolbarButton variant="primary" onClick={handleCreateManualVoter}>
+                Tambah ke Data Master
+              </SuperadminToolbarButton>
+            </section>
+        </StaggerContainer>
+      )}
 
       {showCsvModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">

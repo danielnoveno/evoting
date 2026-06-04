@@ -61,7 +61,6 @@ function mapAdminRegistryRow(row: AdminRegistryRow): AdminRegistryRecord {
   return {
     email: row.email,
     assignedRole: row.assigned_role,
-    displayName: row.display_name,
     organizationName: row.organization_name,
     accessScope: row.access_scope,
     status: row.status,
@@ -420,7 +419,6 @@ export async function createAdminRegistry(input: AdminRegistryInput): Promise<Ad
   const payload: Database['app']['Tables']['admin_registry']['Insert'] = {
     email,
     assigned_role: 'admin',
-    display_name: input.displayName?.trim() || null,
     organization_name: input.organizationName?.trim() || null,
     access_scope: input.accessScope ?? 'all',
     status: input.status ?? 'pending',
@@ -471,7 +469,6 @@ export async function updateAdminRegistry(currentEmail: string, input: AdminRegi
   const actorProfileId = await getCurrentProfileId()
   const payload: Database['app']['Tables']['admin_registry']['Update'] = {
     email: nextEmail,
-    display_name: input.displayName?.trim() || null,
     organization_name: input.organizationName?.trim() || null,
     access_scope: input.accessScope ?? 'all',
     status: input.status ?? 'pending',
@@ -494,7 +491,7 @@ export async function updateAdminRegistry(currentEmail: string, input: AdminRegi
     await syncProfileRoleForEmail(oldEmail, 'voter')
   }
 
-  await syncProfileRoleForEmail(nextEmail, payload.status === 'inactive' ? 'voter' : currentRecord.assigned_role, payload.display_name)
+  await syncProfileRoleForEmail(nextEmail, payload.status === 'inactive' ? 'voter' : currentRecord.assigned_role, payload.organization_name)
 
   return mapAdminRegistryRow(data)
 }
@@ -550,4 +547,6 @@ export async function updateDirectoryRegistryStatus(email: string, status: 'pend
 
   const nextRole = status === 'inactive' ? 'voter' : current.assigned_role
   await syncProfileRoleForEmail(normalizedEmail, nextRole, current.display_name)
+}
+l(normalizedEmail, nextRole, current.display_name)
 }

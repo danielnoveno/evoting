@@ -474,15 +474,15 @@ function SuperadminManagementContent() {
                               type="checkbox"
                               checked={selectedEmails.includes(admin.email)}
                               onChange={() => toggleSelected(admin.email)}
-                              aria-label={`Pilih superadmin ${admin.displayName || admin.email}`}
+                              aria-label={`Pilih superadmin ${admin.organizationName || admin.email}`}
                               className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                             />
                           </DataTableCell>
                           <DataTableCell>
                             <div className="flex items-center gap-4">
-                              <SuperadminAvatar initials={getInitials(admin.displayName || 'SA')} />
+                              <SuperadminAvatar initials={getInitials(admin.organizationName || 'SA')} />
                               <div>
-                                <p className="text-[16px] font-semibold text-slate-900">{admin.displayName || 'Super Admin'}</p>
+                                <p className="text-[16px] font-semibold text-slate-900">{admin.organizationName || 'Super Admin'}</p>
                               </div>
                             </div>
                           </DataTableCell>
@@ -695,5 +695,8 @@ export default function SuperadminManagementPage() {
     }>
       <SuperadminManagementContent />
     </Suspense>
+  )
+}
+ense>
   )
 }

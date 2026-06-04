@@ -52,7 +52,6 @@ export type Database = {
         Row: {
           email: string
           assigned_role: 'admin' | 'super_admin'
-          display_name: string | null
           organization_name: string | null
           access_scope: 'all' | 'specific'
           status: 'pending' | 'active' | 'inactive'
@@ -70,7 +69,6 @@ export type Database = {
         Insert: {
           email: string
           assigned_role?: 'admin' | 'super_admin'
-          display_name?: string | null
           organization_name?: string | null
           access_scope?: 'all' | 'specific'
           status?: 'pending' | 'active' | 'inactive'
@@ -88,7 +86,6 @@ export type Database = {
         Update: {
           email?: string
           assigned_role?: 'admin' | 'super_admin'
-          display_name?: string | null
           organization_name?: string | null
           access_scope?: 'all' | 'specific'
           status?: 'pending' | 'active' | 'inactive'

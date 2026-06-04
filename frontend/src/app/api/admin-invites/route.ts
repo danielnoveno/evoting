@@ -144,14 +144,13 @@ export async function POST(request: NextRequest) {
 
   if (!isRecord(payload)) return jsonError('Data undangan tidak valid.', 400)
 
-  const displayName = typeof payload.displayName === 'string' ? payload.displayName.trim() : ''
+  const organizationName = typeof payload.organizationName === 'string' ? payload.organizationName.trim() : (typeof payload.displayName === 'string' ? payload.displayName.trim() : '')
   const email = typeof payload.email === 'string' ? normalizeEmail(payload.email) : ''
   const walletAddress = typeof payload.walletAddress === 'string' ? payload.walletAddress.trim() : ''
   const assignedRole = payload.role === 'admin' ? 'admin' as const : 'super_admin' as const
-  const organizationName = typeof payload.organizationName === 'string' ? payload.organizationName.trim() : null
   const accessScope = payload.accessScope === 'specific' ? 'specific' as const : 'all' as const
 
-  if (!displayName || !email) return jsonError('Nama dan email wajib diisi.', 400)
+  if (!organizationName || !email) return jsonError('Nama dan email wajib diisi.', 400)
   if (assignedRole === 'super_admin' && !walletAddress) return jsonError('Wallet address wajib diisi untuk superadmin.', 400)
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError('Format email institusi tidak valid.', 400)
   if (walletAddress && !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) return jsonError('Wallet address tidak valid.', 400)
@@ -176,7 +175,6 @@ export async function POST(request: NextRequest) {
   const payloadRow: Record<string, unknown> = {
     email,
     assigned_role: assignedRole,
-    display_name: displayName,
     organization_name: organizationName,
     access_scope: accessScope,
     status: 'pending',
@@ -198,7 +196,7 @@ export async function POST(request: NextRequest) {
   const { data, error } = await auth.client
     .from('admin_registry')
     .upsert(payloadRow, { onConflict: 'email' })
-    .select('email,assigned_role,display_name,wallet_address,activation_expires_at,activation_accepted_at,status')
+    .select('email,assigned_role,organization_name,wallet_address,activation_expires_at,activation_accepted_at,status')
     .single()
 
   if (error) return jsonError(`Gagal menyimpan undangan: ${error.message}`, 500)
@@ -220,7 +218,7 @@ export async function POST(request: NextRequest) {
   }
 
   const emailResult = await sendAdminActivationEmail({
-    displayName,
+    displayName: organizationName,
     email,
     activationLink,
     role: assignedRole,

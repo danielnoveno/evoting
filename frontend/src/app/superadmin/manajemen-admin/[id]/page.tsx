@@ -157,7 +157,6 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
                         currentEmail: directoryRecord.email,
                         input: {
                           email: directoryRecord.email,
-                          displayName: directoryRecord.displayName ?? seedRecord.name,
                           organizationName: directoryRecord.organizationName,
                           accessScope: directoryRecord.accessScope,
                           status: enabled ? 'inactive' : 'active',
@@ -349,6 +348,13 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
               router.push('/superadmin/manajemen-admin')
             },
             onError: (error) => showToast({ tone: 'error', title: 'Gagal menghapus admin', description: getRepositoryErrorMessage(error) }),
+          })
+        }}
+      />
+    </SuperadminShell>
+  )
+}
+toryErrorMessage(error) }),
           })
         }}
       />

@@ -43,7 +43,7 @@ insert into app.admin_registry (
 insert into app.admin_registry (
     email,
     assigned_role,
-    display_name,
+    organization_name,
     status,
     access_scope,
     wallet_address

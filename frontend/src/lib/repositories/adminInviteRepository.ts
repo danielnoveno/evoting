@@ -98,9 +98,9 @@ export async function createAdminInvite(input: CreateAdminInviteInput): Promise<
 
   const body: Record<string, unknown> = {
     email: input.email,
-    displayName: input.displayName,
   }
 
+  if (input.displayName) body.displayName = input.displayName
   if (input.walletAddress) body.walletAddress = input.walletAddress
   if (input.role) body.role = input.role
   if (input.organizationName) body.organizationName = input.organizationName

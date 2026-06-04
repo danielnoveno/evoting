@@ -316,8 +316,8 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
             <div className="mt-6 rounded-[24px] bg-white p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[18px] font-semibold text-slate-900">{admin.name}</p>
-                  <p className="mt-1 font-mono text-[14px] text-slate-500">{admin.email}</p>
+                  <p className="text-[18px] font-semibold text-slate-900">{formData.organizationName || admin.name}</p>
+                  <p className="mt-1 font-mono text-[14px] text-slate-500">{formData.email || admin.email}</p>
                 </div>
                 <SuperadminStatusBadge status={formData.status} />
               </div>

@@ -21,7 +21,7 @@ export function formatAdminDate(value: string | null | undefined) {
 }
 
 export function mapDirectoryAdmin(record: AdminDirectoryRecord): SuperadminAdminRecord {
-  const name = record.displayName?.trim() || record.profile?.displayName?.trim() || record.email.split('@')[0] || 'Admin'
+  const name = record.organizationName?.trim() || record.profile?.displayName?.trim() || record.email.split('@')[0] || 'Admin'
   const isSuperAdmin = record.role === 'super_admin'
   const status: SuperadminStatus = record.registryStatus === 'inactive'
     ? 'Nonaktif'
@@ -30,7 +30,6 @@ export function mapDirectoryAdmin(record: AdminDirectoryRecord): SuperadminAdmin
       : 'Menunggu'
   const accessLabel = isSuperAdmin ? 'Super Admin' : 'Admin Organisasi'
   const accessDetail = record.description
-    ?? record.organizationName
     ?? (isSuperAdmin ? 'Akses Platform' : record.accessScope === 'all' ? 'Semua Pemilihan' : 'Pemilihan Tertentu')
 
   // Map assigned spaces from database if available

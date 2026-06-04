@@ -646,7 +646,6 @@ $$;
 create table if not exists app.admin_registry (
   email text primary key,
   assigned_role app.app_role not null default 'admin',
-  display_name text,
   organization_name text,
   access_scope text not null default 'all',
   status text not null default 'pending',
@@ -663,7 +662,6 @@ create table if not exists app.admin_registry (
 
 
 alter table app.admin_registry
-  add column if not exists display_name text,
   add column if not exists organization_name text,
   add column if not exists access_scope text not null default 'all',
   add column if not exists status text not null default 'pending',
