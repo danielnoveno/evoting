@@ -8,6 +8,7 @@ import {
   SuperadminFieldLabel,
   SuperadminAvatar,
   SuperadminEmptyState,
+  SuperadminFilterChip,
   SuperadminShell,
   SuperadminStatusBadge,
   SuperadminTabButton,
