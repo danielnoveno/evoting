@@ -420,38 +420,40 @@ export function SuperadminMasterVoterPage() {
           </button>
         </div>
 
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
-            {[
-              { key: 'semua', label: 'Semua Status' },
-              { key: 'belum-sinkron', label: 'Belum Sinkron' },
-              { key: 'tersinkronisasi', label: 'Tersinkronisasi' },
-              { key: 'terpilih', label: 'Terpilih' },
-            ].map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setActiveFilter(item.key as typeof activeFilter)}
-                className={activeFilter === item.key
-                  ? 'inline-flex h-10 items-center justify-center rounded-2xl bg-white px-5 text-[15px] font-semibold text-slate-900 shadow-sm'
-                  : 'inline-flex h-10 items-center justify-center rounded-2xl px-5 text-[15px] text-slate-800 hover:bg-white/70'}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+        <ScrollReveal variant="fade-up" delay={200} duration={800}>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
+              {[
+                { key: 'semua', label: 'Semua Status' },
+                { key: 'belum-sinkron', label: 'Belum Sinkron' },
+                { key: 'tersinkronisasi', label: 'Tersinkronisasi' },
+                { key: 'terpilih', label: 'Terpilih' },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setActiveFilter(item.key as typeof activeFilter)}
+                  className={activeFilter === item.key
+                    ? 'inline-flex h-10 items-center justify-center rounded-2xl bg-white px-5 text-[15px] font-semibold text-slate-900 shadow-sm'
+                    : 'inline-flex h-10 items-center justify-center rounded-2xl px-5 text-[15px] text-slate-800 hover:bg-white/70'}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
 
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari voter..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black md:w-64"
-            />
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Cari voter..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black md:w-64"
+              />
+            </div>
           </div>
-        </div>
+        </ScrollReveal>
 
         {selectedVoters.length > 0 ? (
           <SelectedCounter

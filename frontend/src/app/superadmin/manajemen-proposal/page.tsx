@@ -113,24 +113,26 @@ export default function SuperadminProposalManagementPage() {
         />
       </ScrollReveal>
 
-      <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
-          {PROPOSAL_STATUS_FILTERS.map((status) => (
-            <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
-              {status}
-            </SuperadminFilterChip>
-          ))}
+      <ScrollReveal variant="fade-up" delay={200} duration={800}>
+        <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
+            {PROPOSAL_STATUS_FILTERS.map((status) => (
+              <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
+                {status}
+              </SuperadminFilterChip>
+            ))}
+          </div>
+          <label className="relative block w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Cari proposal..."
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black"
+            />
+          </label>
         </div>
-        <label className="relative block w-full md:w-64">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Cari proposal..."
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black"
-          />
-        </label>
-      </div>
+      </ScrollReveal>
 
       <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-4">
         <DataTableShell className="relative rounded-[32px] border border-slate-200 bg-slate-50 p-3">

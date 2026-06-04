@@ -163,25 +163,27 @@ export default function AdminElectionManagementPage() {
         />
       </ScrollReveal>
 
-      <section className="mt-8 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
-          {adminElectionFilters.map((filter) => (
-            <AdminFilterPill key={filter.key} active={activeFilter === filter.key} onClick={() => setActiveFilter(filter.key)}>
-              {filter.label}
-            </AdminFilterPill>
-          ))}
-        </div>
+      <ScrollReveal variant="fade-up" delay={200} duration={800}>
+        <section className="mt-8 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
+            {adminElectionFilters.map((filter) => (
+              <AdminFilterPill key={filter.key} active={activeFilter === filter.key} onClick={() => setActiveFilter(filter.key)}>
+                {filter.label}
+              </AdminFilterPill>
+            ))}
+          </div>
 
-        <div className="flex items-center gap-3 self-end xl:self-auto">
-          <button type="button" onClick={() => showToast({ tone: 'info', title: 'Urutkan', description: 'Fitur pengurutan akan tersedia pada versi produksi.' })} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-800 hover:bg-slate-200">
-            <Settings2 className="h-4 w-4" />
-            Urutkan: Terbaru
-          </button>
-          <button type="button" onClick={() => showToast({ tone: 'info', title: 'Tampilan', description: 'Opsi tampilan grid/list akan tersedia pada versi produksi.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-800 hover:bg-slate-200">
-            <Grid2x2 className="h-4 w-4" />
-          </button>
-        </div>
-      </section>
+          <div className="flex items-center gap-3 self-end xl:self-auto">
+            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Urutkan', description: 'Fitur pengurutan akan tersedia pada versi produksi.' })} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-800 hover:bg-slate-200">
+              <Settings2 className="h-4 w-4" />
+              Urutkan: Terbaru
+            </button>
+            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Tampilan', description: 'Opsi tampilan grid/list akan tersedia pada versi produksi.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-800 hover:bg-slate-200">
+              <Grid2x2 className="h-4 w-4" />
+            </button>
+          </div>
+        </section>
+      </ScrollReveal>
 
 
       <StaggerContainer id="tour-admin-election-list" stagger={100} variant="fade-up" duration={600} className="mt-8 grid auto-rows-fr gap-5 xl:grid-cols-2 2xl:grid-cols-3">
