@@ -982,12 +982,14 @@ create table if not exists app.admin_space_access (
 alter table app.admin_space_access enable row level security;
 
 -- Policies for Admin Space Access
+drop policy if exists "super_admin_manage_all_access" on app.admin_space_access;
 create policy "super_admin_manage_all_access"
 on app.admin_space_access
 for all
 using (app.has_role(array['super_admin'::app.app_role]))
 with check (app.has_role(array['super_admin'::app.app_role]));
 
+drop policy if exists "admin_view_own_access" on app.admin_space_access;
 create policy "admin_view_own_access"
 on app.admin_space_access
 for select
@@ -997,6 +999,7 @@ using (
 
 -- Update Proposal Drafts RLS to be more restrictive for Admins with 'specific' scope
 drop policy if exists "proposal_drafts_select_owner_or_admin" on app.proposal_drafts;
+drop policy if exists "proposal_drafts_select_restricted" on app.proposal_drafts;
 
 create policy "proposal_drafts_select_restricted"
 on app.proposal_drafts

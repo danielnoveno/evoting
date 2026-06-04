@@ -3,6 +3,7 @@
 -- Run this only if you intend to reset your database and run a consolidated migration file afterward.
 
 -- Drop all tables in schema 'app' and 'indexer'
+DROP TABLE IF EXISTS app.admin_space_access CASCADE;
 DROP TABLE IF EXISTS app.platform_settings CASCADE;
 DROP TABLE IF EXISTS app.proposal_candidates CASCADE;
 DROP TABLE IF EXISTS app.proposal_whitelist_entries CASCADE;
@@ -26,6 +27,7 @@ DROP FUNCTION IF EXISTS app.current_profile_id() CASCADE;
 DROP FUNCTION IF EXISTS app.current_user_role() CASCADE;
 DROP FUNCTION IF EXISTS app.has_role(app.app_role[]) CASCADE;
 DROP FUNCTION IF EXISTS app.role_for_email(text) CASCADE;
+DROP FUNCTION IF EXISTS app.on_profile_activation_notify() CASCADE;
 
 -- Drop all custom types in schema 'app' and 'indexer'
 DROP TYPE IF EXISTS app.app_role;
