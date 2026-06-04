@@ -1,9 +1,9 @@
 'use client'
 
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Database, Download, FileText, Loader2, Mail, Search, Trash2, Upload, Users, X } from 'lucide-react'
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Database, Download, FileText, Loader2, Mail, Search, Trash2, Upload, Users, X, ChevronsUpDown } from 'lucide-react'
 import { type ChangeEvent, type DragEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { SuperadminSectionCard, SuperadminShell } from '@/components/superadmin/superadmin-shell'
+import { SuperadminSectionCard, SuperadminShell, SuperadminAvatar } from '@/components/superadmin/superadmin-shell'
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
@@ -29,6 +29,16 @@ import { type SuperadminMasterVoter, useSuperadminMasterVotersStore } from '@/li
 
 const MASTER_VOTER_CSV_HEADERS = ['nim', 'nama', 'email', 'fakultas'] as const
 const PAGE_SIZE_OPTIONS = [5, 10, 20] as const
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'VT'
+}
 
 export function SuperadminMasterVoterPage() {
   const { showToast } = useToast()
@@ -500,8 +510,8 @@ export function SuperadminMasterVoterPage() {
           />
         ) : null}
 
-        <DataTableShell>
-          <DataTableToolbar>
+        <DataTableShell className="relative rounded-[32px] border border-slate-200 bg-slate-50 p-3">
+          <DataTableToolbar className="bg-transparent border-none">
             <DataTableCount
               title="Registrasi Mahasiswa & Dosen (DPT Platform)"
               description={`Total terdaftar: ${filteredVoters.length} dari ${voters.length} data master.`}
@@ -509,8 +519,8 @@ export function SuperadminMasterVoterPage() {
           </DataTableToolbar>
 
           <DataTableViewport>
-            <DataTable>
-              <DataTableHead>
+            <DataTable className="[border-spacing:0_10px]">
+              <DataTableHead className="bg-transparent">
                 <DataTableHeaderRow>
                   <DataTableHeaderCell className="w-[56px]">
                     <input
@@ -521,18 +531,38 @@ export function SuperadminMasterVoterPage() {
                       className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                     />
                   </DataTableHeaderCell>
-                  <DataTableHeaderCell>NIM / Identitas</DataTableHeaderCell>
-                  <DataTableHeaderCell>Nama Lengkap</DataTableHeaderCell>
-                  <DataTableHeaderCell>Email Institusi</DataTableHeaderCell>
-                  <DataTableHeaderCell>Fakultas / Program</DataTableHeaderCell>
-                  <DataTableHeaderCell>Status Sinkronisasi</DataTableHeaderCell>
-                  <DataTableHeaderCell className="text-center">Action</DataTableHeaderCell>
+                  <DataTableHeaderCell>
+                    <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
+                      NIM / Identitas
+                      <ChevronsUpDown className="h-3.5 w-3.5" />
+                    </div>
+                  </DataTableHeaderCell>
+                  <DataTableHeaderCell>
+                    <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
+                      Nama Lengkap
+                      <ChevronsUpDown className="h-3.5 w-3.5" />
+                    </div>
+                  </DataTableHeaderCell>
+                  <DataTableHeaderCell>
+                    <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
+                      Email Institusi
+                    </div>
+                  </DataTableHeaderCell>
+                  <DataTableHeaderCell>
+                    <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
+                      Status Sinkronisasi
+                    </div>
+                  </DataTableHeaderCell>
+                  <DataTableHeaderCell className="text-center uppercase tracking-[0.08em] text-slate-400">Aksi</DataTableHeaderCell>
                 </DataTableHeaderRow>
               </DataTableHead>
-              <DataTableBody>
+              <DataTableBody className="bg-transparent">
                 {paginatedVoters.length > 0 ? (
                   paginatedVoters.map((voter) => (
-                    <DataTableRow key={voter.nim}>
+                    <DataTableRow 
+                      key={voter.nim}
+                      className="[&>td]:border-y [&>td]:border-slate-200 [&>td]:bg-white [&>td:first-child]:rounded-l-[20px] [&>td:first-child]:border-l [&>td:last-child]:rounded-r-[20px] [&>td:last-child]:border-r hover:[&>td]:border-slate-300 hover:[&>td]:bg-slate-50/80"
+                    >
                       <DataTableCell className="w-[56px]">
                         <input
                           type="checkbox"
@@ -542,15 +572,23 @@ export function SuperadminMasterVoterPage() {
                           className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                         />
                       </DataTableCell>
-                      <DataTableCell className="font-mono text-[14px] font-medium text-slate-900">{voter.nim}</DataTableCell>
                       <DataTableCell>
-                        <div className="font-semibold text-slate-900">{voter.name}</div>
+                        <div className="font-mono text-[14px] font-medium text-slate-900">{voter.nim}</div>
+                        <div className="mt-0.5 text-[12px] text-slate-500">{voter.faculty}</div>
                       </DataTableCell>
-                      <DataTableCell className="font-mono text-[13px] text-slate-500">{voter.email}</DataTableCell>
-                      <DataTableCell>{voter.faculty}</DataTableCell>
+                      <DataTableCell>
+                        <div className="flex items-center gap-4">
+                          <SuperadminAvatar initials={getInitials(voter.name)} />
+                          <div>
+                            <div className="font-semibold text-slate-900">{voter.name}</div>
+                            <div className="mt-0.5 text-[12px] text-slate-500">Mahasiswa Aktif</div>
+                          </div>
+                        </div>
+                      </DataTableCell>
+                      <DataTableCell className="font-mono text-[13px] text-slate-600">{voter.email}</DataTableCell>
                       <DataTableCell>
                         <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${
                             voter.syncStatus === 'Tersinkronisasi'
                               ? 'bg-emerald-50 text-emerald-600'
                               : 'bg-amber-50 text-amber-600'
@@ -558,12 +596,12 @@ export function SuperadminMasterVoterPage() {
                         >
                           {voter.syncStatus === 'Tersinkronisasi' ? (
                             <>
-                              <Check className="h-3.5 w-3.5" />
+                              <Check className="h-3 w-3" />
                               Tersinkronisasi
                             </>
                           ) : (
                             <>
-                              <AlertTriangle className="h-3.5 w-3.5" />
+                              <AlertTriangle className="h-3 w-3" />
                               Belum Sinkron
                             </>
                           )}
@@ -583,7 +621,7 @@ export function SuperadminMasterVoterPage() {
                   ))
                 ) : (
                   <DataTableEmpty
-                    colSpan={7}
+                    colSpan={6}
                     title="Data Master Voter kosong"
                     description={searchTerm ? 'Tidak ada hasil pencarian yang cocok.' : 'Silakan gunakan tombol Impor Data Master via CSV di atas untuk memuat data.'}
                   />
