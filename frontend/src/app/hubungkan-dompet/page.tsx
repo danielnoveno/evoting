@@ -276,13 +276,13 @@ function ConnectWalletContent() {
                       </Link>
                       <h1 className="text-[24px] font-semibold leading-tight text-slate-900">
                         {activationMode
-                          ? activationContext === 'admin' ? 'Aktivasi Akses Admin' : 'Aktivasi Hak Suara Voter'
+                          ? activationContext === 'admin' ? 'Aktivasi Akses Admin Organisasi' : 'Aktivasi Hak Suara Voter'
                           : 'Masuk ke Votein'}
                       </h1>
                       <p className="mt-1 text-[13px] leading-6 text-slate-400">
                         {activationMode
                           ? activationContext === 'admin'
-                            ? 'Ikuti 3 tahap singkat untuk menyambungkan wallet dan membuka dashboard admin.'
+                            ? 'Selamat datang, Admin! Ikuti 3 tahap verifikasi untuk membuka akses ke dashboard pengelolaan organisasi Anda.'
                             : 'Ikuti 3 tahap aktivasi singkat untuk membuka akses memilih di Votein.'
                           : 'Ikuti 3 langkah pendek. Untuk mulai menggunakan Votein.'}
                       </p>
@@ -317,7 +317,7 @@ function ConnectWalletContent() {
                       <div className="min-w-0 flex-1">
                         <h2 className="text-[14px] font-semibold text-slate-900">Sambungkan Smart Wallet</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isConnected ? 'Smart Wallet sudah tersambung.' : activationContext === 'admin' ? 'Smart Wallet dipakai untuk mengenali akses admin.' : 'Smart Wallet dipakai sebagai identitas digital yang aman dan mudah.'}
+                          {isConnected ? 'Smart Wallet sudah tersambung.' : activationContext === 'admin' ? 'Gunakan Smart Wallet sebagai kunci digital administratif Anda.' : 'Smart Wallet dipakai sebagai identitas digital yang aman dan mudah.'}
                         </p>
                       </div>
                       {!isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -328,9 +328,9 @@ function ConnectWalletContent() {
                         {authSession ? <Check className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className={isConnected ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Masuk dengan akun kampus</h2>
+                        <h2 className={isConnected ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Verifikasi Akun Kampus</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {authSession ? 'Akun kampus sudah dikenali.' : activationContext === 'admin' ? 'Ini memastikan yang masuk benar-benar petugas yang diberi akses admin.' : 'Ini memastikan yang masuk benar-benar mahasiswa UAJY.'}
+                          {authSession ? 'Identitas kampus sudah diverifikasi.' : activationContext === 'admin' ? 'Masuk dengan email yang didaftarkan sebagai Admin Organisasi.' : 'Ini memastikan yang masuk benar-benar mahasiswa UAJY.'}
                         </p>
                       </div>
                       {isConnected && !authSession && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -341,9 +341,9 @@ function ConnectWalletContent() {
                         {isWalletBound ? <Check className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className={isConnected && authSession ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>{activationContext === 'admin' ? 'Aktifkan akses admin' : 'Aktifkan hak suara'}</h2>
+                        <h2 className={isConnected && authSession ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>{activationContext === 'admin' ? 'Finalisasi Akses Admin' : 'Aktifkan hak suara'}</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isWalletBound ? activationContext === 'admin' ? 'Akses admin sudah siap.' : 'Akses memilih sudah siap.' : activationContext === 'admin' ? 'Hubungkan akun kampus dan dompet supaya dashboard admin bisa dibuka.' : 'Hubungkan akun kampus dan dompet supaya kamu bisa memilih.'}
+                          {isWalletBound ? activationContext === 'admin' ? 'Akses dashboard admin sudah aktif.' : 'Akses memilih sudah siap.' : activationContext === 'admin' ? 'Tautkan akun kampus dengan dompet untuk mengaktifkan wewenang admin.' : 'Hubungkan akun kampus dan dompet supaya kamu bisa memilih.'}
                         </p>
                       </div>
                       {isConnected && authSession && !isWalletBound && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -361,7 +361,7 @@ function ConnectWalletContent() {
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationMode
                             ? activationContext === 'admin'
-                              ? 'Mulai aktivasi admin dengan menyambungkan Smart Wallet yang akan dipakai untuk membuka dashboard admin.'
+                              ? 'Langkah awal untuk mengelola pemilihan organisasi adalah dengan menyambungkan Smart Wallet. Dompet ini akan menjadi identitas administratif Anda di blockchain.'
                               : 'Mulai aktivasi dengan menyambungkan Smart Wallet. Teknologi ini memungkinkan Anda memiliki Smart Wallet aman tanpa perlu memasang ekstensi atau menyimpan seed phrase yang rumit.'
                             : 'Votein menggunakan teknologi Smart Wallet (Akun Pintar) untuk memudahkan Anda. Cukup sambungkan, dan sistem akan mengenali identitas digital Anda secara otomatis.'}
                         </p>
@@ -397,7 +397,7 @@ function ConnectWalletContent() {
                         <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? 'Tahap 2 — Verifikasi akun kampus' : 'Masuk dengan akun kampus'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationContext === 'admin'
-                            ? 'Setelah dompet tersambung, masuk dengan akun kampus yang didaftarkan oleh superadmin.'
+                            ? 'Setelah dompet tersambung, silakan masuk dengan email organisasi/kampus yang sudah didaftarkan oleh Superadmin sebagai pengelola.'
                             : 'Setelah dompet tersambung, masuk dengan akun kampus. Ini membantu sistem memastikan hak pilih diberikan ke mahasiswa yang benar.'}
                         </p>
 
@@ -465,16 +465,16 @@ function ConnectWalletContent() {
                               <Building2 className="h-3 w-3" />
                             </div>
                             <div className="space-y-3">
-                              <h3 className="text-[13px] font-bold text-blue-900">{activationContext === 'admin' ? 'Penting untuk Admin' : 'Penting untuk Pemilih'}</h3>
+                              <h3 className="text-[13px] font-bold text-blue-900">{activationContext === 'admin' ? 'Penting untuk Admin Organisasi' : 'Penting untuk Pemilih'}</h3>
                               <p className="text-[12px] leading-5 text-blue-800/80">
                                 {activationContext === 'admin'
-                                  ? 'Alamat Smart Wallet yang Anda gunakan akan ditautkan dengan akun kampus admin. Satu alamat dompet hanya boleh dipakai oleh satu akun.'
+                                  ? 'Alamat Smart Wallet ini akan menjadi identitas resmi Anda untuk mengelola data pemilihan pada jaringan blockchain. Pastikan dompet ini aman dan hanya Anda yang memiliki akses.'
                                   : <>Alamat Smart Wallet yang Anda gunakan akan ditautkan secara permanen dengan akun <span className="font-bold">@students.uajy.ac.id</span> Anda. Satu alamat dompet hanya untuk satu akun mahasiswa.</>}
                               </p>
                               <div className="rounded-lg bg-white/60 p-3 text-[11px] leading-relaxed text-blue-900/70 border border-blue-100/50">
                                 <span className="font-bold text-blue-900 block mb-1">Tips:</span>
                                   {activationContext === 'admin'
-                                    ? 'Gunakan email kampus yang sama dengan email undangan admin agar validasi role berjalan otomatis.'
+                                    ? 'Pastikan Anda menggunakan email yang sama dengan undangan yang dikirimkan oleh Superadmin.'
                                     : 'Jika Anda baru membuat Smart Wallet, kami sarankan untuk menggunakan email mahasiswa UAJY Anda saat pendaftaran dompet agar sinkron dengan sistem Votein UAJY.'}
                               </div>
                             </div>
@@ -492,10 +492,10 @@ function ConnectWalletContent() {
 
                     {isConnected && authSession && !isWalletBound && (
                       <div className="mt-8 w-full">
-                          <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? `Tahap 3 — ${activationContext === 'admin' ? 'Aktifkan akses admin' : 'Aktifkan hak suara'}` : activationContext === 'admin' ? 'Aktifkan akses admin' : 'Aktifkan hak suara'}</h2>
+                          <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? `Tahap 3 — ${activationContext === 'admin' ? 'Finalisasi Akses Admin' : 'Aktifkan hak suara'}` : activationContext === 'admin' ? 'Finalisasi Akses Admin' : 'Aktifkan hak suara'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationContext === 'admin'
-                            ? 'Tinggal satu klik lagi. Sistem akan memasangkan akun kampus dengan Smart Wallet supaya akses dashboard admin aktif.'
+                            ? 'Satu langkah terakhir. Kami akan menautkan identitas kampus Anda dengan Smart Wallet ini untuk mengaktifkan wewenang penuh di Dashboard Admin.'
                             : 'Tinggal satu klik lagi. Kami akan memasangkan akun kampus dengan Smart Walletmu supaya hak memilih aktif.'}
                         </p>
 
@@ -522,7 +522,7 @@ function ConnectWalletContent() {
                             />
                           </div>
                           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">{activationContext === 'admin' ? 'Akun Admin' : 'Akun Mahasiswa'}</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">{activationContext === 'admin' ? 'Akun Admin Organisasi' : 'Akun Mahasiswa'}</p>
                             <p className="mt-1 truncate text-[13px] font-semibold text-slate-900" title={authSession.user?.email}>{authSession.user?.email}</p>
                           </div>
 
@@ -540,8 +540,14 @@ function ConnectWalletContent() {
                         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                           <CheckCircle2 className="h-8 w-8" />
                         </div>
-                        <h2 className="mt-6 text-[20px] font-semibold text-slate-900">Akses siap digunakan</h2>
-                        <p className="mt-3 text-[13px] leading-6 text-slate-600">Sebentar lagi kamu diarahkan ke halaman tujuan...</p>
+                        <h2 className="mt-6 text-[20px] font-semibold text-slate-900">
+                          {activationContext === 'admin' ? 'Akses Admin Aktif' : 'Akses siap digunakan'}
+                        </h2>
+                        <p className="mt-3 text-[13px] leading-6 text-slate-600">
+                          {activationContext === 'admin' 
+                            ? 'Selamat! Anda sekarang memiliki akses penuh untuk mengelola pemilihan organisasi.'
+                            : 'Sebentar lagi kamu diarahkan ke halaman tujuan...'}
+                        </p>
                       </div>
                     )}
                   </div>
