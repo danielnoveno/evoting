@@ -21,6 +21,9 @@ import { useSuperadminAdminDirectory, useUpdateAdminRegistry } from '@/hooks/use
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
+import { useProposalDraftList } from '@/hooks/use-admin-proposal-list'
+import { syncAdminSpaces } from '@/lib/repositories/adminAccessRepository'
+import { Checkbox } from '@/components/ui/checkbox'
 
 type AdminScope = 'all' | 'specific'
 type AdminStatus = 'Aktif' | 'Menunggu' | 'Nonaktif'
@@ -36,6 +39,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
   const adminId = decodeURIComponent(params.id)
   const adminDirectoryQuery = useSuperadminAdminDirectory()
   const updateAdminMutation = useUpdateAdminRegistry()
+  const proposalDraftsQuery = useProposalDraftList()
   const directoryRecord = useMemo(() => adminDirectoryQuery.data?.find((item) => item.email === adminId && item.role === 'admin') ?? null, [adminDirectoryQuery.data, adminId])
   const admin = useMemo(() => directoryRecord ? mapDirectoryAdmin(directoryRecord) : null, [directoryRecord])
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -52,6 +56,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
   }), [admin, directoryRecord])
 
   const [formData, setFormData] = useState(initialForm)
+  const [selectedSpaceIds, setSelectedSpaceIds] = useState<string[]>([])
   const editSource = searchParams.get('from')
   const backHref = editSource === 'list'
     ? '/superadmin/manajemen-admin'
@@ -60,7 +65,10 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
 
   useEffect(() => {
     setFormData(initialForm)
-  }, [initialForm])
+    if (directoryRecord?.assignedSpaces) {
+      setSelectedSpaceIds(directoryRecord.assignedSpaces.map(s => s.proposalDraftId))
+    }
+  }, [initialForm, directoryRecord])
 
   if (adminDirectoryQuery.isLoading) {
     return (
@@ -74,7 +82,13 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
 
   if (!admin || !directoryRecord) notFound()
 
-  const isDirty = JSON.stringify(formData) !== JSON.stringify(initialForm)
+  const isSpacesDirty = useMemo(() => {
+    const initialIds = (directoryRecord.assignedSpaces || []).map(s => s.proposalDraftId).sort()
+    const currentIds = [...selectedSpaceIds].sort()
+    return JSON.stringify(initialIds) !== JSON.stringify(currentIds)
+  }, [directoryRecord.assignedSpaces, selectedSpaceIds])
+
+  const isDirty = JSON.stringify(formData) !== JSON.stringify(initialForm) || isSpacesDirty
 
   const handleChange = <K extends keyof typeof formData>(key: K, value: (typeof formData)[K]) => {
     setFormData((current) => ({ ...current, [key]: value }))
@@ -88,6 +102,11 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       showToast({ tone: 'error', title: 'Email belum valid', description: 'Gunakan format email yang valid.' })
+      return
+    }
+
+    if (formData.scope === 'specific' && selectedSpaceIds.length === 0) {
+      showToast({ tone: 'error', title: 'Akses pemilihan belum dipilih', description: 'Pilih minimal satu pemilihan untuk admin dengan akses terbatas.' })
       return
     }
 
@@ -108,7 +127,24 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
         },
       },
       {
-        onSuccess: (updated) => {
+        onSuccess: async (updated) => {
+          // Sync specific space access if needed
+          if (formData.scope === 'specific') {
+            try {
+              await syncAdminSpaces(updated.email, selectedSpaceIds)
+            } catch (error) {
+              console.error('Failed to sync spaces:', error)
+              showToast({ tone: 'warning', title: 'Akses pemilihan gagal disimpan', description: 'Profil diperbarui, tetapi daftar akses pemilihan gagal disinkronkan.' })
+            }
+          } else if (formData.scope === 'all' && isSpacesDirty) {
+            // Clear spaces if scope changed to 'all'
+            try {
+              await syncAdminSpaces(updated.email, [])
+            } catch (error) {
+              console.error('Failed to clear spaces:', error)
+            }
+          }
+
           setConfirmOpen(false)
           showToast({
             tone: 'success',
@@ -213,6 +249,47 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
                 onClick={() => handleChange('scope', 'specific')}
               />
             </div>
+
+            {formData.scope === 'specific' && (
+              <div className="mt-8 border-t border-slate-100 pt-8">
+                <SuperadminFieldLabel>Daftar Pemilihan Tersedia</SuperadminFieldLabel>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {proposalDraftsQuery.isLoading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-50" />
+                    ))
+                  ) : proposalDraftsQuery.data?.length === 0 ? (
+                    <p className="col-span-full text-[14px] text-slate-500 italic">Belum ada pemilihan yang dibuat di sistem.</p>
+                  ) : (
+                    proposalDraftsQuery.data?.map((proposal) => (
+                      <label
+                        key={proposal.id}
+                        className={`flex cursor-pointer items-center gap-4 rounded-2xl border p-4 transition ${
+                          selectedSpaceIds.includes(proposal.id)
+                            ? 'border-black bg-slate-50'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selectedSpaceIds.includes(proposal.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedSpaceIds(current =>
+                              checked
+                                ? [...current, proposal.id]
+                                : current.filter(id => id !== proposal.id)
+                            )
+                          }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[14px] font-semibold text-slate-900">{proposal.title}</p>
+                          <p className="truncate text-[12px] text-slate-500">{proposal.organizationName || 'Tanpa Organisasi'}</p>
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </SuperadminSectionCard>
 
           <SuperadminSectionCard>
@@ -247,6 +324,9 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
                 <p><span className="font-semibold text-slate-900">Identitas wallet:</span> {admin.blockchainIdentity}</p>
                 <p><span className="font-semibold text-slate-900">Akses saat ini:</span> {formData.accessLabel} · {formData.accessDetail}</p>
                 <p><span className="font-semibold text-slate-900">Mode akses:</span> {formData.scope === 'all' ? 'Semua Pemilihan' : 'Pemilihan Tertentu'}</p>
+                {formData.scope === 'specific' && (
+                  <p className="text-emerald-600 font-medium">· {selectedSpaceIds.length} pemilihan dipilih</p>
+                )}
               </div>
             </div>
           </SuperadminSectionCard>

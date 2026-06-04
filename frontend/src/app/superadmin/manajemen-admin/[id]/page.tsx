@@ -264,7 +264,11 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
           <SuperadminSectionCard>
             <div className="flex items-start justify-between gap-4">
               <h2 className="text-[18px] font-semibold text-slate-900">Akses Space</h2>
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Kelola akses belum tersedia', description: 'Halaman pengelolaan akses sedang disiapkan.' })} className="text-[15px] font-semibold text-slate-800">
+              <button 
+                type="button" 
+                onClick={() => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(adminId)}/edit`)} 
+                className="text-[15px] font-semibold text-slate-800 hover:text-black transition"
+              >
                 Kelola Akses
               </button>
             </div>

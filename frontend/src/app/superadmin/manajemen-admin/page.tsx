@@ -49,6 +49,9 @@ import { resendAdminInvite } from '@/lib/repositories/adminInviteRepository'
 import { deleteAdminRegistry, updateAdminRegistry } from '@/lib/repositories/profileRepository'
 import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
 import { profileQueryKeys } from '@/hooks/use-profile'
+import { syncAdminSpaces } from '@/lib/repositories/adminAccessRepository'
+import { useProposalDraftList } from '@/hooks/use-admin-proposal-list'
+import { Checkbox } from '@/components/ui/checkbox'
 
 type AdminTabKey = (typeof superadminAdminTabs)[number]['key']
 
@@ -78,6 +81,8 @@ function SuperadminAdminManagementContent() {
   const createAdminMutation = useCreateAdminRegistry()
   const createAdminInviteMutation = useCreateAdminInvite()
   const [formData, setFormData] = useState(initialFormData)
+  const [selectedSpaceIds, setSelectedSpaceIds] = useState<string[]>([])
+  const proposalDraftsQuery = useProposalDraftList()
   const [activationLink, setActivationLink] = useState('')
   const [selectedAdminEmails, setSelectedAdminEmails] = useState<string[]>([])
   const [selectionBarDismissed, setSelectionBarDismissed] = useState(false)
@@ -271,6 +276,11 @@ function SuperadminAdminManagementContent() {
       return
     }
 
+    if (formData.scope === 'specific' && selectedSpaceIds.length === 0) {
+      showToast({ tone: 'error', title: 'Akses pemilihan belum dipilih', description: 'Pilih minimal satu pemilihan untuk admin dengan akses terbatas.' })
+      return
+    }
+
     // Use token activation flow with email for all admins
     createAdminInviteMutation.mutate(
       {
@@ -282,13 +292,24 @@ function SuperadminAdminManagementContent() {
         role: 'admin',
       },
       {
-        onSuccess: (invite) => {
+        onSuccess: async (invite) => {
+          // Sync specific space access if needed
+          if (formData.scope === 'specific' && selectedSpaceIds.length > 0) {
+            try {
+              await syncAdminSpaces(invite.email, selectedSpaceIds)
+            } catch (error) {
+              console.error('Failed to sync spaces:', error)
+              showToast({ tone: 'warning', title: 'Akses pemilihan gagal disimpan', description: 'Admin dibuat, tetapi daftar akses pemilihan gagal dikonfigurasi.' })
+            }
+          }
+
           updateTab('daftar')
           setActiveStatus('Semua Status')
           if (invite.activationLink) {
             setActivationLink(invite.activationLink)
           }
           setFormData(initialFormData)
+          setSelectedSpaceIds([])
 
           const emailMsg = invite.emailStatus === 'sent'
             ? 'Email aktivasi sudah dikirim.'
@@ -603,6 +624,47 @@ function SuperadminAdminManagementContent() {
                 />
               ))}
             </div>
+
+            {formData.scope === 'specific' && (
+              <div className="mt-8 border-t border-slate-100 pt-8">
+                <SuperadminFieldLabel>Daftar Pemilihan Tersedia</SuperadminFieldLabel>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {proposalDraftsQuery.isLoading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-50" />
+                    ))
+                  ) : proposalDraftsQuery.data?.length === 0 ? (
+                    <p className="col-span-full text-[14px] text-slate-500 italic">Belum ada pemilihan yang dibuat di sistem.</p>
+                  ) : (
+                    proposalDraftsQuery.data?.map((proposal) => (
+                      <label
+                        key={proposal.id}
+                        className={`flex cursor-pointer items-center gap-4 rounded-2xl border p-4 transition ${
+                          selectedSpaceIds.includes(proposal.id)
+                            ? 'border-black bg-slate-50'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selectedSpaceIds.includes(proposal.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedSpaceIds(current =>
+                              checked
+                                ? [...current, proposal.id]
+                                : current.filter(id => id !== proposal.id)
+                            )
+                          }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[14px] font-semibold text-slate-900">{proposal.title}</p>
+                          <p className="truncate text-[12px] text-slate-500">{proposal.organizationName || 'Tanpa Organisasi'}</p>
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </AppSectionCard>
 
           <AppSectionCard>

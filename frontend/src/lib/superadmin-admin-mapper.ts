@@ -33,6 +33,19 @@ export function mapDirectoryAdmin(record: AdminDirectoryRecord): SuperadminAdmin
     ?? record.organizationName
     ?? (isSuperAdmin ? 'Akses Platform' : record.accessScope === 'all' ? 'Semua Pemilihan' : 'Pemilihan Tertentu')
 
+  // Map assigned spaces from database if available
+  const mappedSpaces = record.assignedSpaces?.map(access => ({
+    id: access.proposalDraftId,
+    title: access.proposalTitle || 'Pemilihan Terbatas',
+    subtitle: 'Akses pengelolaan pemilihan spesifik',
+    role: accessLabel
+  })) || []
+
+  // If scope is 'all' or no specific assignments, use the default organization-based display
+  const finalSpaces = record.accessScope === 'all' || mappedSpaces.length === 0
+    ? (record.organizationName ? [{ id: record.organizationName, title: record.organizationName, subtitle: record.accessScope === 'all' ? 'Akses semua ruang pemilihan organisasi' : 'Belum ada ruang pemilihan spesifik ditugaskan', role: accessLabel }] : [])
+    : mappedSpaces
+
   return {
     id: record.email,
     initials: getAdminInitials(name),
@@ -47,9 +60,7 @@ export function mapDirectoryAdmin(record: AdminDirectoryRecord): SuperadminAdmin
     lastLoginText: record.profile ? 'Profil aktif' : record.registryStatus === 'inactive' ? 'Akses dinonaktifkan' : 'Menunggu aktivasi',
     lastLoginRelative: record.profile ? 'Wallet sudah tertaut ke akun ini' : 'Email sudah didaftarkan super admin',
     blockchainIdentity: record.profile?.walletAddress ?? 'Wallet belum ditautkan',
-    spaces: record.organizationName
-      ? [{ id: record.organizationName, title: record.organizationName, subtitle: record.accessScope === 'all' ? 'Akses semua ruang pemilihan organisasi' : 'Akses ruang pemilihan tertentu', role: accessLabel }]
-      : [],
+    spaces: finalSpaces,
     recentActivity: [],
   }
 }
