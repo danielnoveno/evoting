@@ -122,7 +122,7 @@ function ConnectWalletContent() {
       : ''
   const completedSteps = (isConnected ? 1 : 0) + (authSession ? 1 : 0) + (isWalletBound ? 1 : 0)
   const currentStepLabel = !isConnected
-    ? activationMode ? 'Aktivasi voter · tahap 1 dari 3' : '1. Sambungkan dompet digital'
+    ? activationMode ? 'Aktivasi voter · tahap 1 dari 3' : '1. Sambungkan Smart Wallet'
     : !authSession
       ? activationMode ? 'Aktivasi voter · tahap 2 dari 3' : '2. Masuk dengan akun kampus'
       : !isWalletBound
@@ -183,7 +183,7 @@ function ConnectWalletContent() {
       },
       {
         onSuccess: () => {
-          showToast({ tone: 'success', title: 'Akses Berhasil Diaktifkan', description: 'Dompet digital dan akun kampus sudah terhubung.' })
+          showToast({ tone: 'success', title: 'Akses Berhasil Diaktifkan', description: 'Smart Wallet dan akun kampus sudah terhubung.' })
         },
         onError: (err) => {
           const message = getRepositoryErrorMessage(err, 'Dompet belum dapat ditautkan. Coba lagi.')
@@ -305,9 +305,9 @@ function ConnectWalletContent() {
                         {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-[14px] font-semibold text-slate-900">Sambungkan dompet digital</h2>
+                        <h2 className="text-[14px] font-semibold text-slate-900">Sambungkan Smart Wallet</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isConnected ? 'Dompet sudah tersambung.' : 'Dompet digital dipakai seperti kartu anggota untuk mengenali kamu.'}
+                          {isConnected ? 'Smart Wallet sudah tersambung.' : 'Smart Wallet dipakai sebagai identitas digital yang aman dan mudah.'}
                         </p>
                       </div>
                       {!isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -347,29 +347,29 @@ function ConnectWalletContent() {
 
                     {!isConnected && (
                       <div className="mt-8 w-full">
-                        <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? 'Tahap 1 — Sambungkan dompet digital' : 'Sambungkan dompet digital'}</h2>
+                        <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? 'Tahap 1 — Sambungkan Smart Wallet' : 'Sambungkan Smart Wallet'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationMode
-                            ? 'Mulai aktivasi dengan menyambungkan dompet digital milikmu sendiri. Dompet ini akan dipakai sebagai identitas saat proses voting.'
-                            : 'Dompet digital itu seperti kartu pengenal untuk voting. Klik tombol sambungkan, lalu setujui dari aplikasi dompet yang muncul.'}
+                            ? 'Mulai aktivasi dengan menyambungkan Smart Wallet. Teknologi ini memungkinkan Anda memiliki Smart Wallet aman tanpa perlu memasang ekstensi atau menyimpan seed phrase yang rumit.'
+                            : 'Votein menggunakan teknologi Smart Wallet (Akun Pintar) untuk memudahkan Anda. Cukup sambungkan, dan sistem akan mengenali identitas digital Anda secara otomatis.'}
                         </p>
 
                         {activationMode && (
                           <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50/60 p-5">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">Model Aktivasi Pemilih</p>
                             <div className="mt-3 space-y-2 text-[13px] leading-6 text-blue-900/80">
-                              <p><strong>Tahap 1.</strong> Sambungkan dompet digital yang akan dipakai sampai voting selesai.</p>
+                              <p><strong>Tahap 1.</strong> Sambungkan Smart Wallet yang akan dipakai sampai voting selesai.</p>
                               <p><strong>Tahap 2.</strong> Verifikasi akun kampus UAJY agar sistem mengenali identitas pemilih.</p>
-                              <p><strong>Tahap 3.</strong> Aktifkan hak suara dengan menautkan akun kampus dan dompet digital.</p>
+                              <p><strong>Tahap 3.</strong> Aktifkan hak suara dengan menautkan akun kampus dan Smart Wallet.</p>
                             </div>
                           </div>
                         )}
 
                         <div className="mt-8 space-y-4">
                           {[
-                            'Kalau belum punya, aplikasi biasanya membantu membuat dompet baru.',
-                            'Pakai dompet yang sama sampai proses memilih selesai.',
-                            'Jangan berikan akses dompet ke orang lain, sama seperti jangan memberi password.',
+                            'Smart Wallet dapat dibuat secara instan hanya dengan biometrik atau passkey ponsel Anda.',
+                            'Tidak perlu biaya gas untuk pendaftaran dompet di jaringan Base Sepolia.',
+                            'Keamanan tingkat tinggi yang menjaga privasi pilihan suara Anda tetap terenkripsi.',
                           ].map((item) => (
                             <div key={item} className="flex items-center gap-3 text-[13px] text-slate-600">
                               <span className="h-3 w-3 rounded-full border-2 border-blue-500 bg-blue-50" />
@@ -453,11 +453,11 @@ function ConnectWalletContent() {
                             <div className="space-y-3">
                               <h3 className="text-[13px] font-bold text-blue-900">Penting untuk Pemilih</h3>
                               <p className="text-[12px] leading-5 text-blue-800/80">
-                                Alamat dompet digital yang Anda gunakan akan ditautkan secara permanen dengan akun <span className="font-bold">@students.uajy.ac.id</span> Anda. Satu alamat dompet hanya untuk satu akun mahasiswa.
+                                Alamat Smart Wallet yang Anda gunakan akan ditautkan secara permanen dengan akun <span className="font-bold">@students.uajy.ac.id</span> Anda. Satu alamat dompet hanya untuk satu akun mahasiswa.
                               </p>
                               <div className="rounded-lg bg-white/60 p-3 text-[11px] leading-relaxed text-blue-900/70 border border-blue-100/50">
                                 <span className="font-bold text-blue-900 block mb-1">Tips:</span>
-                                Jika Anda baru membuat dompet digital, kami sarankan untuk menggunakan email mahasiswa UAJY Anda saat pendaftaran dompet agar sinkron dengan sistem Votein UAJY.
+                                Jika Anda baru membuat Smart Wallet, kami sarankan untuk menggunakan email mahasiswa UAJY Anda saat pendaftaran dompet agar sinkron dengan sistem Votein UAJY.
                               </div>
                             </div>
                           </div>
@@ -476,7 +476,7 @@ function ConnectWalletContent() {
                       <div className="mt-8 w-full">
                           <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? 'Tahap 3 — Aktifkan hak suara' : 'Aktifkan hak suara'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                          Tinggal satu klik lagi. Kami akan memasangkan akun kampus dengan dompet digitalmu supaya hak memilih aktif.
+                          Tinggal satu klik lagi. Kami akan memasangkan akun kampus dengan Smart Walletmu supaya hak memilih aktif.
                         </p>
 
                         <div className="mt-6 space-y-3">
@@ -495,7 +495,7 @@ function ConnectWalletContent() {
                           )}
 
                           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Dompet digital</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Smart Wallet</p>
                             <WalletAddress
                               address={address ?? '-'}
                               className="mt-1 block font-mono text-[12px] font-semibold text-slate-900"
@@ -538,7 +538,7 @@ function ConnectWalletContent() {
 
                     {!isConnected && (
                       <ConnectWallet className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B]">
-                        Sambungkan Dompet Digital
+                        Sambungkan Smart Wallet
                         <ChevronRight className="h-4 w-4" />
                       </ConnectWallet>
                     )}
