@@ -351,13 +351,6 @@ function SuperadminAdminManagementContent() {
                   Tambah Admin
                 </SuperadminToolbarButton>
               </div>
-              <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
-                {superadminAdminStatuses.map((status) => (
-                  <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
-                    {status}
-                  </SuperadminFilterChip>
-                ))}
-              </div>
             </div>
           </div>
         )}
@@ -365,7 +358,14 @@ function SuperadminAdminManagementContent() {
 
       {activeTab === 'daftar' ? (
         <>
-          <div className="mt-8 flex justify-end">
+          <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
+              {superadminAdminStatuses.map((status) => (
+                <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
+                  {status}
+                </SuperadminFilterChip>
+              ))}
+            </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input

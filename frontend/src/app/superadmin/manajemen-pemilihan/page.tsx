@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Clock3 } from 'lucide-react'
+import { AlertTriangle, Clock3, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -42,6 +42,7 @@ export default function SuperadminElectionManagementPage() {
   const router = useRouter()
   const { showToast } = useToast()
   const [activeFilter, setActiveFilter] = useState<ElectionFilter>('Semua')
+  const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const { data: proposalRowsRaw, isLoading, error } = useSuperadminProposalDrafts()
 
@@ -62,16 +63,23 @@ export default function SuperadminElectionManagementPage() {
   }, [proposalRowsRaw])
 
   const filteredElections = useMemo(() => {
-    if (activeFilter === 'Semua') return elections
-    return elections.filter((election) => election.status === activeFilter)
-  }, [activeFilter, elections])
+    const normalizedSearch = searchTerm.trim().toLowerCase()
+    return elections.filter((election) => {
+      const matchesStatus = activeFilter === 'Semua' ? true : election.status === activeFilter
+      const matchesSearch = !normalizedSearch
+        || election.title.toLowerCase().includes(normalizedSearch)
+        || election.code.toLowerCase().includes(normalizedSearch)
+
+      return matchesStatus && matchesSearch
+    })
+  }, [activeFilter, elections, searchTerm])
 
   const totalPages = Math.max(1, Math.ceil(filteredElections.length / PAGE_SIZE))
   const paginatedElections = filteredElections.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [activeFilter])
+  }, [activeFilter, searchTerm])
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages)
@@ -95,19 +103,30 @@ export default function SuperadminElectionManagementPage() {
         <AppPageHeader
           title="Manajemen Pemilihan"
           description="Pantau dan kelola ruang pemilihan aktif di jaringan blockchain."
-          rightContent={
-            <div className="flex flex-wrap gap-3 rounded-[20px] bg-slate-100 p-2">
-              {superadminElectionFilters.map((filter) => (
-                <SuperadminFilterChip key={filter} active={activeFilter === filter} onClick={() => setActiveFilter(filter)}>
-                  {filter}
-                </SuperadminFilterChip>
-              ))}
-            </div>
-          }
         />
       </ScrollReveal>
 
-      <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-8">
+      <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
+          {superadminElectionFilters.map((filter) => (
+            <SuperadminFilterChip key={filter} active={activeFilter === filter} onClick={() => setActiveFilter(filter)}>
+              {filter}
+            </SuperadminFilterChip>
+          ))}
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari pemilihan..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black lg:w-64"
+          />
+        </div>
+      </div>
+
+      <StaggerContainer stagger={50} variant="fade-up" duration={600} className="mt-4">
         <DataTableShell className="relative rounded-[32px] border border-slate-200 bg-slate-50 p-3">
           <DataTableViewport>
             <DataTable className="[border-spacing:0_10px]">

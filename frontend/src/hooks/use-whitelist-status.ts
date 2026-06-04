@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createWhitelistEntriesBulk, createWhitelistEntry, deleteWhitelistEntry, getWhitelistStatus, listWhitelistEntries } from '@/lib/repositories/whitelistRepository'
+import { createWhitelistEntriesBulk, createWhitelistEntry, deleteWhitelistEntry, getWhitelistStatus, listWhitelistEntries, updateWhitelistSyncStatus } from '@/lib/repositories/whitelistRepository'
 
 export function useWhitelistEntries(proposalDraftId: string | null | undefined) {
   return useQuery({
@@ -38,6 +38,19 @@ export function useDeleteWhitelistEntry(proposalDraftId: string | null | undefin
 
   return useMutation({
     mutationFn: deleteWhitelistEntry,
+    onSuccess: () => {
+      if (proposalDraftId) {
+        void queryClient.invalidateQueries({ queryKey: ['whitelist', 'list', proposalDraftId] })
+      }
+    },
+  })
+}
+
+export function useUpdateWhitelistSyncStatus(proposalDraftId: string | null | undefined) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: updateWhitelistSyncStatus,
     onSuccess: () => {
       if (proposalDraftId) {
         void queryClient.invalidateQueries({ queryKey: ['whitelist', 'list', proposalDraftId] })

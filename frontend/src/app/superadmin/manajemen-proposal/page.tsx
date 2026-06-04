@@ -3,7 +3,7 @@
 import { ArrowUpDown, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { SuperadminEmptyState, SuperadminShell, SuperadminStatusBadge } from '@/components/superadmin/superadmin-shell'
+import { SuperadminEmptyState, SuperadminShell, SuperadminStatusBadge, SuperadminFilterChip } from '@/components/superadmin/superadmin-shell'
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -26,10 +26,13 @@ import {
 
 type SortField = 'tanggal' | 'organisasi' | 'jenis' | 'status'
 const PAGE_SIZE = 10
+const PROPOSAL_STATUS_FILTERS = ['Semua', 'Menunggu Review', 'Disetujui', 'Berjalan'] as const
+type ProposalStatusFilter = (typeof PROPOSAL_STATUS_FILTERS)[number]
 
 export default function SuperadminProposalManagementPage() {
   const router = useRouter()
   const [query, setQuery] = useState('')
+  const [activeStatus, setActiveStatus] = useState<ProposalStatusFilter>('Semua')
   const [currentPage, setCurrentPage] = useState(1)
   const { data: proposalRowsRaw, isLoading, error } = useSuperadminProposalDrafts()
   
@@ -58,9 +61,15 @@ export default function SuperadminProposalManagementPage() {
 
   const filteredRows = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
-    let rows = normalizedQuery
-      ? proposalRows.filter((row) => row.organizationName.toLowerCase().includes(normalizedQuery) || row.id.toLowerCase().includes(normalizedQuery) || row.proposalType.toLowerCase().includes(normalizedQuery))
-      : proposalRows
+    let rows = proposalRows
+
+    if (activeStatus !== 'Semua') {
+      rows = rows.filter((row) => row.status === activeStatus)
+    }
+
+    if (normalizedQuery) {
+      rows = rows.filter((row) => row.organizationName.toLowerCase().includes(normalizedQuery) || row.id.toLowerCase().includes(normalizedQuery) || row.proposalType.toLowerCase().includes(normalizedQuery))
+    }
 
     return [...rows].sort((left, right) => {
       const direction = sortDirection === 'asc' ? 1 : -1
@@ -70,14 +79,14 @@ export default function SuperadminProposalManagementPage() {
       if (sortField === 'status') return left.status.localeCompare(right.status) * direction
       return left.submittedAt.localeCompare(right.submittedAt) * direction
     })
-  }, [proposalRows, query, sortDirection, sortField])
+  }, [proposalRows, query, sortDirection, sortField, activeStatus])
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE))
   const paginatedRows = filteredRows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [query, sortDirection, sortField])
+  }, [query, sortDirection, sortField, activeStatus])
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages)
@@ -104,7 +113,14 @@ export default function SuperadminProposalManagementPage() {
         />
       </ScrollReveal>
 
-      <div className="mt-8 flex justify-end">
+      <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
+          {PROPOSAL_STATUS_FILTERS.map((status) => (
+            <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
+              {status}
+            </SuperadminFilterChip>
+          ))}
+        </div>
         <label className="relative block w-full lg:w-80">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input

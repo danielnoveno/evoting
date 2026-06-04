@@ -167,6 +167,27 @@ export async function deleteWhitelistEntry(id: string): Promise<void> {
   if (error) throw new RepositoryError('Gagal menghapus pemilih dari whitelist. Coba lagi.')
 }
 
+export async function updateWhitelistSyncStatus(input: {
+  proposalDraftId: string
+  txHash: string
+  walletAddresses: string[]
+}): Promise<void> {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const { error } = await client
+    .schema('app')
+    .from('proposal_whitelist_entries')
+    .update({
+      sync_status: 'synced',
+      latest_sync_tx_hash: input.txHash,
+    })
+    .eq('proposal_draft_id', input.proposalDraftId)
+    .in('wallet_address', input.walletAddresses)
+
+  if (error) throw new RepositoryError('Gagal memperbarui status sinkronisasi whitelist.')
+}
+
 export async function createWhitelistEntriesBulk(input: {
   proposalDraftId: string
   fileName: string

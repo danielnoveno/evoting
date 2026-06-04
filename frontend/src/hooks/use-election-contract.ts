@@ -75,6 +75,25 @@ export function useElectionContract(address?: string) {
     })
   }
 
+  const registerVoters = (voters: string[]) => {
+    if (!address) return
+    writeContract({
+      address: address as `0x${string}`,
+      abi: electionSpaceAbi,
+      functionName: 'registerVoters',
+      args: [voters],
+    })
+  }
+
+  const transitionToNextPhase = () => {
+    if (!address) return
+    writeContract({
+      address: address as `0x${string}`,
+      abi: electionSpaceAbi,
+      functionName: 'transitionToNextPhase',
+    })
+  }
+
   return {
     // State
     currentPhase,
@@ -84,6 +103,8 @@ export function useElectionContract(address?: string) {
     // Actions
     commitVote,
     revealVote,
+    registerVoters,
+    transitionToNextPhase,
     
     // TX Status
     hash,

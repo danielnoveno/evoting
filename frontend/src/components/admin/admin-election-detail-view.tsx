@@ -9,12 +9,15 @@ import { ModalShell } from '@/components/ui/modal-shell'
 import { useToast } from '@/components/ui/toast-provider'
 import { adminElectionDetailTabs, AdminElectionDetailTabId, AdminElectionRecord } from '@/lib/admin-election-data'
 import { ScrollReveal } from '@/components/public/parallax'
-import { useCreateWhitelistEntriesBulk, useCreateWhitelistEntry, useDeleteWhitelistEntry, useWhitelistEntries } from '@/hooks/use-whitelist-status'
+import { useCreateWhitelistEntriesBulk, useCreateWhitelistEntry, useDeleteWhitelistEntry, useUpdateWhitelistSyncStatus, useWhitelistEntries } from '@/hooks/use-whitelist-status'
 import { useWhitelistImportJobs } from '@/hooks/use-whitelist-import-jobs'
 import { useWhitelistImportSignedUrl } from '@/hooks/use-whitelist-import-file'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { countInvalidWhitelistCsvRows, parseWhitelistCsv } from '@/lib/whitelist-csv'
 import { useProposalCandidates } from '@/hooks/use-proposal-relations'
+import { useElectionContract } from '@/hooks/use-election-contract'
+import { useElectionResults } from '@/hooks/use-election-results'
+import { useElectionAuditLogs } from '@/hooks/use-election-audit-logs'
 
 function QuickActionIcon({ icon }: { icon: 'download' | 'share' | 'audit' | 'report' }) {
   if (icon === 'download') return <Download className="h-5 w-5" />
@@ -44,6 +47,27 @@ function StatusBadge({ status }: { status: 'verified' | 'pending' }) {
 export function AdminElectionDetailView({ election, activeTab }: { election: AdminElectionRecord; activeTab: AdminElectionDetailTabId }) {
   const canAddCandidate = election.status === 'aktif'
   const { showToast } = useToast()
+
+  // Blockchain Hook
+  const deployedAddress = election.detail.parameterVoting.contract.address
+  const isAddressValid = deployedAddress && deployedAddress.startsWith('0x') && deployedAddress.length === 42
+  
+  const { 
+    registerVoters, 
+    transitionToNextPhase,
+    isWritePending, 
+    isConfirming, 
+    isConfirmed, 
+    hash: txHash,
+    writeError,
+    resetWrite,
+    currentPhase: onChainPhase
+  } = useElectionContract(isAddressValid ? deployedAddress : undefined)
+
+  // Indexer Hooks
+  const resultsQuery = useElectionResults(isAddressValid ? deployedAddress : undefined)
+  const auditLogsQuery = useElectionAuditLogs(isAddressValid ? deployedAddress : undefined)
+
   const [candidates, setCandidates] = useState(election.detail.candidates)
   const [candidateToDelete, setCandidateToDelete] = useState<{ id: string; name: string } | null>(null)
   const [manualWhitelistOpen, setManualWhitelistOpen] = useState(false)
@@ -55,15 +79,74 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const [uploadFileName, setUploadFileName] = useState('daftar-pemilih.csv')
   const [uploadCsvContent, setUploadCsvContent] = useState('')
   const [syncOnchainConfirmOpen, setSyncOnchainConfirmOpen] = useState(false)
+  const [nextPhaseConfirmOpen, setNextPhaseConfirmOpen] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
   const [whitelistSearch, setWhitelistSearch] = useState('')
   const whitelistQuery = useWhitelistEntries(election.id)
   const createWhitelistEntry = useCreateWhitelistEntry()
   const deleteWhitelistEntry = useDeleteWhitelistEntry(election.id)
   const createWhitelistEntriesBulk = useCreateWhitelistEntriesBulk(election.id)
+  const updateWhitelistSyncStatus = useUpdateWhitelistSyncStatus(election.id)
   const whitelistImportJobsQuery = useWhitelistImportJobs(election.id)
   const whitelistImportSignedUrl = useWhitelistImportSignedUrl()
   const candidatesQuery = useProposalCandidates(election.id)
+
+  // Track transaction success for whitelist sync
+  useEffect(() => {
+    if (isConfirmed && txHash && isSyncing) {
+      const unsyncedAddresses = (whitelistQuery.data ?? [])
+        .filter(r => r.syncStatus !== 'synced')
+        .map(r => r.walletAddress)
+
+      if (unsyncedAddresses.length > 0) {
+        updateWhitelistSyncStatus.mutate({
+          proposalDraftId: election.id,
+          txHash: txHash,
+          walletAddresses: unsyncedAddresses
+        }, {
+          onSuccess: () => {
+            setIsSyncing(false)
+            setSyncOnchainConfirmOpen(false)
+            resetWrite()
+            showToast({
+              tone: 'success',
+              title: 'Sinkronisasi Berhasil',
+              description: 'Daftar pemilih telah berhasil didaftarkan on-chain.',
+            })
+          }
+        })
+      } else {
+        setIsSyncing(false)
+        setSyncOnchainConfirmOpen(false)
+      }
+    }
+  }, [isConfirmed, txHash, isSyncing, election.id, whitelistQuery.data, updateWhitelistSyncStatus, showToast, resetWrite])
+
+  // Track transaction success for phase transition
+  useEffect(() => {
+    if (isConfirmed && txHash && nextPhaseConfirmOpen) {
+      setNextPhaseConfirmOpen(false)
+      resetWrite()
+      showToast({
+        tone: 'success',
+        title: 'Fase Diperbarui',
+        description: 'Fase pemilihan berhasil diubah di blockchain.',
+      })
+    }
+  }, [isConfirmed, txHash, nextPhaseConfirmOpen, showToast, resetWrite])
+
+  // Handle Error
+  useEffect(() => {
+    if (writeError) {
+      setIsSyncing(false)
+      showToast({
+        tone: 'error',
+        title: 'Transaksi Gagal',
+        description: (writeError as any)?.shortMessage || writeError.message || 'Terjadi kesalahan saat memproses transaksi.',
+      })
+      resetWrite()
+    }
+  }, [writeError, showToast, resetWrite])
 
   const whitelistRecords = useMemo(() => {
     return (whitelistQuery.data ?? []).map((record) => ({
@@ -262,19 +345,41 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   }
 
   const handleConfirmSyncOnchain = () => {
-    setIsSyncing(true)
-    setTimeout(() => {
-      setIsSyncing(false)
-      setSyncOnchainConfirmOpen(false)
+    if (!isAddressValid) {
       showToast({
-        tone: 'success',
-        title: 'Sinkronisasi Berhasil',
-        description: 'Data proposal telah dikunci dan disinkronisasikan ke blockchain.',
+        tone: 'error',
+        title: 'Alamat Kontrak Tidak Valid',
+        description: 'Pemilihan ini belum dideploy ke blockchain.',
       })
-    }, 2000)
+      setSyncOnchainConfirmOpen(false)
+      return
+    }
+
+    const unsyncedAddresses = (whitelistQuery.data ?? [])
+      .filter(r => r.syncStatus !== 'synced')
+      .map(r => r.walletAddress)
+
+    if (unsyncedAddresses.length === 0) {
+      showToast({
+        tone: 'info',
+        title: 'Sudah Sinkron',
+        description: 'Seluruh daftar pemilih sudah terdaftar on-chain.',
+      })
+      setSyncOnchainConfirmOpen(false)
+      return
+    }
+
+    setIsSyncing(true)
+    registerVoters(unsyncedAddresses)
+  }
+
+  const handleConfirmNextPhase = () => {
+    if (!isAddressValid) return
+    transitionToNextPhase()
   }
 
   const handleOpenImportFile = (filePath: string) => {
+
     whitelistImportSignedUrl.mutate(filePath, {
       onSuccess: (signedUrl) => {
         window.open(signedUrl, '_blank', 'noopener,noreferrer')
@@ -587,11 +692,27 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           <ListChecks className="h-4 w-4" />
           Lihat Log Audit
         </button>
+        {isAddressValid && (
+          <button 
+            type="button" 
+            onClick={() => setNextPhaseConfirmOpen(true)} 
+            disabled={isWritePending || isConfirming || onChainPhase === 3}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-[15px] font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${(isWritePending || isConfirming) ? 'animate-spin' : ''}`} />
+            Buka Fase Berikutnya
+          </button>
+        )}
         <button type="button" onClick={() => showToast({ tone: 'info', title: 'Edit Parameter', description: 'Parameter pemilihan hanya dapat diubah sebelum fase commit dimulai.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-500 px-5 text-[15px] font-medium text-white hover:bg-slate-600">
           <Pencil className="h-4 w-4" />
           Edit Parameter
         </button>
-        <button type="button" onClick={() => setSyncOnchainConfirmOpen(true)} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 text-[15px] font-medium text-white hover:bg-indigo-700">
+        <button 
+          type="button" 
+          onClick={() => setSyncOnchainConfirmOpen(true)} 
+          disabled={isWritePending || isConfirming}
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 text-[15px] font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+        >
           <Link2 className="h-4 w-4" />
           Sinkronisasi ke Blockchain
         </button>
@@ -716,142 +837,180 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     </section>
   )
 
-  const renderRealtimeTab = () => (
-    <section className="mt-8 space-y-8">
-      <div className="flex justify-end">
-        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
-          <span className="h-3 w-3 rounded-full bg-emerald-500" />
-          {election.detail.realtime.connectedLabel}
-        </span>
-      </div>
+  const renderRealtimeTab = () => {
+    const indexerData = resultsQuery.data
+    const totalVoters = parseInt(election.detail.realtime.totalTarget) || 100
+    const totalVotes = indexerData?.totalRevealed ?? 0
+    const participationRate = totalVoters > 0 ? (totalVotes / totalVoters) * 100 : 0
+    
+    // Map indexer candidate results to UI candidates
+    const mappedResults = candidates.map((candidate, index) => {
+      const candidateId = index + 1 // 1-indexed on contract
+      const result = indexerData?.candidateResults.find(r => Number(r.candidateId) === candidateId)
+      const votes = result?.voteCount ?? 0
+      const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0
+      
+      return {
+        candidateNumber: String(candidateId),
+        candidateName: candidate.name,
+        votes: String(votes),
+        percentage: `${percentage.toFixed(1)}%`,
+        tone: index === 0 ? 'primary' as const : 'secondary' as const,
+      }
+    })
 
-      <div className="grid gap-6 2xl:grid-cols-3">
-        <article className="rounded-[30px] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total Suara Masuk</p>
-          <div className="mt-5 flex items-end gap-3">
-            <p className="text-[56px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.realtime.totalVotes}</p>
-            <p className="pb-2 text-[22px] text-slate-500">/ {election.detail.realtime.totalTarget}</p>
-          </div>
-          <div className="mt-8 flex items-center justify-between gap-4 text-[16px] text-slate-700">
-            <span>Partisipasi</span>
-            <span className="font-semibold text-slate-900">{election.detail.realtime.participation}</span>
-          </div>
-          <div className="mt-4 h-2 rounded-full bg-slate-100">
-            <div className={`h-2 rounded-full bg-black ${election.detail.turnout.progressWidthClassName}`} />
-          </div>
-        </article>
+    const auditFeed = (auditLogsQuery.data ?? []).map(log => ({
+      tx: log.txHash,
+      time: new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(log.createdAt)),
+      age: 'Baru saja', // Simplified
+    }))
 
-        <article className="rounded-[30px] border-l-4 border-l-black bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Waktu Tersisa</p>
-          <div className="mt-6 grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.realtime.remaining.hours}</p>
-              <p className="mt-2 text-[12px] uppercase tracking-[0.08em] text-slate-400">Jam</p>
-            </div>
-            <div>
-              <p className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.realtime.remaining.minutes}</p>
-              <p className="mt-2 text-[12px] uppercase tracking-[0.08em] text-slate-400">Menit</p>
-            </div>
-            <div>
-              <p className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.realtime.remaining.seconds}</p>
-              <p className="mt-2 text-[12px] uppercase tracking-[0.08em] text-slate-400">Detik</p>
-            </div>
-          </div>
-          <button type="button" onClick={() => showToast({ tone: 'info', title: 'Hitung Mundur', description: 'Waktu mundur otomatis berjalan pada saat pemilihan berlangsung.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-100 text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:bg-slate-200">
-            {election.detail.realtime.remaining.label}
-          </button>
-        </article>
+    return (
+      <section className="mt-8 space-y-8">
+        <div className="flex justify-end">
+          <span className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] ${resultsQuery.isError ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
+            <span className={`h-3 w-3 rounded-full ${resultsQuery.isError ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+            {resultsQuery.isError ? 'Indexer Tertunda' : (resultsQuery.isLoading ? 'Menghubungkan Indexer...' : 'Indexer Terhubung (Live)')}
+          </span>
+        </div>
 
-        <article className="rounded-[30px] bg-[#161b33] p-6 text-white">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Status Jaringan</p>
-          <div className="mt-6 flex items-start gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white">
-              <ShieldCheck className="h-6 w-6" />
-            </div>
-            <div>
-              <h2 className="text-[18px] font-semibold text-white">{election.detail.realtime.networkStatus.title}</h2>
-              <p className="mt-3 text-[14px] leading-7 text-slate-300">{election.detail.realtime.networkStatus.subtitle}</p>
-            </div>
-          </div>
-        </article>
-      </div>
-
-      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.4fr)_420px]">
-        <article className="rounded-[30px] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-[20px] font-semibold text-slate-900">Perolehan Suara Kandidat</h2>
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={() => showToast({ tone: 'success', title: 'Data di-refresh', description: 'Data perolehan suara telah diperbarui.' })} className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200">
-                <RefreshCw className="h-4 w-4" />
-              </button>
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduh Laporan', description: 'Fitur unduh laporan sedang disiapkan.' })} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
-                <Download className="h-4 w-4" />
-                Unduh Laporan
-              </button>
-            </div>
-          </div>
-          <div className="mt-8 space-y-10">
-            {election.detail.realtime.results.map((result) => (
-              <div key={result.candidateNumber} className="flex gap-4">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top,_#475569,_#0f172a_72%)]" />
-                <div className="flex-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">No. Urut {result.candidateNumber}</p>
-                  <div className="mt-2 flex items-end justify-between gap-4">
-                    <h3 className="text-[18px] font-semibold text-slate-900">{result.candidateName}</h3>
-                    <div className="text-right">
-                      <p className="text-[18px] font-semibold text-slate-900">{result.votes} Suara</p>
-                      <p className="mt-1 text-[14px] text-slate-500">{result.percentage}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 h-2 rounded-full bg-slate-100">
-                    <div className={`h-2 rounded-full ${result.barWidthClassName} ${result.tone === 'primary' ? 'bg-black' : 'bg-slate-400'}`} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <div className="space-y-6">
+        <div className="grid gap-6 2xl:grid-cols-3">
           <article className="rounded-[30px] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-[20px] font-semibold text-slate-900">Live Feed Blockchain</h2>
-              <span className="h-3 w-3 rounded-full bg-emerald-500" />
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total Suara Masuk</p>
+            <div className="mt-5 flex items-end gap-3">
+              <p className="text-[56px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{totalVotes}</p>
+              <p className="pb-2 text-[22px] text-slate-500">/ {totalVoters}</p>
             </div>
-            <div className="mt-6 space-y-4">
-              {election.detail.realtime.feed.map((item) => (
-                <article key={item.tx} className="rounded-[20px] border-l-4 border-l-black bg-slate-100 p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Terkonfirmasi</p>
-                      <p className="mt-3 font-mono text-[13px] text-slate-700">{item.tx}</p>
-                      <p className="mt-3 text-[12px] text-slate-500">◷ {item.time}</p>
-                    </div>
-                    <span className="text-[12px] text-slate-400">{item.age}</span>
-                  </div>
-                </article>
-              ))}
+            <div className="mt-8 flex items-center justify-between gap-4 text-[16px] text-slate-700">
+              <span>Partisipasi</span>
+              <span className="font-semibold text-slate-900">{participationRate.toFixed(1)}%</span>
             </div>
-            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Explorer Blockchain', description: 'Tautan ke Basescan explorer akan tersedia pada versi produksi.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:text-slate-900">
-              Lihat Semua Transaksi
+            <div className="mt-4 h-2 rounded-full bg-slate-100">
+              <div className="h-2 rounded-full bg-black transition-all duration-1000" style={{ width: `${participationRate}%` }} />
+            </div>
+          </article>
+
+          <article className="rounded-[30px] border-l-4 border-l-black bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Waktu Tersisa</p>
+            <div className="mt-6 grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.realtime.remaining.hours}</p>
+                <p className="mt-2 text-[12px] uppercase tracking-[0.08em] text-slate-400">Jam</p>
+              </div>
+              <div>
+                <p className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.realtime.remaining.minutes}</p>
+                <p className="mt-2 text-[12px] uppercase tracking-[0.08em] text-slate-400">Menit</p>
+              </div>
+              <div>
+                <p className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.realtime.remaining.seconds}</p>
+                <p className="mt-2 text-[12px] uppercase tracking-[0.08em] text-slate-400">Detik</p>
+              </div>
+            </div>
+            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Hitung Mundur', description: 'Waktu mundur otomatis berjalan pada saat pemilihan berlangsung.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-100 text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:bg-slate-200">
+              {election.detail.realtime.remaining.label}
             </button>
           </article>
 
-          <article className="rounded-[30px] bg-slate-100 p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-900">
-                <ShieldCheck className="h-5 w-5" />
+          <article className="rounded-[30px] bg-[#161b33] p-6 text-white">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Status Jaringan</p>
+            <div className="mt-6 flex items-start gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white">
+                <ShieldCheck className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-[18px] font-semibold text-slate-900">{election.detail.realtime.guarantee.title}</h2>
-                <p className="mt-3 text-[14px] leading-7 text-slate-500">{election.detail.realtime.guarantee.description}</p>
+                <h2 className="text-[18px] font-semibold text-white">{election.detail.realtime.networkStatus.title}</h2>
+                <p className="mt-3 text-[14px] leading-7 text-slate-300">{election.detail.realtime.networkStatus.subtitle}</p>
               </div>
             </div>
           </article>
         </div>
-      </div>
-    </section>
-  )
+
+        <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.4fr)_420px]">
+          <article className="rounded-[30px] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <h2 className="text-[20px] font-semibold text-slate-900">Perolehan Suara Kandidat</h2>
+              <div className="flex items-center gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => { resultsQuery.refetch(); showToast({ tone: 'success', title: 'Data di-refresh', description: 'Data perolehan suara telah diperbarui.' }) }} 
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200"
+                >
+                  <RefreshCw className={`h-4 w-4 ${resultsQuery.isRefetching ? 'animate-spin' : ''}`} />
+                </button>
+                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduh Laporan', description: 'Fitur unduh laporan sedang disiapkan.' })} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
+                  <Download className="h-4 w-4" />
+                  Unduh Laporan
+                </button>
+              </div>
+            </div>
+            <div className="mt-8 space-y-10">
+              {mappedResults.map((result) => (
+                <div key={result.candidateNumber} className="flex gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top,_#475569,_#0f172a_72%)]" />
+                  <div className="flex-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">No. Urut {result.candidateNumber}</p>
+                    <div className="mt-2 flex items-end justify-between gap-4">
+                      <h3 className="text-[18px] font-semibold text-slate-900">{result.candidateName}</h3>
+                      <div className="text-right">
+                        <p className="text-[18px] font-semibold text-slate-900">{result.votes} Suara</p>
+                        <p className="mt-1 text-[14px] text-slate-500">{result.percentage}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 h-2 rounded-full bg-slate-100">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-1000 ${result.tone === 'primary' ? 'bg-black' : 'bg-slate-400'}`} 
+                        style={{ width: result.percentage }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <div className="space-y-6">
+            <article className="rounded-[30px] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-[20px] font-semibold text-slate-900">Live Feed Blockchain</h2>
+                <span className={`h-3 w-3 rounded-full ${auditLogsQuery.isLoading ? 'animate-pulse bg-blue-500' : 'bg-emerald-500'}`} />
+              </div>
+              <div className="mt-6 space-y-4">
+                {auditFeed.length > 0 ? auditFeed.map((item) => (
+                  <article key={item.tx} className="rounded-[20px] border-l-4 border-l-black bg-slate-100 p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Terkonfirmasi</p>
+                        <p className="mt-3 font-mono text-[13px] text-slate-700 break-all">{item.tx}</p>
+                        <p className="mt-3 text-[12px] text-slate-500">◷ {item.time}</p>
+                      </div>
+                      <span className="text-[12px] text-slate-400 whitespace-nowrap">{item.age}</span>
+                    </div>
+                  </article>
+                )) : (
+                  <p className="text-[14px] text-slate-500 py-4 text-center italic">Menunggu transaksi pertama...</p>
+                )}
+              </div>
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Explorer Blockchain', description: 'Tautan ke Basescan explorer akan tersedia pada versi produksi.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:text-slate-900">
+                Lihat Semua Transaksi
+              </button>
+            </article>
+
+            <article className="rounded-[30px] bg-slate-100 p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-900">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-[18px] font-semibold text-slate-900">{election.detail.realtime.guarantee.title}</h2>
+                  <p className="mt-3 text-[14px] leading-7 text-slate-500">{election.detail.realtime.guarantee.description}</p>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <AdminShell>
@@ -1031,9 +1190,27 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         open={syncOnchainConfirmOpen}
         title="Sinkronisasi ke Blockchain?"
         description="Data proposal (kandidat, parameter, dan whitelist) akan disinkronisasikan ke blockchain. Proses ini akan memakan biaya gas dan data tidak dapat diubah lagi."
-        confirmLabel={isSyncing ? "Memproses..." : "Ya, Sinkronisasikan"}
-        onCancel={() => setSyncOnchainConfirmOpen(false)}
+        confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Sinkronisasikan"}
+        onCancel={() => {
+          if (!isWritePending && !isConfirming) {
+            setSyncOnchainConfirmOpen(false)
+            setIsSyncing(false)
+          }
+        }}
         onConfirm={handleConfirmSyncOnchain}
+      />
+
+      <ConfirmDialog
+        open={nextPhaseConfirmOpen}
+        title="Buka Fase Berikutnya?"
+        description="Aksi ini akan mengubah fase pemilihan di blockchain. Pastikan seluruh persiapan fase saat ini sudah selesai karena fase tidak dapat dikembalikan ke sebelumnya."
+        confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Lanjutkan"}
+        onCancel={() => {
+          if (!isWritePending && !isConfirming) {
+            setNextPhaseConfirmOpen(false)
+          }
+        }}
+        onConfirm={handleConfirmNextPhase}
       />
     </AdminShell>
   )
