@@ -1,6 +1,20 @@
 -- Developer Roles Seed
 -- This file contains initial role assignments for development accounts.
 
+-- Defensive schema alignment for databases that were partially migrated before
+-- the consolidated migration was introduced. The canonical schema still lives in
+-- supabase/migrations/00000000000000_consolidated_migration.sql.
+alter table app.admin_registry
+    add column if not exists display_name text,
+    add column if not exists organization_name text,
+    add column if not exists access_scope text not null default 'all',
+    add column if not exists status text not null default 'pending',
+    add column if not exists wallet_address text,
+    add column if not exists activation_token_hash text,
+    add column if not exists activation_sent_at timestamptz,
+    add column if not exists activation_expires_at timestamptz,
+    add column if not exists activation_accepted_at timestamptz;
+
 -- Register Superadmin
 insert into app.admin_registry (
     email,
@@ -16,7 +30,9 @@ insert into app.admin_registry (
     'all'
 ) on conflict (email) do update set
     assigned_role = 'super_admin',
-    status = 'active';
+    display_name = excluded.display_name,
+    status = 'active',
+    access_scope = 'all';
 
 -- Register Campus Admin
 insert into app.admin_registry (
@@ -35,7 +51,10 @@ insert into app.admin_registry (
     'FTI UAJY'
 ) on conflict (email) do update set
     assigned_role = 'admin',
-    status = 'active';
+    display_name = excluded.display_name,
+    organization_name = excluded.organization_name,
+    status = 'active',
+    access_scope = 'all';
 
 -- Register Initial Voter
 -- We use admin_registry to pre-register the voter and their wallet.
@@ -43,7 +62,7 @@ insert into app.admin_registry (
 insert into app.admin_registry (
     email,
     assigned_role,
-    organization_name,
+    display_name,
     status,
     access_scope,
     wallet_address
@@ -56,7 +75,9 @@ insert into app.admin_registry (
     '0xB8064e95d190777C16D1795aA872B259df4B8930'
 ) on conflict (email) do update set
     assigned_role = 'voter',
+    display_name = excluded.display_name,
     status = 'active',
+    access_scope = 'all',
     wallet_address = '0xB8064e95d190777C16D1795aA872B259df4B8930';
 
 -- Ensure profile roles are correct if they already exist
