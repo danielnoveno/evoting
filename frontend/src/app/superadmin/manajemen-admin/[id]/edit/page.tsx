@@ -21,9 +21,10 @@ import { useSuperadminAdminDirectory, useUpdateAdminRegistry } from '@/hooks/use
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
-import { useProposalDraftList } from '@/hooks/use-admin-proposal-list'
+import { useAdminProposalList } from '@/hooks/use-admin-proposal-list'
 import { syncAdminSpaces } from '@/lib/repositories/adminAccessRepository'
 import { Checkbox } from '@/components/ui/checkbox'
+import type { ProposalDraftRecord } from '@/lib/repositories/types'
 
 type AdminScope = 'all' | 'specific'
 type AdminStatus = 'Aktif' | 'Menunggu' | 'Nonaktif'
@@ -39,7 +40,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
   const adminId = decodeURIComponent(params.id)
   const adminDirectoryQuery = useSuperadminAdminDirectory()
   const updateAdminMutation = useUpdateAdminRegistry()
-  const proposalDraftsQuery = useProposalDraftList()
+  const proposalDraftsQuery = useAdminProposalList()
   const directoryRecord = useMemo(() => adminDirectoryQuery.data?.find((item) => item.email === adminId && item.role === 'admin') ?? null, [adminDirectoryQuery.data, adminId])
   const admin = useMemo(() => directoryRecord ? mapDirectoryAdmin(directoryRecord) : null, [directoryRecord])
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -134,7 +135,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
               await syncAdminSpaces(updated.email, selectedSpaceIds)
             } catch (error) {
               console.error('Failed to sync spaces:', error)
-              showToast({ tone: 'warning', title: 'Akses pemilihan gagal disimpan', description: 'Profil diperbarui, tetapi daftar akses pemilihan gagal disinkronkan.' })
+              showToast({ tone: 'info', title: 'Akses pemilihan gagal disimpan', description: 'Profil diperbarui, tetapi daftar akses pemilihan gagal disinkronkan.' })
             }
           } else if (formData.scope === 'all' && isSpacesDirty) {
             // Clear spaces if scope changed to 'all'
@@ -258,10 +259,10 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
                     Array.from({ length: 4 }).map((_, i) => (
                       <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-50" />
                     ))
-                  ) : proposalDraftsQuery.data?.length === 0 ? (
+                  ) : (proposalDraftsQuery.data as ProposalDraftRecord[] | undefined)?.length === 0 ? (
                     <p className="col-span-full text-[14px] text-slate-500 italic">Belum ada pemilihan yang dibuat di sistem.</p>
                   ) : (
-                    proposalDraftsQuery.data?.map((proposal) => (
+                    (proposalDraftsQuery.data as ProposalDraftRecord[] | undefined)?.map((proposal) => (
                       <label
                         key={proposal.id}
                         className={`flex cursor-pointer items-center gap-4 rounded-2xl border p-4 transition ${

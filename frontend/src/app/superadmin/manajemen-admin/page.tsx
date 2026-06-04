@@ -50,8 +50,9 @@ import { deleteAdminRegistry, updateAdminRegistry } from '@/lib/repositories/pro
 import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
 import { profileQueryKeys } from '@/hooks/use-profile'
 import { syncAdminSpaces } from '@/lib/repositories/adminAccessRepository'
-import { useProposalDraftList } from '@/hooks/use-admin-proposal-list'
+import { useAdminProposalList } from '@/hooks/use-admin-proposal-list'
 import { Checkbox } from '@/components/ui/checkbox'
+import type { ProposalDraftRecord } from '@/lib/repositories/types'
 
 type AdminTabKey = (typeof superadminAdminTabs)[number]['key']
 
@@ -82,7 +83,7 @@ function SuperadminAdminManagementContent() {
   const createAdminInviteMutation = useCreateAdminInvite()
   const [formData, setFormData] = useState(initialFormData)
   const [selectedSpaceIds, setSelectedSpaceIds] = useState<string[]>([])
-  const proposalDraftsQuery = useProposalDraftList()
+  const proposalDraftsQuery = useAdminProposalList()
   const [activationLink, setActivationLink] = useState('')
   const [selectedAdminEmails, setSelectedAdminEmails] = useState<string[]>([])
   const [selectionBarDismissed, setSelectionBarDismissed] = useState(false)
@@ -299,7 +300,7 @@ function SuperadminAdminManagementContent() {
               await syncAdminSpaces(invite.email, selectedSpaceIds)
             } catch (error) {
               console.error('Failed to sync spaces:', error)
-              showToast({ tone: 'warning', title: 'Akses pemilihan gagal disimpan', description: 'Admin dibuat, tetapi daftar akses pemilihan gagal dikonfigurasi.' })
+              showToast({ tone: 'info', title: 'Akses pemilihan gagal disimpan', description: 'Admin dibuat, tetapi daftar akses pemilihan gagal dikonfigurasi.' })
             }
           }
 
@@ -633,10 +634,10 @@ function SuperadminAdminManagementContent() {
                     Array.from({ length: 4 }).map((_, i) => (
                       <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-50" />
                     ))
-                  ) : proposalDraftsQuery.data?.length === 0 ? (
+                  ) : (proposalDraftsQuery.data as ProposalDraftRecord[] | undefined)?.length === 0 ? (
                     <p className="col-span-full text-[14px] text-slate-500 italic">Belum ada pemilihan yang dibuat di sistem.</p>
                   ) : (
-                    proposalDraftsQuery.data?.map((proposal) => (
+                    (proposalDraftsQuery.data as ProposalDraftRecord[] | undefined)?.map((proposal) => (
                       <label
                         key={proposal.id}
                         className={`flex cursor-pointer items-center gap-4 rounded-2xl border p-4 transition ${

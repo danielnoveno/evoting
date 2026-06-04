@@ -3,7 +3,7 @@
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import type { Database } from '@/lib/supabase/database.types'
-import type { AdminDirectoryRecord, AdminRegistryInput, AdminRegistryRecord, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
+import type { AdminDirectoryRecord, AdminRegistryInput, AdminRegistryRecord, AdminSpaceAccessRecord, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
 
 type ProfileRow = Database['app']['Tables']['app_profiles']['Row']
