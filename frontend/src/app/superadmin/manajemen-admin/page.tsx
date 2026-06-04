@@ -358,7 +358,7 @@ function SuperadminAdminManagementContent() {
 
       {activeTab === 'daftar' ? (
         <>
-          <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
               {superadminAdminStatuses.map((status) => (
                 <SuperadminFilterChip key={status} active={activeStatus === status} onClick={() => setActiveStatus(status)}>
@@ -373,7 +373,7 @@ function SuperadminAdminManagementContent() {
                 placeholder="Cari admin..."
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black lg:w-64"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black md:w-64"
               />
             </div>
           </div>

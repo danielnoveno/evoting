@@ -117,9 +117,18 @@ function SuperadminManagementContent() {
     [selectedEmails, superadmins],
   )
 
+  const [activeStatus, setActiveStatus] = useState<(typeof superadminAdminStatuses)[number]>('Semua Status')
+
   const filteredSuperadmins = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()
     const filtered = superadmins.filter((admin) => {
+      const isActive = Boolean(admin.profile) || admin.registryStatus === 'active'
+      const statusLabel = isActive ? 'Aktif' : 'Menunggu'
+      
+      const matchesStatus = activeStatus === 'Semua Status' ? true : statusLabel === activeStatus
+      
+      if (!matchesStatus) return false
+      
       if (!normalizedSearch) return true
       return (admin.displayName ?? 'super admin').toLowerCase().includes(normalizedSearch)
         || admin.email.toLowerCase().includes(normalizedSearch)
@@ -150,7 +159,7 @@ function SuperadminManagementContent() {
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1
       return 0
     })
-  }, [searchTerm, superadmins, sortField, sortDirection])
+  }, [searchTerm, superadmins, sortField, sortDirection, activeStatus])
 
   const handleSort = (field: SortField) => {
     if (sortField !== field) {
@@ -356,7 +365,18 @@ function SuperadminManagementContent() {
             </div>
           )}
 
-          <div className="mt-8 flex justify-end">
+          <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
+              {['Semua Status', 'Aktif', 'Menunggu'].map((status) => (
+                <SuperadminFilterChip
+                  key={status}
+                  active={activeStatus === status}
+                  onClick={() => setActiveStatus(status as any)}
+                >
+                  {status}
+                </SuperadminFilterChip>
+              ))}
+            </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -364,7 +384,7 @@ function SuperadminManagementContent() {
                 placeholder="Cari superadmin..."
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black lg:w-64"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black md:w-64"
               />
             </div>
           </div>
