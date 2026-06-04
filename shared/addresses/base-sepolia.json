@@ -8,9 +8,9 @@
       "verified": true
     },
     "VoteChainRegistry": {
-      "address": "0xa91568d64d24d42Ec1Cd10C20B2F9D8d341250D0",
-      "deployTxHash": "0x843ef31e2214000d907b0ca51ad4dde4660df1cc79b57ec61ca75fe9669071c1",
-      "verified": true
+      "address": "0x2D331f530A3644687abE85c624e70Ab9747C41ad",
+      "deployTxHash": "0x6fd729dfc8416d41a4da60359c9852dd5822605c247946d38623163a2e86bab2",
+      "verified": false
     },
     "VoteChainMVP": {
       "address": "",

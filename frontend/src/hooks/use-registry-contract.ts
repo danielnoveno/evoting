@@ -6,7 +6,7 @@ import VoteChainRegistryArtifact from '@/lib/abi/VoteChainRegistry.json'
 const registryAbi = VoteChainRegistryArtifact.abi
 
 // Default registry address for Base Sepolia - should be updated after deployment
-export const REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || '0xa91568d64d24d42Ec1Cd10C20B2F9D8d341250D0'
+export const REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || '0x2D331f530A3644687abE85c624e70Ab9747C41ad'
 
 export function useRegistryContract() {
   const { address: userAddress } = useAccount()
