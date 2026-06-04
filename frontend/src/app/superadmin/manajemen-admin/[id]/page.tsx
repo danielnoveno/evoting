@@ -183,6 +183,9 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
             {activationLink && (
               <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                 <p className="text-[12px] font-semibold text-emerald-700">Link aktivasi siap digunakan</p>
+                {directoryRecord?.activation_expires_at && (
+                  <LinkExpirationTimer expiresAt={directoryRecord.activation_expires_at} />
+                )}
                 <p className="mt-2 text-[12px] leading-5 text-emerald-700">
                   {lastEmailStatus === 'sent'
                     ? 'Email aktivasi sudah dikirim ke email admin organisasi.'
