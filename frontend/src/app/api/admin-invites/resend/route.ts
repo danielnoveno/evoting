@@ -31,6 +31,21 @@ function getRequestOrigin(request: NextRequest) {
   return request.nextUrl.origin.replace(/\/$/, '')
 }
 
+function createActivationLink(request: NextRequest, role: 'admin' | 'super_admin', token: string) {
+  const origin = getRequestOrigin(request)
+
+  if (role === 'admin') {
+    const url = new URL('/hubungkan-dompet', origin)
+    url.searchParams.set('activate', 'admin')
+    url.searchParams.set('redirect', '/admin')
+    return url.toString()
+  }
+
+  const url = new URL('/portal-admin', origin)
+  url.searchParams.set('invite', token)
+  return url.toString()
+}
+
 async function requireSuperadmin(request: NextRequest) {
   const client = getSupabaseServiceRoleClient()
   if (!client) {
@@ -106,28 +121,35 @@ export async function POST(request: NextRequest) {
   if (fetchError) return jsonError(`Gagal memeriksa undangan: ${fetchError.message}`, 500)
   if (!invite) return jsonError('Undangan tidak ditemukan untuk email ini.', 404)
   if (invite.status === 'inactive') return jsonError('Undangan sudah dinonaktifkan.', 410)
-  if (invite.activation_accepted_at) return jsonError('Undangan ini sudah digunakan and tidak bisa dikirim ulang.', 409)
+  if (invite.activation_accepted_at && invite.assigned_role === 'super_admin') {
+    return jsonError('Undangan ini sudah digunakan dan tidak bisa dikirim ulang.', 409)
+  }
 
   // Generate new token & expiry
   const newToken = createActivationToken()
   const newTokenHash = hashToken(newToken)
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString()
 
+  const updatePayload: Record<string, unknown> = {
+    activation_sent_at: new Date().toISOString(),
+    activation_expires_at: expiresAt,
+    updated_by: auth.profileId,
+  }
+
+  if (invite.assigned_role === 'super_admin' || !invite.activation_accepted_at) {
+    updatePayload.activation_token_hash = newTokenHash
+    updatePayload.activation_accepted_at = null
+  }
+
   const { error: updateError } = await auth.client
     .from('admin_registry')
-    .update({
-      activation_token_hash: newTokenHash,
-      activation_sent_at: new Date().toISOString(),
-      activation_expires_at: expiresAt,
-      activation_accepted_at: null,
-      updated_by: auth.profileId,
-    })
+    .update(updatePayload)
     .eq('email', email)
 
   if (updateError) return jsonError(`Gagal memperbarui undangan: ${updateError.message}`, 500)
 
 
-  const activationLink = `${getRequestOrigin(request)}/portal-admin?invite=${encodeURIComponent(newToken)}`
+  const activationLink = createActivationLink(request, invite.assigned_role, newToken)
 
   const emailResult = await sendAdminActivationEmail({
     displayName: invite.organization_name ?? email.split('@')[0],

@@ -44,6 +44,21 @@ function getRequestOrigin(request: NextRequest) {
   return request.nextUrl.origin.replace(/\/$/, '')
 }
 
+function createActivationLink(request: NextRequest, role: InviteRole, token: string) {
+  const origin = getRequestOrigin(request)
+
+  if (role === 'admin') {
+    const url = new URL('/hubungkan-dompet', origin)
+    url.searchParams.set('activate', 'admin')
+    url.searchParams.set('redirect', '/admin')
+    return url.toString()
+  }
+
+  const url = new URL('/portal-admin', origin)
+  url.searchParams.set('invite', token)
+  return url.toString()
+}
+
 function toInviteResponse(row: InviteRow) {
   return {
     email: row.email,
@@ -202,7 +217,7 @@ export async function POST(request: NextRequest) {
   if (error) return jsonError(`Gagal menyimpan undangan: ${error.message}`, 500)
 
 
-  const activationLink = `${getRequestOrigin(request)}/portal-admin?invite=${encodeURIComponent(token)}`
+  const activationLink = createActivationLink(request, assignedRole, token)
 
   // Attempt to send activation email — non-blocking; invite is saved regardless
   let emailStatus: 'sent' | 'skipped' | 'failed' = 'skipped'
