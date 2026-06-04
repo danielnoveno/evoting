@@ -108,6 +108,10 @@ export async function getCurrentProfile(): Promise<AppProfileRecord | null> {
   const client = getSupabaseBrowserClient()
   if (!client) return null
 
+  // Check if session exists in storage first to avoid unnecessary getUser() calls and 403 logs for guest users
+  const { data: sessionData } = await client.auth.getSession()
+  if (!sessionData.session) return null
+
   const user = await requireUser()
   const { data, error } = await client
     .schema('app')
