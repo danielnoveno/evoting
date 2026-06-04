@@ -344,7 +344,7 @@ export async function getPublicElectionResults(spaceAddress?: string | null): Pr
   }
 }
 
-async function listPonderAuditLogs(spaceAddress?: string | null, limit = 6): Promise<TxAuditLogRecord[] | null> {
+export async function listPonderAuditLogs(spaceAddress?: string | null, limit = 6): Promise<TxAuditLogRecord[] | null> {
   const graphqlUrl = getPonderGraphqlUrl()
   if (!graphqlUrl) return null
 
@@ -377,6 +377,10 @@ async function listPonderAuditLogs(spaceAddress?: string | null, limit = 6): Pro
   if (payload.errors && payload.errors.length > 0) throw new RepositoryError('Indexer belum siap menyajikan audit log.')
 
   return (payload.data?.chainEvents?.items ?? []).map(mapPonderAuditEvent)
+}
+
+export async function getElectionResultsFromIndexer(spaceAddress?: string | null): Promise<PublicElectionResultRecord | null> {
+  return getPublicElectionResults(spaceAddress)
 }
 
 export async function listVoterOnchainProofs(walletAddress?: string | null, spaceAddresses: string[] = []): Promise<VoterOnchainProofRecord[]> {

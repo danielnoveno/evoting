@@ -2,6 +2,7 @@
 .opencode
 .docs
 .env
+contracts/.env
 .env.local
 .env.development.local
 .env.test.local

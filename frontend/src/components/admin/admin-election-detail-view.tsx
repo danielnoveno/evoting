@@ -18,6 +18,7 @@ import { useProposalCandidates } from '@/hooks/use-proposal-relations'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useElectionResults } from '@/hooks/use-election-results'
 import { useElectionAuditLogs } from '@/hooks/use-election-audit-logs'
+import type { PublicElectionCandidateResultRecord } from '@/lib/repositories/types'
 
 function QuickActionIcon({ icon }: { icon: 'download' | 'share' | 'audit' | 'report' }) {
   if (icon === 'download') return <Download className="h-5 w-5" />
@@ -846,7 +847,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     // Map indexer candidate results to UI candidates
     const mappedResults = candidates.map((candidate, index) => {
       const candidateId = index + 1 // 1-indexed on contract
-      const result = indexerData?.candidateResults.find(r => Number(r.candidateId) === candidateId)
+      const result = indexerData?.candidateResults.find((r: PublicElectionCandidateResultRecord) => Number(r.candidateId) === candidateId)
       const votes = result?.voteCount ?? 0
       const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0
       
