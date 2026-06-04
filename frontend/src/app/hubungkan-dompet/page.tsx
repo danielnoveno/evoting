@@ -67,6 +67,9 @@ function ConnectWalletContent() {
 
   const redirectParam = searchParams.get('redirect')
   const activateParam = searchParams.get('activate')
+  const authSession = authSessionQuery.data
+  const currentProfile = currentProfileQuery.data
+  const connectedWalletProfile = connectedWalletProfileQuery.data
 
   // Determine context: prioritized by profile role if logged in, then URL param, then redirect hint
   const activationContext = useMemo((): 'admin' | 'voter' => {
@@ -114,9 +117,6 @@ function ConnectWalletContent() {
     }
   }, [searchParams, mounted])
 
-  const authSession = authSessionQuery.data
-  const currentProfile = currentProfileQuery.data
-  const connectedWalletProfile = connectedWalletProfileQuery.data
   const isWalletBound = sameWalletAddress(currentProfile?.walletAddress, address)
   const accountHasDifferentWallet = Boolean(address && currentProfile?.walletAddress && !isWalletBound)
   const connectedWalletOwnedByOther = Boolean(
@@ -625,12 +625,6 @@ export default function ConnectWalletPage() {
             <Loader2 className="h-8 w-8 animate-spin text-slate-900 mx-auto" />
             <p className="mt-4 text-[12px] font-medium text-slate-500">Memuat sistem...</p>
           </div>
-       </div>
-    }>
-      <ConnectWalletContent />
-    </Suspense>
-  )
-}
        </div>
     }>
       <ConnectWalletContent />
