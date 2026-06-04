@@ -24,6 +24,31 @@ export default function AdminProfilePage() {
 
   const [activeSessions, setActiveSessions] = useState<Array<{ id: string; device: string; location: string; time: string; status: string; isCurrent: boolean; icon: typeof Monitor }>>([])
 
+  useEffect(() => {
+    const fetchSessionInfo = async () => {
+      try {
+        const response = await fetch('/api/auth/session-info')
+        const data = await response.json()
+        
+        setActiveSessions([
+          {
+            id: 'current',
+            device: `${data.device} Browser`,
+            location: data.location,
+            time: 'Baru saja',
+            status: 'online',
+            isCurrent: true,
+            icon: data.device === 'Mobile' ? Smartphone : Monitor
+          }
+        ])
+      } catch (err) {
+        console.error('Failed to fetch session info:', err)
+      }
+    }
+
+    fetchSessionInfo()
+  }, [])
+
   const handleTerminateSession = (id: string) => {
     setActiveSessions(prev => prev.filter(s => s.id !== id))
     showToast({

@@ -67,8 +67,16 @@ function ConnectWalletContent() {
 
   const redirectParam = searchParams.get('redirect')
   const activateParam = searchParams.get('activate')
-  const activationMode = activateParam === '1' || activateParam === 'admin'
-  const activationContext: 'admin' | 'voter' = activateParam === 'admin' ? 'admin' : 'voter'
+
+  // Determine context: prioritized by profile role if logged in, then URL param, then redirect hint
+  const activationContext = useMemo((): 'admin' | 'voter' => {
+    if (currentProfile?.role === 'admin' || currentProfile?.role === 'super_admin') return 'admin'
+    if (activateParam === 'admin') return 'admin'
+    if (redirectParam?.startsWith('/admin') || redirectParam?.startsWith('/superadmin') || redirectParam?.startsWith('/portal-admin')) return 'admin'
+    return 'voter'
+  }, [currentProfile?.role, activateParam, redirectParam])
+
+  const activationMode = activateParam === '1' || activateParam === 'admin' || (Boolean(authSession) && activationContext === 'admin')
   const redirectTarget = useMemo(() => resolveRedirectTarget(redirectParam), [redirectParam])
 
   const [mounted, setMounted] = useState(false)
@@ -259,14 +267,14 @@ function ConnectWalletContent() {
           className="right-[-60px] top-[60px] h-[260px] w-[260px] rounded-full bg-gradient-to-bl from-slate-100/60 to-blue-50/20 blur-3xl"
         />
 
-        <div className="relative z-10 w-full max-w-[1040px] px-2 sm:px-0">
+        <div className="relative z-10 w-full max-w-[1100px] px-2 sm:px-0">
           <ScrollReveal variant="fade-up">
             <section className="relative overflow-hidden rounded-xl border border-slate-200 bg-white">
               <Link href="/" aria-label="Tutup dan kembali ke beranda" className="absolute right-4 top-4 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-900">
                 <X className="h-4 w-4" />
               </Link>
 
-              <div className="grid max-h-[84vh] overflow-y-auto xl:grid-cols-[0.44fr_0.56fr]">
+              <div className="grid max-h-[84vh] overflow-y-auto xl:grid-cols-[0.5fr_0.5fr]">
                 <aside className="border-b border-slate-100 bg-white p-6 xl:border-b-0 xl:border-r xl:p-8">
                   <div className="flex items-start justify-between gap-5">
                     <div>
@@ -617,6 +625,12 @@ export default function ConnectWalletPage() {
             <Loader2 className="h-8 w-8 animate-spin text-slate-900 mx-auto" />
             <p className="mt-4 text-[12px] font-medium text-slate-500">Memuat sistem...</p>
           </div>
+       </div>
+    }>
+      <ConnectWalletContent />
+    </Suspense>
+  )
+}
        </div>
     }>
       <ConnectWalletContent />

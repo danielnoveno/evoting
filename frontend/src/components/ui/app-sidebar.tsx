@@ -58,7 +58,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const pathname = usePathname()
 
-  const sidebarDesktopWidthClass = collapsed ? 'lg:w-[96px]' : 'lg:w-[264px]'
+  const sidebarDesktopWidthClass = collapsed ? 'lg:w-[96px]' : 'lg:w-[280px]'
 
   const formattedWallet = useMemo(() => {
     const w = profile.wallet
@@ -78,7 +78,7 @@ export function AppSidebar({
         />
       ) : null}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-[264px] shrink-0 border-r border-slate-200 bg-white transition-all duration-200 lg:z-40 lg:flex lg:translate-x-0 ${sidebarDesktopWidthClass} ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-[280px] shrink-0 border-r border-slate-200 bg-white transition-all duration-200 lg:z-40 lg:flex lg:translate-x-0 ${sidebarDesktopWidthClass} ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="flex h-full w-full flex-col overflow-y-auto">
           {/* ─── Brand / Logo ─── */}
           <div className={`flex items-start justify-between px-5 pb-4 pt-6 ${collapsed ? 'lg:px-4' : ''}`}>
@@ -205,6 +205,6 @@ export function AppSidebar({
  * Helper: returns the content-area margin className based on collapse state.
  */
 export function useSidebarLayout(collapsed: boolean) {
-  const sidebarWidthClass = useMemo(() => (collapsed ? 'lg:ml-[96px]' : 'lg:ml-[264px]'), [collapsed])
+  const sidebarWidthClass = useMemo(() => (collapsed ? 'lg:ml-[96px]' : 'lg:ml-[280px]'), [collapsed])
   return { sidebarWidthClass }
 }
