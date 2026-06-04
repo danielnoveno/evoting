@@ -5,11 +5,11 @@ import { coinbaseWallet, injected } from 'wagmi/connectors'
 export const wagmiConfig = createConfig({
   chains: [baseSepolia],
   connectors: [
-    injected(),
     coinbaseWallet({
       appName: 'Votein',
-      preference: 'smartWalletOnly',
+      preference: 'all',
     }),
+    injected(),
   ],
   ssr: true,
   transports: {

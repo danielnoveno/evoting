@@ -55,6 +55,19 @@ function PortalAdminContent() {
   const invitePreviewQuery = useAdminInvitePreview(inviteToken)
   const activateInviteMutation = useActivateAdminInvite()
 
+  const handleResetConnection = () => {
+    disconnect()
+    try {
+      localStorage.removeItem('wagmi.store')
+      localStorage.removeItem('wagmi.recentConnectorId')
+      localStorage.removeItem('wagmi.connected')
+      localStorage.removeItem('wagmi.walletProgress')
+    } catch (e) {
+      console.error('Failed to clear wagmi storage', e)
+    }
+    window.location.reload()
+  }
+
   const [mounted, setMounted] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
