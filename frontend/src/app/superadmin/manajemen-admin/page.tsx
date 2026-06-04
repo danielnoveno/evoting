@@ -734,23 +734,3 @@ export default function SuperadminAdminManagementPage() {
     </Suspense>
   )
 }
-Shell>
-  )
-}
-
-export default function SuperadminAdminManagementPage() {
-  return (
-    <Suspense fallback={
-      <SuperadminShell>
-        <div className="flex h-[50vh] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-black" />
-        </div>
-      </SuperadminShell>
-    }>
-      <SuperadminAdminManagementContent />
-    </Suspense>
-  )
-}
-nse>
-  )
-}

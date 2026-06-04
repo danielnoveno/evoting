@@ -21,6 +21,21 @@ import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
 import { Loader2 } from 'lucide-react'
 
+function LinkExpirationTimer({ expiresAt }: { expiresAt: string }) {
+  const expiration = new Date(expiresAt)
+  const label = Number.isNaN(expiration.getTime())
+    ? 'Masa berlaku link tidak dapat dibaca.'
+    : `Berlaku sampai ${expiration.toLocaleString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })}`
+
+  return <p className="mt-1 text-[12px] font-medium text-emerald-700">{label}</p>
+}
+
 export default function SuperadminAdminDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const adminId = decodeURIComponent(params.id)
@@ -183,8 +198,8 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
             {activationLink && (
               <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                 <p className="text-[12px] font-semibold text-emerald-700">Link aktivasi siap digunakan</p>
-                {directoryRecord?.activation_expires_at && (
-                  <LinkExpirationTimer expiresAt={directoryRecord.activation_expires_at} />
+                {directoryRecord?.activationExpiresAt && (
+                  <LinkExpirationTimer expiresAt={directoryRecord.activationExpiresAt} />
                 )}
                 <p className="mt-2 text-[12px] leading-5 text-emerald-700">
                   {lastEmailStatus === 'sent'
@@ -351,13 +366,6 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
               router.push('/superadmin/manajemen-admin')
             },
             onError: (error) => showToast({ tone: 'error', title: 'Gagal menghapus admin', description: getRepositoryErrorMessage(error) }),
-          })
-        }}
-      />
-    </SuperadminShell>
-  )
-}
-toryErrorMessage(error) }),
           })
         }}
       />

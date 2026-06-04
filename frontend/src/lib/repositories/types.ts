@@ -24,11 +24,14 @@ export interface AdminSpaceAccessRecord {
 export interface AdminDirectoryRecord {
   email: string
   role: Extract<AppRole, 'admin' | 'super_admin'>
+  displayName: string | null
   organizationName: string | null
   accessScope: 'all' | 'specific'
   registryStatus: 'pending' | 'active' | 'inactive' | null
   description: string | null
   walletAddress: string | null
+  activationExpiresAt: string | null
+  activationAcceptedAt: string | null
   createdAt: string
   updatedAt: string | null
   profile: AppProfileRecord | null
@@ -51,6 +54,7 @@ export interface AdminRegistryRecord {
 
 export interface AdminRegistryInput {
   email: string
+  displayName?: string | null
   organizationName?: string | null
   accessScope?: 'all' | 'specific'
   status?: 'pending' | 'active' | 'inactive'

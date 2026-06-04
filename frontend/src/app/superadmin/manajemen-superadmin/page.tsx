@@ -697,6 +697,3 @@ export default function SuperadminManagementPage() {
     </Suspense>
   )
 }
-ense>
-  )
-}

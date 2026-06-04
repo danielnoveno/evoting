@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
 
   const { data: invite, error: fetchError } = await auth.client
     .from('admin_registry')
-    .select('email,assigned_role,display_name,wallet_address,activation_token_hash,activation_expires_at,activation_accepted_at,status')
+    .select('email,assigned_role,organization_name,wallet_address,activation_token_hash,activation_expires_at,activation_accepted_at,status')
     .eq('email', email)
     .maybeSingle()
 

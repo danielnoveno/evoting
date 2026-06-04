@@ -344,12 +344,14 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
     directoryByEmail.set(lowerEmail, {
       email,
       role: profile.role === 'super_admin' ? 'super_admin' : 'admin',
-      displayName: registry?.display_name ?? profile.displayName,
+      displayName: registry?.organization_name ?? profile.displayName,
       organizationName: registry?.organization_name ?? null,
       accessScope: registry?.access_scope ?? 'all',
       registryStatus: registry?.status ?? null,
       description: registry?.description ?? null,
       walletAddress: registry?.wallet_address ?? profile.walletAddress,
+      activationExpiresAt: registry?.activation_expires_at ?? null,
+      activationAcceptedAt: registry?.activation_accepted_at ?? null,
       createdAt: registry?.created_at ?? profile.createdAt,
       updatedAt: registry?.updated_at ?? profile.updatedAt,
       profile,
@@ -367,12 +369,14 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
     directoryByEmail.set(key, {
       email: row.email,
       role: row.assigned_role,
-      displayName: row.display_name,
+      displayName: row.organization_name,
       organizationName: row.organization_name,
       accessScope: row.access_scope,
       registryStatus: row.status,
       description: row.description,
       walletAddress: row.wallet_address,
+      activationExpiresAt: row.activation_expires_at,
+      activationAcceptedAt: row.activation_accepted_at,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       profile: null,
@@ -416,10 +420,11 @@ export async function createAdminRegistry(input: AdminRegistryInput): Promise<Ad
   if (!email) throw new RepositoryError('Email admin wajib diisi.')
 
   const actorProfileId = await getCurrentProfileId()
+  const displayName = input.displayName?.trim() || input.organizationName?.trim() || null
   const payload: Database['app']['Tables']['admin_registry']['Insert'] = {
     email,
     assigned_role: 'admin',
-    organization_name: input.organizationName?.trim() || null,
+    organization_name: input.organizationName?.trim() || input.displayName?.trim() || null,
     access_scope: input.accessScope ?? 'all',
     status: input.status ?? 'pending',
     description: input.description?.trim() || null,
@@ -443,7 +448,7 @@ export async function createAdminRegistry(input: AdminRegistryInput): Promise<Ad
   }
 
   if (payload.status !== 'inactive') {
-    await syncProfileRoleForEmail(email, 'admin', payload.display_name)
+    await syncProfileRoleForEmail(email, 'admin', displayName)
   }
 
   return mapAdminRegistryRow(data)
@@ -467,9 +472,10 @@ export async function updateAdminRegistry(currentEmail: string, input: AdminRegi
   if (currentError || !currentRecord) throw new RepositoryError('Data admin yang ingin diperbarui tidak ditemukan.')
 
   const actorProfileId = await getCurrentProfileId()
+  const displayName = input.displayName?.trim() || input.organizationName?.trim() || null
   const payload: Database['app']['Tables']['admin_registry']['Update'] = {
     email: nextEmail,
-    organization_name: input.organizationName?.trim() || null,
+    organization_name: input.organizationName?.trim() || input.displayName?.trim() || null,
     access_scope: input.accessScope ?? 'all',
     status: input.status ?? 'pending',
     description: input.description?.trim() || null,
@@ -491,7 +497,7 @@ export async function updateAdminRegistry(currentEmail: string, input: AdminRegi
     await syncProfileRoleForEmail(oldEmail, 'voter')
   }
 
-  await syncProfileRoleForEmail(nextEmail, payload.status === 'inactive' ? 'voter' : currentRecord.assigned_role, payload.organization_name)
+  await syncProfileRoleForEmail(nextEmail, payload.status === 'inactive' ? 'voter' : currentRecord.assigned_role, displayName)
 
   return mapAdminRegistryRow(data)
 }
@@ -546,7 +552,5 @@ export async function updateDirectoryRegistryStatus(email: string, status: 'pend
   if (error) throw new RepositoryError('Gagal memperbarui status akses. Coba lagi.')
 
   const nextRole = status === 'inactive' ? 'voter' : current.assigned_role
-  await syncProfileRoleForEmail(normalizedEmail, nextRole, current.display_name)
-}
-l(normalizedEmail, nextRole, current.display_name)
+  await syncProfileRoleForEmail(normalizedEmail, nextRole, current.organization_name)
 }

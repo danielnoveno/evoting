@@ -9,7 +9,7 @@ type InviteRole = 'admin' | 'super_admin'
 type ActivationInviteRow = {
   email: string
   assigned_role: InviteRole
-  display_name: string | null
+  organization_name: string | null
   wallet_address: string | null
   activation_expires_at: string | null
   activation_accepted_at: string | null
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   const tokenHash = hashToken(token)
   const { data, error } = await client
     .from('admin_registry')
-    .select('email,assigned_role,display_name,wallet_address,activation_expires_at,activation_accepted_at,status')
+    .select('email,assigned_role,organization_name,wallet_address,activation_expires_at,activation_accepted_at,status')
     .eq('activation_token_hash', tokenHash)
     .maybeSingle()
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     password,
     email_confirm: true,
     user_metadata: {
-      full_name: invite.display_name ?? invite.email.split('@')[0],
+      full_name: invite.organization_name ?? invite.email.split('@')[0],
     },
   })
 

@@ -10,7 +10,7 @@ type InviteRole = 'admin' | 'super_admin'
 type InviteRow = {
   email: string
   assigned_role: InviteRole
-  display_name: string | null
+  organization_name: string | null
   wallet_address: string | null
   activation_expires_at: string | null
   activation_accepted_at: string | null
@@ -47,7 +47,7 @@ function getRequestOrigin(request: NextRequest) {
 function toInviteResponse(row: InviteRow) {
   return {
     email: row.email,
-    displayName: row.display_name,
+    displayName: row.organization_name,
     walletAddress: row.wallet_address,
     role: row.assigned_role,
     expiresAt: row.activation_expires_at ?? '',
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
   const tokenHash = hashToken(token)
   const { data, error } = await client
     .from('admin_registry')
-    .select('email,assigned_role,display_name,wallet_address,activation_expires_at,activation_accepted_at,status')
+    .select('email,assigned_role,organization_name,wallet_address,activation_expires_at,activation_accepted_at,status')
     .eq('activation_token_hash', tokenHash)
     .maybeSingle()
 
