@@ -96,21 +96,11 @@ export default function SuperadminAuditLogPage() {
       <ScrollReveal variant="fade-up" duration={800}>
         <section className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="w-full max-w-[720px]">
-          <label className="inline-flex h-12 w-full max-w-[340px] items-center gap-3 rounded-[6px] border border-slate-400 bg-slate-100 px-4">
-            <Search className="h-4 w-4 text-slate-500" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Cari TX Hash atau event..."
-              className="w-full bg-transparent text-[15px] text-slate-900 outline-none placeholder:text-slate-500"
-            />
-          </label>
-
-          <h1 className="mt-12 text-[54px] font-semibold tracking-[-0.05em] text-slate-900">{superadminAuditLogData.title}</h1>
-          <p className="mt-4 max-w-[760px] text-[18px] leading-9 text-slate-800">{superadminAuditLogData.description}</p>
+          <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[54px]">{superadminAuditLogData.title}</h1>
+          <p className="mt-4 max-w-[760px] text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">{superadminAuditLogData.description}</p>
         </div>
 
-        <div className="mt-2 flex gap-4 xl:mt-20">
+        <div className="mt-2 flex flex-wrap gap-4 xl:mt-10">
           <SuperadminToolbarButton onClick={() => showToast({ tone: 'success', title: 'Laporan audit disiapkan', description: 'File laporan audit sedang disiapkan.' })}>
             <Download className="h-4 w-4" />
             Unduh Laporan
@@ -165,45 +155,59 @@ export default function SuperadminAuditLogPage() {
 
       <ScrollReveal variant="fade-up" delay={200} duration={800}>
         <section className="mt-10 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
-        <div className="flex items-center justify-between border-b border-slate-100 px-8 py-6">
+        <div className="border-b border-slate-100 px-8 py-6">
           <p className="flex items-center gap-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-700">
             <span className="h-2.5 w-2.5 rounded-full bg-black" />
             Live System Events
           </p>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {[
-              ['semua', 'Semua'],
-              ['verified', 'Verified'],
-              ['syncing', 'Syncing'],
-              ['proposal', 'Proposal'],
-              ['vote', 'Vote'],
-              ['validator', 'Validator'],
-            ].map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => {
-                  setActiveFilter(key as typeof activeFilter)
-                  setVisibleCount(4)
-                }}
-                className={activeFilter === key
-                  ? 'rounded-full bg-slate-900 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-white'
-                  : 'rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500 hover:bg-slate-200'}
-              >
-                {label}
+          
+          <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                ['semua', 'Semua'],
+                ['verified', 'Verified'],
+                ['syncing', 'Syncing'],
+                ['proposal', 'Proposal'],
+                ['vote', 'Vote'],
+                ['validator', 'Validator'],
+              ].map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    setActiveFilter(key as typeof activeFilter)
+                    setVisibleCount(4)
+                  }}
+                  className={activeFilter === key
+                    ? 'rounded-full bg-slate-900 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-white'
+                    : 'rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500 hover:bg-slate-200'}
+                >
+                  {label}
+                </button>
+              ))}
+              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Filter event aktif', description: `Filter saat ini: ${activeFilter}.` })} className="ml-1 text-slate-500 hover:text-slate-900">
+                <Filter className="h-4 w-4" />
               </button>
-            ))}
-            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Filter event aktif', description: `Filter saat ini: ${activeFilter}.` })} className="ml-1 text-slate-500 hover:text-slate-900">
-              <Filter className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setSortOrder((current) => current === 'terbaru' ? 'terlama' : 'terbaru')}
-              className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500 hover:bg-slate-200"
-            >
-              <ArrowUpDown className="h-3.5 w-3.5" />
-              {sortOrder}
-            </button>
+              <button
+                type="button"
+                onClick={() => setSortOrder((current) => current === 'terbaru' ? 'terlama' : 'terbaru')}
+                className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500 hover:bg-slate-200"
+              >
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                {sortOrder}
+              </button>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Cari TX Hash atau event..."
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 text-[13px] text-slate-900 outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-black md:w-64"
+              />
+            </div>
           </div>
         </div>
 

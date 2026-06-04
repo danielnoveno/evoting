@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/data-table'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { superadminAdminStatuses } from '@/lib/superadmin-data'
 import { listAdminDirectory, updateDirectoryRegistryStatus } from '@/lib/repositories/profileRepository'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { useCreateAdminInvite, useResendAdminInvite } from '@/hooks/use-admin-invite'
@@ -367,11 +368,11 @@ function SuperadminManagementContent() {
 
           <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
-              {['Semua Status', 'Aktif', 'Menunggu'].map((status) => (
+              {superadminAdminStatuses.map((status) => (
                 <SuperadminFilterChip
                   key={status}
                   active={activeStatus === status}
-                  onClick={() => setActiveStatus(status as any)}
+                  onClick={() => setActiveStatus(status)}
                 >
                   {status}
                 </SuperadminFilterChip>
