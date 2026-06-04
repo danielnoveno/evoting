@@ -1,6 +1,7 @@
 'use client'
 
 import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
+import { PAYMASTER_URL } from '@/lib/wagmi'
 import ElectionSpaceArtifact from '@/lib/abi/ElectionSpace.json'
 
 const electionSpaceAbi = ElectionSpaceArtifact.abi
@@ -57,21 +58,40 @@ export function useElectionContract(address?: string) {
   // Write functions
   const commitVote = (commitment: `0x${string}`) => {
     if (!address) return
+    
+    // Menyiapkan capabilities untuk Paymaster (Gasless)
+    const capabilities = PAYMASTER_URL ? {
+      paymasterService: {
+        url: PAYMASTER_URL
+      }
+    } : undefined;
+
     writeContract({
       address: address as `0x${string}`,
       abi: electionSpaceAbi,
       functionName: 'commitVote',
       args: [commitment],
+      // @ts-ignore - capabilities adalah fitur baru wagmi/viem untuk EIP-5792
+      capabilities,
     })
   }
 
   const revealVote = (candidateId: number, salt: `0x${string}`) => {
     if (!address) return
+
+    const capabilities = PAYMASTER_URL ? {
+      paymasterService: {
+        url: PAYMASTER_URL
+      }
+    } : undefined;
+
     writeContract({
       address: address as `0x${string}`,
       abi: electionSpaceAbi,
       functionName: 'revealVote',
       args: [BigInt(candidateId), salt],
+      // @ts-ignore
+      capabilities,
     })
   }
 
