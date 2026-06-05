@@ -5,6 +5,6 @@ import { createWhitelistImportSignedUrl } from '@/lib/repositories/whitelistRepo
 
 export function useWhitelistImportSignedUrl() {
   return useMutation({
-    mutationFn: createWhitelistImportSignedUrl,
+    mutationFn: (filePath: string) => createWhitelistImportSignedUrl(filePath),
   })
 }
