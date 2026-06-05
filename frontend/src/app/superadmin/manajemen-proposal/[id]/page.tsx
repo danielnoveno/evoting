@@ -13,7 +13,9 @@ import {
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
+import { useWhitelistImportJobs } from '@/hooks/use-whitelist-import-jobs'
 import { REGISTRY_ADDRESS, useRegistryContract } from '@/hooks/use-registry-contract'
+import { createWhitelistImportSignedUrl } from '@/lib/repositories/whitelistRepository'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import type { SuperadminProposalDetail } from '@/lib/superadmin-data'
 import type { Address } from 'viem'
@@ -24,6 +26,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const router = useRouter()
   const { showToast } = useToast()
   const proposalQuery = useProposalDraft(params.id)
+  const whitelistJobsQuery = useWhitelistImportJobs(params.id)
   const updateStatus = useUpdateProposalStatus()
   
   // Real contract integration
@@ -41,6 +44,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   } = useRegistryContract()
 
   const liveProposal = proposalQuery.data
+  const whitelistJobs = whitelistJobsQuery.data ?? []
 
   const proposal = useMemo<SuperadminProposalDetail | null>(() => {
     if (!liveProposal) return null
@@ -73,12 +77,37 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       timeline: [
         { id: 't1', title: 'Proposal Diajukan', actor: `Oleh: ${liveProposal.organizationName ?? 'Admin'}`, time: new Date(liveProposal.createdAt).toLocaleString('id-ID') },
       ],
-      documents: [],
+      documents: whitelistJobs.map((job) => ({
+        id: job.id,
+        name: job.fileName,
+        meta: `Whitelist CSV • ${job.rowCount} entri • ${new Date(job.createdAt).toLocaleDateString('id-ID')}`,
+        path: job.filePath,
+      })),
     }
-  }, [liveProposal])
+  }, [liveProposal, whitelistJobs])
   
   const [decisionType, setDecisionType] = useState<DecisionType>(null)
   const [note, setNote] = useState('')
+
+  const handleDownload = async (path?: string, fileName?: string) => {
+    if (!path) {
+      showToast({ tone: 'info', title: 'Unduhan ZIP belum tersedia', description: 'Dokumen unduhan sedang disiapkan.' })
+      return
+    }
+
+    try {
+      const url = await createWhitelistImportSignedUrl(path, fileName)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName || 'download'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      showToast({ tone: 'success', title: 'Unduhan dimulai', description: `File ${fileName} sedang diunduh.` })
+    } catch (error) {
+      showToast({ tone: 'error', title: 'Gagal mengunduh', description: 'Terjadi kesalahan saat menyiapkan file.' })
+    }
+  }
 
   useEffect(() => {
     if (isConfirmed && hash && receipt && decisionType && !updateStatus.isPending) {
@@ -200,7 +229,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           <>
             <button
               type="button"
-              onClick={() => showToast({ tone: 'info', title: 'Unduhan ZIP belum tersedia', description: 'Dokumen unduhan sedang disiapkan.' })}
+              onClick={() => handleDownload(proposal.documents[0]?.path, proposal.documents[0]?.name)}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-50"
             >
               <Download className="h-4 w-4" />
@@ -328,13 +357,13 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                 <FileText className="h-5 w-5 text-slate-700" />
                 <h2 className="text-[20px] font-semibold text-slate-900">Dokumen Pendukung</h2>
               </div>
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduhan ZIP belum tersedia', description: 'Dokumen unduhan sedang disiapkan.' })} className="text-[14px] font-semibold text-slate-700 hover:text-slate-900">
+              <button type="button" onClick={() => handleDownload()} className="text-[14px] font-semibold text-slate-700 hover:text-slate-900">
                 Unduh semua (ZIP)
               </button>
             </div>
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               {proposal.documents.map((document) => (
-                <SuperadminInteractiveCard key={document.id} onClick={() => showToast({ tone: 'success', title: 'Dokumen dibuka', description: `${document.name} siap ditinjau dari halaman ini.` })} className="bg-slate-100 px-5 py-5 shadow-none">
+                <SuperadminInteractiveCard key={document.id} onClick={() => handleDownload(document.path, document.name)} className="bg-slate-100 px-5 py-5 shadow-none">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="rounded-2xl bg-white p-3 text-slate-700">
@@ -347,7 +376,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                     </div>
                     <button type="button" onClick={(event) => {
                       event.stopPropagation()
-                      showToast({ tone: 'success', title: 'Dokumen siap diunduh', description: `${document.name} sedang disiapkan untuk diunduh.` })
+                      handleDownload(document.path, document.name)
                     }} className="rounded-2xl bg-white p-3 text-slate-700 hover:bg-slate-50">
                       <Download className="h-4 w-4" />
                     </button>

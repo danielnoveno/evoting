@@ -69,13 +69,15 @@ export async function getWhitelistImportJob(id: string): Promise<WhitelistImport
   return data ? mapWhitelistImportJobRow(data) : null
 }
 
-export async function createWhitelistImportSignedUrl(filePath: string): Promise<string> {
+export async function createWhitelistImportSignedUrl(filePath: string, downloadName?: string): Promise<string> {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
 
   const { data, error } = await client.storage
     .from('proof-exports')
-    .createSignedUrl(filePath, 60 * 5)
+    .createSignedUrl(filePath, 60 * 5, {
+      download: downloadName ?? true
+    })
 
   if (error || !data?.signedUrl) {
     throw new RepositoryError('Gagal membuat tautan unduhan file impor. Coba lagi.')
