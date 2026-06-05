@@ -5,6 +5,7 @@ import { notFound, useRouter } from 'next/navigation'
 import { useMemo, useState, useEffect } from 'react'
 import {
   SuperadminDetailIntro,
+  SuperadminEmptyState,
   SuperadminInteractiveCard,
   SuperadminSectionCard,
   SuperadminShell,
@@ -91,7 +92,11 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
 
   const handleDownload = async (path?: string, fileName?: string) => {
     if (!path) {
-      showToast({ tone: 'info', title: 'Unduhan ZIP belum tersedia', description: 'Dokumen unduhan sedang disiapkan.' })
+      showToast({
+        tone: 'info',
+        title: 'Dokumen belum tersedia',
+        description: 'Proposal ini belum memiliki dokumen pendukung untuk diunduh. Admin akan mengunggah CSV whitelist setelah pemilihan disetujui.',
+      })
       return
     }
 
@@ -105,7 +110,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       document.body.removeChild(link)
       showToast({ tone: 'success', title: 'Unduhan dimulai', description: `File ${fileName} sedang diunduh.` })
     } catch (error) {
-      showToast({ tone: 'error', title: 'Gagal mengunduh', description: 'Terjadi kesalahan saat menyiapkan file.' })
+      console.error('[superadmin] Gagal menyiapkan signed URL unduhan:', error)
+      const reason = error instanceof Error ? error.message : 'Penyimpanan file belum dapat diakses.'
+      showToast({ tone: 'error', title: 'Gagal mengunduh', description: reason })
     }
   }
 
@@ -229,11 +236,12 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           <>
             <button
               type="button"
+              disabled={proposal.documents.length === 0}
               onClick={() => handleDownload(proposal.documents[0]?.path, proposal.documents[0]?.name)}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-50"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
-              Unduh Dokumen
+              {proposal.documents.length === 0 ? 'Dokumen Belum Tersedia' : 'Unduh Dokumen'}
             </button>
             {proposal.badge === 'Disetujui' ? (
               <button
@@ -357,33 +365,47 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                 <FileText className="h-5 w-5 text-slate-700" />
                 <h2 className="text-[20px] font-semibold text-slate-900">Dokumen Pendukung</h2>
               </div>
-              <button type="button" onClick={() => handleDownload()} className="text-[14px] font-semibold text-slate-700 hover:text-slate-900">
-                Unduh semua (ZIP)
+              <button
+                type="button"
+                disabled={proposal.documents.length === 0}
+                onClick={() => handleDownload()}
+                className="text-[14px] font-semibold text-slate-700 hover:text-slate-900 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                {proposal.documents.length === 0 ? 'Tidak ada dokumen' : 'Unduh semua (ZIP)'}
               </button>
             </div>
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              {proposal.documents.map((document) => (
-                <SuperadminInteractiveCard key={document.id} onClick={() => handleDownload(document.path, document.name)} className="bg-slate-100 px-5 py-5 shadow-none">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="rounded-2xl bg-white p-3 text-slate-700">
-                        <FileText className="h-5 w-5" />
+            {proposal.documents.length === 0 ? (
+              <div className="mt-6">
+                <SuperadminEmptyState
+                  title="Belum ada dokumen pendukung"
+                  description="Dokumen seperti CSV whitelist akan tersedia di sini setelah admin organisasi mengunggahnya melalui halaman manajemen pemilihan."
+                />
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                {proposal.documents.map((document) => (
+                  <SuperadminInteractiveCard key={document.id} onClick={() => handleDownload(document.path, document.name)} className="bg-slate-100 px-5 py-5 shadow-none">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="rounded-2xl bg-white p-3 text-slate-700">
+                          <FileText className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-[17px] font-semibold text-slate-900">{document.name}</p>
+                          <p className="mt-1 text-[14px] text-slate-500">{document.meta}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[17px] font-semibold text-slate-900">{document.name}</p>
-                        <p className="mt-1 text-[14px] text-slate-500">{document.meta}</p>
-                      </div>
+                      <button type="button" onClick={(event) => {
+                        event.stopPropagation()
+                        handleDownload(document.path, document.name)
+                      }} className="rounded-2xl bg-white p-3 text-slate-700 hover:bg-slate-50">
+                        <Download className="h-4 w-4" />
+                      </button>
                     </div>
-                    <button type="button" onClick={(event) => {
-                      event.stopPropagation()
-                      handleDownload(document.path, document.name)
-                    }} className="rounded-2xl bg-white p-3 text-slate-700 hover:bg-slate-50">
-                      <Download className="h-4 w-4" />
-                    </button>
-                  </div>
-                </SuperadminInteractiveCard>
-              ))}
-            </div>
+                  </SuperadminInteractiveCard>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 
