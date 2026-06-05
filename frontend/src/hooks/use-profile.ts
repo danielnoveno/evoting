@@ -9,6 +9,12 @@ export const profileQueryKeys = {
   current: ['profile', 'current'] as const,
   wallet: (walletAddress: string) => ['profile', 'wallet', walletAddress] as const,
   adminDirectory: ['profile', 'admin-directory'] as const,
+  superadmins: ['superadmins'] as const,
+}
+
+function invalidateProfileDirectoryViews(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+  void queryClient.invalidateQueries({ queryKey: profileQueryKeys.superadmins })
 }
 
 export function useCurrentProfile() {
@@ -42,7 +48,7 @@ export function useCreateAdminRegistry() {
   return useMutation({
     mutationFn: (input: AdminRegistryInput) => createAdminRegistry(input),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+      invalidateProfileDirectoryViews(queryClient)
       void queryClient.invalidateQueries({ queryKey: ['profile'] })
     },
   })
@@ -54,7 +60,7 @@ export function useUpdateAdminRegistry() {
   return useMutation({
     mutationFn: ({ currentEmail, input }: { currentEmail: string; input: AdminRegistryInput }) => updateAdminRegistry(currentEmail, input),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+      invalidateProfileDirectoryViews(queryClient)
       void queryClient.invalidateQueries({ queryKey: ['profile'] })
     },
   })
@@ -66,7 +72,7 @@ export function useDeleteAdminRegistry() {
   return useMutation({
     mutationFn: (email: string) => deleteAdminRegistry(email),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+      invalidateProfileDirectoryViews(queryClient)
       void queryClient.invalidateQueries({ queryKey: ['profile'] })
     },
   })
@@ -91,6 +97,7 @@ export function useSaveCurrentProfile() {
     onSuccess: (profile) => {
       void queryClient.invalidateQueries({ queryKey: profileQueryKeys.current })
       void queryClient.invalidateQueries({ queryKey: profileQueryKeys.wallet(profile.walletAddress) })
+      invalidateProfileDirectoryViews(queryClient)
     },
   })
 }
@@ -103,6 +110,7 @@ export function useBindCurrentWallet() {
     onSuccess: (profile) => {
       void queryClient.invalidateQueries({ queryKey: profileQueryKeys.current })
       void queryClient.invalidateQueries({ queryKey: profileQueryKeys.wallet(profile.walletAddress) })
+      invalidateProfileDirectoryViews(queryClient)
       void queryClient.invalidateQueries({ queryKey: ['auth', 'session'] })
     },
   })

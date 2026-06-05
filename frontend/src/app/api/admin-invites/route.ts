@@ -162,7 +162,11 @@ export async function POST(request: NextRequest) {
   const organizationName = typeof payload.organizationName === 'string' ? payload.organizationName.trim() : (typeof payload.displayName === 'string' ? payload.displayName.trim() : '')
   const email = typeof payload.email === 'string' ? normalizeEmail(payload.email) : ''
   const walletAddress = typeof payload.walletAddress === 'string' ? payload.walletAddress.trim() : ''
-  const assignedRole = payload.role === 'admin' ? 'admin' as const : 'super_admin' as const
+  if (payload.role !== 'admin' && payload.role !== 'super_admin') {
+    return jsonError('Role undangan tidak valid. Pilih admin atau superadmin.', 400)
+  }
+
+  const assignedRole = payload.role
   const accessScope = payload.accessScope === 'specific' ? 'specific' as const : 'all' as const
 
   if (!organizationName || !email) return jsonError('Nama dan email wajib diisi.', 400)

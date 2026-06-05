@@ -702,6 +702,18 @@ as $$
   ), 'voter'::app.app_role);
 $$;
 
+create or replace function app.auth_email()
+returns text
+language sql
+stable
+security definer
+set search_path = app
+as $$
+  select lower(nullif(auth.jwt() ->> 'email', ''));
+$$;
+
+grant execute on function app.auth_email() to authenticated, service_role;
+
 drop policy if exists "profiles_insert_self" on app.app_profiles;
 drop policy if exists "profiles_update_self_or_admin" on app.app_profiles;
 drop policy if exists "profiles_update_self_or_superadmin" on app.app_profiles;
@@ -711,7 +723,8 @@ on app.app_profiles
 for insert
 with check (
   user_id = auth.uid()
-  and role = app.role_for_email(email)
+  and (email is null or lower(email) = app.auth_email())
+  and role = app.role_for_email(app.auth_email())
 );
 
 create policy "profiles_update_self_or_superadmin"
@@ -724,7 +737,11 @@ using (
 with check (
   (
     user_id = auth.uid()
-    and role = app.role_for_email(email)
+    and (email is null or lower(email) = app.auth_email())
+    and (
+      role = app.role_for_email(app.auth_email())
+      or (app.current_user_role() = 'super_admin'::app.app_role and role = 'super_admin'::app.app_role)
+    )
   )
   or app.has_role(array['super_admin'::app.app_role])
 );
@@ -1000,6 +1017,8 @@ using (
 -- Update Proposal Drafts RLS to be more restrictive for Admins with 'specific' scope
 drop policy if exists "proposal_drafts_select_owner_or_admin" on app.proposal_drafts;
 drop policy if exists "proposal_drafts_select_restricted" on app.proposal_drafts;
+drop policy if exists "proposal_drafts_update_owner_or_admin" on app.proposal_drafts;
+drop policy if exists "proposal_drafts_update_restricted" on app.proposal_drafts;
 
 create policy "proposal_drafts_select_restricted"
 on app.proposal_drafts
@@ -1024,6 +1043,52 @@ using (
       or exists (
         select 1 from app.admin_space_access
         where lower(admin_email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+          and proposal_draft_id = id
+      )
+    )
+  )
+);
+
+create policy "proposal_drafts_update_restricted"
+on app.proposal_drafts
+for update
+using (
+  -- Super Admin may update every proposal draft.
+  app.has_role(array['super_admin'::app.app_role])
+  or (
+    -- Admin follows the same scope restriction used by SELECT.
+    app.has_role(array['admin'::app.app_role])
+    and (
+      created_by = app.current_profile_id()
+      or exists (
+        select 1 from app.admin_registry
+        where lower(email) = app.auth_email()
+          and access_scope = 'all'
+          and status != 'inactive'
+      )
+      or exists (
+        select 1 from app.admin_space_access
+        where lower(admin_email) = app.auth_email()
+          and proposal_draft_id = id
+      )
+    )
+  )
+)
+with check (
+  app.has_role(array['super_admin'::app.app_role])
+  or (
+    app.has_role(array['admin'::app.app_role])
+    and (
+      created_by = app.current_profile_id()
+      or exists (
+        select 1 from app.admin_registry
+        where lower(email) = app.auth_email()
+          and access_scope = 'all'
+          and status != 'inactive'
+      )
+      or exists (
+        select 1 from app.admin_space_access
+        where lower(admin_email) = app.auth_email()
           and proposal_draft_id = id
       )
     )

@@ -38,12 +38,12 @@ import {
   SelectedCounter,
 } from '@/components/ui/data-table'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { superadminAdminStatuses } from '@/lib/superadmin-data'
-import { listAdminDirectory, updateDirectoryRegistryStatus } from '@/lib/repositories/profileRepository'
+import { updateDirectoryRegistryStatus } from '@/lib/repositories/profileRepository'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { useCreateAdminInvite, useResendAdminInvite } from '@/hooks/use-admin-invite'
-import { useCurrentProfile } from '@/hooks/use-profile'
+import { profileQueryKeys, useCurrentProfile, useSuperadminAdminDirectory } from '@/hooks/use-profile'
 
 type TabKey = 'daftar' | 'tambah'
 
@@ -90,14 +90,14 @@ function SuperadminManagementContent() {
   const createAdminInviteMutation = useCreateAdminInvite()
   const resendInviteMutation = useResendAdminInvite()
   const currentProfileQuery = useCurrentProfile()
+  const adminDirectoryQuery = useSuperadminAdminDirectory()
 
-  const { data: superadmins = [], isLoading, error } = useQuery({
-    queryKey: ['superadmins'],
-    queryFn: async () => {
-      const directory = await listAdminDirectory()
-      return directory.filter((admin) => admin.role === 'super_admin')
-    },
-  })
+  const superadmins = useMemo(
+    () => (adminDirectoryQuery.data ?? []).filter((admin) => admin.role === 'super_admin'),
+    [adminDirectoryQuery.data],
+  )
+  const isLoading = adminDirectoryQuery.isLoading
+  const error = adminDirectoryQuery.error
 
   useEffect(() => {
     const tab = searchParams.get('tab')
@@ -256,7 +256,8 @@ function SuperadminManagementContent() {
     const results = await Promise.allSettled(candidates.map((admin) => updateDirectoryRegistryStatus(admin.email, 'inactive')))
     const successCount = results.filter((result) => result.status === 'fulfilled').length
     const failedCount = results.length - successCount
-    await queryClient.invalidateQueries({ queryKey: ['superadmins'] })
+    await queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+    await queryClient.invalidateQueries({ queryKey: profileQueryKeys.superadmins })
     await currentProfileQuery.refetch()
     setBulkActionLoading(null)
     setBulkDeactivateDialogOpen(false)
@@ -462,6 +463,7 @@ function SuperadminManagementContent() {
                       ))
                     ) : paginatedSuperadmins.length > 0 ? paginatedSuperadmins.map((admin) => {
                       const isActive = Boolean(admin.profile) || admin.registryStatus === 'active'
+                      const displayLabel = admin.displayName?.trim() || admin.profile?.displayName?.trim() || admin.email
 
                       return (
                         <DataTableRow
@@ -474,15 +476,15 @@ function SuperadminManagementContent() {
                               type="checkbox"
                               checked={selectedEmails.includes(admin.email)}
                               onChange={() => toggleSelected(admin.email)}
-                              aria-label={`Pilih superadmin ${admin.organizationName || admin.email}`}
+                              aria-label={`Pilih superadmin ${displayLabel}`}
                               className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                             />
                           </DataTableCell>
                           <DataTableCell>
                             <div className="flex items-center gap-4">
-                              <SuperadminAvatar initials={getInitials(admin.organizationName || 'SA')} />
+                              <SuperadminAvatar initials={getInitials(displayLabel)} />
                               <div>
-                                <p className="text-[16px] font-semibold text-slate-900">{admin.organizationName || 'Super Admin'}</p>
+                                <p className="text-[16px] font-semibold text-slate-900">{displayLabel}</p>
                               </div>
                             </div>
                           </DataTableCell>

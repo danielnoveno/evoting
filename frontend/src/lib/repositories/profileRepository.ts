@@ -42,6 +42,20 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
 }
 
+function firstNonEmptyText(...values: Array<string | null | undefined>): string | null {
+  for (const value of values) {
+    const trimmed = value?.trim()
+    if (trimmed) return trimmed
+  }
+
+  return null
+}
+
+function getVerifiedProfileEmail(user: User, currentProfile: { email: string | null } | null | undefined, fallbackEmail: string | null | undefined): string | null {
+  const email = firstNonEmptyText(user.email, currentProfile?.email, fallbackEmail)
+  return email ? normalizeEmail(email) : null
+}
+
 function mapProfileRow(row: ProfileRow): AppProfileRecord {
   return {
     id: row.id,
@@ -170,7 +184,8 @@ export async function upsertCurrentProfile(input: ProfileUpsertInput): Promise<A
 
   const user = await requireUser()
   const currentProfile = await getCurrentProfile()
-  const registeredAccess = await getRegisteredAdminAccessForEmail(input.email ?? user.email ?? null)
+  const profileEmail = getVerifiedProfileEmail(user, currentProfile, input.email)
+  const registeredAccess = await getRegisteredAdminAccessForEmail(profileEmail)
   if (registeredAccess?.wallet_address && !sameWalletAddress(registeredAccess.wallet_address, input.walletAddress)) {
     throw new RepositoryError('Wallet tersambung tidak sesuai dengan wallet yang didaftarkan pada undangan admin.')
   }
@@ -181,7 +196,7 @@ export async function upsertCurrentProfile(input: ProfileUpsertInput): Promise<A
     user_id: user.id,
     wallet_address: input.walletAddress,
     display_name: input.displayName ?? null,
-    email: input.email ?? user.email ?? null,
+    email: profileEmail,
     role: nextRole,
     avatar_url: input.avatarUrl ?? null,
     role_hint: input.roleHint ?? null,
@@ -235,7 +250,8 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
     throw new RepositoryError(`Wallet ini sudah ditautkan ke akun kampus lain${ownerEmail}. Putuskan dompet tersambung, lalu sambungkan wallet yang sesuai.`)
   }
 
-  const registeredAccess = await getRegisteredAdminAccessForEmail(input.email ?? user.email ?? null)
+  const profileEmail = getVerifiedProfileEmail(user, currentProfile, input.email)
+  const registeredAccess = await getRegisteredAdminAccessForEmail(profileEmail)
   if (registeredAccess?.wallet_address && !sameWalletAddress(registeredAccess.wallet_address, input.walletAddress)) {
     throw new RepositoryError('Wallet tersambung tidak sesuai dengan wallet yang didaftarkan pada undangan admin.')
   }
@@ -247,7 +263,7 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
     user_id: user.id,
     wallet_address: normalizedWallet,
     display_name: input.displayName ?? currentProfile?.display_name ?? null,
-    email: input.email ?? currentProfile?.email ?? user.email ?? null,
+    email: profileEmail,
     role: nextRole,
     avatar_url: input.avatarUrl ?? currentProfile?.avatar_url ?? null,
     role_hint: input.roleHint ?? currentProfile?.role_hint ?? 'microsoft-bound-wallet',
@@ -348,16 +364,16 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
     directoryByEmail.set(lowerEmail, {
       email,
       role: profile.role === 'super_admin' ? 'super_admin' : 'admin',
-      displayName: registry?.organization_name ?? profile.displayName,
+      displayName: firstNonEmptyText(profile.displayName, registry?.organization_name, email.split('@')[0]),
       organizationName: registry?.organization_name ?? null,
       accessScope: registry?.access_scope ?? 'all',
       registryStatus: registry?.status ?? null,
       description: registry?.description ?? null,
-      walletAddress: registry?.wallet_address ?? profile.walletAddress,
+      walletAddress: firstNonEmptyText(profile.walletAddress, registry?.wallet_address),
       activationExpiresAt: registry?.activation_expires_at ?? null,
       activationAcceptedAt: registry?.activation_accepted_at ?? null,
-      createdAt: registry?.created_at ?? profile.createdAt,
-      updatedAt: registry?.updated_at ?? profile.updatedAt,
+      createdAt: profile.createdAt ?? registry?.created_at ?? '',
+      updatedAt: profile.updatedAt ?? registry?.updated_at ?? null,
       profile,
       assignedSpaces,
     })
@@ -556,5 +572,5 @@ export async function updateDirectoryRegistryStatus(email: string, status: 'pend
   if (error) throw new RepositoryError('Gagal memperbarui status akses. Coba lagi.')
 
   const nextRole = status === 'inactive' ? 'voter' : current.assigned_role
-  await syncProfileRoleForEmail(normalizedEmail, nextRole, current.organization_name)
+  await syncProfileRoleForEmail(normalizedEmail, nextRole)
 }

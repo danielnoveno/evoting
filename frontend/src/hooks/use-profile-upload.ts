@@ -50,6 +50,7 @@ export function useProfileImageUpload() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: profileQueryKeys.current })
       void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.superadmins })
     },
   })
 }

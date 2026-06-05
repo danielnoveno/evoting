@@ -21,11 +21,15 @@ export function formatAdminDate(value: string | null | undefined) {
 }
 
 export function mapDirectoryAdmin(record: AdminDirectoryRecord): SuperadminAdminRecord {
-  const name = record.organizationName?.trim() || record.profile?.displayName?.trim() || record.email.split('@')[0] || 'Admin'
+  const name = record.profile?.displayName?.trim()
+    || record.displayName?.trim()
+    || record.organizationName?.trim()
+    || record.email.split('@')[0]
+    || 'Admin'
   const isSuperAdmin = record.role === 'super_admin'
   const status: SuperadminStatus = record.registryStatus === 'inactive'
     ? 'Nonaktif'
-    : record.profile
+    : record.profile || record.registryStatus === 'active'
       ? 'Aktif'
       : 'Menunggu'
   const accessLabel = isSuperAdmin ? 'Super Admin' : 'Admin Organisasi'
@@ -58,7 +62,7 @@ export function mapDirectoryAdmin(record: AdminDirectoryRecord): SuperadminAdmin
     joinedAt: formatAdminDate(record.createdAt),
     lastLoginText: record.profile ? 'Profil aktif' : record.registryStatus === 'inactive' ? 'Akses dinonaktifkan' : 'Menunggu aktivasi',
     lastLoginRelative: record.profile ? 'Wallet sudah tertaut ke akun ini' : 'Email sudah didaftarkan super admin',
-    blockchainIdentity: record.profile?.walletAddress ?? 'Wallet belum ditautkan',
+    blockchainIdentity: record.walletAddress ?? record.profile?.walletAddress ?? 'Wallet belum ditautkan',
     spaces: finalSpaces,
     recentActivity: [],
   }

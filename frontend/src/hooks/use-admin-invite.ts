@@ -32,7 +32,7 @@ export function useCreateAdminInvite() {
     mutationFn: (input: CreateAdminInviteInput) => createAdminInvite(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
-      void queryClient.invalidateQueries({ queryKey: ['superadmins'] })
+      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.superadmins })
     },
   })
 }
@@ -43,7 +43,8 @@ export function useResendAdminInvite() {
   return useMutation({
     mutationFn: (email: string) => resendAdminInvite(email),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['superadmins'] })
+      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.superadmins })
     },
   })
 }
@@ -55,6 +56,8 @@ export function useActivateAdminInvite() {
     mutationFn: ({ token, password }: { token: string; password: string }) => activateAdminInvite(token, password),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin-invite'] })
+      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.superadmins })
     },
   })
 }
