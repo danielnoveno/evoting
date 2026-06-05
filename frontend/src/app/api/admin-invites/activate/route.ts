@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
 
   const invite = data as ActivationInviteRow
   if (invite.status === 'inactive') return jsonError('Undangan ini sudah dinonaktifkan.', 410)
+  if (invite.status === 'active') return jsonError('Akun ini sudah aktif. Silakan masuk biasa atau gunakan Lupa Password.', 409)
   if (invite.activation_accepted_at) return jsonError('Undangan ini sudah digunakan. Silakan masuk dengan password yang sudah dibuat.', 409)
   if (!invite.activation_expires_at || new Date(invite.activation_expires_at).getTime() <= Date.now()) {
     return jsonError('Undangan sudah kedaluwarsa. Minta superadmin utama mengirim undangan baru.', 410)

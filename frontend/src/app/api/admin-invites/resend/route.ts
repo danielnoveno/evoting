@@ -121,8 +121,8 @@ export async function POST(request: NextRequest) {
   if (fetchError) return jsonError(`Gagal memeriksa undangan: ${fetchError.message}`, 500)
   if (!invite) return jsonError('Undangan tidak ditemukan untuk email ini.', 404)
   if (invite.status === 'inactive') return jsonError('Undangan sudah dinonaktifkan.', 410)
-  if (invite.activation_accepted_at && invite.assigned_role === 'super_admin') {
-    return jsonError('Undangan ini sudah digunakan dan tidak bisa dikirim ulang.', 409)
+  if (invite.status === 'active' || invite.activation_accepted_at) {
+    return jsonError('Akun ini sudah aktif. Gunakan login biasa atau kirim reset password, bukan email aktivasi.', 409)
   }
 
   // Generate new token & expiry

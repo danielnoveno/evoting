@@ -10,6 +10,7 @@ type ProfileRow = Database['app']['Tables']['app_profiles']['Row']
 type AdminRegistryRow = Database['app']['Tables']['admin_registry']['Row']
 type SupabaseErrorLike = {
   code?: string
+  status?: number
   message?: string
   details?: string
 }
@@ -22,9 +23,30 @@ function getSupabaseErrorLike(error: unknown): SupabaseErrorLike {
   if (!isObjectRecord(error)) return {}
   return {
     code: typeof error.code === 'string' ? error.code : undefined,
+    status: typeof error.status === 'number' ? error.status : undefined,
     message: typeof error.message === 'string' ? error.message : undefined,
     details: typeof error.details === 'string' ? error.details : undefined,
   }
+}
+
+function isInvalidStoredSession(error: unknown): boolean {
+  const { status, message } = getSupabaseErrorLike(error)
+  const normalizedMessage = message?.toLowerCase() ?? ''
+
+  return status === 401
+    || status === 403
+    || normalizedMessage.includes('jwt')
+    || normalizedMessage.includes('session')
+    || normalizedMessage.includes('expired')
+    || normalizedMessage.includes('invalid')
+    || normalizedMessage.includes('not found')
+}
+
+async function clearLocalAuthSession() {
+  const client = getSupabaseBrowserClient()
+  if (!client) return
+
+  await client.auth.signOut({ scope: 'local' }).catch(() => undefined)
 }
 
 function isUniqueConstraintError(error: unknown, fieldName: string): boolean {
@@ -113,7 +135,14 @@ async function requireUser(): Promise<User> {
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
 
   const { data, error } = await client.auth.getUser()
-  if (error || !data.user) throw new RepositoryError('Sesi kamu belum aktif untuk memuat profil.')
+  if (error || !data.user) {
+    if (error && isInvalidStoredSession(error)) {
+      await clearLocalAuthSession()
+      throw new RepositoryError('Sesi login lama sudah tidak valid. Silakan masuk ulang dengan akun yang aktif.')
+    }
+
+    throw new RepositoryError('Sesi kamu belum aktif untuk memuat profil.')
+  }
 
   return data.user
 }
