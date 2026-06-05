@@ -8,6 +8,25 @@ import { RepositoryError } from '@/lib/repositories/errors'
 
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 type ProposalCandidateRow = Database['app']['Tables']['proposal_candidates']['Row']
+type ProposalStatus = Database['app']['Tables']['proposal_drafts']['Row']['status']
+
+export interface DeploymentRecordInput {
+  deployedSpaceId: number
+  deployedSpaceAddress: string
+  ownerWallet: string
+  registryAddress: string
+  deploymentTxHash: string
+  blockNumber?: number | null
+  actorWallet?: string | null
+}
+
+export interface ProposalStatusUpdateInput {
+  id: string
+  status: ProposalStatus
+  txHash?: string
+  onchainProposalId?: number | null
+  deployment?: DeploymentRecordInput
+}
 
 function mapProposalRow(row: ProposalRow): ProposalDraftRecord {
   return {
@@ -20,6 +39,7 @@ function mapProposalRow(row: ProposalRow): ProposalDraftRecord {
     proposalTxHash: row.proposal_tx_hash,
     reviewTxHash: row.review_tx_hash,
     deploymentTxHash: row.deployment_tx_hash,
+    onchainProposalId: row.onchain_proposal_id,
     deployedSpaceId: row.deployed_space_id,
     deployedSpaceAddress: row.deployed_space_address,
     commitStartAt: row.commit_start_at,
@@ -28,6 +48,14 @@ function mapProposalRow(row: ProposalRow): ProposalDraftRecord {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     createdBy: row.created_by,
+    createdByWalletAddress: null,
+  }
+}
+
+function withCreatorWallet(proposal: ProposalDraftRecord, walletAddress?: string | null): ProposalDraftRecord {
+  return {
+    ...proposal,
+    createdByWalletAddress: walletAddress ?? null,
   }
 }
 
@@ -72,7 +100,18 @@ export async function getProposalDraftById(id: string): Promise<ProposalDraftRec
     .maybeSingle()
 
   if (error) throw new RepositoryError('Gagal memuat detail proposal. Coba lagi.')
-  return data ? mapProposalRow(data) : null
+  if (!data) return null
+
+  const proposal = mapProposalRow(data)
+  const { data: creator, error: creatorError } = await client
+    .schema('app')
+    .from('app_profiles')
+    .select('wallet_address')
+    .eq('id', data.created_by)
+    .maybeSingle()
+
+  if (creatorError) throw new RepositoryError('Gagal memuat wallet admin pengaju. Coba lagi.')
+  return withCreatorWallet(proposal, creator?.wallet_address)
 }
 
 export async function listProposalCandidates(proposalDraftId: string): Promise<ProposalCandidateRecord[]> {
@@ -97,9 +136,7 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
   const profile = await getCurrentProfile()
   if (!profile) throw new RepositoryError('Sesi admin belum aktif untuk menyimpan proposal.')
 
-  const payload: Database['app']['Tables']['proposal_drafts']['Insert'] = {
-    id: input.id,
-    created_by: profile.id,
+  const basePayload = {
     title: input.title,
     organization_name: input.organizationName ?? null,
     description: input.description ?? null,
@@ -110,12 +147,20 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
     status: input.status ?? 'draft',
   }
 
-  const { data, error } = await client
-    .schema('app')
-    .from('proposal_drafts')
-    .upsert(payload, { onConflict: 'id' })
-    .select('*')
-    .single()
+  const { data, error } = input.id
+    ? await client
+      .schema('app')
+      .from('proposal_drafts')
+      .update(basePayload)
+      .eq('id', input.id)
+      .select('*')
+      .single()
+    : await client
+      .schema('app')
+      .from('proposal_drafts')
+      .insert({ ...basePayload, created_by: profile.id })
+      .select('*')
+      .single()
 
   if (error) throw new RepositoryError('Gagal menyimpan proposal. Coba lagi.')
 
@@ -191,42 +236,84 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
   return mapProposalRow(data)
 }
 
-export async function updateProposalStatus(
-  id: string,
-  status: Database['app']['Tables']['proposal_drafts']['Row']['status'],
-  txHash?: string,
-  deployedSpaceAddress?: string
-): Promise<ProposalDraftRecord> {
+export async function updateProposalStatus(input: ProposalStatusUpdateInput): Promise<ProposalDraftRecord> {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
 
   const payload: Partial<Database['app']['Tables']['proposal_drafts']['Update']> = {
-    status,
+    status: input.status,
     updated_at: new Date().toISOString(),
   }
 
-  if (txHash) {
-    if (status === 'submitted') {
-      payload.proposal_tx_hash = txHash
-    } else if (status === 'approved') {
-      payload.review_tx_hash = txHash
-    } else if (status === 'deployed') {
-      payload.deployment_tx_hash = txHash
+  if (input.txHash) {
+    if (input.status === 'submitted') {
+      payload.proposal_tx_hash = input.txHash
+    } else if (input.status === 'approved') {
+      payload.review_tx_hash = input.txHash
+    } else if (input.status === 'deployed') {
+      payload.deployment_tx_hash = input.txHash
     }
   }
 
-  if (deployedSpaceAddress) {
-    payload.deployed_space_address = deployedSpaceAddress
+  if (typeof input.onchainProposalId === 'number') {
+    payload.onchain_proposal_id = input.onchainProposalId
+  }
+
+  if (input.deployment) {
+    payload.deployment_tx_hash = input.deployment.deploymentTxHash
+    payload.deployed_space_id = input.deployment.deployedSpaceId
+    payload.deployed_space_address = input.deployment.deployedSpaceAddress
   }
 
   const { data, error } = await client
     .schema('app')
     .from('proposal_drafts')
     .update(payload)
-    .eq('id', id)
+    .eq('id', input.id)
     .select('*')
     .single()
 
   if (error) throw new RepositoryError('Gagal memperbarui status proposal. Coba lagi.')
+
+  if (input.deployment) {
+    const { error: mapError } = await client
+      .schema('app')
+      .from('space_registry_map')
+      .upsert({
+        proposal_draft_id: input.id,
+        chain_id: 84532,
+        onchain_proposal_id: input.onchainProposalId ?? null,
+        space_id: input.deployment.deployedSpaceId,
+        registry_address: input.deployment.registryAddress,
+        space_address: input.deployment.deployedSpaceAddress,
+        owner_wallet: input.deployment.ownerWallet,
+        deployment_tx_hash: input.deployment.deploymentTxHash,
+      }, { onConflict: 'proposal_draft_id' })
+
+    if (mapError) throw new RepositoryError('Pemilihan tersimpan, tetapi mapping registry Supabase gagal diperbarui.')
+
+    const auditWallet = input.deployment.actorWallet ?? input.deployment.ownerWallet
+    const { error: auditError } = await client
+      .schema('app')
+      .from('tx_audit_log')
+      .upsert({
+        space_id: input.deployment.deployedSpaceId,
+        proposal_draft_id: input.id,
+        wallet_address: auditWallet,
+        action_type: 'deploy_space',
+        tx_hash: input.deployment.deploymentTxHash,
+        block_number: input.deployment.blockNumber ?? null,
+        status: 'success',
+        source: 'frontend',
+        metadata: {
+          registryAddress: input.deployment.registryAddress,
+          spaceAddress: input.deployment.deployedSpaceAddress,
+          ownerWallet: input.deployment.ownerWallet,
+        },
+      }, { onConflict: 'tx_hash,action_type' })
+
+    if (auditError) throw new RepositoryError('Pemilihan tersimpan, tetapi audit transaksi Supabase gagal diperbarui.')
+  }
+
   return mapProposalRow(data)
 }

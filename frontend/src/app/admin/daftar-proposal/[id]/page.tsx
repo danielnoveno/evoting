@@ -5,11 +5,8 @@ import { AdminShell } from '@/components/admin/admin-shell'
 import { ProposalForm, ProposalFormData } from '@/components/admin/proposal-form'
 import { useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
-import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
-import { useRegistryContract } from '@/hooks/use-registry-contract'
-import { Rocket, Loader2 } from 'lucide-react'
+import { Send } from 'lucide-react'
 import { useToast } from '@/components/ui/toast-provider'
-import { useEffect } from 'react'
 
 function toDatetimeLocal(value: string | null, fallback: string) {
   if (!value) return fallback
@@ -26,31 +23,6 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
   const candidateQuery = useProposalCandidates(params.id)
   const whitelistQuery = useProposalWhitelistEntries(params.id)
   const updateStatus = useUpdateProposalStatus()
-  
-  const { 
-    submitProposal, 
-    isWritePending, 
-    isConfirming, 
-    isConfirmed, 
-    hash,
-    resetWrite
-  } = useRegistryContract()
-
-  useEffect(() => {
-    if (isConfirmed && hash) {
-      updateStatus.mutate({ id: params.id, status: 'submitted', txHash: hash }, {
-        onSuccess: () => {
-          showToast({ title: 'Berhasil Terkirim', description: 'Proposal telah didaftarkan ke blockchain dan status diperbarui.', tone: 'success' })
-          resetWrite()
-          router.push('/admin/daftar-proposal')
-        },
-        onError: () => {
-          showToast({ title: 'Terjadi Kesalahan', description: 'Proposal terkirim ke blockchain tetapi gagal memperbarui status lokal.', tone: 'error' })
-        }
-      })
-    }
-  }, [isConfirmed, hash, params.id, resetWrite, router, showToast, updateStatus])
-
   const liveProposal = proposalQuery.data
   if (!liveProposal && !proposalQuery.isLoading) notFound()
 
@@ -73,12 +45,24 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
     whitelistWallets: whitelistQuery.data?.map(e => e.walletAddress).join('\n') ?? '',
   }
 
-  const handleSubmitToBlockchain = () => {
+  const handleSubmitForReview = () => {
     if (!liveProposal) return
-    showToast({
-      title: 'Metadata belum tersedia',
-      description: 'Unggah metadata final terlebih dahulu. Sistem tidak lagi mengirim URI metadata palsu ke blockchain.',
-      tone: 'info',
+    updateStatus.mutate({ id: params.id, status: 'submitted' }, {
+      onSuccess: () => {
+        showToast({
+          title: 'Proposal diajukan ke superadmin',
+          description: 'Data tersimpan di Supabase. Deploy blockchain akan dilakukan oleh superadmin setelah disetujui.',
+          tone: 'success',
+        })
+        router.push('/admin/daftar-proposal')
+      },
+      onError: () => {
+        showToast({
+          title: 'Gagal mengajukan proposal',
+          description: 'Status proposal belum berhasil diperbarui di Supabase.',
+          tone: 'error',
+        })
+      }
     })
   }
 
@@ -88,16 +72,16 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
         initialData={initialData}
         isReadOnly={true}
         pageTitle="Detail Proposal"
-        pageDescription="Tinjau parameter sebelum mengirim ke blockchain."
+        pageDescription="Tinjau parameter proposal. Deploy blockchain dilakukan oleh superadmin saat proposal disetujui."
         extraActions={
-          liveProposal?.status === 'draft' && (
+          (liveProposal?.status === 'draft' || liveProposal?.status === 'revision_requested') && (
             <button
-              onClick={handleSubmitToBlockchain}
-              disabled={isWritePending || isConfirming}
+              onClick={handleSubmitForReview}
+              disabled={updateStatus.isPending}
               className="inline-flex h-12 items-center gap-2 rounded-2xl bg-blue-600 px-6 text-white hover:bg-blue-700"
             >
-              {isWritePending || isConfirming ? <Loader2 className="animate-spin h-4 w-4" /> : <Rocket className="h-4 w-4" />}
-              Kirim ke Blockchain
+              <Send className="h-4 w-4" />
+              Ajukan ke Superadmin
             </button>
           )
         }

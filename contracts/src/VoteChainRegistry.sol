@@ -151,6 +151,48 @@ contract VoteChainRegistry {
         emit ElectionSpaceCreated(spaceId, spaceAddress, proposalId, proposal.proposer, proposal.candidateCount);
     }
 
+    function createElectionForAdmin(
+        address spaceAdmin,
+        string calldata title,
+        string calldata metadataURI,
+        uint256 candidateCount
+    ) external onlySuperAdmin returns (uint256 proposalId, uint256 spaceId, address spaceAddress) {
+        if (spaceAdmin == address(0)) revert InvalidAdmin();
+        if (candidateCount == 0) revert InvalidCandidateCount();
+
+        proposalId = nextProposalId;
+        nextProposalId += 1;
+
+        proposals[proposalId] = Proposal({
+            proposer: spaceAdmin,
+            candidateCount: candidateCount,
+            status: ProposalStatus.Deployed,
+            title: title,
+            metadataURI: metadataURI,
+            reviewer: msg.sender,
+            reviewedAt: block.timestamp
+        });
+
+        emit ProposalSubmitted(proposalId, spaceAdmin, candidateCount);
+        emit ProposalReviewed(proposalId, ProposalStatus.Approved, msg.sender);
+
+        spaceId = nextSpaceId;
+        nextSpaceId += 1;
+
+        ElectionSpace space = new ElectionSpace(
+            address(this),
+            spaceAdmin,
+            spaceId,
+            candidateCount,
+            title,
+            metadataURI
+        );
+        spaceAddress = address(space);
+        spaceById[spaceId] = spaceAddress;
+
+        emit ElectionSpaceCreated(spaceId, spaceAddress, proposalId, spaceAdmin, candidateCount);
+    }
+
     function proposeSpaceUpdate(uint256 spaceId, string calldata title, string calldata metadataURI)
         external
         onlyPlatformAdminOrSuper

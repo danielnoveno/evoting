@@ -72,6 +72,27 @@ contract VoteChainMVPTest {
         require(registry.spaceById(1) == spaceAddress, "registry mapping mismatch");
     }
 
+    function test_super_admin_can_deploy_for_offchain_proposal_admin() external {
+        VoteChainRegistry registry = new VoteChainRegistry();
+        AdminClient admin = new AdminClient();
+
+        (uint256 proposalId, uint256 spaceId, address spaceAddress) = registry.createElectionForAdmin(
+            address(admin),
+            "Pemilihan Ketua HIMAFORKA",
+            "supabase://proposal-drafts/example",
+            2
+        );
+
+        ElectionSpace space = ElectionSpace(spaceAddress);
+        require(proposalId == 1, "proposalId should be 1");
+        require(spaceId == 1, "spaceId should be 1");
+        require(space.spaceAdmin() == address(admin), "admin should own space");
+        (, , VoteChainRegistry.ProposalStatus status, , , address reviewer,) = registry.proposals(proposalId);
+        require(uint8(status) == uint8(VoteChainRegistry.ProposalStatus.Deployed), "proposal deployed");
+        require(reviewer == address(this), "superadmin reviewer recorded");
+        require(registry.spaceById(1) == spaceAddress, "registry mapping mismatch");
+    }
+
     function test_non_admin_cannot_submit_proposal() external {
         VoteChainRegistry registry = new VoteChainRegistry();
         AdminClient nonAdmin = new AdminClient();

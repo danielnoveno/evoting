@@ -20,6 +20,8 @@ function mapStatus(status: ProposalDraftRecord['status']): ProposalListStatus {
       return 'DISETUJUI'
     case 'submitted':
       return 'MENUNGGU REVIEW'
+    case 'revision_requested':
+      return 'PERLU REVISI'
     case 'rejected':
       return 'DITOLAK'
     case 'draft':

@@ -13,9 +13,10 @@ import {
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
-import { useRegistryContract } from '@/hooks/use-registry-contract'
+import { REGISTRY_ADDRESS, useRegistryContract } from '@/hooks/use-registry-contract'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import type { SuperadminProposalDetail } from '@/lib/superadmin-data'
+import type { Address } from 'viem'
 
 type DecisionType = 'approve' | 'revise' | 'reject' | 'deploy' | null
 
@@ -27,9 +28,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   
   // Real contract integration
   const { 
-    reviewProposal, 
-    createElection, 
+    createElectionForAdmin,
     parseElectionSpaceCreated,
+    userAddress,
     isWritePending, 
     isConfirming, 
     isConfirmed, 
@@ -46,7 +47,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
 
     return {
       id: liveProposal.id,
-      badge: liveProposal.status === 'draft' ? 'Draf' : liveProposal.status === 'submitted' ? 'Menunggu Review' : liveProposal.status === 'approved' ? 'Disetujui' : liveProposal.status === 'deployed' ? 'Berjalan' : liveProposal.status,
+      badge: liveProposal.status === 'draft' ? 'Draf' : liveProposal.status === 'submitted' ? 'Menunggu Review' : liveProposal.status === 'revision_requested' ? 'Perlu Revisi' : liveProposal.status === 'approved' ? 'Disetujui' : liveProposal.status === 'deployed' ? 'Berjalan' : liveProposal.status,
       proposalCode: `PROPOSAL-${liveProposal.id.slice(0, 8).toUpperCase()}`,
       title: liveProposal.title,
       organizationName: liveProposal.organizationName ?? 'Organisasi Tanpa Nama',
@@ -80,41 +81,57 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const [note, setNote] = useState('')
 
   useEffect(() => {
-    if (isConfirmed && hash && receipt) {
-      const nextStatus = decisionType === 'approve' ? 'approved' : decisionType === 'deploy' ? 'deployed' : null
-      const deployedSpaceAddress = decisionType === 'deploy' ? parseElectionSpaceCreated(receipt) : undefined
+    if (isConfirmed && hash && receipt && decisionType && !updateStatus.isPending) {
+      const deployment = decisionType === 'approve' || decisionType === 'deploy'
+        ? parseElectionSpaceCreated(receipt)
+        : null
+      const ownerWallet = liveProposal?.createdByWalletAddress
       
-      if (nextStatus) {
+      if (deployment && ownerWallet) {
         updateStatus.mutate({ 
           id: params.id, 
-          status: nextStatus, 
+          status: 'deployed', 
           txHash: hash,
-          deployedSpaceAddress: deployedSpaceAddress ?? undefined
+          onchainProposalId: deployment.proposalId,
+          deployment: {
+            deployedSpaceId: deployment.spaceId,
+            deployedSpaceAddress: deployment.spaceAddress,
+            ownerWallet,
+            registryAddress: REGISTRY_ADDRESS,
+            deploymentTxHash: hash,
+            blockNumber: receipt.blockNumber ? Number(receipt.blockNumber) : null,
+            actorWallet: userAddress ?? null,
+          },
         }, {
           onSuccess: () => {
             showToast({
-              title: decisionType === 'approve' ? 'Proposal Disetujui' : 'Pemilihan Berhasil Di-deploy',
-              description: deployedSpaceAddress 
-                ? `Berhasil. Alamat Space: ${deployedSpaceAddress}` 
-                : 'Transaksi blockchain berhasil dikonfirmasi dan status diperbarui.',
+              title: 'Proposal Disetujui & Pemilihan Di-deploy',
+              description: `Gas fee dibayar oleh superadmin. Alamat Space: ${deployment.spaceAddress}`,
               tone: 'success',
             })
             resetWrite()
             setDecisionType(null)
-            if (decisionType === 'deploy') {
-              window.setTimeout(() => router.push('/superadmin/manajemen-pemilihan'), 1500)
-            }
+            window.setTimeout(() => router.push('/superadmin/manajemen-pemilihan'), 1500)
+          },
+          onError: () => {
+            showToast({
+              title: 'Deploy berhasil, sinkronisasi Supabase gagal',
+              description: 'Catat tx hash dari wallet lalu ulangi sinkronisasi data pemilihan.',
+              tone: 'error',
+            })
+            resetWrite()
+            setDecisionType(null)
           }
         })
       }
     }
-  }, [isConfirmed, hash, receipt, decisionType, params.id, updateStatus, showToast, router, resetWrite, parseElectionSpaceCreated])
+  }, [isConfirmed, hash, receipt, decisionType, params.id, updateStatus, showToast, router, resetWrite, parseElectionSpaceCreated, liveProposal?.createdByWalletAddress, userAddress])
 
   if (proposalQuery.isLoading) return <div className="p-20 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto text-slate-400" /></div>
   if (!proposal) notFound()
 
   const decisionMeta = decisionType === 'approve'
-    ? { title: 'Setujui proposal ini secara on-chain?', confirmLabel: 'Setujui di Blockchain' }
+    ? { title: 'Setujui dan deploy pemilihan ini?', confirmLabel: 'Setujui & Deploy' }
     : decisionType === 'deploy'
       ? { title: 'Deploy pemilihan ini sekarang?', confirmLabel: 'Deploy Pemilihan' }
       : decisionType === 'revise'
@@ -125,19 +142,26 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const totalChecks = proposal.objectives.length
 
   const handleConfirmAction = () => {
-    // Map params.id to numeric ID for contract
-    // This is a bit of a hack since our DB uses UUID and Contract uses uint256
-    // In a real app, we might store the on-chain ID in the DB
-    const numericId = parseInt(params.id.split('-')[0], 16) % 1000000
-
-    if (decisionType === 'approve') {
-      reviewProposal(numericId, true)
-    } else if (decisionType === 'deploy') {
-      createElection(numericId)
+    if (decisionType === 'approve' || decisionType === 'deploy') {
+      if (!liveProposal?.createdByWalletAddress) {
+        showToast({
+          title: 'Wallet admin belum tersedia',
+          description: 'Proposal belum bisa di-deploy karena wallet admin pengaju tidak ditemukan di Supabase.',
+          tone: 'error',
+        })
+        setDecisionType(null)
+        return
+      }
+      createElectionForAdmin(
+        liveProposal.createdByWalletAddress as Address,
+        liveProposal.title,
+        `supabase://proposal-drafts/${liveProposal.id}`,
+        liveProposal.candidateCount,
+      )
     } else {
       // Off-chain actions
       const title = decisionType === 'revise' ? 'Permintaan revisi dikirim' : 'Proposal ditolak'
-      const status = decisionType === 'revise' ? 'rejected' : 'rejected' // Using rejected as fallback status
+      const status = decisionType === 'revise' ? 'revision_requested' : 'rejected'
       
       updateStatus.mutate({ id: params.id, status }, {
         onSuccess: () => {
@@ -195,12 +219,12 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             ) : (
               <button
                 type="button"
-                disabled={isWritePending || isConfirming || proposal.badge === 'Selesai'}
+                disabled={isWritePending || isConfirming || proposal.badge === 'Selesai' || proposal.badge === 'Berjalan'}
                 onClick={() => setDecisionType('approve')}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-5 text-[15px] font-medium text-white hover:bg-slate-800 disabled:opacity-50"
               >
                 {isWritePending || isConfirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ThumbsUp className="h-4 w-4" />}
-                Setujui Cepat
+                Setujui & Deploy
               </button>
             )}
           </>
@@ -340,12 +364,12 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             <div className="mt-6 space-y-3">
               <button 
                 type="button" 
-                disabled={isWritePending || isConfirming || proposal.badge === 'Disetujui'}
+                disabled={isWritePending || isConfirming || proposal.badge === 'Disetujui' || proposal.badge === 'Berjalan'}
                 onClick={() => setDecisionType('approve')} 
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-6 text-[15px] font-medium text-white hover:bg-slate-800 disabled:opacity-50"
               >
                 <ThumbsUp className="h-4 w-4" />
-                Setujui Proposal
+                Setujui & Deploy
               </button>
               {proposal.badge === 'Disetujui' && (
                 <button 
@@ -360,7 +384,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               )}
               <button 
                 type="button" 
-                disabled={isWritePending || isConfirming}
+                disabled={isWritePending || isConfirming || proposal.badge === 'Berjalan'}
                 onClick={() => setDecisionType('revise')} 
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-200"
               >
@@ -369,7 +393,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               </button>
               <button 
                 type="button" 
-                disabled={isWritePending || isConfirming}
+                disabled={isWritePending || isConfirming || proposal.badge === 'Berjalan'}
                 onClick={() => setDecisionType('reject')} 
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-red-50 px-6 text-[15px] font-medium text-red-600 hover:bg-red-100"
               >
@@ -451,7 +475,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       <ConfirmDialog
         open={decisionType !== null}
         title={decisionMeta.title}
-        description={note.trim() ? `Catatan audit: ${note}` : 'Perubahan ini akan dikirim ke Smart Contract Registry di Base Sepolia.'}
+        description={note.trim() ? `Catatan audit: ${note}` : decisionType === 'approve' || decisionType === 'deploy' ? 'Superadmin akan membayar gas fee untuk deploy pemilihan ke Base Sepolia.' : 'Status proposal akan diperbarui di Supabase untuk ditindaklanjuti admin.'}
         confirmLabel={decisionMeta.confirmLabel}
         tone={decisionType === 'reject' ? 'danger' : 'default'}
         onCancel={() => {

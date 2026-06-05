@@ -17,7 +17,7 @@ begin
   end if;
 
   if not exists (select 1 from pg_type where typname = 'proposal_status') then
-    create type app.proposal_status as enum ('draft', 'submitted', 'approved', 'rejected', 'deployed', 'archived');
+    create type app.proposal_status as enum ('draft', 'submitted', 'revision_requested', 'approved', 'rejected', 'deployed', 'archived');
   end if;
 
   if not exists (select 1 from pg_type where typname = 'whitelist_source') then
@@ -533,6 +533,17 @@ using (
       )
   )
 );
+
+create policy "space_registry_map_insert_superadmin"
+on app.space_registry_map
+for insert
+with check (app.has_role(array['super_admin'::app.app_role]));
+
+create policy "space_registry_map_update_superadmin"
+on app.space_registry_map
+for update
+using (app.has_role(array['super_admin'::app.app_role]))
+with check (app.has_role(array['super_admin'::app.app_role]));
 
 create policy "tx_audit_log_select_owner_or_admin"
 on app.tx_audit_log

@@ -258,7 +258,7 @@ export async function listPublicElections(): Promise<PublicElectionRecord[]> {
     .schema('app')
     .from('proposal_drafts')
     .select('*')
-    .in('status', ['approved', 'deployed', 'archived'])
+    .in('status', ['deployed', 'archived'])
     .order('created_at', { ascending: false })
 
   if (error) throw new RepositoryError('Gagal memuat data pemilihan dari Supabase.')

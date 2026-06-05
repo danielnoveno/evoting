@@ -62,8 +62,8 @@ export interface AdminRegistryInput {
   walletAddress?: string | null
 }
 
-export type ProposalDraftStatus = 'draft' | 'submitted' | 'approved' | 'rejected' | 'deployed' | 'archived'
-export type ProposalListStatus = 'DRAF' | 'MENUNGGU REVIEW' | 'DISETUJUI' | 'DITOLAK'
+export type ProposalDraftStatus = 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived'
+export type ProposalListStatus = 'DRAF' | 'MENUNGGU REVIEW' | 'PERLU REVISI' | 'DISETUJUI' | 'DITOLAK'
 
 export interface ProposalDraftRecord {
   id: string
@@ -75,6 +75,7 @@ export interface ProposalDraftRecord {
   proposalTxHash: string | null
   reviewTxHash: string | null
   deploymentTxHash: string | null
+  onchainProposalId: number | null
   deployedSpaceId: number | null
   deployedSpaceAddress: string | null
   commitStartAt: string | null
@@ -83,6 +84,7 @@ export interface ProposalDraftRecord {
   createdAt: string
   updatedAt: string
   createdBy: string
+  createdByWalletAddress: string | null
 }
 
 export type PublicElectionPhase = 'registration' | 'commit' | 'reveal' | 'ended'

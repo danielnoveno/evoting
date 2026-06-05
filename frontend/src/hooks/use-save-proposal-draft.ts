@@ -10,7 +10,10 @@ export function useSaveProposalDraft() {
     mutationFn: saveProposalDraft,
     onSuccess: (proposal) => {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'proposal-drafts'] })
+      void queryClient.invalidateQueries({ queryKey: ['superadmin', 'all-proposals'] })
       void queryClient.invalidateQueries({ queryKey: ['proposal-draft', proposal.id] })
+      void queryClient.invalidateQueries({ queryKey: ['proposal-candidates', proposal.id] })
+      void queryClient.invalidateQueries({ queryKey: ['proposal-whitelist', proposal.id] })
     },
   })
 }

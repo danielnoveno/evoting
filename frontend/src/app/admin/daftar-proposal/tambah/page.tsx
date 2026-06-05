@@ -8,7 +8,7 @@ export default function AdminCreateProposalPage() {
     <AdminShell>
       <ProposalForm
         pageTitle="Formulir Proposal"
-        pageDescription="Konfigurasikan parameter pemilihan umum berbasis blockchain dengan presisi tinggi untuk menjamin integritas data."
+        pageDescription="Ajukan proposal pemilihan ke superadmin. Pemilihan baru akan dibuat di blockchain hanya setelah proposal disetujui dan di-deploy oleh superadmin."
       />
     </AdminShell>
   )

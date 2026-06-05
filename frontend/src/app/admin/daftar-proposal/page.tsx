@@ -18,6 +18,8 @@ function getStatusBadgeClass(status: ProposalStatus) {
       return 'bg-emerald-100 text-emerald-700'
     case 'MENUNGGU REVIEW':
       return 'bg-amber-100 text-amber-700'
+    case 'PERLU REVISI':
+      return 'bg-amber-100 text-amber-700'
     case 'DRAF':
       return 'bg-slate-200 text-slate-800'
     case 'DITOLAK':

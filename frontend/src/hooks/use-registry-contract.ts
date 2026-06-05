@@ -1,12 +1,19 @@
 'use client'
 
 import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
+import { decodeEventLog, type Address, type Log } from 'viem'
 import VoteChainRegistryArtifact from '@/lib/abi/VoteChainRegistry.json'
 
 const registryAbi = VoteChainRegistryArtifact.abi
 
 // Default registry address for Base Sepolia - should be updated after deployment
 export const REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || '0x2D331f530A3644687abE85c624e70Ab9747C41ad'
+
+interface ElectionSpaceCreatedEvent {
+  proposalId: number
+  spaceId: number
+  spaceAddress: Address
+}
 
 export function useRegistryContract() {
   const { address: userAddress } = useAccount()
@@ -57,25 +64,44 @@ export function useRegistryContract() {
     })
   }
 
-  const parseElectionSpaceCreated = (receipt: any) => {
+  const createElectionForAdmin = (
+    spaceAdmin: Address,
+    title: string,
+    metadataURI: string,
+    candidateCount: number
+  ) => {
+    writeContract({
+      address: REGISTRY_ADDRESS as Address,
+      abi: registryAbi,
+      functionName: 'createElectionForAdmin',
+      args: [spaceAdmin, title, metadataURI, BigInt(candidateCount)],
+    })
+  }
+
+  const parseElectionSpaceCreated = (receipt?: { logs?: Log[] } | null): ElectionSpaceCreatedEvent | null => {
     if (!receipt || !receipt.logs) return null
-    // The event is ElectionSpaceCreated(uint256 spaceId, address space, ...)
-    // Usually it's one of the logs. Keep this bounded until event parsing is implemented.
-    try {
-      // Find the log from the Registry contract
-      const log = receipt.logs.find((l: any) => l.address.toLowerCase() === REGISTRY_ADDRESS.toLowerCase())
-      if (!log) return null
-      
-      // In a real app we'd use viem's decodeEventLog
-      // For now, let's just look at the topics/data if we know the position
-      // Topic 0 is event signature, Topic 1 is spaceId, Topic 2 is space address (if indexed)
-      // Looking at the Solidity: event ElectionSpaceCreated(uint256 indexed spaceId, address indexed space, ...)
-      // So topic 2 is the space address.
-      if (log.topics && log.topics[2]) {
-        return `0x${log.topics[2].slice(26)}` as `0x${string}`
+    for (const log of receipt.logs) {
+      if (log.address.toLowerCase() !== REGISTRY_ADDRESS.toLowerCase()) continue
+
+      try {
+        const decoded = decodeEventLog({
+          abi: registryAbi,
+          data: log.data,
+          topics: log.topics,
+        })
+
+        if (decoded.eventName !== 'ElectionSpaceCreated') continue
+        const args = decoded.args as { spaceId?: bigint; space?: Address; proposalId?: bigint }
+        if (typeof args.spaceId === 'bigint' && args.space && typeof args.proposalId === 'bigint') {
+          return {
+            proposalId: Number(args.proposalId),
+            spaceId: Number(args.spaceId),
+            spaceAddress: args.space,
+          }
+        }
+      } catch {
+        // Continue scanning receipt logs until the registry deployment event is found.
       }
-    } catch (e) {
-      console.error('Failed to parse space address', e)
     }
     return null
   }
@@ -91,14 +117,16 @@ export function useRegistryContract() {
       address: REGISTRY_ADDRESS as `0x${string}`,
       abi: registryAbi,
       functionName: 'submitProposal',
-      args: [title, metadataURI, BigInt(candidateCount), BigInt(commitDuration), BigInt(revealDuration)],
+      args: [title, metadataURI, BigInt(candidateCount)],
     })
   }
 
   return {
     isSuperAdmin,
+    userAddress,
     reviewProposal,
     createElection,
+    createElectionForAdmin,
     submitProposal,
     parseElectionSpaceCreated,
     hash,

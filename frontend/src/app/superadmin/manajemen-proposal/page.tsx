@@ -26,7 +26,7 @@ import {
 
 type SortField = 'tanggal' | 'organisasi' | 'jenis' | 'status'
 const PAGE_SIZE = 10
-const PROPOSAL_STATUS_FILTERS = ['Semua', 'Menunggu Review', 'Disetujui', 'Berjalan'] as const
+const PROPOSAL_STATUS_FILTERS = ['Semua', 'Menunggu Review', 'Perlu Revisi', 'Disetujui', 'Berjalan'] as const
 type ProposalStatusFilter = (typeof PROPOSAL_STATUS_FILTERS)[number]
 
 export default function SuperadminProposalManagementPage() {
@@ -43,7 +43,7 @@ export default function SuperadminProposalManagementPage() {
       organizationName: p.organizationName ?? 'Organisasi Tanpa Nama',
       proposalType: 'Internal Organisasi', // Fallback type
       submittedAt: new Date(p.createdAt).toLocaleDateString('id-ID'),
-      status: p.status === 'draft' ? 'Draf' : p.status === 'submitted' ? 'Menunggu Review' : p.status === 'approved' ? 'Disetujui' : p.status === 'deployed' ? 'Berjalan' : p.status
+      status: p.status === 'draft' ? 'Draf' : p.status === 'submitted' ? 'Menunggu Review' : p.status === 'revision_requested' ? 'Perlu Revisi' : p.status === 'approved' ? 'Disetujui' : p.status === 'deployed' ? 'Berjalan' : p.status
     }))
   }, [proposalRowsRaw])
   const [sortField, setSortField] = useState<SortField>('tanggal')

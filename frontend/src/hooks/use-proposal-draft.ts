@@ -24,10 +24,11 @@ export function useUpdateProposalStatus() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: { id: string; status: any; txHash?: string; deployedSpaceAddress?: string }) => 
-      updateProposalStatus(input.id, input.status, input.txHash, input.deployedSpaceAddress),
+    mutationFn: updateProposalStatus,
     onSuccess: (proposal) => {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'proposal-drafts'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'elections'] })
+      void queryClient.invalidateQueries({ queryKey: ['superadmin', 'all-proposals'] })
       void queryClient.invalidateQueries({ queryKey: ['proposal-draft', proposal.id] })
     },
   })

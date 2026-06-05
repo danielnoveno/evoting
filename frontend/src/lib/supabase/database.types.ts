@@ -111,7 +111,7 @@ export type Database = {
           theme_color: string
           rules_text: string | null
           candidate_count: number
-          status: 'draft' | 'submitted' | 'approved' | 'rejected' | 'deployed' | 'archived'
+          status: 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived'
           metadata_version: number
           onchain_proposal_id: number | null
           proposal_tx_hash: string | null
@@ -134,7 +134,7 @@ export type Database = {
           theme_color?: string
           rules_text?: string | null
           candidate_count?: number
-          status?: 'draft' | 'submitted' | 'approved' | 'rejected' | 'deployed' | 'archived'
+          status?: 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived'
           metadata_version?: number
           onchain_proposal_id?: number | null
           proposal_tx_hash?: string | null
@@ -157,7 +157,7 @@ export type Database = {
           theme_color?: string
           rules_text?: string | null
           candidate_count?: number
-          status?: 'draft' | 'submitted' | 'approved' | 'rejected' | 'deployed' | 'archived'
+          status?: 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived'
           metadata_version?: number
           onchain_proposal_id?: number | null
           proposal_tx_hash?: string | null

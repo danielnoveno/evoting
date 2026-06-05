@@ -7,7 +7,7 @@ import { Save, Users, UserCheck, Shield, CheckCircle2, Network, Clock, ShieldChe
 import { ScrollReveal } from '@/components/public/parallax'
 import { useSaveProposalDraft } from '@/hooks/use-save-proposal-draft'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
-import type { ProposalCandidateInput } from '@/lib/repositories/types'
+import type { ProposalCandidateInput, ProposalDraftStatus } from '@/lib/repositories/types'
 
 export interface ProposalFormData {
   title: string
@@ -42,6 +42,7 @@ interface ProposalFormProps {
   pageTitle: string
   pageDescription: string
   submitLabel?: string
+  submitStatus?: ProposalDraftStatus
   successMessageTitle?: string
   successMessageDesc?: string
   extraActions?: React.ReactNode
@@ -53,9 +54,10 @@ export function ProposalForm({
   isReadOnly = false,
   pageTitle,
   pageDescription,
-  submitLabel = 'Simpan Proposal',
-  successMessageTitle = 'Proposal Berhasil Disimpan',
-  successMessageDesc = 'Data proposal telah tersimpan dan siap ditinjau.',
+  submitLabel = 'Ajukan Proposal',
+  submitStatus = 'submitted',
+  successMessageTitle = 'Proposal Berhasil Diajukan',
+  successMessageDesc = 'Data proposal tersimpan di Supabase dan masuk antrean review superadmin.',
   extraActions
 }: ProposalFormProps) {
   const router = useRouter()
@@ -169,13 +171,20 @@ export function ProposalForm({
       commitStartAt: new Date(formData.commitDate).toISOString(),
       revealStartAt: new Date(formData.revealDate).toISOString(),
       endedAt: new Date(formData.endedDate).toISOString(),
-      status: 'draft',
+      status: submitStatus,
       candidates: formData.candidateEntries.filter(c => c.name.trim()),
       whitelistEntries: formData.whitelistWallets.split('\n').filter(Boolean).map(w => ({ walletAddress: w.trim() }))
     }, {
       onSuccess: () => {
         showToast({ title: successMessageTitle, description: successMessageDesc, tone: 'success' })
         router.push('/admin/daftar-proposal')
+      },
+      onError: (error) => {
+        showToast({
+          title: 'Gagal menyimpan proposal',
+          description: getRepositoryErrorMessage(error, 'Proposal belum tersimpan ke Supabase. Cek sesi admin dan koneksi backend.'),
+          tone: 'error',
+        })
       }
     })
   }
@@ -194,7 +203,7 @@ export function ProposalForm({
           {extraActions}
           {!isReadOnly && (
             <button onClick={handleSubmit} disabled={saveProposalDraft.isPending} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-black px-6 text-white">
-              <Save className="h-4 w-4" /> {saveProposalDraft.isPending ? 'Saving...' : submitLabel}
+              <Save className="h-4 w-4" /> {saveProposalDraft.isPending ? 'Menyimpan...' : submitLabel}
             </button>
           )}
         </div>

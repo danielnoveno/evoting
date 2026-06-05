@@ -49,6 +49,7 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
     voterCount: proposal ? parseInt(proposal.votersEstimate.replace(/,/g, ''), 10) || 0 : 0,
     commitDate: toDatetimeLocal(liveProposal?.commitStartAt ?? null, '2026-06-12T09:00'),
     revealDate: toDatetimeLocal(liveProposal?.revealStartAt ?? null, '2026-06-19T09:00'),
+    endedDate: toDatetimeLocal(liveProposal?.endedAt ?? null, '2026-06-26T09:00'),
     candidateEntries: candidateQuery.data?.map((candidate) => ({
       name: candidate.fullName,
       studentId: candidate.studentId ?? '',
@@ -76,10 +77,11 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
         proposalId={params.id}
         initialData={initialData}
         pageTitle="Edit Proposal"
-        pageDescription={`Perbarui parameter untuk proposal ${liveProposal?.title ?? proposal?.title}. Perubahan yang dilakukan akan disimpan ke dalam draf sebelum dipublikasi.`}
-        submitLabel="Simpan Perubahan"
-        successMessageTitle="Perubahan Disimpan"
-        successMessageDesc={`Proposal ${liveProposal?.title ?? proposal?.title} berhasil diperbarui.`}
+        pageDescription={`Perbarui parameter untuk proposal ${liveProposal?.title ?? proposal?.title}. Setelah disimpan, proposal akan kembali masuk antrean review superadmin.`}
+        submitLabel="Ajukan Ulang"
+        submitStatus="submitted"
+        successMessageTitle="Proposal Diajukan Ulang"
+        successMessageDesc={`Proposal ${liveProposal?.title ?? proposal?.title} berhasil diperbarui dan menunggu review superadmin.`}
       />
     </AdminShell>
   )

@@ -21,7 +21,7 @@ export function useAdminProposalList() {
     const data = query.data ?? []
     const total = data.length
     const waiting = data.filter((item) => item.status === 'submitted').length
-    const running = data.filter((item) => item.status === 'approved' || item.status === 'deployed').length
+    const running = data.filter((item) => item.status === 'deployed').length
     const finished = data.filter((item) => item.endedAt).length
 
     return [
@@ -90,7 +90,7 @@ export function useAdminElectionList() {
     if (!query.data || query.data.length === 0) return []
     
     return query.data
-      .filter(p => p.status === 'approved' || p.status === 'deployed')
+      .filter(p => p.status === 'deployed')
       .map((p, index) => {
         const voterTarget = String(p.candidateCount * 10)
 
