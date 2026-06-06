@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/toast-provider'
-import { Save, Users, UserCheck, Shield, CheckCircle2, Network, Clock, ShieldCheck, ArrowLeft } from 'lucide-react'
+import { ArrowLeft, FileText, Save, ShieldCheck, Upload, X } from 'lucide-react'
 import { ScrollReveal } from '@/components/public/parallax'
+import { useCandidateAssetUpload } from '@/hooks/use-candidate-asset-upload'
 import { useSaveProposalDraft } from '@/hooks/use-save-proposal-draft'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+import { uploadProposalDocument } from '@/lib/repositories/proposalDocumentRepository'
 import type { ProposalCandidateInput, ProposalDraftStatus } from '@/lib/repositories/types'
 
 export interface ProposalFormData {
@@ -28,12 +30,16 @@ const EMPTY_CANDIDATE: ProposalCandidateInput = {
   faculty: '',
   bio: '',
   vision: '',
+  mission: '',
+  youtubeUrl: '',
   avatarPath: '',
 }
 
 type ProposalFormErrors = Partial<Record<'title' | 'candidateCount' | 'voterCount' | 'commitDate' | 'revealDate' | 'endedDate' | 'dateRange', string>>
 
 const MIN_GAP_MINUTES = 60
+const MAX_SUPPORTING_DOCUMENT_SIZE = 10 * 1024 * 1024
+const MAX_CANDIDATE_PHOTO_SIZE = 5 * 1024 * 1024
 
 interface ProposalFormProps {
   proposalId?: string
@@ -63,6 +69,12 @@ export function ProposalForm({
   const router = useRouter()
   const { showToast } = useToast()
   const saveProposalDraft = useSaveProposalDraft()
+  const uploadCandidateAsset = useCandidateAssetUpload()
+  const [supportingDocument, setSupportingDocument] = useState<File | null>(null)
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false)
+  const [candidatePhotoFiles, setCandidatePhotoFiles] = useState<Record<number, File>>({})
+  const [candidatePhotoPreviews, setCandidatePhotoPreviews] = useState<Record<number, string>>({})
+  const [isUploadingCandidatePhotos, setIsUploadingCandidatePhotos] = useState(false)
   
   const [formData, setFormData] = useState<ProposalFormData>({
     title: initialData?.title || '',
@@ -77,6 +89,13 @@ export function ProposalForm({
     whitelistWallets: initialData?.whitelistWallets || '',
   })
   const [errors, setErrors] = useState<ProposalFormErrors>({})
+  const isSubmitting = saveProposalDraft.isPending || isUploadingDocument || isUploadingCandidatePhotos
+
+  useEffect(() => {
+    return () => {
+      Object.values(candidatePhotoPreviews).forEach((previewUrl) => URL.revokeObjectURL(previewUrl))
+    }
+  }, [candidatePhotoPreviews])
 
   useEffect(() => {
     if (initialData) {
@@ -97,13 +116,14 @@ export function ProposalForm({
 
   const validateForm = (data: ProposalFormData) => {
     const nextErrors: ProposalFormErrors = {}
+    const filledCandidateCount = data.candidateEntries.filter((candidate) => candidate.name.trim()).length
 
     if (!data.title.trim()) {
       nextErrors.title = 'Nama pemilihan wajib diisi.'
     }
 
-    if (Number(data.candidateCount) < 2) {
-      nextErrors.candidateCount = 'Minimal harus ada 2 kandidat.'
+    if (filledCandidateCount < 2) {
+      nextErrors.candidateCount = 'Minimal isi 2 kandidat dengan nama lengkap.'
     }
 
     if (!data.commitDate) nextErrors.commitDate = 'Wajib diisi.'
@@ -153,7 +173,84 @@ export function ProposalForm({
     })
   }
 
-  const handleSubmit = () => {
+  const handleSupportingDocumentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) return
+    const file = event.target.files?.[0] ?? null
+    event.target.value = ''
+
+    if (!file) return
+
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+    if (!isPdf) {
+      showToast({
+        title: 'Format dokumen belum didukung',
+        description: 'Gunakan file PDF untuk surat rekomendasi atau dokumen pendukung.',
+        tone: 'error',
+      })
+      return
+    }
+
+    if (file.size > MAX_SUPPORTING_DOCUMENT_SIZE) {
+      showToast({
+        title: 'Ukuran dokumen terlalu besar',
+        description: 'Maksimal ukuran dokumen pendukung adalah 10 MB.',
+        tone: 'error',
+      })
+      return
+    }
+
+    setSupportingDocument(file)
+  }
+
+  const handleCandidatePhotoChange = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) return
+    const file = event.target.files?.[0] ?? null
+    event.target.value = ''
+    if (!file) return
+
+    const isImage = file.type === 'image/jpeg' || file.type === 'image/png' || /\.(jpe?g|png)$/i.test(file.name)
+    if (!isImage) {
+      showToast({
+        title: 'Format foto belum didukung',
+        description: 'Gunakan foto kandidat dalam format JPG atau PNG.',
+        tone: 'error',
+      })
+      return
+    }
+
+    if (file.size > MAX_CANDIDATE_PHOTO_SIZE) {
+      showToast({
+        title: 'Ukuran foto terlalu besar',
+        description: 'Maksimal ukuran foto kandidat adalah 5 MB.',
+        tone: 'error',
+      })
+      return
+    }
+
+    setCandidatePhotoFiles((prev) => ({ ...prev, [index]: file }))
+    setCandidatePhotoPreviews((prev) => {
+      if (prev[index]) URL.revokeObjectURL(prev[index])
+      return { ...prev, [index]: URL.createObjectURL(file) }
+    })
+  }
+
+  const removeCandidatePhoto = (index: number) => {
+    if (isReadOnly) return
+    setCandidatePhotoFiles((prev) => {
+      const next = { ...prev }
+      delete next[index]
+      return next
+    })
+    setCandidatePhotoPreviews((prev) => {
+      if (prev[index]) URL.revokeObjectURL(prev[index])
+      const next = { ...prev }
+      delete next[index]
+      return next
+    })
+    handleCandidateChange(index, 'avatarPath', '')
+  }
+
+  const handleSubmit = async () => {
     if (isReadOnly) return
     const nextErrors = validateForm(formData)
     if (Object.keys(nextErrors).length > 0) {
@@ -162,21 +259,74 @@ export function ProposalForm({
       return
     }
 
+    let candidateEntries = formData.candidateEntries.filter(c => c.name.trim())
+
+    if (Object.keys(candidatePhotoFiles).length > 0) {
+      setIsUploadingCandidatePhotos(true)
+      try {
+        candidateEntries = await Promise.all(candidateEntries.map(async (candidate, index) => {
+          const photoFile = candidatePhotoFiles[index]
+          if (!photoFile) return candidate
+
+          const avatarPath = await uploadCandidateAsset.mutateAsync({
+            file: photoFile,
+            candidateId: `candidate-${index + 1}`,
+            electionId: proposalId ?? 'proposal-drafts',
+          })
+
+          return { ...candidate, avatarPath }
+        }))
+      } catch (error) {
+        showToast({
+          title: 'Gagal mengunggah foto kandidat',
+          description: error instanceof Error ? error.message : 'Coba unggah ulang foto kandidat.',
+          tone: 'error',
+        })
+        setIsUploadingCandidatePhotos(false)
+        return
+      } finally {
+        setIsUploadingCandidatePhotos(false)
+      }
+    }
+
     saveProposalDraft.mutate({
       id: proposalId,
       title: formData.title,
       organizationName: formData.category,
       description: formData.description,
-      candidateCount: formData.candidateCount,
+      candidateCount: candidateEntries.length,
       commitStartAt: new Date(formData.commitDate).toISOString(),
       revealStartAt: new Date(formData.revealDate).toISOString(),
       endedAt: new Date(formData.endedDate).toISOString(),
       status: submitStatus,
-      candidates: formData.candidateEntries.filter(c => c.name.trim()),
+      candidates: candidateEntries,
       whitelistEntries: formData.whitelistWallets.split('\n').filter(Boolean).map(w => ({ walletAddress: w.trim() }))
     }, {
-      onSuccess: () => {
-        showToast({ title: successMessageTitle, description: successMessageDesc, tone: 'success' })
+      onSuccess: async (proposal) => {
+        if (supportingDocument) {
+          setIsUploadingDocument(true)
+          try {
+            await uploadProposalDocument({
+              proposalDraftId: proposal.id,
+              file: supportingDocument,
+            })
+            showToast({
+              title: successMessageTitle,
+              description: `${successMessageDesc} Dokumen pendukung juga berhasil diunggah.`,
+              tone: 'success',
+            })
+          } catch (error) {
+            showToast({
+              title: 'Proposal tersimpan, dokumen gagal diunggah',
+              description: getRepositoryErrorMessage(error, 'Coba unggah ulang dokumen dari halaman edit proposal.'),
+              tone: 'error',
+            })
+          } finally {
+            setIsUploadingDocument(false)
+          }
+        } else {
+          showToast({ title: successMessageTitle, description: successMessageDesc, tone: 'success' })
+        }
         router.push('/admin/daftar-proposal')
       },
       onError: (error) => {
@@ -202,8 +352,8 @@ export function ProposalForm({
         <div className="flex items-center gap-3">
           {extraActions}
           {!isReadOnly && (
-            <button onClick={handleSubmit} disabled={saveProposalDraft.isPending} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-black px-6 text-white">
-              <Save className="h-4 w-4" /> {saveProposalDraft.isPending ? 'Menyimpan...' : submitLabel}
+            <button onClick={handleSubmit} disabled={isSubmitting} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-black px-6 text-white disabled:cursor-not-allowed disabled:opacity-60">
+              <Save className="h-4 w-4" /> {isUploadingCandidatePhotos ? 'Mengunggah foto...' : isUploadingDocument ? 'Mengunggah dokumen...' : saveProposalDraft.isPending ? 'Menyimpan...' : submitLabel}
             </button>
           )}
         </div>
@@ -218,6 +368,51 @@ export function ProposalForm({
               <textarea name="description" value={formData.description} onChange={handleChange} disabled={isReadOnly} placeholder="Deskripsi" className="h-32 w-full rounded-xl bg-slate-100 p-4" />
             </div>
           </section>
+
+          {!isReadOnly ? (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-[14px] font-bold uppercase tracking-widest">Dokumen Pendukung</h2>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Opsional</span>
+              </div>
+              <label className="block cursor-pointer rounded-[28px] border border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:border-slate-400 hover:bg-white">
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="hidden"
+                  onChange={handleSupportingDocumentChange}
+                />
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-slate-700">
+                  <Upload className="h-6 w-6" />
+                </div>
+                <p className="mt-4 text-[17px] font-semibold text-slate-900">Unggah surat rekomendasi</p>
+                <p className="mx-auto mt-2 max-w-[520px] text-[14px] leading-7 text-slate-500">
+                  Lampirkan surat rekomendasi atau dokumen pendukung lain untuk review superadmin. Format PDF maksimal 10 MB.
+                </p>
+              </label>
+              {supportingDocument ? (
+                <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-[14px] font-semibold text-slate-900">{supportingDocument.name}</p>
+                      <p className="mt-0.5 text-[12px] text-slate-500">{(supportingDocument.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSupportingDocument(null)}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    aria-label="Hapus dokumen pendukung"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
 
           <section className="space-y-4">
             <h2 className="text-[14px] font-bold uppercase tracking-widest">Parameter Waktu On-Chain</h2>
@@ -241,12 +436,50 @@ export function ProposalForm({
           <section className="space-y-4">
             <h2 className="text-[14px] font-bold uppercase tracking-widest">Kandidat</h2>
             {formData.candidateEntries.map((c, i) => (
-              <div key={i} className="rounded-xl border p-4 grid gap-3">
-                <input value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Nama Lengkap" className="h-10 w-full rounded-lg bg-slate-50 px-3" />
-                <input value={c.vision || ''} onChange={e => handleCandidateChange(i, 'vision', e.target.value)} disabled={isReadOnly} placeholder="Visi Singkat" className="h-10 w-full rounded-lg bg-slate-50 px-3" />
+              <div key={i} className="grid gap-4 rounded-[24px] border border-slate-200 bg-white p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat {i + 1}</p>
+                  {!isReadOnly ? <span className="text-[12px] text-slate-400">Foto opsional</span> : null}
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-[160px_1fr]">
+                  <div>
+                    <div className="relative overflow-hidden rounded-[22px] border border-slate-200 bg-slate-100 aspect-square">
+                      {candidatePhotoPreviews[i] || c.avatarPath ? (
+                        <img src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''} alt={`Foto kandidat ${c.name || i + 1}`} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full flex-col items-center justify-center text-slate-400">
+                          <Upload className="h-7 w-7" />
+                          <span className="mt-2 text-[12px] font-medium">JPG/PNG</span>
+                        </div>
+                      )}
+                    </div>
+                    {!isReadOnly ? (
+                      <div className="mt-3 grid gap-2">
+                        <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-slate-100 px-3 text-[13px] font-medium text-slate-700 hover:bg-slate-200">
+                          <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" className="hidden" onChange={(event) => handleCandidatePhotoChange(i, event)} />
+                          Unggah Foto
+                        </label>
+                        {(candidatePhotoPreviews[i] || c.avatarPath) ? (
+                          <button type="button" onClick={() => removeCandidatePhoto(i)} className="inline-flex h-9 items-center justify-center rounded-xl text-[13px] font-medium text-red-600 hover:bg-red-50">
+                            Hapus foto
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="grid gap-3">
+                    <input value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Nama Lengkap" className="h-11 w-full rounded-xl bg-slate-50 px-4 text-[14px] text-slate-900 outline-none disabled:text-slate-500" />
+                    <input value={c.youtubeUrl || ''} onChange={e => handleCandidateChange(i, 'youtubeUrl', e.target.value)} disabled={isReadOnly} placeholder="Link video YouTube kandidat (opsional)" className="h-11 w-full rounded-xl bg-slate-50 px-4 text-[14px] text-slate-900 outline-none disabled:text-slate-500" />
+                    <textarea value={c.vision || ''} onChange={e => handleCandidateChange(i, 'vision', e.target.value)} disabled={isReadOnly} placeholder="Visi kandidat" className="min-h-[96px] w-full rounded-xl bg-slate-50 p-4 text-[14px] text-slate-900 outline-none disabled:text-slate-500" />
+                    <textarea value={Array.isArray(c.mission) ? c.mission.join('\n') : c.mission || ''} onChange={e => handleCandidateChange(i, 'mission', e.target.value)} disabled={isReadOnly} placeholder="Misi kandidat — tulis satu poin per baris" className="min-h-[120px] w-full rounded-xl bg-slate-50 p-4 text-[14px] text-slate-900 outline-none disabled:text-slate-500" />
+                  </div>
+                </div>
               </div>
             ))}
-            {!isReadOnly && <button onClick={() => setFormData(p => ({...p, candidateEntries: [...p.candidateEntries, EMPTY_CANDIDATE]}))} className="text-blue-600">+ Tambah</button>}
+            {errors.candidateCount ? <p className="text-[12px] text-red-500">{errors.candidateCount}</p> : null}
+            {!isReadOnly && <button onClick={() => setFormData(p => ({...p, candidateEntries: [...p.candidateEntries, { ...EMPTY_CANDIDATE }]}))} className="text-blue-600">+ Tambah</button>}
           </section>
         </div>
         

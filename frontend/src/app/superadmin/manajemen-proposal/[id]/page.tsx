@@ -14,9 +14,9 @@ import {
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
-import { useWhitelistImportJobs } from '@/hooks/use-whitelist-import-jobs'
+import { useProposalDocuments } from '@/hooks/use-proposal-documents'
 import { REGISTRY_ADDRESS, useRegistryContract } from '@/hooks/use-registry-contract'
-import { createWhitelistImportSignedUrl } from '@/lib/repositories/whitelistRepository'
+import { createProposalDocumentSignedUrl } from '@/lib/repositories/proposalDocumentRepository'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import type { SuperadminProposalDetail } from '@/lib/superadmin-data'
 import type { Address } from 'viem'
@@ -27,7 +27,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const router = useRouter()
   const { showToast } = useToast()
   const proposalQuery = useProposalDraft(params.id)
-  const whitelistJobsQuery = useWhitelistImportJobs(params.id)
+  const proposalDocumentsQuery = useProposalDocuments(params.id)
   const updateStatus = useUpdateProposalStatus()
   
   // Real contract integration
@@ -45,7 +45,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   } = useRegistryContract()
 
   const liveProposal = proposalQuery.data
-  const whitelistJobs = whitelistJobsQuery.data ?? []
+  const proposalDocuments = proposalDocumentsQuery.data ?? []
 
   const proposal = useMemo<SuperadminProposalDetail | null>(() => {
     if (!liveProposal) return null
@@ -78,14 +78,14 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       timeline: [
         { id: 't1', title: 'Proposal Diajukan', actor: `Oleh: ${liveProposal.organizationName ?? 'Admin'}`, time: new Date(liveProposal.createdAt).toLocaleString('id-ID') },
       ],
-      documents: whitelistJobs.map((job) => ({
-        id: job.id,
-        name: job.fileName,
-        meta: `Whitelist CSV • ${job.rowCount} entri • ${new Date(job.createdAt).toLocaleDateString('id-ID')}`,
-        path: job.filePath,
+      documents: proposalDocuments.map((document) => ({
+        id: document.id,
+        name: document.fileName,
+        meta: `Dokumen Pendukung • ${(document.fileSize / 1024 / 1024).toFixed(2)} MB • ${new Date(document.createdAt).toLocaleDateString('id-ID')}`,
+        path: document.filePath,
       })),
     }
-  }, [liveProposal, whitelistJobs])
+  }, [liveProposal, proposalDocuments])
   
   const [decisionType, setDecisionType] = useState<DecisionType>(null)
   const [note, setNote] = useState('')
@@ -95,13 +95,13 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       showToast({
         tone: 'info',
         title: 'Dokumen belum tersedia',
-        description: 'Proposal ini belum memiliki dokumen pendukung untuk diunduh. Admin akan mengunggah CSV whitelist setelah pemilihan disetujui.',
+        description: 'Admin belum melampirkan surat rekomendasi atau dokumen pendukung lain pada proposal ini.',
       })
       return
     }
 
     try {
-      const url = await createWhitelistImportSignedUrl(path, fileName)
+      const url = await createProposalDocumentSignedUrl(path, fileName)
       const link = document.createElement('a')
       link.href = url
       link.download = fileName || 'download'
@@ -378,7 +378,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               <div className="mt-6">
                 <SuperadminEmptyState
                   title="Belum ada dokumen pendukung"
-                  description="Dokumen seperti CSV whitelist akan tersedia di sini setelah admin organisasi mengunggahnya melalui halaman manajemen pemilihan."
+                  description="Admin belum melampirkan surat rekomendasi atau dokumen pendukung lain saat membuat proposal ini."
                 />
               </div>
             ) : (

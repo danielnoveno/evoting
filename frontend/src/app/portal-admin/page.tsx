@@ -18,8 +18,7 @@ import {
   KeyRound,
   ShieldCheck,
 } from 'lucide-react'
-import { ConnectWallet } from '@coinbase/onchainkit/wallet'
-import { useAccount, useDisconnect } from 'wagmi'
+import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { AuthField } from '@/components/auth/auth-shell'
 import { useToast } from '@/components/ui/toast-provider'
 import { useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useEmailPasswordLogin, useResetPassword } from '@/hooks/use-auth-session'
@@ -42,6 +41,7 @@ function PortalAdminContent() {
   const searchParams = useSearchParams()
   const { showToast } = useToast()
   const { address, isConnected } = useAccount()
+  const { connect, connectors, isPending: isConnectPending } = useConnect()
   const { disconnect } = useDisconnect()
   const authSessionQuery = useAuthSession()
   const currentProfileQuery = useCurrentProfile()
@@ -220,6 +220,31 @@ function PortalAdminContent() {
         }
       })
     }
+  }
+
+  const handleConnectWallet = () => {
+    const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
+    if (!connector) {
+      showToast({
+        tone: 'error',
+        title: 'Dompet admin belum siap',
+        description: 'Connector Coinbase/Base Account belum tersedia. Coba muat ulang halaman.',
+      })
+      return
+    }
+
+    connect(
+      { connector },
+      {
+        onError: (error) => {
+          showToast({
+            tone: 'error',
+            title: 'Gagal menyambungkan dompet admin',
+            description: error.message || 'Coba lagi dari perangkat atau browser yang mendukung Coinbase Smart Wallet.',
+          })
+        },
+      },
+    )
   }
 
   const handleActivateInvite = (event: React.FormEvent) => {
@@ -631,10 +656,16 @@ function PortalAdminContent() {
                     </button>
 
                     {!isInviteActivationMode && !isConnected && (
-                      <ConnectWallet className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B]">
+                      <button
+                        type="button"
+                        onClick={handleConnectWallet}
+                        disabled={isConnectPending}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
+                      >
+                        {isConnectPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                         Sambungkan Dompet Admin
-                        <ChevronRight className="h-4 w-4" />
-                      </ConnectWallet>
+                        {!isConnectPending ? <ChevronRight className="h-4 w-4" /> : null}
+                      </button>
                     )}
 
                     {isInviteActivationMode && (

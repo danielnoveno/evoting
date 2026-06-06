@@ -1,7 +1,7 @@
 'use client'
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
-import type { Database } from '@/lib/supabase/database.types'
+import type { Database, Json } from '@/lib/supabase/database.types'
 import { getCurrentProfile } from '@/lib/repositories/profileRepository'
 import type { ProposalCandidateRecord, ProposalDraftRecord, ProposalDraftUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
@@ -9,6 +9,22 @@ import { RepositoryError } from '@/lib/repositories/errors'
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 type ProposalCandidateRow = Database['app']['Tables']['proposal_candidates']['Row']
 type ProposalStatus = Database['app']['Tables']['proposal_drafts']['Row']['status']
+
+function asStringArray(value: Json): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is string => typeof item === 'string')
+}
+
+function normalizeMission(value: string | string[] | null | undefined): string[] {
+  if (Array.isArray(value)) {
+    return value.map((item) => item.trim()).filter(Boolean)
+  }
+
+  return (value ?? '')
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
 
 export interface DeploymentRecordInput {
   deployedSpaceId: number
@@ -69,6 +85,8 @@ function mapProposalCandidateRow(row: ProposalCandidateRow): ProposalCandidateRe
     faculty: row.faculty,
     bio: row.bio,
     vision: row.vision,
+    mission: asStringArray(row.mission),
+    youtubeUrl: row.youtube_url,
     avatarPath: row.avatar_path,
     sortOrder: row.sort_order,
   }
@@ -174,6 +192,8 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
         faculty: candidate.faculty?.trim() || null,
         bio: candidate.bio?.trim() || null,
         vision: candidate.vision?.trim() || null,
+        mission: normalizeMission(candidate.mission),
+        youtube_url: candidate.youtubeUrl?.trim() || null,
         avatar_path: candidate.avatarPath?.trim() || null,
         sort_order: index,
       }))

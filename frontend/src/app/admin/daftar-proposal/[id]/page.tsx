@@ -40,6 +40,8 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
       faculty: c.faculty ?? '',
       bio: c.bio ?? '',
       vision: c.vision ?? '',
+      mission: c.mission.join('\n'),
+      youtubeUrl: c.youtubeUrl ?? '',
       avatarPath: c.avatarPath ?? '',
     })) ?? [],
     whitelistWallets: whitelistQuery.data?.map(e => e.walletAddress).join('\n') ?? '',

@@ -172,6 +172,41 @@ export type Database = {
           updated_at?: string
         }
       }
+      proposal_documents: {
+        Row: {
+          id: string
+          proposal_draft_id: string
+          uploaded_by: string
+          file_path: string
+          file_name: string
+          content_type: string
+          file_size: number
+          document_type: 'supporting' | 'recommendation_letter'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          proposal_draft_id: string
+          uploaded_by: string
+          file_path: string
+          file_name: string
+          content_type?: string
+          file_size?: number
+          document_type?: 'supporting' | 'recommendation_letter'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          proposal_draft_id?: string
+          uploaded_by?: string
+          file_path?: string
+          file_name?: string
+          content_type?: string
+          file_size?: number
+          document_type?: 'supporting' | 'recommendation_letter'
+          created_at?: string
+        }
+      }
       proposal_whitelist_entries: {
         Row: {
           id: string
@@ -224,6 +259,7 @@ export type Database = {
           bio: string | null
           vision: string | null
           mission: Json
+          youtube_url: string | null
           avatar_path: string | null
           sort_order: number
           created_at: string
@@ -239,6 +275,7 @@ export type Database = {
           bio?: string | null
           vision?: string | null
           mission?: Json
+          youtube_url?: string | null
           avatar_path?: string | null
           sort_order?: number
           created_at?: string
@@ -254,6 +291,7 @@ export type Database = {
           bio?: string | null
           vision?: string | null
           mission?: Json
+          youtube_url?: string | null
           avatar_path?: string | null
           sort_order?: number
           created_at?: string

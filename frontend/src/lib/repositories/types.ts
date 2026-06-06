@@ -87,6 +87,18 @@ export interface ProposalDraftRecord {
   createdByWalletAddress: string | null
 }
 
+export interface ProposalDocumentRecord {
+  id: string
+  proposalDraftId: string
+  uploadedBy: string
+  filePath: string
+  fileName: string
+  contentType: string
+  fileSize: number
+  documentType: 'supporting' | 'recommendation_letter'
+  createdAt: string
+}
+
 export type PublicElectionPhase = 'registration' | 'commit' | 'reveal' | 'ended'
 
 export interface PublicElectionCandidateRecord {
@@ -98,6 +110,7 @@ export interface PublicElectionCandidateRecord {
   bio: string | null
   vision: string | null
   mission: string[]
+  youtubeUrl?: string | null
   avatarPath: string | null
   sortOrder: number
 }
@@ -202,6 +215,8 @@ export interface ProposalDraftUpsertInput {
     faculty?: string | null
     bio?: string | null
     vision?: string | null
+    mission?: string | string[] | null
+    youtubeUrl?: string | null
     avatarPath?: string | null
   }>
   whitelistEntries?: Array<{
@@ -216,6 +231,8 @@ export interface ProposalCandidateInput {
   faculty?: string | null
   bio?: string | null
   vision?: string | null
+  mission?: string | string[] | null
+  youtubeUrl?: string | null
   avatarPath?: string | null
 }
 
@@ -241,6 +258,8 @@ export interface ProposalCandidateRecord {
   faculty?: string | null
   bio?: string | null
   vision?: string | null
+  mission: string[]
+  youtubeUrl?: string | null
   avatarPath?: string | null
   sortOrder: number
 }

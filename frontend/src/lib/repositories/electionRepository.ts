@@ -86,6 +86,7 @@ function mapCandidate(row: CandidateRow): PublicElectionCandidateRecord {
     bio: row.bio,
     vision: row.vision,
     mission: asStringArray(row.mission),
+    youtubeUrl: row.youtube_url,
     avatarPath: row.avatar_path,
     sortOrder: row.sort_order,
   }

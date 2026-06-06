@@ -1,13 +1,16 @@
 import { http, createConfig } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
-import { coinbaseWallet } from 'wagmi/connectors'
+import { baseAccountConnector } from '@/lib/base-account-connector'
 
 export const wagmiConfig = createConfig({
   chains: [baseSepolia],
   connectors: [
-    coinbaseWallet({
-      appName: 'VoteChain',
-      preference: 'smartWalletOnly',
+    baseAccountConnector({
+      appName: 'Votein',
+      appLogoUrl: null,
+      preference: {
+        options: 'smartWalletOnly',
+      },
     }),
   ],
   ssr: true,

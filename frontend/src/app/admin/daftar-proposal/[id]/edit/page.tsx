@@ -56,6 +56,8 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
       faculty: candidate.faculty ?? '',
       bio: candidate.bio ?? '',
       vision: candidate.vision ?? '',
+      mission: candidate.mission.join('\n'),
+      youtubeUrl: candidate.youtubeUrl ?? '',
       avatarPath: candidate.avatarPath ?? '',
     })) ?? [],
     whitelistWallets: whitelistQuery.data?.map((entry) => entry.walletAddress).join('\n') ?? '',

@@ -124,6 +124,7 @@ create table if not exists app.proposal_candidates (
   bio text,
   vision text,
   mission jsonb not null default '[]'::jsonb,
+  youtube_url text,
   avatar_path text,
   sort_order integer not null default 0,
   created_at timestamptz not null default timezone('utc', now()),
@@ -143,6 +144,23 @@ create table if not exists app.whitelist_import_jobs (
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+create table if not exists app.proposal_documents (
+  id uuid primary key default gen_random_uuid(),
+  proposal_draft_id uuid not null references app.proposal_drafts(id) on delete cascade,
+  uploaded_by uuid not null references app.app_profiles(id) on delete restrict,
+  file_path text not null,
+  file_name text not null,
+  content_type text not null default 'application/pdf',
+  file_size bigint not null default 0,
+  document_type text not null default 'supporting',
+  created_at timestamptz not null default timezone('utc', now()),
+  constraint proposal_documents_type_check check (document_type in ('supporting', 'recommendation_letter')),
+  constraint proposal_documents_pdf_check check (content_type = 'application/pdf')
+);
+
+create index if not exists idx_proposal_documents_proposal_draft_id
+on app.proposal_documents(proposal_draft_id, created_at desc);
 
 create table if not exists app.proposal_whitelist_entries (
   id uuid primary key default gen_random_uuid(),
@@ -357,6 +375,7 @@ alter table app.app_profiles enable row level security;
 alter table app.proposal_drafts enable row level security;
 alter table app.proposal_candidates enable row level security;
 alter table app.whitelist_import_jobs enable row level security;
+alter table app.proposal_documents enable row level security;
 alter table app.proposal_whitelist_entries enable row level security;
 alter table app.space_metadata_versions enable row level security;
 alter table app.space_registry_map enable row level security;
@@ -605,6 +624,20 @@ values
   ('space-metadata', 'space-metadata', false, 52428800, array['application/json']),
   ('proof-exports', 'proof-exports', false, 52428800, array['application/json', 'application/pdf'])
 on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('proposal-documents', 'proposal-documents', false, 10485760, array['application/pdf'])
+on conflict (id) do update
+set public = excluded.public,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('public-assets', 'public-assets', true, 10485760, array['image/jpeg', 'image/png'])
+on conflict (id) do update
+set public = excluded.public,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
 
 --
 -- From: 20260527T090000_admin_registry_invites.sql
@@ -1114,3 +1147,134 @@ grant insert, update, delete on app.admin_space_access to authenticated;
 -- Index for performance
 create index if not exists idx_admin_space_access_email on app.admin_space_access(admin_email);
 create index if not exists idx_admin_space_access_proposal on app.admin_space_access(proposal_draft_id);
+
+-- Proposal supporting documents are optional attachments uploaded during proposal creation.
+-- Policies are placed after admin_space_access/auth_email definitions because they reuse
+-- the same restricted access model as proposal drafts.
+drop policy if exists "proposal_documents_select_parent_access" on app.proposal_documents;
+create policy "proposal_documents_select_parent_access"
+on app.proposal_documents
+for select
+using (
+  exists (
+    select 1
+    from app.proposal_drafts d
+    where d.id = proposal_draft_id
+      and (
+        app.has_role(array['super_admin'::app.app_role])
+        or d.created_by = app.current_profile_id()
+        or exists (
+          select 1 from app.admin_registry r
+          where lower(r.email) = app.auth_email()
+            and r.access_scope = 'all'
+            and r.status != 'inactive'
+        )
+        or exists (
+          select 1 from app.admin_space_access a
+          where lower(a.admin_email) = app.auth_email()
+            and a.proposal_draft_id = d.id
+        )
+      )
+  )
+);
+
+drop policy if exists "proposal_documents_insert_owner_or_superadmin" on app.proposal_documents;
+create policy "proposal_documents_insert_owner_or_superadmin"
+on app.proposal_documents
+for insert
+with check (
+  uploaded_by = app.current_profile_id()
+  and exists (
+    select 1
+    from app.proposal_drafts d
+    where d.id = proposal_draft_id
+      and (
+        app.has_role(array['super_admin'::app.app_role])
+        or d.created_by = app.current_profile_id()
+        or exists (
+          select 1 from app.admin_registry r
+          where lower(r.email) = app.auth_email()
+            and r.access_scope = 'all'
+            and r.status != 'inactive'
+        )
+        or exists (
+          select 1 from app.admin_space_access a
+          where lower(a.admin_email) = app.auth_email()
+            and a.proposal_draft_id = d.id
+        )
+      )
+  )
+);
+
+drop policy if exists "proposal_documents_objects_select_parent_access" on storage.objects;
+create policy "proposal_documents_objects_select_parent_access"
+on storage.objects
+for select
+using (
+  bucket_id = 'proposal-documents'
+  and exists (
+    select 1
+    from app.proposal_drafts d
+    where d.id::text = (storage.foldername(name))[1]
+      and (
+        app.has_role(array['super_admin'::app.app_role])
+        or d.created_by = app.current_profile_id()
+        or exists (
+          select 1 from app.admin_registry r
+          where lower(r.email) = app.auth_email()
+            and r.access_scope = 'all'
+            and r.status != 'inactive'
+        )
+        or exists (
+          select 1 from app.admin_space_access a
+          where lower(a.admin_email) = app.auth_email()
+            and a.proposal_draft_id = d.id
+        )
+      )
+  )
+);
+
+drop policy if exists "proposal_documents_objects_insert_owner_or_superadmin" on storage.objects;
+create policy "proposal_documents_objects_insert_owner_or_superadmin"
+on storage.objects
+for insert
+with check (
+  bucket_id = 'proposal-documents'
+  and owner = auth.uid()
+  and exists (
+    select 1
+    from app.proposal_drafts d
+    where d.id::text = (storage.foldername(name))[1]
+      and (
+        app.has_role(array['super_admin'::app.app_role])
+        or d.created_by = app.current_profile_id()
+        or exists (
+          select 1 from app.admin_registry r
+          where lower(r.email) = app.auth_email()
+            and r.access_scope = 'all'
+            and r.status != 'inactive'
+        )
+        or exists (
+          select 1 from app.admin_space_access a
+          where lower(a.admin_email) = app.auth_email()
+            and a.proposal_draft_id = d.id
+        )
+      )
+  )
+);
+
+drop policy if exists "public_assets_objects_select_public" on storage.objects;
+create policy "public_assets_objects_select_public"
+on storage.objects
+for select
+using (bucket_id = 'public-assets');
+
+drop policy if exists "public_assets_objects_insert_authenticated" on storage.objects;
+create policy "public_assets_objects_insert_authenticated"
+on storage.objects
+for insert
+with check (
+  bucket_id = 'public-assets'
+  and owner = auth.uid()
+  and app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
+);
