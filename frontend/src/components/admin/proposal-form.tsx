@@ -173,6 +173,14 @@ export function ProposalForm({
     })
   }
 
+  const addCandidateEntry = () => {
+    if (isReadOnly) return
+    setFormData((prev) => ({
+      ...prev,
+      candidateEntries: [...prev.candidateEntries, { ...EMPTY_CANDIDATE }],
+    }))
+  }
+
   const handleSupportingDocumentChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (isReadOnly) return
     const file = event.target.files?.[0] ?? null
@@ -464,7 +472,7 @@ export function ProposalForm({
               {!isReadOnly ? (
                 <button
                   type="button"
-                  onClick={() => setFormData(p => ({...p, candidateEntries: [...p.candidateEntries, { ...EMPTY_CANDIDATE }]}))}
+                  onClick={addCandidateEntry}
                   className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50"
                 >
                   + Tambah Kandidat
@@ -484,14 +492,14 @@ export function ProposalForm({
                   {!isReadOnly ? <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Foto opsional</span> : null}
                 </div>
 
-                <div className="grid gap-5 lg:grid-cols-[240px_1fr]">
-                  <div>
+                <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-stretch">
+                  <div className="flex h-full flex-col gap-2">
                     {!isReadOnly ? (
-                      <div className="grid gap-2">
+                      <div className="flex h-full flex-col gap-2">
                         <label
                           onDragOver={(event) => event.preventDefault()}
                           onDrop={(event) => handleCandidatePhotoDrop(i, event)}
-                          className="flex min-h-[178px] w-full cursor-pointer flex-col items-center justify-center rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-6 text-center transition-colors duration-150 hover:border-slate-400 hover:bg-slate-50 focus-within:border-slate-900 focus-within:ring-4 focus-within:ring-slate-900/5"
+                          className="flex min-h-[240px] w-full flex-1 cursor-pointer flex-col items-center justify-center rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-6 text-center transition-colors duration-150 hover:border-slate-400 hover:bg-slate-50 focus-within:border-slate-900 focus-within:ring-4 focus-within:ring-slate-900/5 lg:min-h-[384px]"
                         >
                           <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" className="sr-only" onChange={(event) => handleCandidatePhotoChange(i, event)} />
                           {candidatePhotoPreviews[i] || c.avatarPath ? (
@@ -516,11 +524,11 @@ export function ProposalForm({
                         ) : null}
                       </div>
                     ) : candidatePhotoPreviews[i] || c.avatarPath ? (
-                      <div className="overflow-hidden rounded-[14px] border border-slate-200 bg-slate-50">
-                        <img src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''} alt={`Foto kandidat ${c.name || i + 1}`} className="h-[178px] w-full object-cover" />
+                      <div className="min-h-[240px] flex-1 overflow-hidden rounded-[14px] border border-slate-200 bg-slate-50 lg:min-h-[384px]">
+                        <img src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''} alt={`Foto kandidat ${c.name || i + 1}`} className="h-full min-h-[240px] w-full object-cover lg:min-h-[384px]" />
                       </div>
                     ) : (
-                      <div className="flex min-h-[178px] w-full flex-col items-center justify-center rounded-[14px] border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-slate-400">
+                      <div className="flex min-h-[240px] w-full flex-1 flex-col items-center justify-center rounded-[14px] border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-slate-400 lg:min-h-[384px]">
                         <Upload className="mb-2.5 h-5 w-5" />
                         <p className="text-[13px] font-semibold text-slate-500">Foto belum tersedia</p>
                       </div>
@@ -550,6 +558,16 @@ export function ProposalForm({
               </div>
             ))}
             {errors.candidateCount ? <p className="text-[12px] text-red-500">{errors.candidateCount}</p> : null}
+            {!isReadOnly ? (
+              <button
+                type="button"
+                onClick={addCandidateEntry}
+                className="flex min-h-[76px] w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 text-center text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-400 hover:bg-white"
+              >
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-[16px] text-slate-700">+</span>
+                Tambah Kandidat Lagi
+              </button>
+            ) : null}
           </section>
         </div>
       </div>
