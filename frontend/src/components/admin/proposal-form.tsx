@@ -202,12 +202,7 @@ export function ProposalForm({
     setSupportingDocument(file)
   }
 
-  const handleCandidatePhotoChange = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
-    if (isReadOnly) return
-    const file = event.target.files?.[0] ?? null
-    event.target.value = ''
-    if (!file) return
-
+  const processCandidatePhotoFile = (index: number, file: File) => {
     const isImage = file.type === 'image/jpeg' || file.type === 'image/png' || /\.(jpe?g|png)$/i.test(file.name)
     if (!isImage) {
       showToast({
@@ -232,6 +227,22 @@ export function ProposalForm({
       if (prev[index]) URL.revokeObjectURL(prev[index])
       return { ...prev, [index]: URL.createObjectURL(file) }
     })
+  }
+
+  const handleCandidatePhotoChange = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) return
+    const file = event.target.files?.[0] ?? null
+    event.target.value = ''
+    if (!file) return
+    processCandidatePhotoFile(index, file)
+  }
+
+  const handleCandidatePhotoDrop = (index: number, event: React.DragEvent<HTMLLabelElement>) => {
+    if (isReadOnly) return
+    event.preventDefault()
+    const file = event.dataTransfer.files?.[0]
+    if (!file) return
+    processCandidatePhotoFile(index, file)
   }
 
   const removeCandidatePhoto = (index: number) => {
@@ -433,32 +444,59 @@ export function ProposalForm({
             {errors.dateRange && <p className="text-red-500 text-[12px]">{errors.dateRange}</p>}
           </section>
 
-          <section className="space-y-4">
-            <h2 className="text-[14px] font-bold uppercase tracking-widest">Kandidat</h2>
+          <section className="space-y-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Kandidat</h2>
+                <p className="mt-1 text-[14px] leading-6 text-slate-600">Isi profil kandidat yang akan tampil kepada pemilih saat pemilihan berjalan.</p>
+              </div>
+              {!isReadOnly ? (
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({...p, candidateEntries: [...p.candidateEntries, { ...EMPTY_CANDIDATE }]}))}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                >
+                  + Tambah Kandidat
+                </button>
+              ) : null}
+            </div>
             {formData.candidateEntries.map((c, i) => (
-              <div key={i} className="grid gap-4 rounded-[24px] border border-slate-200 bg-white p-5">
+              <div key={i} className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-5 transition-colors duration-150 hover:border-slate-300">
                 <div className="flex items-center justify-between gap-4">
-                  <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat {i + 1}</p>
-                  {!isReadOnly ? <span className="text-[12px] text-slate-400">Foto opsional</span> : null}
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-[13px] font-semibold text-slate-700">{i + 1}</span>
+                    <div>
+                      <p className="text-[14px] font-semibold text-slate-900">Profil Kandidat {i + 1}</p>
+                      <p className="mt-0.5 text-[12px] text-slate-400">Nama, media, visi, dan misi kandidat.</p>
+                    </div>
+                  </div>
+                  {!isReadOnly ? <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Foto opsional</span> : null}
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-[160px_1fr]">
+                <div className="grid gap-5 lg:grid-cols-[240px_1fr]">
                   <div>
-                    <div className="relative overflow-hidden rounded-[22px] border border-slate-200 bg-slate-100 aspect-square">
-                      {candidatePhotoPreviews[i] || c.avatarPath ? (
-                        <img src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''} alt={`Foto kandidat ${c.name || i + 1}`} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full w-full flex-col items-center justify-center text-slate-400">
-                          <Upload className="h-7 w-7" />
-                          <span className="mt-2 text-[12px] font-medium">JPG/PNG</span>
-                        </div>
-                      )}
-                    </div>
                     {!isReadOnly ? (
-                      <div className="mt-3 grid gap-2">
-                        <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-slate-100 px-3 text-[13px] font-medium text-slate-700 hover:bg-slate-200">
-                          <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" className="hidden" onChange={(event) => handleCandidatePhotoChange(i, event)} />
-                          Unggah Foto
+                      <div className="grid gap-2">
+                        <label
+                          onDragOver={(event) => event.preventDefault()}
+                          onDrop={(event) => handleCandidatePhotoDrop(i, event)}
+                          className="flex min-h-[178px] w-full cursor-pointer flex-col items-center justify-center rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-6 text-center transition-colors duration-150 hover:border-slate-400 hover:bg-slate-50 focus-within:border-slate-900 focus-within:ring-4 focus-within:ring-slate-900/5"
+                        >
+                          <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" className="sr-only" onChange={(event) => handleCandidatePhotoChange(i, event)} />
+                          {candidatePhotoPreviews[i] || c.avatarPath ? (
+                            <img
+                              src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''}
+                              alt={`Foto kandidat ${c.name || i + 1}`}
+                              className="mb-3 h-14 w-14 rounded-xl object-cover"
+                            />
+                          ) : (
+                            <Upload className="mb-2.5 h-5 w-5 text-slate-400" />
+                          )}
+                          <p className="text-[13px] font-semibold leading-5 text-slate-900">Pilih file atau tarik ke sini.</p>
+                          <p className="mt-1 text-[12px] leading-5 text-slate-400">JPG atau PNG, maksimal 5 MB.</p>
+                          <span className="mt-4 inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50">
+                            Pilih File
+                          </span>
                         </label>
                         {(candidatePhotoPreviews[i] || c.avatarPath) ? (
                           <button type="button" onClick={() => removeCandidatePhoto(i)} className="inline-flex h-9 items-center justify-center rounded-xl text-[13px] font-medium text-red-600 hover:bg-red-50">
@@ -466,20 +504,41 @@ export function ProposalForm({
                           </button>
                         ) : null}
                       </div>
-                    ) : null}
+                    ) : candidatePhotoPreviews[i] || c.avatarPath ? (
+                      <div className="overflow-hidden rounded-[14px] border border-slate-200 bg-slate-50">
+                        <img src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''} alt={`Foto kandidat ${c.name || i + 1}`} className="h-[178px] w-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="flex min-h-[178px] w-full flex-col items-center justify-center rounded-[14px] border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-slate-400">
+                        <Upload className="mb-2.5 h-5 w-5" />
+                        <p className="text-[13px] font-semibold text-slate-500">Foto belum tersedia</p>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid gap-3">
-                    <input value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Nama Lengkap" className="h-11 w-full rounded-xl bg-slate-50 px-4 text-[14px] text-slate-900 outline-none disabled:text-slate-500" />
-                    <input value={c.youtubeUrl || ''} onChange={e => handleCandidateChange(i, 'youtubeUrl', e.target.value)} disabled={isReadOnly} placeholder="Link video YouTube kandidat (opsional)" className="h-11 w-full rounded-xl bg-slate-50 px-4 text-[14px] text-slate-900 outline-none disabled:text-slate-500" />
-                    <textarea value={c.vision || ''} onChange={e => handleCandidateChange(i, 'vision', e.target.value)} disabled={isReadOnly} placeholder="Visi kandidat" className="min-h-[96px] w-full rounded-xl bg-slate-50 p-4 text-[14px] text-slate-900 outline-none disabled:text-slate-500" />
-                    <textarea value={Array.isArray(c.mission) ? c.mission.join('\n') : c.mission || ''} onChange={e => handleCandidateChange(i, 'mission', e.target.value)} disabled={isReadOnly} placeholder="Misi kandidat — tulis satu poin per baris" className="min-h-[120px] w-full rounded-xl bg-slate-50 p-4 text-[14px] text-slate-900 outline-none disabled:text-slate-500" />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama lengkap</span>
+                      <input value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Contoh: Daniel Noveno" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Link video YouTube <span className="font-normal text-slate-400">(opsional)</span></span>
+                      <input value={c.youtubeUrl || ''} onChange={e => handleCandidateChange(i, 'youtubeUrl', e.target.value)} disabled={isReadOnly} placeholder="https://youtube.com/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                    </label>
+                    <label className="block sm:col-span-2">
+                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Visi kandidat</span>
+                      <textarea value={c.vision || ''} onChange={e => handleCandidateChange(i, 'vision', e.target.value)} disabled={isReadOnly} placeholder="Tuliskan visi utama kandidat secara ringkas." className="min-h-[96px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                    </label>
+                    <label className="block sm:col-span-2">
+                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Misi kandidat</span>
+                      <textarea value={Array.isArray(c.mission) ? c.mission.join('\n') : c.mission || ''} onChange={e => handleCandidateChange(i, 'mission', e.target.value)} disabled={isReadOnly} placeholder="Tulis satu poin misi per baris." className="min-h-[120px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                      <span className="mt-1.5 block text-[12px] text-slate-400">Setiap baris akan disimpan sebagai satu poin misi.</span>
+                    </label>
                   </div>
                 </div>
               </div>
             ))}
             {errors.candidateCount ? <p className="text-[12px] text-red-500">{errors.candidateCount}</p> : null}
-            {!isReadOnly && <button onClick={() => setFormData(p => ({...p, candidateEntries: [...p.candidateEntries, { ...EMPTY_CANDIDATE }]}))} className="text-blue-600">+ Tambah</button>}
           </section>
         </div>
         
