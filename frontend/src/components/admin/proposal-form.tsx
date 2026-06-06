@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/toast-provider'
-import { ArrowLeft, FileText, Save, ShieldCheck, Upload, X } from 'lucide-react'
+import { ArrowLeft, FileText, Save, ShieldCheck, Trash2, Upload, X } from 'lucide-react'
 import { ScrollReveal } from '@/components/public/parallax'
 import { useCandidateAssetUpload } from '@/hooks/use-candidate-asset-upload'
 import { useSaveProposalDraft } from '@/hooks/use-save-proposal-draft'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { uploadProposalDocument } from '@/lib/repositories/proposalDocumentRepository'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { ProposalCandidateInput, ProposalDraftStatus } from '@/lib/repositories/types'
 
 export interface ProposalFormData {
@@ -75,6 +76,8 @@ export function ProposalForm({
   const [candidatePhotoFiles, setCandidatePhotoFiles] = useState<Record<number, File>>({})
   const [candidatePhotoPreviews, setCandidatePhotoPreviews] = useState<Record<number, string>>({})
   const [isUploadingCandidatePhotos, setIsUploadingCandidatePhotos] = useState(false)
+  const [pendingRemovalIndex, setPendingRemovalIndex] = useState<number | null>(null)
+  const [removalDialogOpen, setRemovalDialogOpen] = useState(false)
   
   const [formData, setFormData] = useState<ProposalFormData>({
     title: initialData?.title || '',
@@ -267,6 +270,82 @@ export function ProposalForm({
       return next
     })
     handleCandidateChange(index, 'avatarPath', '')
+  }
+
+  const isCandidateEntryEmpty = (
+    entry: ProposalCandidateInput,
+    photoFile: File | undefined,
+    photoPreview: string | undefined,
+  ) => {
+    const hasPhoto = Boolean(photoFile) || Boolean(photoPreview) || Boolean(entry.avatarPath)
+    const stringValue = (value: string | string[] | null | undefined) => {
+      if (Array.isArray(value)) return value.some((item) => item.trim().length > 0)
+      return Boolean(value && value.trim().length > 0)
+    }
+    return (
+      !hasPhoto
+      && !stringValue(entry.name)
+      && !stringValue(entry.studentId)
+      && !stringValue(entry.faculty)
+      && !stringValue(entry.bio)
+      && !stringValue(entry.vision)
+      && !stringValue(entry.mission)
+      && !stringValue(entry.youtubeUrl)
+    )
+  }
+
+  const performRemoveCandidateAt = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      candidateEntries: prev.candidateEntries.filter((_, i) => i !== index),
+    }))
+    setCandidatePhotoFiles((prev) => {
+      const next: Record<number, File> = {}
+      Object.entries(prev).forEach(([key, value]) => {
+        const numericKey = Number(key)
+        if (numericKey < index) next[numericKey] = value
+        else if (numericKey > index) next[numericKey - 1] = value
+      })
+      return next
+    })
+    setCandidatePhotoPreviews((prev) => {
+      const next: Record<number, string> = {}
+      Object.entries(prev).forEach(([key, value]) => {
+        const numericKey = Number(key)
+        if (numericKey < index) next[numericKey] = value
+        else if (numericKey > index) {
+          next[numericKey - 1] = value
+        } else {
+          URL.revokeObjectURL(value)
+        }
+      })
+      return next
+    })
+  }
+
+  const requestRemoveCandidate = (index: number) => {
+    if (isReadOnly) return
+    if (formData.candidateEntries.length <= 1) return
+    const entry = formData.candidateEntries[index]
+    if (!entry) return
+    const photoFile = candidatePhotoFiles[index]
+    const photoPreview = candidatePhotoPreviews[index]
+    if (isCandidateEntryEmpty(entry, photoFile, photoPreview)) {
+      performRemoveCandidateAt(index)
+      return
+    }
+    setPendingRemovalIndex(index)
+    setRemovalDialogOpen(true)
+  }
+
+  const confirmRemoveCandidate = () => {
+    if (pendingRemovalIndex === null) {
+      setRemovalDialogOpen(false)
+      return
+    }
+    performRemoveCandidateAt(pendingRemovalIndex)
+    setPendingRemovalIndex(null)
+    setRemovalDialogOpen(false)
   }
 
   const handleSubmit = async () => {
@@ -489,7 +568,22 @@ export function ProposalForm({
                       <p className="mt-0.5 text-[12px] text-slate-400">Nama, media, visi, dan misi kandidat.</p>
                     </div>
                   </div>
-                  {!isReadOnly ? <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Foto opsional</span> : null}
+                  {!isReadOnly ? (
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Foto opsional</span>
+                      {formData.candidateEntries.length > 1 ? (
+                        <button
+                          type="button"
+                          onClick={() => requestRemoveCandidate(i)}
+                          aria-label={`Hapus kandidat ${i + 1}`}
+                          title="Hapus kandidat"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-4 focus:ring-red-500/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-stretch">
@@ -571,6 +665,23 @@ export function ProposalForm({
           </section>
         </div>
       </div>
+      <ConfirmDialog
+        open={removalDialogOpen}
+        title="Hapus kandidat ini?"
+        description={
+          pendingRemovalIndex !== null
+            ? `Kandidat ${pendingRemovalIndex + 1} sudah memiliki data yang terisi. Menghapus kandidat ini akan membuang foto, visi, misi, dan link YouTube yang sudah diisi. Tindakan ini tidak dapat dibatalkan.`
+            : 'Kandidat sudah terisi. Tindakan ini tidak dapat dibatalkan.'
+        }
+        confirmLabel="Ya, hapus kandidat"
+        cancelLabel="Batal"
+        tone="danger"
+        onConfirm={confirmRemoveCandidate}
+        onCancel={() => {
+          setRemovalDialogOpen(false)
+          setPendingRemovalIndex(null)
+        }}
+      />
     </ScrollReveal>
   )
 }
