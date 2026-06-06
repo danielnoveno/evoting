@@ -370,8 +370,8 @@ export function ProposalForm({
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
-        <div className="space-y-10">
+      <div className="grid gap-x-8 gap-y-10 lg:grid-cols-[minmax(0,1fr)_400px]">
+        <div>
           <section className="space-y-4">
             <h2 className="text-[14px] font-bold uppercase tracking-widest">Informasi Dasar</h2>
             <div className="grid gap-4">
@@ -379,6 +379,17 @@ export function ProposalForm({
               <textarea name="description" value={formData.description} onChange={handleChange} disabled={isReadOnly} placeholder="Deskripsi" className="h-32 w-full rounded-xl bg-slate-100 p-4" />
             </div>
           </section>
+        </div>
+
+        <aside className="space-y-6">
+           <div className="rounded-3xl bg-slate-900 p-8 text-white">
+              <ShieldCheck className="h-10 w-10 text-emerald-400 mb-6" />
+              <h3 className="text-[20px] font-bold">Hardened Logic</h3>
+              <p className="mt-4 text-slate-400 leading-7">Parameter waktu akan dikunci di blockchain untuk menjamin pemilihan tidak dapat dimanipulasi setelah dimulai.</p>
+           </div>
+        </aside>
+
+        <div className="space-y-10 lg:col-span-2">
 
           {!isReadOnly ? (
             <section className="space-y-4">
@@ -541,14 +552,6 @@ export function ProposalForm({
             {errors.candidateCount ? <p className="text-[12px] text-red-500">{errors.candidateCount}</p> : null}
           </section>
         </div>
-        
-        <aside className="space-y-6">
-           <div className="rounded-3xl bg-slate-900 p-8 text-white">
-              <ShieldCheck className="h-10 w-10 text-emerald-400 mb-6" />
-              <h3 className="text-[20px] font-bold">Hardened Logic</h3>
-              <p className="mt-4 text-slate-400 leading-7">Parameter waktu akan dikunci di blockchain untuk menjamin pemilihan tidak dapat dimanipulasi setelah dimulai.</p>
-           </div>
-        </aside>
       </div>
     </ScrollReveal>
   )
