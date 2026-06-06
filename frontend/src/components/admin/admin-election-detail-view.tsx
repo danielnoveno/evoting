@@ -18,6 +18,7 @@ import { useProposalCandidates } from '@/hooks/use-proposal-relations'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useElectionResults } from '@/hooks/use-election-results'
 import { useElectionAuditLogs } from '@/hooks/use-election-audit-logs'
+import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 import type { PublicElectionCandidateResultRecord } from '@/lib/repositories/types'
 
 function QuickActionIcon({ icon }: { icon: 'download' | 'share' | 'audit' | 'report' }) {
@@ -1098,7 +1099,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       >
         <div className="space-y-5">
           <div>
-            <label className="mb-2 block text-[12px] font-semibold text-slate-800">Alamat Wallet</label>
+            <label className="mb-2 block text-[12px] font-semibold text-slate-800">Alamat Wallet <RequiredAsterisk /></label>
             <input
               type="text"
               value={manualWallet}
@@ -1145,7 +1146,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       >
         <div className="space-y-5">
           <div>
-            <label className="mb-2 block text-[12px] font-semibold text-slate-800">File CSV Whitelist</label>
+            <label className="mb-2 block text-[12px] font-semibold text-slate-800">File CSV Whitelist <RequiredAsterisk /></label>
             <input
               type="file"
               accept=".csv"

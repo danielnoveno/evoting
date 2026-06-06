@@ -1,6 +1,7 @@
 import { InputHTMLAttributes, ReactNode, useId, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { PublicFooter } from '@/components/public/site-shell'
+import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
@@ -72,7 +73,10 @@ export function AuthField({ label, error, type = 'text', className, ...props }: 
 
   return (
     <div>
-      <label htmlFor={fieldId} className="mb-1.5 block text-[11px] font-semibold text-slate-800">{label}</label>
+      <label htmlFor={fieldId} className="mb-1.5 block text-[11px] font-semibold text-slate-800">
+        {label}
+        {props.required && <RequiredAsterisk />}
+      </label>
       <div className="relative">
         <input
           id={fieldId}

@@ -10,6 +10,7 @@ import { useProfileByWallet, useSaveCurrentProfile } from '@/hooks/use-profile'
 import { mapProfileToViewModel } from '@/lib/mappers/profileMapper'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { useProfileImageUpload } from '@/hooks/use-profile-upload'
+import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 
 export default function VoterProfilePage() {
   const { showToast } = useToast()
@@ -174,7 +175,7 @@ export default function VoterProfilePage() {
 
           <div className="mt-8 space-y-7">
             <div>
-              <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Nama tampilan (display name)</label>
+              <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Nama tampilan (display name) <RequiredAsterisk /></label>
               <div className="relative">
                  <input value={displayName || resolvedProfile.displayName} onChange={(event) => setDisplayName(event.target.value)} className="h-14 w-full rounded-2xl bg-slate-100 px-4 pr-12 text-[16px] text-slate-900 outline-none focus:bg-white focus:ring-1 focus:ring-slate-300 sm:px-5" />
                 <Pencil className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

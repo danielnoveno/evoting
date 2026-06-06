@@ -558,7 +558,7 @@ function SuperadminAdminManagementContent() {
             />
             <div className="mt-8 grid gap-5 xl:grid-cols-2">
               <label className="block">
-                <SuperadminFieldLabel>Nama Organisasi Admin</SuperadminFieldLabel>
+                <SuperadminFieldLabel required>Nama Organisasi Admin</SuperadminFieldLabel>
                 <SuperadminTextInput
                   value={formData.organizationName}
                   onChange={(event) => setFormData((current) => ({ ...current, organizationName: event.target.value }))}
@@ -567,7 +567,7 @@ function SuperadminAdminManagementContent() {
               </label>
 
               <label className="block">
-                <SuperadminFieldLabel>Email Institusi</SuperadminFieldLabel>
+                <SuperadminFieldLabel required>Email Institusi</SuperadminFieldLabel>
                 <SuperadminTextInput
                   value={formData.email}
                   onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}

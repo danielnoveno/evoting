@@ -10,6 +10,7 @@ import { useProfileByWallet, useSaveCurrentProfile } from '@/hooks/use-profile'
 import { mapProfileToViewModel } from '@/lib/mappers/profileMapper'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { useProfileImageUpload } from '@/hooks/use-profile-upload'
+import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 
 import { useAccount } from 'wagmi'
 
@@ -298,7 +299,7 @@ export default function AdminProfilePage() {
               {/* Display Name */}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 mb-3">
-                  NAMA TAMPILAN (DISPLAY NAME)
+                  NAMA TAMPILAN (DISPLAY NAME) <RequiredAsterisk />
                 </label>
                 <div className="relative">
                   <input 

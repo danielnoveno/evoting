@@ -11,6 +11,7 @@ import { upsertStoredCandidate } from '@/lib/admin-candidate-store'
 import { AdminElectionRecord } from '@/lib/admin-election-data'
 import { ScrollReveal } from '@/components/public/parallax'
 import { useCandidateAssetUpload } from '@/hooks/use-candidate-asset-upload'
+import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 
 type CandidatePrefill = {
   fullName: string
@@ -238,7 +239,7 @@ export function AdminCandidateFormView({
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Informasi Identitas</p>
             <div className="mt-6 space-y-6">
               <div>
-                <label htmlFor="cand-identity-number" className="mb-3 block text-[13px] font-semibold text-slate-700">{form.identityLabel}</label>
+                <label htmlFor="cand-identity-number" className="mb-3 block text-[13px] font-semibold text-slate-700">{form.identityLabel} <RequiredAsterisk /></label>
                 <input
                   id="cand-identity-number"
                   type="text"
@@ -270,7 +271,7 @@ export function AdminCandidateFormView({
           <article className="rounded-[30px] bg-slate-100 p-6">
             <div className="space-y-6">
               <div>
-                <label htmlFor="cand-full-name" className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{form.fullNameLabel}</label>
+                <label htmlFor="cand-full-name" className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{form.fullNameLabel} <RequiredAsterisk /></label>
                 <input
                   id="cand-full-name"
                   type="text"
@@ -303,7 +304,7 @@ export function AdminCandidateFormView({
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Visi & Misi Strategis</p>
             <div className="mt-8 grid sm:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="cand-vision" className="mb-3 block text-[14px] font-semibold text-slate-700">{form.visionLabel}</label>
+                <label htmlFor="cand-vision" className="mb-3 block text-[14px] font-semibold text-slate-700">{form.visionLabel} <RequiredAsterisk /></label>
                 <textarea
                   id="cand-vision"
                   placeholder={form.visionPlaceholder}
@@ -318,7 +319,7 @@ export function AdminCandidateFormView({
                 {errors.vision && <p className="mt-2 text-[12px] text-red-600 font-medium">{errors.vision}</p>}
               </div>
               <div>
-                <label htmlFor="cand-mission" className="mb-3 block text-[14px] font-semibold text-slate-700">{form.missionLabel}</label>
+                <label htmlFor="cand-mission" className="mb-3 block text-[14px] font-semibold text-slate-700">{form.missionLabel} <RequiredAsterisk /></label>
                 <textarea
                   id="cand-mission"
                   placeholder={form.missionPlaceholder}

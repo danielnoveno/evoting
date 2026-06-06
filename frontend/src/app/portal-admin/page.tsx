@@ -440,6 +440,7 @@ function PortalAdminContent() {
                               value={activationPassword}
                               onChange={(event) => setActivationPassword(event.target.value)}
                               placeholder="Minimal 8 karakter"
+                              required
                             />
                             <AuthField
                               label="Konfirmasi Password"
@@ -447,6 +448,7 @@ function PortalAdminContent() {
                               value={activationPasswordConfirm}
                               onChange={(event) => setActivationPasswordConfirm(event.target.value)}
                               placeholder="Ulangi password"
+                              required
                             />
 
                             {activationError && (

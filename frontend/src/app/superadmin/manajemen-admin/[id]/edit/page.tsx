@@ -199,22 +199,22 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
             <SuperadminSectionHeading title="Informasi Admin" description="Gunakan data ini untuk memperbarui informasi admin." />
             <div className="mt-8 grid gap-5 xl:grid-cols-2">
               <label className="block xl:col-span-2">
-                <SuperadminFieldLabel>Nama Lengkap</SuperadminFieldLabel>
+                <SuperadminFieldLabel required>Nama Lengkap</SuperadminFieldLabel>
                 <SuperadminTextInput value={formData.name} onChange={(event) => handleChange('name', event.target.value)} placeholder="Masukkan nama lengkap" />
               </label>
 
               <label className="block xl:col-span-2">
-                <SuperadminFieldLabel>Email Institusi</SuperadminFieldLabel>
+                <SuperadminFieldLabel required>Email Institusi</SuperadminFieldLabel>
                 <SuperadminTextInput value={formData.email} onChange={(event) => handleChange('email', event.target.value)} placeholder="nama@institusi.edu" />
               </label>
 
               <label className="block xl:col-span-2">
-                <SuperadminFieldLabel>Nama Organisasi</SuperadminFieldLabel>
+                <SuperadminFieldLabel required>Nama Organisasi</SuperadminFieldLabel>
                 <SuperadminTextInput value={formData.organizationName} onChange={(event) => handleChange('organizationName', event.target.value)} placeholder="Contoh: HIMAFORKA FTI UAJY" />
               </label>
 
               <label className="block">
-                <SuperadminFieldLabel>Status Akun</SuperadminFieldLabel>
+                <SuperadminFieldLabel required>Status Akun</SuperadminFieldLabel>
                 <SuperadminSelectInput value={formData.status} onChange={(event) => handleChange('status', event.target.value as AdminStatus)}>
                   <option value="Aktif">Aktif</option>
                   <option value="Menunggu">Menunggu</option>

@@ -730,7 +730,7 @@ export function SuperadminMasterVoterPage() {
 
             <div className="mt-8 grid gap-5 xl:grid-cols-2">
               <label className="block">
-                <SuperadminFieldLabel>NIM (Nomor Induk Mahasiswa)</SuperadminFieldLabel>
+                <SuperadminFieldLabel required>NIM (Nomor Induk Mahasiswa)</SuperadminFieldLabel>
                 <SuperadminTextInput
                   value={formData.nim}
                   onChange={(event) => setFormData((current) => ({ ...current, nim: event.target.value }))}
@@ -739,7 +739,7 @@ export function SuperadminMasterVoterPage() {
               </label>
 
               <label className="block">
-                <SuperadminFieldLabel>Nama Lengkap</SuperadminFieldLabel>
+                <SuperadminFieldLabel required>Nama Lengkap</SuperadminFieldLabel>
                 <SuperadminTextInput
                   value={formData.name}
                   onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
@@ -748,7 +748,7 @@ export function SuperadminMasterVoterPage() {
               </label>
 
               <label className="block">
-                <SuperadminFieldLabel>Email Institusi (@students.uajy.ac.id)</SuperadminFieldLabel>
+                <SuperadminFieldLabel required>Email Institusi (@students.uajy.ac.id)</SuperadminFieldLabel>
                 <SuperadminTextInput
                   value={formData.email}
                   onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
@@ -757,7 +757,7 @@ export function SuperadminMasterVoterPage() {
               </label>
 
               <label className="block">
-                <SuperadminFieldLabel>Fakultas / Program Studi</SuperadminFieldLabel>
+                <SuperadminFieldLabel required>Fakultas / Program Studi</SuperadminFieldLabel>
                 <SuperadminTextInput
                   value={formData.faculty}
                   onChange={(event) => setFormData((current) => ({ ...current, faculty: event.target.value }))}

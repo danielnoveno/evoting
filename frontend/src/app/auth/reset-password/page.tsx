@@ -104,6 +104,7 @@ export default function ResetPasswordPage() {
               onChange={(event) => setEmail(event.target.value)}
               placeholder="nama@students.uajy.ac.id"
               error={emailError}
+              required
             />
 
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-[12px] leading-5 text-blue-700">

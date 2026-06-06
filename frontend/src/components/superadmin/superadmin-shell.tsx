@@ -8,6 +8,7 @@ import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/consol
 import { superadminShellContent } from '@/lib/superadmin-data'
 import { usePlatformSettings } from '@/hooks/use-platform-settings'
 import { useLanguage } from '@/lib/contexts/language-context'
+import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 
 export function SuperadminShell({ children }: { children: ReactNode }) {
   const { data: settings } = usePlatformSettings()
@@ -196,8 +197,13 @@ export function SuperadminSectionHeading({ title, description }: { title: string
   )
 }
 
-export function SuperadminFieldLabel({ children }: { children: ReactNode }) {
-  return <span className="mb-3 block text-[11px] uppercase tracking-[0.08em] text-slate-500">{children}</span>
+export function SuperadminFieldLabel({ children, required }: { children: ReactNode; required?: boolean }) {
+  return (
+    <span className="mb-3 block text-[11px] uppercase tracking-[0.08em] text-slate-500">
+      {children}
+      {required && <RequiredAsterisk />}
+    </span>
+  )
 }
 
 export function SuperadminTextInput(

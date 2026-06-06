@@ -10,6 +10,7 @@ import { useSaveProposalDraft } from '@/hooks/use-save-proposal-draft'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { uploadProposalDocument } from '@/lib/repositories/proposalDocumentRepository'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 import type { ProposalCandidateInput, ProposalDraftStatus } from '@/lib/repositories/types'
 
 export interface ProposalFormData {
@@ -462,8 +463,14 @@ export function ProposalForm({
           <section className="space-y-4">
             <h2 className="text-[14px] font-bold uppercase tracking-widest">Informasi Dasar</h2>
             <div className="grid gap-4">
-              <input name="title" value={formData.title} onChange={handleChange} disabled={isReadOnly} placeholder="Nama Pemilihan" className="h-12 w-full rounded-xl bg-slate-100 px-4" />
-              <textarea name="description" value={formData.description} onChange={handleChange} disabled={isReadOnly} placeholder="Deskripsi" className="h-32 w-full rounded-xl bg-slate-100 p-4" />
+              <label className="block">
+                <span className="mb-2 block text-[12px] font-semibold text-slate-600">Nama Pemilihan <RequiredAsterisk /></span>
+                <input name="title" value={formData.title} onChange={handleChange} disabled={isReadOnly} placeholder="Masukkan nama pemilihan..." className="h-12 w-full rounded-xl bg-slate-100 px-4" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-[12px] font-semibold text-slate-600">Deskripsi</span>
+                <textarea name="description" value={formData.description} onChange={handleChange} disabled={isReadOnly} placeholder="Tuliskan deskripsi pemilihan..." className="h-32 w-full rounded-xl bg-slate-100 p-4" />
+              </label>
             </div>
           </section>
         </div>
@@ -527,15 +534,15 @@ export function ProposalForm({
             <h2 className="text-[14px] font-bold uppercase tracking-widest">Parameter Waktu On-Chain</h2>
             <div className="grid sm:grid-cols-3 gap-4">
               <div>
-                <label className="text-[10px] font-bold uppercase text-slate-500">Mulai Commit</label>
+                <label className="text-[10px] font-bold uppercase text-slate-500">Mulai Commit <RequiredAsterisk /></label>
                 <input type="datetime-local" name="commitDate" value={formData.commitDate} onChange={handleChange} disabled={isReadOnly} className="h-12 w-full rounded-xl bg-slate-100 px-4" />
               </div>
               <div>
-                <label className="text-[10px] font-bold uppercase text-slate-500">Mulai Reveal</label>
+                <label className="text-[10px] font-bold uppercase text-slate-500">Mulai Reveal <RequiredAsterisk /></label>
                 <input type="datetime-local" name="revealDate" value={formData.revealDate} onChange={handleChange} disabled={isReadOnly} className="h-12 w-full rounded-xl bg-slate-100 px-4" />
               </div>
               <div>
-                <label className="text-[10px] font-bold uppercase text-slate-500">Selesai (Off-Chain)</label>
+                <label className="text-[10px] font-bold uppercase text-slate-500">Selesai (Off-Chain) <RequiredAsterisk /></label>
                 <input type="datetime-local" name="endedDate" value={formData.endedDate} onChange={handleChange} disabled={isReadOnly} className="h-12 w-full rounded-xl bg-slate-100 px-4" />
               </div>
             </div>
@@ -631,7 +638,7 @@ export function ProposalForm({
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <label className="block">
-                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama lengkap</span>
+                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama lengkap <RequiredAsterisk /></span>
                       <input value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Contoh: Daniel Noveno" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                     </label>
                     <label className="block">

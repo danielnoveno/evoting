@@ -73,6 +73,7 @@ export default function UpdatePasswordPage() {
               value={password} 
               onChange={(event) => setPassword(event.target.value)} 
               placeholder="Minimal 6 karakter"
+              required
             />
 
             <AuthField 
@@ -82,6 +83,7 @@ export default function UpdatePasswordPage() {
               value={confirmPassword} 
               onChange={(event) => setConfirmPassword(event.target.value)} 
               placeholder="Ulangi password baru"
+              required
             />
             
             {formError ? (
