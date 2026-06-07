@@ -572,7 +572,7 @@ export function ProposalForm({
                     <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-[13px] font-semibold text-slate-700">{i + 1}</span>
                     <div>
                       <p className="text-[14px] font-semibold text-slate-900">Profil Kandidat {i + 1}</p>
-                      <p className="mt-0.5 text-[12px] text-slate-400">Nama, media, visi, dan misi kandidat.</p>
+                      <p className="mt-0.5 text-[12px] text-slate-400">Foto, identitas, bio, visi, misi, dan media kandidat.</p>
                     </div>
                   </div>
                   {!isReadOnly ? (
@@ -649,8 +649,20 @@ export function ProposalForm({
                       <input value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Contoh: Daniel Noveno" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                     </label>
                     <label className="block">
+                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">NPM/NIM <span className="font-normal text-slate-400">(opsional)</span></span>
+                      <input value={c.studentId || ''} onChange={e => handleCandidateChange(i, 'studentId', e.target.value)} disabled={isReadOnly} placeholder="Contoh: 220711663" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Fakultas/Prodi <span className="font-normal text-slate-400">(opsional)</span></span>
+                      <input value={c.faculty || ''} onChange={e => handleCandidateChange(i, 'faculty', e.target.value)} disabled={isReadOnly} placeholder="Contoh: FTI / Informatika" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                    </label>
+                    <label className="block">
                       <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Link video YouTube <span className="font-normal text-slate-400">(opsional)</span></span>
                       <input value={c.youtubeUrl || ''} onChange={e => handleCandidateChange(i, 'youtubeUrl', e.target.value)} disabled={isReadOnly} placeholder="https://youtube.com/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                    </label>
+                    <label className="block sm:col-span-2">
+                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Bio singkat <span className="font-normal text-slate-400">(opsional)</span></span>
+                      <textarea value={c.bio || ''} onChange={e => handleCandidateChange(i, 'bio', e.target.value)} disabled={isReadOnly} placeholder="Tuliskan latar belakang atau pengalaman organisasi kandidat secara singkat." className="min-h-[96px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                     </label>
                     <label className="block sm:col-span-2">
                       <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Visi kandidat</span>
