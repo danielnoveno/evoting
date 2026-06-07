@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck, QrCode } from 'lucide-react'
+import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck, QrCode, WalletCards } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton, SuperadminTextInput } from '@/components/superadmin/superadmin-shell'
@@ -15,9 +15,18 @@ import { useProfileImageUpload } from '@/hooks/use-profile-upload'
 import { useMFAFactors, useEnrollMFA, useVerifyMFA, useUnenrollMFA } from '@/hooks/use-mfa'
 import { usePlatformSettings, useUpdatePlatformSettings } from '@/hooks/use-platform-settings'
 import { useResetPassword } from '@/hooks/use-auth-session'
+import { useAccount, useBalance } from 'wagmi'
 
 export default function SuperadminProfilePage() {
   const { showToast } = useToast()
+  const { address: connectedWallet, isConnected, chainId } = useAccount()
+  const walletBalanceQuery = useBalance({
+    address: connectedWallet,
+    query: {
+      enabled: Boolean(connectedWallet),
+      refetchInterval: 30_000,
+    },
+  })
   const { platform, setPlatform } = useSuperadminPlatformStore()
   const { data: profile, isLoading: isProfileLoading } = useCurrentProfile()
   
@@ -169,6 +178,10 @@ export default function SuperadminProfilePage() {
   }
 
   const initials = profile?.displayName ? getAdminInitials(profile.displayName) : 'SA'
+  const balanceLabel = walletBalanceQuery.data
+    ? `${Number(walletBalanceQuery.data.formatted).toLocaleString('id-ID', { maximumFractionDigits: 6 })} ${walletBalanceQuery.data.symbol}`
+    : '-'
+  const isBaseSepolia = chainId === 84532
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -272,7 +285,38 @@ export default function SuperadminProfilePage() {
                 <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Blockchain Identity</p>
                 <p className="mt-2 font-mono text-[14px] break-all text-slate-100">{profile?.walletAddress || '-'}</p>
               </div>
-              
+
+              <div className="rounded-[24px] border border-slate-200 bg-white px-5 py-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                    <WalletCards className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Saldo Wallet Tersambung</p>
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${isConnected && isBaseSepolia ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {isConnected ? (isBaseSepolia ? 'Base Sepolia' : 'Network perlu dicek') : 'Belum tersambung'}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-[24px] font-semibold tracking-[-0.03em] text-slate-900">
+                      {walletBalanceQuery.isLoading ? 'Memuat saldo...' : balanceLabel}
+                    </p>
+                    <p className="mt-2 font-mono text-[12px] break-all text-slate-500">
+                      {connectedWallet ?? 'Sambungkan Smart Wallet superadmin untuk melihat saldo gas deploy.'}
+                    </p>
+                    {walletBalanceQuery.isError ? (
+                      <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-[13px] leading-6 text-red-700">
+                        Saldo belum bisa dibaca. Cek koneksi wallet dan jaringan Base Sepolia.
+                      </p>
+                    ) : (
+                      <p className="mt-3 rounded-2xl bg-slate-50 px-3 py-2 text-[13px] leading-6 text-slate-600">
+                        Saldo ini digunakan sebagai gas fee saat superadmin melakukan deploy pemilihan. Angka diperbarui otomatis berkala.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+               
               <div className="flex gap-3">
                 <button
                   type="button"
