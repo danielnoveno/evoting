@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   X,
   Copy,
+  AlertTriangle,
 } from 'lucide-react'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -38,6 +39,18 @@ function sameWalletAddress(left: string | null | undefined, right: string | null
 function resolveRedirectTarget(redirectParam: string | null) {
   if (redirectParam?.startsWith('/')) return redirectParam
   return '/pemilih'
+}
+
+function getWalletConnectionErrorMessage(error: { message?: string }) {
+  const message = error.message?.toLowerCase() ?? ''
+  if (message.includes('window') || message.includes('popup') || message.includes('permission')) {
+    return 'Browser memerlukan izin untuk membuka jendela dompet. Klik tombol sambungkan lagi, lalu izinkan jendela yang muncul.'
+  }
+  if (message.includes('rejected') || message.includes('denied') || message.includes('cancel')) {
+    return 'Penyambungan dompet dibatalkan. Klik sambungkan lagi jika ingin melanjutkan.'
+  }
+
+  return 'Coba lagi dari perangkat atau browser yang mendukung Smart Wallet.'
 }
 
 function ConnectWalletContent() {
@@ -266,7 +279,7 @@ function ConnectWalletContent() {
           showToast({
             tone: 'error',
             title: 'Gagal menyambungkan Smart Wallet',
-            description: error.message || 'Coba lagi dari perangkat atau browser yang mendukung Coinbase Smart Wallet.',
+            description: getWalletConnectionErrorMessage(error),
           })
         },
       },
@@ -421,6 +434,18 @@ function ConnectWalletContent() {
                               {item}
                             </div>
                           ))}
+                        </div>
+
+                        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                          <div className="flex gap-3">
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                            <div>
+                              <p className="text-[12px] font-semibold">Jika muncul dialog dari Base Account</p>
+                              <p className="mt-1 text-[12px] leading-5 text-amber-800">
+                                Itu adalah permintaan izin dari penyedia dompet. Ikuti tombol konfirmasi pada dialog tersebut untuk melanjutkan. Jika tidak sengaja tertutup, klik tombol sambungkan lagi.
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}

@@ -17,6 +17,7 @@ import {
   Copy,
   KeyRound,
   ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { AuthField } from '@/components/auth/auth-shell'
@@ -34,6 +35,18 @@ import { useActivateAdminInvite, useAdminInvitePreview } from '@/hooks/use-admin
 function sameWalletAddress(left: string | null | undefined, right: string | null | undefined): boolean {
   if (!left || !right) return false
   return left.trim().toLowerCase() === right.trim().toLowerCase()
+}
+
+function getWalletConnectionErrorMessage(error: { message?: string }) {
+  const message = error.message?.toLowerCase() ?? ''
+  if (message.includes('window') || message.includes('popup') || message.includes('permission')) {
+    return 'Browser memerlukan izin untuk membuka jendela dompet. Klik tombol sambungkan lagi, lalu izinkan jendela yang muncul.'
+  }
+  if (message.includes('rejected') || message.includes('denied') || message.includes('cancel')) {
+    return 'Penyambungan dompet dibatalkan. Klik sambungkan lagi jika ingin melanjutkan.'
+  }
+
+  return 'Coba lagi dari perangkat atau browser yang mendukung Smart Wallet.'
 }
 
 function PortalAdminContent() {
@@ -240,7 +253,7 @@ function PortalAdminContent() {
           showToast({
             tone: 'error',
             title: 'Gagal menyambungkan dompet admin',
-            description: error.message || 'Coba lagi dari perangkat atau browser yang mendukung Coinbase Smart Wallet.',
+            description: getWalletConnectionErrorMessage(error),
           })
         },
       },
@@ -489,6 +502,18 @@ function PortalAdminContent() {
                             </div>
                           ))}
                         </div>
+
+                        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                          <div className="flex gap-3">
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                            <div>
+                              <p className="text-[12px] font-semibold">Jika muncul dialog dari Base Account</p>
+                              <p className="mt-1 text-[12px] leading-5 text-amber-800">
+                                Itu adalah permintaan izin dari penyedia dompet. Ikuti tombol konfirmasi pada dialog tersebut untuk melanjutkan. Jika tidak sengaja tertutup, klik tombol sambungkan lagi.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
 
@@ -544,7 +569,7 @@ function PortalAdminContent() {
                                 <path d="M12 12H23V23H12V12Z" fill="#FFB900"/>
                               </svg>
                             )}
-                            Login Staf Institusi
+                            Masuk sebagai Staf Institusi
                           </button>
 
                           <button
@@ -553,7 +578,7 @@ function PortalAdminContent() {
                             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
                           >
                             {googleLoginMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <img src="https://www.google.com/favicon.ico" className="h-4 w-4" alt="Google" />}
-                            Login dengan Google
+                            Masuk dengan Google
                           </button>
                         </div>
 
