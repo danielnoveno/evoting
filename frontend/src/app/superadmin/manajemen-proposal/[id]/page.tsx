@@ -24,6 +24,35 @@ import type { Address } from 'viem'
 
 type DecisionType = 'approve' | 'revise' | 'reject' | 'deploy' | null
 
+const BASE_SEPOLIA_CHAIN_ID = 84532
+
+function getDeployErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? '')
+  const lowerMessage = message.toLowerCase()
+
+  if (lowerMessage.includes('user rejected') || lowerMessage.includes('rejected request')) {
+    return 'Transaksi dibatalkan dari wallet.'
+  }
+
+  if (lowerMessage.includes('not connected') || lowerMessage.includes('connector not connected')) {
+    return 'Wallet belum tersambung. Sambungkan Smart Wallet superadmin terlebih dahulu.'
+  }
+
+  if (lowerMessage.includes('notsuperadmin')) {
+    return 'Wallet tersambung bukan superadmin kontrak registry.'
+  }
+
+  if (lowerMessage.includes('invalidcandidatecount')) {
+    return 'Jumlah kandidat belum valid, sehingga pemilihan belum bisa di-deploy.'
+  }
+
+  if (lowerMessage.includes('chain') || lowerMessage.includes('network')) {
+    return 'Jaringan wallet belum Base Sepolia. Ubah network ke Base Sepolia lalu coba lagi.'
+  }
+
+  return 'Transaksi deploy belum berhasil. Pastikan wallet superadmin tersambung, jaringan Base Sepolia aktif, dan saldo gas tersedia.'
+}
+
 export default function SuperadminProposalDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { showToast } = useToast()
@@ -37,6 +66,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
     createElectionForAdmin,
     parseElectionSpaceCreated,
     userAddress,
+    isConnected,
+    chainId,
+    isSuperAdmin,
     isWritePending, 
     isConfirming, 
     isConfirmed, 
@@ -99,6 +131,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+  const [pendingOnchainDecision, setPendingOnchainDecision] = useState<DecisionType>(null)
 
   const proposalDocumentsForPreview = proposal?.documents ?? []
   const selectedPreviewDocument = proposalDocumentsForPreview.find((document) => document.id === previewDocumentId) ?? proposalDocumentsForPreview[0]
@@ -168,12 +201,12 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   }, [proposalDocumentsForPreview])
 
   useEffect(() => {
-    if (isConfirmed && hash && receipt && decisionType && !updateStatus.isPending) {
-      const deployment = decisionType === 'approve' || decisionType === 'deploy'
+    if (isConfirmed && hash && receipt && pendingOnchainDecision && !updateStatus.isPending) {
+      const deployment = pendingOnchainDecision === 'approve' || pendingOnchainDecision === 'deploy'
         ? parseElectionSpaceCreated(receipt)
         : null
       const ownerWallet = liveProposal?.createdByWalletAddress
-      
+       
       if (deployment && ownerWallet) {
         updateStatus.mutate({ 
           id: params.id, 
@@ -197,7 +230,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               tone: 'success',
             })
             resetWrite()
-            setDecisionType(null)
+            setPendingOnchainDecision(null)
             window.setTimeout(() => router.push('/superadmin/manajemen-pemilihan'), 1500)
           },
           onError: () => {
@@ -207,12 +240,20 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               tone: 'error',
             })
             resetWrite()
-            setDecisionType(null)
+            setPendingOnchainDecision(null)
           }
         })
+      } else {
+        showToast({
+          title: 'Deploy terkonfirmasi, event tidak terbaca',
+          description: 'Transaksi sudah masuk blockchain, tetapi alamat Space belum berhasil dibaca dari receipt. Cek tx hash di wallet/Basescan.',
+          tone: 'error',
+        })
+        resetWrite()
+        setPendingOnchainDecision(null)
       }
     }
-  }, [isConfirmed, hash, receipt, decisionType, params.id, updateStatus, showToast, router, resetWrite, parseElectionSpaceCreated, liveProposal?.createdByWalletAddress, userAddress])
+  }, [isConfirmed, hash, receipt, pendingOnchainDecision, params.id, updateStatus, showToast, router, resetWrite, parseElectionSpaceCreated, liveProposal?.createdByWalletAddress, userAddress])
 
   if (proposalQuery.isLoading) return <div className="p-20 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto text-slate-400" /></div>
   if (!proposal) notFound()
@@ -228,8 +269,40 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const readinessScore = proposal.objectives.filter((item) => item.tone === 'success').length
   const totalChecks = proposal.objectives.length
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = async () => {
     if (decisionType === 'approve' || decisionType === 'deploy') {
+      const activeDecision = decisionType
+
+      if (!isConnected || !userAddress) {
+        showToast({
+          title: 'Wallet belum tersambung',
+          description: 'Sambungkan Smart Wallet superadmin terlebih dahulu, lalu ulangi aksi deploy.',
+          tone: 'error',
+        })
+        setDecisionType(null)
+        return
+      }
+
+      if (chainId !== BASE_SEPOLIA_CHAIN_ID) {
+        showToast({
+          title: 'Network belum sesuai',
+          description: 'Ubah jaringan wallet ke Base Sepolia sebelum deploy pemilihan.',
+          tone: 'error',
+        })
+        setDecisionType(null)
+        return
+      }
+
+      if (isSuperAdmin !== true) {
+        showToast({
+          title: isSuperAdmin === false ? 'Wallet bukan superadmin kontrak' : 'Validasi wallet belum siap',
+          description: isSuperAdmin === false ? 'Gunakan wallet yang menjadi superadmin pada VoteChain Registry.' : 'Tunggu beberapa detik sampai peran wallet terbaca, lalu coba deploy lagi.',
+          tone: 'error',
+        })
+        setDecisionType(null)
+        return
+      }
+
       if (!liveProposal?.createdByWalletAddress) {
         showToast({
           title: 'Wallet admin belum tersedia',
@@ -239,12 +312,30 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         setDecisionType(null)
         return
       }
-      createElectionForAdmin(
-        liveProposal.createdByWalletAddress as Address,
-        liveProposal.title,
-        `supabase://proposal-drafts/${liveProposal.id}`,
-        liveProposal.candidateCount,
-      )
+
+      setDecisionType(null)
+      setPendingOnchainDecision(activeDecision)
+      resetWrite()
+      try {
+        const txHash = await createElectionForAdmin(
+          liveProposal.createdByWalletAddress as Address,
+          liveProposal.title,
+          `supabase://proposal-drafts/${liveProposal.id}`,
+          liveProposal.candidateCount,
+        )
+        showToast({
+          title: 'Transaksi deploy dikirim',
+          description: `Menunggu konfirmasi Base Sepolia. Tx: ${txHash.slice(0, 10)}...`,
+          tone: 'info',
+        })
+      } catch (error) {
+        showToast({
+          title: 'Transaksi deploy gagal',
+          description: getDeployErrorMessage(error),
+          tone: 'error',
+        })
+        setPendingOnchainDecision(null)
+      }
     } else {
       // Off-chain actions
       const title = decisionType === 'revise' ? 'Permintaan revisi dikirim' : 'Proposal ditolak'
@@ -255,6 +346,10 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           showToast({ tone: decisionType === 'reject' ? 'error' : 'success', title, description: 'Status proposal berhasil diperbarui.' })
           setDecisionType(null)
           window.setTimeout(() => router.push('/superadmin/manajemen-proposal'), 500)
+        },
+        onError: (error) => {
+          const description = error instanceof Error ? error.message : 'Status proposal gagal diperbarui.'
+          showToast({ tone: 'error', title: 'Gagal memperbarui status', description })
         }
       })
     }
@@ -297,21 +392,21 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             {proposal.badge === 'Disetujui' ? (
               <button
                 type="button"
-                disabled={isWritePending || isConfirming}
+                disabled={isWritePending || isConfirming || pendingOnchainDecision !== null}
                 onClick={() => setDecisionType('deploy')}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 text-[15px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
               >
-                {isWritePending || isConfirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+                 {isWritePending || isConfirming || pendingOnchainDecision ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
                 Deploy ke Blockchain
               </button>
             ) : (
               <button
                 type="button"
-                disabled={isWritePending || isConfirming || proposal.badge === 'Selesai' || proposal.badge === 'Berjalan'}
+                 disabled={isWritePending || isConfirming || pendingOnchainDecision !== null || proposal.badge === 'Selesai' || proposal.badge === 'Berjalan'}
                 onClick={() => setDecisionType('approve')}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-5 text-[15px] font-medium text-white hover:bg-slate-800 disabled:opacity-50"
               >
-                {isWritePending || isConfirming ? <Loader2 className="h-4 w-4 animate-spin" /> : <ThumbsUp className="h-4 w-4" />}
+                 {isWritePending || isConfirming || pendingOnchainDecision ? <Loader2 className="h-4 w-4 animate-spin" /> : <ThumbsUp className="h-4 w-4" />}
                 Setujui & Deploy
               </button>
             )}
@@ -326,9 +421,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           <div>
             <h2 className="text-[15px] font-semibold text-red-900">Gagal memproses transaksi</h2>
             <p className="mt-1 text-[13px] text-red-800 leading-relaxed">
-              {writeError.message.includes('User rejected') 
-                ? 'Transaksi dibatalkan oleh admin.' 
-                : 'Terjadi kesalahan on-chain. Pastikan Anda masuk sebagai Super Admin yang sah di wallet.'}
+              {getDeployErrorMessage(writeError)}
             </p>
           </div>
         </section>
@@ -601,27 +694,27 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             <div className="mt-6 space-y-3">
               <button 
                 type="button" 
-                disabled={isWritePending || isConfirming || proposal.badge === 'Disetujui' || proposal.badge === 'Berjalan'}
+                disabled={isWritePending || isConfirming || pendingOnchainDecision !== null || proposal.badge === 'Disetujui' || proposal.badge === 'Berjalan'}
                 onClick={() => setDecisionType('approve')} 
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-6 text-[15px] font-medium text-white hover:bg-slate-800 disabled:opacity-50"
               >
-                <ThumbsUp className="h-4 w-4" />
+                {isWritePending || isConfirming || pendingOnchainDecision ? <Loader2 className="h-4 w-4 animate-spin" /> : <ThumbsUp className="h-4 w-4" />}
                 Setujui & Deploy
               </button>
               {proposal.badge === 'Disetujui' && (
                 <button 
                   type="button" 
-                  disabled={isWritePending || isConfirming}
+                  disabled={isWritePending || isConfirming || pendingOnchainDecision !== null}
                   onClick={() => setDecisionType('deploy')} 
                   className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 text-[15px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
                 >
-                  <Rocket className="h-4 w-4" />
+                  {isWritePending || isConfirming || pendingOnchainDecision ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
                   Deploy Pemilihan
                 </button>
               )}
               <button 
                 type="button" 
-                disabled={isWritePending || isConfirming || proposal.badge === 'Berjalan'}
+                disabled={isWritePending || isConfirming || pendingOnchainDecision !== null || proposal.badge === 'Berjalan'}
                 onClick={() => setDecisionType('revise')} 
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-200"
               >
@@ -630,7 +723,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               </button>
               <button 
                 type="button" 
-                disabled={isWritePending || isConfirming || proposal.badge === 'Berjalan'}
+                disabled={isWritePending || isConfirming || pendingOnchainDecision !== null || proposal.badge === 'Berjalan'}
                 onClick={() => setDecisionType('reject')} 
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-red-50 px-6 text-[15px] font-medium text-red-600 hover:bg-red-100"
               >

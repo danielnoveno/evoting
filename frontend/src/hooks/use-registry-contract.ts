@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback } from 'react'
 import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
 import { decodeEventLog, type Address, type Log } from 'viem'
 import VoteChainRegistryArtifact from '@/lib/abi/VoteChainRegistry.json'
@@ -16,10 +17,11 @@ interface ElectionSpaceCreatedEvent {
 }
 
 export function useRegistryContract() {
-  const { address: userAddress } = useAccount()
+  const { address: userAddress, isConnected, chainId } = useAccount()
 
   const { 
     writeContract, 
+    writeContractAsync,
     data: hash, 
     isPending: isWritePending, 
     error: writeError,
@@ -64,21 +66,21 @@ export function useRegistryContract() {
     })
   }
 
-  const createElectionForAdmin = (
+  const createElectionForAdmin = useCallback((
     spaceAdmin: Address,
     title: string,
     metadataURI: string,
     candidateCount: number
   ) => {
-    writeContract({
+    return writeContractAsync({
       address: REGISTRY_ADDRESS as Address,
       abi: registryAbi,
       functionName: 'createElectionForAdmin',
       args: [spaceAdmin, title, metadataURI, BigInt(candidateCount)],
     })
-  }
+  }, [writeContractAsync])
 
-  const parseElectionSpaceCreated = (receipt?: { logs?: Log[] } | null): ElectionSpaceCreatedEvent | null => {
+  const parseElectionSpaceCreated = useCallback((receipt?: { logs?: Log[] } | null): ElectionSpaceCreatedEvent | null => {
     if (!receipt || !receipt.logs) return null
     for (const log of receipt.logs) {
       if (log.address.toLowerCase() !== REGISTRY_ADDRESS.toLowerCase()) continue
@@ -104,7 +106,7 @@ export function useRegistryContract() {
       }
     }
     return null
-  }
+  }, [])
 
   const submitProposal = (
     title: string,
@@ -124,6 +126,8 @@ export function useRegistryContract() {
   return {
     isSuperAdmin,
     userAddress,
+    isConnected,
+    chainId,
     reviewProposal,
     createElection,
     createElectionForAdmin,
