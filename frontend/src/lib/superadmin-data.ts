@@ -35,7 +35,7 @@ export interface SuperadminProposalDetail {
   objectives: Array<{ id: string; title: string; description: string; tone: 'success' | 'danger' }>
   riskProfile: { level: string; note: string; items: Array<{ label: string; status: string }> }
   timeline: Array<{ id: string; title: string; actor: string; time: string }>
-  documents: Array<{ id: string; name: string; meta: string; path?: string }>
+  documents: Array<{ id: string; name: string; meta: string; path?: string; contentType?: string; documentType?: string; sizeLabel?: string; uploadedAt?: string }>
 }
 export interface SuperadminRiskAlert { 
   id: string; 

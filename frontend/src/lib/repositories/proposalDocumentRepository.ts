@@ -123,3 +123,18 @@ export async function createProposalDocumentSignedUrl(filePath: string, download
 
   return data.signedUrl
 }
+
+export async function createProposalDocumentPreviewUrl(filePath: string): Promise<string> {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const { data, error } = await client.storage
+    .from(PROPOSAL_DOCUMENT_BUCKET)
+    .createSignedUrl(filePath, 60 * 5)
+
+  if (error || !data?.signedUrl) {
+    throw new RepositoryError('Gagal membuat pratinjau dokumen. Coba lagi.')
+  }
+
+  return data.signedUrl
+}

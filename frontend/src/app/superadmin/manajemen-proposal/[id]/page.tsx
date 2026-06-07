@@ -1,6 +1,6 @@
 'use client'
 
-import { BadgeCheck, CalendarDays, Check, CircleAlert, Download, ExternalLink, FileText, Landmark, ListChecks, ShieldCheck, ThumbsDown, ThumbsUp, Loader2, Rocket } from 'lucide-react'
+import { BadgeCheck, CalendarDays, Check, CircleAlert, Download, ExternalLink, FileText, Landmark, ListChecks, ShieldCheck, ThumbsDown, ThumbsUp, Loader2, Rocket, Eye, UserRound, Youtube, Users, Clock3 } from 'lucide-react'
 import { notFound, useRouter } from 'next/navigation'
 import { useMemo, useState, useEffect } from 'react'
 import {
@@ -15,8 +15,9 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
 import { useProposalDocuments } from '@/hooks/use-proposal-documents'
+import { useProposalCandidates } from '@/hooks/use-proposal-relations'
 import { REGISTRY_ADDRESS, useRegistryContract } from '@/hooks/use-registry-contract'
-import { createProposalDocumentSignedUrl } from '@/lib/repositories/proposalDocumentRepository'
+import { createProposalDocumentPreviewUrl, createProposalDocumentSignedUrl } from '@/lib/repositories/proposalDocumentRepository'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import type { SuperadminProposalDetail } from '@/lib/superadmin-data'
 import type { Address } from 'viem'
@@ -28,6 +29,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const { showToast } = useToast()
   const proposalQuery = useProposalDraft(params.id)
   const proposalDocumentsQuery = useProposalDocuments(params.id)
+  const proposalCandidatesQuery = useProposalCandidates(params.id)
   const updateStatus = useUpdateProposalStatus()
   
   // Real contract integration
@@ -46,6 +48,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
 
   const liveProposal = proposalQuery.data
   const proposalDocuments = proposalDocumentsQuery.data ?? []
+  const proposalCandidates = proposalCandidatesQuery.data ?? []
 
   const proposal = useMemo<SuperadminProposalDetail | null>(() => {
     if (!liveProposal) return null
@@ -83,12 +86,23 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         name: document.fileName,
         meta: `Dokumen Pendukung • ${(document.fileSize / 1024 / 1024).toFixed(2)} MB • ${new Date(document.createdAt).toLocaleDateString('id-ID')}`,
         path: document.filePath,
+        contentType: document.contentType,
+        documentType: document.documentType,
+        sizeLabel: `${(document.fileSize / 1024 / 1024).toFixed(2)} MB`,
+        uploadedAt: new Date(document.createdAt).toLocaleString('id-ID'),
       })),
     }
   }, [liveProposal, proposalDocuments])
   
   const [decisionType, setDecisionType] = useState<DecisionType>(null)
   const [note, setNote] = useState('')
+  const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+
+  const proposalDocumentsForPreview = proposal?.documents ?? []
+  const selectedPreviewDocument = proposalDocumentsForPreview.find((document) => document.id === previewDocumentId) ?? proposalDocumentsForPreview[0]
+  const canPreviewSelectedDocument = Boolean(selectedPreviewDocument?.contentType?.includes('pdf') || selectedPreviewDocument?.name.toLowerCase().endsWith('.pdf'))
 
   const handleDownload = async (path?: string, fileName?: string) => {
     if (!path) {
@@ -115,6 +129,43 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       showToast({ tone: 'error', title: 'Gagal mengunduh', description: reason })
     }
   }
+
+  const handlePreview = async (documentId: string, path?: string, contentType?: string, fileName?: string) => {
+    setPreviewDocumentId(documentId)
+    const canPreview = Boolean(contentType?.includes('pdf') || fileName?.toLowerCase().endsWith('.pdf'))
+
+    if (!path) {
+      setPreviewUrl(null)
+      showToast({ tone: 'info', title: 'Dokumen belum tersedia', description: 'Berkas tidak memiliki lokasi penyimpanan yang bisa dibuka.' })
+      return
+    }
+
+    if (!canPreview) {
+      setPreviewUrl(null)
+      showToast({ tone: 'info', title: 'Pratinjau belum didukung', description: 'Saat ini pratinjau langsung hanya tersedia untuk PDF. Gunakan tombol unduh untuk format lain seperti Word.' })
+      return
+    }
+
+    setIsPreviewLoading(true)
+    try {
+      const url = await createProposalDocumentPreviewUrl(path)
+      setPreviewUrl(url)
+    } catch (error) {
+      console.error('[superadmin] Gagal menyiapkan pratinjau dokumen:', error)
+      const reason = error instanceof Error ? error.message : 'Pratinjau dokumen belum dapat dibuka.'
+      showToast({ tone: 'error', title: 'Gagal membuka pratinjau', description: reason })
+    } finally {
+      setIsPreviewLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const firstDocument = proposalDocumentsForPreview[0]
+    if (!previewDocumentId && firstDocument?.path) {
+      void handlePreview(firstDocument.id, firstDocument.path, firstDocument.contentType, firstDocument.name)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proposalDocumentsForPreview])
 
   useEffect(() => {
     if (isConfirmed && hash && receipt && decisionType && !updateStatus.isPending) {
@@ -309,6 +360,102 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         </article>
       </StaggerContainer>
 
+      <ScrollReveal variant="fade-up" delay={150} duration={800}>
+        <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-7">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <UserRound className="h-5 w-5 text-slate-700" />
+                <h2 className="text-[20px] font-semibold text-slate-900">Profil Kandidat</h2>
+              </div>
+              <p className="mt-2 text-[14px] leading-6 text-slate-600">Detail kandidat yang akan ikut dalam ruang pemilihan jika proposal disetujui.</p>
+            </div>
+            <span className="inline-flex w-fit items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-[13px] font-medium text-slate-700">
+              <Users className="h-4 w-4" />
+              {proposalCandidates.length} kandidat dimuat
+            </span>
+          </div>
+
+          {proposalCandidatesQuery.isLoading ? (
+            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+              {[0, 1].map((item) => <div key={item} className="h-56 animate-pulse rounded-[24px] bg-slate-100" />)}
+            </div>
+          ) : proposalCandidates.length === 0 ? (
+            <div className="mt-6">
+              <SuperadminEmptyState title="Kandidat belum tersedia" description="Admin belum menambahkan profil kandidat pada proposal ini." />
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-5 lg:grid-cols-2">
+              {proposalCandidates.map((candidate, index) => (
+                <article key={candidate.id} className="overflow-hidden rounded-[28px] border border-slate-200 bg-slate-50">
+                  <div className="grid gap-0 md:grid-cols-[180px_minmax(0,1fr)]">
+                    <div className="min-h-[220px] bg-slate-100">
+                      {candidate.avatarPath ? (
+                        <img src={candidate.avatarPath} alt={`Foto ${candidate.fullName}`} className="h-full min-h-[220px] w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full min-h-[220px] items-center justify-center text-slate-400">
+                          <UserRound className="h-12 w-12" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-5">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat {index + 1}</p>
+                          <h3 className="mt-2 text-[20px] font-semibold text-slate-900">{candidate.fullName}</h3>
+                        </div>
+                        <span className="rounded-xl bg-white px-3 py-1.5 font-mono text-[12px] text-slate-600">ID {candidate.candidateLocalId}</span>
+                      </div>
+
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-2xl bg-white p-3">
+                          <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">NPM/NIM</p>
+                          <p className="mt-1 text-[14px] font-semibold text-slate-900">{candidate.studentId || 'Belum diisi'}</p>
+                        </div>
+                        <div className="rounded-2xl bg-white p-3">
+                          <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Fakultas/Prodi</p>
+                          <p className="mt-1 text-[14px] font-semibold text-slate-900">{candidate.faculty || 'Belum diisi'}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 space-y-4 text-[14px] leading-6 text-slate-700">
+                        <div>
+                          <p className="font-semibold text-slate-900">Bio singkat</p>
+                          <p className="mt-1">{candidate.bio || 'Bio kandidat belum diisi oleh admin.'}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-900">Visi</p>
+                          <p className="mt-1">{candidate.vision || 'Visi kandidat belum diisi oleh admin.'}</p>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-slate-900">Misi</p>
+                          {candidate.mission.length > 0 ? (
+                            <ol className="mt-2 space-y-2">
+                              {candidate.mission.map((mission, missionIndex) => (
+                                <li key={`${candidate.id}-${missionIndex}`} className="flex gap-2">
+                                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-slate-600">{missionIndex + 1}</span>
+                                  <span>{mission}</span>
+                                </li>
+                              ))}
+                            </ol>
+                          ) : <p className="mt-1">Misi kandidat belum diisi oleh admin.</p>}
+                        </div>
+                        {candidate.youtubeUrl && (
+                          <a href={candidate.youtubeUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-900 hover:bg-slate-50">
+                            <Youtube className="h-4 w-4" />
+                            Lihat video profil
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      </ScrollReveal>
+
       <ScrollReveal variant="fade-up" delay={200} duration={800}>
         <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_420px]">
         <div className="space-y-6">
@@ -368,10 +515,10 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               <button
                 type="button"
                 disabled={proposal.documents.length === 0}
-                onClick={() => handleDownload()}
+                onClick={() => handleDownload(proposal.documents[0]?.path, proposal.documents[0]?.name)}
                 className="text-[14px] font-semibold text-slate-700 hover:text-slate-900 disabled:cursor-not-allowed disabled:text-slate-400"
               >
-                {proposal.documents.length === 0 ? 'Tidak ada dokumen' : 'Unduh semua (ZIP)'}
+                {proposal.documents.length === 0 ? 'Tidak ada dokumen' : 'Unduh dokumen aktif'}
               </button>
             </div>
             {proposal.documents.length === 0 ? (
@@ -382,20 +529,22 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                 />
               </div>
             ) : (
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
-                {proposal.documents.map((document) => (
-                  <SuperadminInteractiveCard key={document.id} onClick={() => handleDownload(document.path, document.name)} className="bg-slate-100 px-5 py-5 shadow-none">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
+              <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+                <div className="space-y-3">
+                  {proposal.documents.map((document) => (
+                    <SuperadminInteractiveCard key={document.id} onClick={() => handlePreview(document.id, document.path, document.contentType, document.name)} className={`px-4 py-4 shadow-none ${selectedPreviewDocument?.id === document.id ? 'border-slate-900 bg-white' : 'bg-slate-100'}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
                         <div className="rounded-2xl bg-white p-3 text-slate-700">
                           <FileText className="h-5 w-5" />
                         </div>
-                        <div>
-                          <p className="text-[17px] font-semibold text-slate-900">{document.name}</p>
+                        <div className="min-w-0">
+                          <p className="truncate text-[15px] font-semibold text-slate-900">{document.name}</p>
                           <p className="mt-1 text-[14px] text-slate-500">{document.meta}</p>
+                          <p className="mt-2 inline-flex rounded-lg bg-white px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">{document.documentType === 'recommendation_letter' ? 'Surat rekomendasi' : 'Pendukung'}</p>
                         </div>
                       </div>
-                      <button type="button" onClick={(event) => {
+                      <button aria-label={`Unduh ${document.name}`} type="button" onClick={(event) => {
                         event.stopPropagation()
                         handleDownload(document.path, document.name)
                       }} className="rounded-2xl bg-white p-3 text-slate-700 hover:bg-slate-50">
@@ -403,7 +552,44 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                       </button>
                     </div>
                   </SuperadminInteractiveCard>
-                ))}
+                  ))}
+                </div>
+
+                <div className="min-h-[520px] overflow-hidden rounded-[24px] border border-slate-200 bg-slate-50">
+                  <div className="flex flex-col gap-3 border-b border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="truncate text-[15px] font-semibold text-slate-900">{selectedPreviewDocument?.name ?? 'Pilih dokumen'}</p>
+                      <p className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-slate-500">
+                        <Clock3 className="h-3.5 w-3.5" />
+                        {selectedPreviewDocument?.uploadedAt ?? 'Belum ada waktu unggah'}
+                        {selectedPreviewDocument?.sizeLabel ? <span>• {selectedPreviewDocument.sizeLabel}</span> : null}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" disabled={!selectedPreviewDocument?.path} onClick={() => selectedPreviewDocument && handlePreview(selectedPreviewDocument.id, selectedPreviewDocument.path, selectedPreviewDocument.contentType, selectedPreviewDocument.name)} className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-900 hover:bg-slate-50 disabled:opacity-50">
+                        <Eye className="h-4 w-4" />
+                        Preview
+                      </button>
+                      <button type="button" disabled={!selectedPreviewDocument?.path} onClick={() => handleDownload(selectedPreviewDocument?.path, selectedPreviewDocument?.name)} className="inline-flex h-10 items-center gap-2 rounded-xl bg-slate-900 px-3 text-[13px] font-semibold text-white hover:bg-slate-800 disabled:opacity-50">
+                        <Download className="h-4 w-4" />
+                        Unduh
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex min-h-[456px] items-center justify-center p-4">
+                    {isPreviewLoading ? (
+                      <div className="flex items-center gap-3 text-[14px] text-slate-600"><Loader2 className="h-5 w-5 animate-spin" /> Menyiapkan pratinjau dokumen...</div>
+                    ) : previewUrl && canPreviewSelectedDocument ? (
+                      <iframe title={`Pratinjau ${selectedPreviewDocument?.name ?? 'dokumen'}`} src={previewUrl} className="h-[456px] w-full rounded-2xl border border-slate-200 bg-white" />
+                    ) : (
+                      <div className="max-w-md text-center">
+                        <FileText className="mx-auto h-12 w-12 text-slate-400" />
+                        <h3 className="mt-4 text-[16px] font-semibold text-slate-900">Pratinjau tidak tersedia</h3>
+                        <p className="mt-2 text-[14px] leading-6 text-slate-600">PDF dapat ditampilkan langsung di halaman ini. Untuk dokumen Word atau format lain, gunakan tombol unduh.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </section>
