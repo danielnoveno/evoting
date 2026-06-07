@@ -7,6 +7,7 @@ import { wagmiConfig } from '@/lib/wagmi'
 import { DynamicPageTitle } from '@/components/ui/dynamic-page-title'
 import { ToastProvider } from '@/components/ui/toast-provider'
 import { LanguageProvider } from '@/lib/contexts/language-context'
+import { IdleSessionTimeout } from '@/components/auth/idle-session-timeout'
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
@@ -17,6 +18,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
         <LanguageProvider>
           <ToastProvider>
             <DynamicPageTitle />
+            <IdleSessionTimeout />
             {children}
           </ToastProvider>
         </LanguageProvider>

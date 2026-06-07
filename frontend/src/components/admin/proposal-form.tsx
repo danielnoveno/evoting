@@ -600,23 +600,30 @@ export function ProposalForm({
                         <label
                           onDragOver={(event) => event.preventDefault()}
                           onDrop={(event) => handleCandidatePhotoDrop(i, event)}
-                          className="flex min-h-[240px] w-full flex-1 cursor-pointer flex-col items-center justify-center rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-6 text-center transition-colors duration-150 hover:border-slate-400 hover:bg-slate-50 focus-within:border-slate-900 focus-within:ring-4 focus-within:ring-slate-900/5 lg:min-h-[384px]"
+                          className="relative flex min-h-[240px] w-full flex-1 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[14px] border border-dashed border-slate-300 bg-white text-center transition-colors duration-150 hover:border-slate-400 hover:bg-slate-50 focus-within:border-slate-900 focus-within:ring-4 focus-within:ring-slate-900/5 lg:min-h-[384px]"
                         >
                           <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" className="sr-only" onChange={(event) => handleCandidatePhotoChange(i, event)} />
                           {candidatePhotoPreviews[i] || c.avatarPath ? (
-                            <img
-                              src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''}
-                              alt={`Foto kandidat ${c.name || i + 1}`}
-                              className="mb-3 h-14 w-14 rounded-xl object-cover"
-                            />
+                            <div className="absolute inset-0 h-full w-full">
+                              <img
+                                src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''}
+                                alt={`Foto kandidat ${c.name || i + 1}`}
+                                className="h-full w-full object-cover"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
+                                <p className="text-[13px] font-semibold text-white">Ganti Foto</p>
+                              </div>
+                            </div>
                           ) : (
-                            <Upload className="mb-2.5 h-5 w-5 text-slate-400" />
+                            <div className="flex flex-col items-center px-4 py-6">
+                              <Upload className="mb-2.5 h-5 w-5 text-slate-400" />
+                              <p className="text-[13px] font-semibold leading-5 text-slate-900">Pilih file atau tarik ke sini.</p>
+                              <p className="mt-1 text-[12px] leading-5 text-slate-400">JPG atau PNG, maksimal 5 MB.</p>
+                              <span className="mt-4 inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50">
+                                Pilih File
+                              </span>
+                            </div>
                           )}
-                          <p className="text-[13px] font-semibold leading-5 text-slate-900">Pilih file atau tarik ke sini.</p>
-                          <p className="mt-1 text-[12px] leading-5 text-slate-400">JPG atau PNG, maksimal 5 MB.</p>
-                          <span className="mt-4 inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50">
-                            Pilih File
-                          </span>
                         </label>
                         {(candidatePhotoPreviews[i] || c.avatarPath) ? (
                           <button type="button" onClick={() => removeCandidatePhoto(i)} className="inline-flex h-9 items-center justify-center rounded-xl text-[13px] font-medium text-red-600 hover:bg-red-50">

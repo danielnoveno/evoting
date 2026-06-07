@@ -61,8 +61,13 @@ export async function updateSupabaseSession(request: NextRequest) {
     const { data: { session } } = await client.auth.getSession()
 
     if (!session) {
-      const redirectUrl = new URL('/hubungkan-dompet', request.url)
-      redirectUrl.searchParams.set('redirect', request.nextUrl.pathname)
+      const requiredRole = getRequiredRole(request.nextUrl.pathname)
+      const redirectUrl = requiredRole === 'admin' || requiredRole === 'super_admin'
+        ? new URL('/portal-admin', request.url)
+        : new URL('/hubungkan-dompet', request.url)
+      if (requiredRole === 'voter') {
+        redirectUrl.searchParams.set('redirect', request.nextUrl.pathname)
+      }
       // When redirecting, we MUST include the headers from our 'response' object 
       // which contains any newly set session cookies from a refresh.
       return NextResponse.redirect(redirectUrl, {

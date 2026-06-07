@@ -204,7 +204,7 @@ export function AdminCandidateFormView({
           <article className="rounded-[30px] bg-slate-100 p-6">
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{form.uploadLabel}</p>
             <div className="mt-6">
-              <label className="block w-full cursor-pointer rounded-[28px] border border-dashed border-slate-300 bg-slate-200/60 p-8 text-center hover:border-slate-400">
+              <label className="relative block w-full cursor-pointer overflow-hidden rounded-[28px] border border-dashed border-slate-300 bg-slate-200/60 text-center transition-colors hover:border-slate-400">
                 <input
                   type="file"
                   accept="image/png, image/jpeg"
@@ -218,13 +218,15 @@ export function AdminCandidateFormView({
                   }}
                 />
                 {imagePreview ? (
-                  <div className="flex flex-col items-center justify-center">
-                    <img src={imagePreview} alt="Preview" className="h-[200px] w-auto rounded-2xl object-cover" />
-                    <p className="mt-4 text-[13px] font-semibold text-slate-700">Klik untuk mengganti foto</p>
+                  <div className="relative h-[300px] w-full">
+                    <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
+                      <p className="text-[14px] font-semibold text-white">Ganti Foto Kandidat</p>
+                    </div>
                   </div>
                 ) : (
-                  <div className="flex min-h-[260px] flex-col items-center justify-center">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-500">
+                  <div className="flex min-h-[300px] flex-col items-center justify-center p-8">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm">
                       <Camera className="h-8 w-8" />
                     </div>
                     <p className="mt-6 max-w-[260px] text-[18px] font-semibold leading-8 text-slate-700">{form.uploadHint}</p>
