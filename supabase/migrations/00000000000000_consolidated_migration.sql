@@ -739,7 +739,7 @@ as $$
     select assigned_role
     from app.admin_registry
     where lower(email) = lower(coalesce(input_email, ''))
-      and status in ('pending', 'active')
+      and status = 'active'
       and assigned_role in ('voter'::app.app_role, 'admin'::app.app_role, 'super_admin'::app.app_role)
     limit 1
 
@@ -924,7 +924,7 @@ as $$
     where lower(email) = lower(coalesce(input_email, ''))
       and (
         (assigned_role = 'voter'::app.app_role and status in ('pending', 'active'))
-        or (assigned_role = 'admin'::app.app_role and status in ('pending', 'active'))
+        or (assigned_role = 'admin'::app.app_role and status = 'active')
         or (assigned_role = 'super_admin'::app.app_role and status = 'active')
       )
       and assigned_role in ('voter'::app.app_role, 'admin'::app.app_role, 'super_admin'::app.app_role)

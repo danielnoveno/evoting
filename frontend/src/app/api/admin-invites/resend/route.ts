@@ -31,16 +31,8 @@ function getRequestOrigin(request: NextRequest) {
   return request.nextUrl.origin.replace(/\/$/, '')
 }
 
-function createActivationLink(request: NextRequest, role: 'admin' | 'super_admin', token: string) {
+function createActivationLink(request: NextRequest, token: string) {
   const origin = getRequestOrigin(request)
-
-  if (role === 'admin') {
-    const url = new URL('/hubungkan-dompet', origin)
-    url.searchParams.set('activate', 'admin')
-    url.searchParams.set('redirect', '/admin')
-    return url.toString()
-  }
-
   const url = new URL('/portal-admin', origin)
   url.searchParams.set('invite', token)
   return url.toString()
@@ -149,7 +141,7 @@ export async function POST(request: NextRequest) {
   if (updateError) return jsonError(`Gagal memperbarui undangan: ${updateError.message}`, 500)
 
 
-  const activationLink = createActivationLink(request, invite.assigned_role, newToken)
+  const activationLink = createActivationLink(request, newToken)
 
   const emailResult = await sendAdminActivationEmail({
     displayName: invite.organization_name ?? email.split('@')[0],

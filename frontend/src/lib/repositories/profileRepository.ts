@@ -125,7 +125,7 @@ async function getRegisteredAdminAccessForEmail(email: string | null | undefined
 
   if (error) throw new RepositoryError('Gagal memeriksa undangan role admin. Coba lagi.')
   if (!data || data.status === 'inactive') return null
-  if (data.assigned_role === 'super_admin' && data.status !== 'active') return null
+  if ((data.assigned_role === 'admin' || data.assigned_role === 'super_admin') && data.status !== 'active') return null
 
   return data
 }

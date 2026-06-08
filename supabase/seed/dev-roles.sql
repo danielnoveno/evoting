@@ -34,7 +34,8 @@ insert into app.admin_registry (
     status = 'active',
     access_scope = 'all';
 
--- Register Campus Admin
+-- Register Campus Admin invite. Keep this pending so a fresh database still
+-- exercises the email activation flow before the admin account becomes active.
 insert into app.admin_registry (
     email,
     assigned_role,
@@ -46,14 +47,15 @@ insert into app.admin_registry (
     'novenoow@gmail.com',
     'admin',
     'FTI Admin',
-    'active',
+    'pending',
     'all',
     'FTI UAJY'
 ) on conflict (email) do update set
     assigned_role = 'admin',
     display_name = excluded.display_name,
     organization_name = excluded.organization_name,
-    status = 'active',
+    status = 'pending',
+    activation_accepted_at = null,
     access_scope = 'all';
 
 -- Register Initial Voter
@@ -82,5 +84,5 @@ insert into app.admin_registry (
 
 -- Ensure profile roles are correct if they already exist
 update app.app_profiles set role = 'super_admin' where email = 'dnw022003@gmail.com';
-update app.app_profiles set role = 'admin' where email = 'novenoow@gmail.com';
+update app.app_profiles set role = 'voter' where email = 'novenoow@gmail.com' and role = 'admin';
 update app.app_profiles set role = 'voter' where email = '220711663@students.uajy.ac.id';

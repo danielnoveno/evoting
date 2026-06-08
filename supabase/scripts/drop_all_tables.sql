@@ -1,6 +1,7 @@
 -- WARNING: DESTRUCTIVE SCRIPT
 -- This script drops all custom tables, types, functions, and policies.
--- Run this only if you intend to reset your database and run a consolidated migration file afterward.
+-- Run this manually only when you intend to reset the database, then apply the
+-- consolidated migration afterward. Do not place this file in migrations/.
 
 -- Drop all tables in schema 'app' and 'indexer'
 DROP TABLE IF EXISTS app.admin_space_access CASCADE;

@@ -127,8 +127,8 @@ function PortalAdminContent() {
       ? `Wallet tersambung sudah tertaut ke akun ${connectedWalletProfile?.email ?? 'kampus lain'}. Putuskan dompet tersambung, lalu pilih wallet yang sesuai.`
       : ''
   const isAdminAccessValidated = Boolean(authSession && isWalletBound)
-  const completedSteps = (isConnected ? 1 : 0) + (isAdminAccessValidated ? 1 : 0)
-  const currentStepLabel = isInviteActivationMode ? 'Aktivasi akun' : !isConnected ? 'Sambungkan dompet digital' : !authSession ? 'Verifikasi admin' : !isWalletBound ? 'Validasi otoritas' : 'Akses siap'
+  const completedSteps = (authSession ? 1 : 0) + (isAdminAccessValidated ? 1 : 0)
+  const currentStepLabel = isInviteActivationMode ? 'Aktivasi akun' : !authSession ? 'Verifikasi admin' : !isConnected ? 'Sambungkan dompet digital' : !isWalletBound ? 'Validasi otoritas' : 'Akses siap'
 
   useEffect(() => {
     if (invitePreview?.email && !authSession) {
@@ -369,30 +369,30 @@ function PortalAdminContent() {
                   <div className="relative mt-10 space-y-5">
                     <div className="absolute bottom-16 left-[18px] top-12 border-l border-dashed border-slate-300" aria-hidden="true" />
 
-                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${!isConnected ? 'bg-slate-100' : 'bg-white'}`}>
-                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isConnected ? 'bg-emerald-50 text-emerald-600' : 'bg-[#0F172A] text-white'}`}>
-                        {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
+                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${!authSession ? 'bg-slate-100' : 'bg-white'}`}>
+                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${authSession ? 'bg-emerald-50 text-emerald-600' : 'bg-[#0F172A] text-white'}`}>
+                        {authSession ? <Check className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-[14px] font-semibold text-slate-900">Sambungkan dompet digital</h2>
+                        <h2 className="text-[14px] font-semibold text-slate-900">Verifikasi Admin</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isConnected ? 'Dompet admin sudah tersambung.' : 'Dompet digital dipakai untuk mengenali sesi admin.'}
+                          {authSession ? 'Akun institusi sudah masuk.' : 'Masuk dengan akun institusi untuk memeriksa otoritas admin.'}
                         </p>
                       </div>
-                      {!isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
+                      {!authSession && <ChevronRight className="h-4 w-4 text-slate-400" />}
                     </div>
 
-                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${isConnected && !isAdminAccessValidated ? 'bg-slate-100' : 'bg-white'} ${!isConnected ? 'opacity-50' : ''}`}>
-                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isAdminAccessValidated ? 'bg-emerald-50 text-emerald-600' : isConnected ? 'bg-[#0F172A] text-white' : 'bg-slate-100 text-slate-400'}`}>
-                        {isAdminAccessValidated ? <Check className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
+                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${authSession && !isAdminAccessValidated ? 'bg-slate-100' : 'bg-white'} ${!authSession ? 'opacity-50' : ''}`}>
+                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isAdminAccessValidated ? 'bg-emerald-50 text-emerald-600' : authSession ? 'bg-[#0F172A] text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        {isAdminAccessValidated ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className={isConnected ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Verifikasi Admin</h2>
+                        <h2 className={authSession ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Sambungkan dompet digital</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isAdminAccessValidated ? 'Akses admin sudah tervalidasi.' : authSession ? 'Akun kampus sudah masuk. Cocokkan dompet untuk membuka akses.' : 'Validasi akun kampus untuk memastikan otoritas admin.'}
+                          {isAdminAccessValidated ? 'Akses admin sudah tervalidasi.' : authSession ? 'Cocokkan dompet yang terdaftar untuk membuka akses.' : 'Dompet dicek setelah akun admin masuk.'}
                         </p>
                       </div>
-                      {isConnected && !isAdminAccessValidated && <ChevronRight className="h-4 w-4 text-slate-400" />}
+                      {authSession && !isAdminAccessValidated && <ChevronRight className="h-4 w-4 text-slate-400" />}
                     </div>
                   </div>
                 </aside>
@@ -483,11 +483,11 @@ function PortalAdminContent() {
                       </div>
                     )}
 
-                    {!isInviteActivationMode && !isConnected && (
+                    {!isInviteActivationMode && authSession && !isConnected && (
                       <div className="mt-8 w-full">
                         <h2 className="text-[20px] font-semibold text-slate-900">Sambungkan dompet digital admin</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                          Sambungkan dompet digital yang akan dipakai untuk mengenali akses admin sebelum masuk ke dashboard manajemen pemilihan.
+                          Akun admin sudah masuk. Sekarang sambungkan dompet digital yang terdaftar untuk membuka dashboard manajemen pemilihan.
                         </p>
 
                         <div className="mt-8 space-y-4">
@@ -517,14 +517,14 @@ function PortalAdminContent() {
                       </div>
                     )}
 
-                    {!isInviteActivationMode && isConnected && !authSession && (
+                    {!isInviteActivationMode && !authSession && (
                       <div className="mt-8 w-full">
                         <h2 className="text-[20px] font-semibold text-slate-900">Verifikasi Admin</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           Masuk dengan akun kampus untuk memeriksa apakah akun memiliki otoritas admin atau Tata Usaha.
                         </p>
 
-                        <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50 p-4">
+                        {isConnected && <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50 p-4">
                           <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Dompet tersambung</p>
                           <div className="mt-2 flex min-w-0 items-center gap-2">
                             <WalletAddress
@@ -551,7 +551,7 @@ function PortalAdminContent() {
                               Ganti
                             </button>
                           </div>
-                        </div>
+                        </div>}
 
                         <div className="mt-6 flex flex-col gap-3">
                           <button
@@ -682,7 +682,7 @@ function PortalAdminContent() {
                       <ArrowLeft className="h-4 w-4" />
                     </button>
 
-                    {!isInviteActivationMode && !isConnected && (
+                    {!isInviteActivationMode && authSession && !isConnected && (
                       <button
                         type="button"
                         onClick={handleConnectWallet}
@@ -699,7 +699,7 @@ function PortalAdminContent() {
                       <p className="text-right text-[12px] text-slate-400">Aktifkan akun terlebih dahulu.</p>
                     )}
 
-                    {!isInviteActivationMode && isConnected && !authSession && (
+                    {!isInviteActivationMode && !authSession && (
                       <p className="text-right text-[12px] text-slate-400">Pilih salah satu metode masuk di atas.</p>
                     )}
 
