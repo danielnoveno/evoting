@@ -336,7 +336,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       if (isSuperAdmin !== true) {
         showToast({
           title: isSuperAdmin === false ? 'Wallet bukan superadmin kontrak' : 'Validasi wallet belum siap',
-          description: isSuperAdmin === false ? 'Gunakan wallet yang menjadi superadmin pada VoteChain Registry.' : 'Tunggu beberapa detik sampai peran wallet terbaca, lalu coba deploy lagi.',
+          description: isSuperAdmin === false 
+            ? `Gunakan wallet superadmin. Wallet tersambung: ${userAddress?.slice(0, 6)}...${userAddress?.slice(-4)}. Pastikan alamat ini terdaftar di VoteChain Registry.` 
+            : 'Tunggu beberapa detik sampai peran wallet terbaca, lalu coba deploy lagi.',
           tone: 'error',
         })
         setDecisionType(null)
@@ -408,6 +410,12 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               Review Proposal Superadmin
             </span>
             <span className="rounded-xl bg-slate-100 px-3 py-2 font-mono text-[13px] text-slate-500"># {proposal.proposalCode}</span>
+            {isConnected && userAddress && (
+              <span className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-[13px] font-medium ${isSuperAdmin ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
+                {isSuperAdmin ? <ShieldCheck className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}
+                {isSuperAdmin ? 'Superadmin:' : 'Bukan Superadmin:'} {userAddress.slice(0, 6)}...{userAddress.slice(-4)}
+              </span>
+            )}
           </>
         )}
         title={proposal.title}
