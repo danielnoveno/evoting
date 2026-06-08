@@ -21,8 +21,20 @@ function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 }
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    return typeof message === 'string' ? message : ''
+  }
+  return ''
+}
+
 function isUserRejected(error: unknown) {
-  return error instanceof Error && /(user closed modal|accounts received is empty|user denied account|request rejected)/i.test(error.message)
+  const maybeCode = typeof error === 'object' && error !== null && 'code' in error
+    ? (error as { code?: unknown }).code
+    : undefined
+  return maybeCode === 4001 || /(user closed modal|accounts received is empty|wallet must has at least one account|user denied account|request rejected)/i.test(getErrorMessage(error))
 }
 
 function removeProviderListener(
@@ -66,6 +78,10 @@ export function baseAccountConnector(parameters: BaseAccountParameters) {
             },
           ],
         }) as WalletConnectResponse
+
+        if (!response.accounts.length) {
+          throw new UserRejectedRequestError(new Error('wallet must has at least one account'))
+        }
 
         const accounts = response.accounts.map((account) => ({
           address: getAddress(account.address),
