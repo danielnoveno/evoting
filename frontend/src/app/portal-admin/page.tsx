@@ -112,7 +112,7 @@ function PortalAdminContent() {
   const currentProfile = currentProfileQuery.data
   const connectedWalletProfile = connectedWalletProfileQuery.data
   const invitePreview = invitePreviewQuery.data
-  const isInviteActivationMode = Boolean(inviteToken && !authSession)
+  const isInviteActivationMode = Boolean(inviteToken)
   const isWalletBound = sameWalletAddress(currentProfile?.walletAddress, address)
   const accountHasDifferentWallet = Boolean(address && currentProfile?.walletAddress && !isWalletBound)
   const connectedWalletOwnedByOther = Boolean(
@@ -137,7 +137,8 @@ function PortalAdminContent() {
   }, [invitePreview?.email, authSession])
 
   useEffect(() => {
-    if (mounted && isConnected && authSession && isWalletBound) {
+    // Jangan redirect jika sedang dalam mode aktivasi (ada invite token)
+    if (mounted && !inviteToken && isConnected && authSession && isWalletBound) {
       if (currentProfile?.role === 'super_admin') {
         if (redirectStartedRef.current) return
         redirectStartedRef.current = true
@@ -343,7 +344,7 @@ function PortalAdminContent() {
                       </Link>
                       <h1 className="text-[24px] font-semibold leading-tight text-slate-900">Portal Admin</h1>
                       <p className="mt-1 text-[13px] leading-6 text-slate-400">
-                        Akses untuk Tata Usaha UAJY.
+                        {isInviteActivationMode ? 'Aktivasi akun baru.' : 'Akses untuk Tata Usaha UAJY.'}
                       </p>
                     </div>
 
@@ -369,18 +370,20 @@ function PortalAdminContent() {
                   <div className="relative mt-10 space-y-5">
                     <div className="absolute bottom-16 left-[18px] top-12 border-l border-dashed border-slate-300" aria-hidden="true" />
 
-                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${!authSession ? 'bg-slate-100' : 'bg-white'}`}>
-                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${authSession ? 'bg-emerald-50 text-emerald-600' : 'bg-[#0F172A] text-white'}`}>
-                        {authSession ? <Check className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h2 className="text-[14px] font-semibold text-slate-900">Verifikasi Admin</h2>
-                        <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {authSession ? 'Akun institusi sudah masuk.' : 'Masuk dengan akun institusi untuk memeriksa otoritas admin.'}
-                        </p>
-                      </div>
-                      {!authSession && <ChevronRight className="h-4 w-4 text-slate-400" />}
+                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${(!authSession && !isInviteActivationMode) || (isInviteActivationMode && !authSession) ? 'bg-slate-100' : 'bg-white'}`}>
+                    <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${authSession ? 'bg-emerald-50 text-emerald-600' : 'bg-[#0F172A] text-white'}`}>
+                      {authSession ? <Check className="h-4 w-4" /> : isInviteActivationMode ? <ShieldCheck className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-[14px] font-semibold text-slate-900">
+                        {isInviteActivationMode ? 'Aktivasi Akun' : 'Verifikasi Admin'}
+                      </h2>
+                      <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
+                        {authSession ? 'Akun institusi sudah masuk.' : isInviteActivationMode ? 'Lakukan aktivasi akun melalui link email.' : 'Masuk dengan akun institusi untuk memeriksa otoritas admin.'}
+                      </p>
+                    </div>
+                    {!authSession && <ChevronRight className="h-4 w-4 text-slate-400" />}
+                  </div>
 
                     <div className={`relative flex items-center gap-4 rounded-lg p-4 ${authSession && !isAdminAccessValidated ? 'bg-slate-100' : 'bg-white'} ${!authSession ? 'opacity-50' : ''}`}>
                       <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isAdminAccessValidated ? 'bg-emerald-50 text-emerald-600' : authSession ? 'bg-[#0F172A] text-white' : 'bg-slate-100 text-slate-400'}`}>

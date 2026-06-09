@@ -28,7 +28,7 @@ on conflict (source_key) do nothing;
 insert into app.admin_registry (
   email,
   assigned_role,
-  display_name,
+  description,
   status,
   access_scope
 ) values (
@@ -39,14 +39,14 @@ insert into app.admin_registry (
   'all'
 ) on conflict (email) do update set
   assigned_role = 'super_admin',
-  display_name = excluded.display_name,
+  description = excluded.description,
   status = 'active',
   access_scope = 'all';
 
 insert into app.admin_registry (
   email,
   assigned_role,
-  display_name,
+  description,
   status,
   access_scope,
   organization_name
@@ -59,7 +59,7 @@ insert into app.admin_registry (
   'FTI UAJY'
 ) on conflict (email) do update set
   assigned_role = 'admin',
-  display_name = excluded.display_name,
+  description = excluded.description,
   organization_name = excluded.organization_name,
   status = 'pending',
   activation_accepted_at = null,
@@ -68,7 +68,7 @@ insert into app.admin_registry (
 insert into app.admin_registry (
   email,
   assigned_role,
-  display_name,
+  description,
   status,
   access_scope,
   wallet_address
@@ -81,7 +81,7 @@ insert into app.admin_registry (
   '0xB8064e95d190777C16D1795aA872B259df4B8930'
 ) on conflict (email) do update set
   assigned_role = 'voter',
-  display_name = excluded.display_name,
+  description = excluded.description,
   status = 'active',
   access_scope = 'all',
   wallet_address = '0xB8064e95d190777C16D1795aA872B259df4B8930';
