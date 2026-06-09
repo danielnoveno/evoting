@@ -12,6 +12,7 @@ const ADMIN_IDLE_TIMEOUT_MS = 1 * 60 * 1000 // TODO: kembalikan ke 15 menit sete
 const VOTER_IDLE_TIMEOUT_MS = 1 * 60 * 1000 // TODO: kembalikan ke 30 menit setelah testing
 const WARNING_BEFORE_MS = 20 * 1000 // peringatan 20 detik sebelum timeout
 const LAST_ACTIVITY_STORAGE_KEY = 'votechain:last-activity-at'
+const SESSION_DEBUG_STORAGE_KEY = 'votechain:session-debug'
 // Hindari `mousemove` dan `visibilitychange` supaya testing idle timeout tidak
 // terus-terusan reset hanya karena cursor bergerak kecil atau tab berubah fokus.
 // Timer hanya diperpanjang lewat aktivitas yang lebih disengaja.
@@ -39,6 +40,8 @@ export function IdleSessionTimeout() {
   const [showWarning, setShowWarning] = useState(false)
   const [showExpired, setShowExpired] = useState(false)
   const [expiredTargetPath, setExpiredTargetPath] = useState<string | null>(null)
+  const [isDebugEnabled, setIsDebugEnabled] = useState(false)
+  const [debugTick, setDebugTick] = useState(0)
 
   const isProtectedContext = useMemo(() => (
     pathname.startsWith('/pemilih')
@@ -195,7 +198,22 @@ export function IdleSessionTimeout() {
     }
   }, [clearTimers])
 
+  useEffect(() => {
+    const enabled = window.localStorage.getItem(SESSION_DEBUG_STORAGE_KEY) === '1'
+    setIsDebugEnabled(enabled)
+    if (!enabled) return
+
+    const interval = window.setInterval(() => {
+      setDebugTick((value) => value + 1)
+    }, 1000)
+
+    return () => window.clearInterval(interval)
+  }, [])
+
   const isAdmin = currentProfile?.role === 'admin' || currentProfile?.role === 'super_admin'
+  const debugLastActivityAt = isDebugEnabled ? readLastActivityAt() : Date.now()
+  const debugElapsedSeconds = Math.max(0, Math.floor((Date.now() - debugLastActivityAt) / 1000))
+  const debugRemainingSeconds = Math.max(0, Math.ceil((idleTimeoutMs - (Date.now() - debugLastActivityAt)) / 1000))
 
   // ─── Modal Peringatan (1 menit sebelum timeout) ──────────────────────
   const warningModal = showWarning ? (
@@ -261,6 +279,29 @@ export function IdleSessionTimeout() {
     <>
       {warningModal}
       {expiredModal}
+      {isDebugEnabled ? (
+        <div className="fixed bottom-4 right-4 z-[130] w-[320px] rounded-2xl border border-slate-200 bg-white/95 p-4 text-[12px] text-slate-700 shadow-[0_12px_40px_rgba(15,23,42,0.16)] backdrop-blur">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-semibold text-slate-900">Session timeout debug</p>
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">ON</span>
+          </div>
+          <dl className="mt-3 grid grid-cols-[120px_minmax(0,1fr)] gap-x-3 gap-y-1.5">
+            <dt>Protected route</dt><dd className="font-mono">{String(isProtectedContext)}</dd>
+            <dt>Auth session</dt><dd className="font-mono">{String(Boolean(authSession))}</dd>
+            <dt>Role</dt><dd className="font-mono">{currentProfile?.role ?? '-'}</dd>
+            <dt>Path</dt><dd className="truncate font-mono">{pathname}</dd>
+            <dt>Last activity</dt><dd className="font-mono">{new Date(debugLastActivityAt).toLocaleTimeString('id-ID')}</dd>
+            <dt>Elapsed</dt><dd className="font-mono">{debugElapsedSeconds}s</dd>
+            <dt>Remaining</dt><dd className="font-mono">{debugRemainingSeconds}s</dd>
+            <dt>Warning</dt><dd className="font-mono">{String(showWarning)}</dd>
+            <dt>Expired</dt><dd className="font-mono">{String(showExpired)}</dd>
+            <dt>Tick</dt><dd className="font-mono">{debugTick}</dd>
+          </dl>
+          <p className="mt-3 text-[11px] leading-5 text-slate-500">
+            Matikan: <code>localStorage.removeItem('{SESSION_DEBUG_STORAGE_KEY}')</code> lalu refresh.
+          </p>
+        </div>
+      ) : null}
     </>
   )
 }
