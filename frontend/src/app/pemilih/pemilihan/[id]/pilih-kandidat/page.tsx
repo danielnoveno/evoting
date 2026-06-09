@@ -4,14 +4,18 @@ import { ArrowRight, Clock3, Info } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useAccount } from 'wagmi'
+import type { Address } from 'viem'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { findElection, formatDateTime, useVoterStore } from '@/lib/voter-store'
 import { generateCommitment, generateSalt, saveVoteCommitment } from '@/lib/vote-commitment-storage'
+import { backendRuntimeConfig } from '@/lib/supabase/config'
 
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const { address } = useAccount()
   const { store, loading, actions } = useVoterStore()
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 8 })
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -79,11 +83,24 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     if (candidateToConfirm) {
       const candidate = election.candidates.find(c => c.id === candidateToConfirm)
       const candidateNumber = candidate ? parseInt(candidate.id.split('-').pop() || '0') : 0
+      const deployedSpaceAddress = election.deployedSpaceAddress
+
+      if (!address || !deployedSpaceAddress) {
+        setConfirmOpen(false)
+        window.alert('Sambungkan dompet dan pastikan ruang voting sudah memiliki alamat kontrak sebelum memilih kandidat.')
+        return
+      }
 
       actions.selectCandidate(election.id, candidateToConfirm)
       
       const salt = generateSalt()
-      const commitment = await generateCommitment(candidateNumber, salt)
+      const commitment = generateCommitment(
+        candidateNumber,
+        salt,
+        address as Address,
+        deployedSpaceAddress as Address,
+        backendRuntimeConfig.chainId,
+      )
       saveVoteCommitment(election.id, {
         candidateId: candidateToConfirm,
         salt,

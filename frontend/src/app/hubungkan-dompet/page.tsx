@@ -37,7 +37,7 @@ function sameWalletAddress(left: string | null | undefined, right: string | null
 }
 
 function resolveRedirectTarget(redirectParam: string | null) {
-  if (redirectParam?.startsWith('/')) return redirectParam
+  if (redirectParam?.startsWith('/') && !redirectParam.startsWith('//')) return redirectParam
   return '/pemilih'
 }
 

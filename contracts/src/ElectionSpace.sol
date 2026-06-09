@@ -53,6 +53,8 @@ contract ElectionSpace {
     error NotCommittedYet();
     error CommitmentMismatch();
     error InvalidCandidate();
+    error InvalidVoter();
+    error InvalidCommitment();
     error ElectionSuspended();
     error ElectionTerminated();
 
@@ -123,6 +125,7 @@ contract ElectionSpace {
         onlyActive
         onlyPhase(Phase.Registration)
     {
+        if (voter == address(0)) revert InvalidVoter();
         if (isWhitelisted[voter]) revert AlreadyRegistered();
 
         isWhitelisted[voter] = true;
@@ -137,6 +140,7 @@ contract ElectionSpace {
     {
         for (uint256 i = 0; i < voters.length; i++) {
             address voter = voters[i];
+            if (voter == address(0)) revert InvalidVoter();
             if (!isWhitelisted[voter]) {
                 isWhitelisted[voter] = true;
                 emit WhitelistUpdated(spaceId, voter, true, msg.sender);
@@ -161,6 +165,7 @@ contract ElectionSpace {
         onlyPhase(Phase.Commit)
     {
         if (hasCommitted[msg.sender]) revert AlreadyCommitted();
+        if (commitment == bytes32(0)) revert InvalidCommitment();
 
         hasCommitted[msg.sender] = true;
         commitmentOf[msg.sender] = commitment;
@@ -178,7 +183,7 @@ contract ElectionSpace {
         if (hasRevealed[msg.sender]) revert AlreadyRevealed();
         if (candidateId == 0 || candidateId > candidateCount) revert InvalidCandidate();
 
-        bytes32 recomputed = keccak256(abi.encodePacked(candidateId, salt));
+        bytes32 recomputed = keccak256(abi.encode(candidateId, salt, msg.sender, address(this), block.chainid));
         if (recomputed != commitmentOf[msg.sender]) revert CommitmentMismatch();
 
         hasRevealed[msg.sender] = true;
@@ -205,6 +210,7 @@ contract ElectionSpace {
     }
 
     function updateMetadata(string calldata _title, string calldata _metadataURI, address actor) external onlyRegistry {
+        if (currentPhase != Phase.Registration) revert WrongPhase(Phase.Registration, currentPhase);
         title = _title;
         metadataURI = _metadataURI;
         emit ElectionMetadataUpdated(spaceId, _title, _metadataURI, actor);

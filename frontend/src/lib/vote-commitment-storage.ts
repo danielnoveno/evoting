@@ -1,6 +1,6 @@
 'use client'
 
-import { encodePacked, keccak256 } from 'viem'
+import { encodeAbiParameters, keccak256, parseAbiParameters, type Address } from 'viem'
 
 export interface VoteCommitmentRecord {
   candidateId: string
@@ -22,8 +22,19 @@ export function generateSalt(): `0x${string}` {
     .join('')}` as `0x${string}`
 }
 
-export function generateCommitment(candidateId: number, salt: `0x${string}`): `0x${string}` {
-  return keccak256(encodePacked(['uint256', 'bytes32'], [BigInt(candidateId), salt]))
+export function generateCommitment(
+  candidateId: number,
+  salt: `0x${string}`,
+  voterAddress: Address,
+  electionSpaceAddress: Address,
+  chainId: number,
+): `0x${string}` {
+  return keccak256(
+    encodeAbiParameters(
+      parseAbiParameters('uint256, bytes32, address, address, uint256'),
+      [BigInt(candidateId), salt, voterAddress, electionSpaceAddress, BigInt(chainId)],
+    ),
+  )
 }
 
 export function saveVoteCommitment(electionId: string, data: VoteCommitmentRecord) {

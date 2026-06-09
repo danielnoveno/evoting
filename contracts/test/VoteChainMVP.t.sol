@@ -36,6 +36,14 @@ contract VoterClient {
 }
 
 contract VoteChainMVPTest {
+    function _commitment(ElectionSpace space, address voter, uint256 candidateId, bytes32 salt)
+        internal
+        view
+        returns (bytes32)
+    {
+        return keccak256(abi.encode(candidateId, salt, voter, address(space), block.chainid));
+    }
+
     function _createApprovedElection(uint256 candidateCount)
         internal
         returns (VoteChainRegistry registry, AdminClient admin, VoterClient voter1, VoterClient voter2, uint256 spaceId, ElectionSpace space)
@@ -116,7 +124,7 @@ contract VoteChainMVPTest {
         admin.transitionToNextPhase(space);
 
         bytes32 salt = bytes32(uint256(111));
-        bytes32 commitment = keccak256(abi.encodePacked(uint256(1), salt));
+        bytes32 commitment = _commitment(space, address(voter1), 1, salt);
 
         voter1.commit(space, commitment);
         require(space.hasCommitted(address(voter1)), "voter should be committed");
@@ -140,7 +148,7 @@ contract VoteChainMVPTest {
         admin.transitionToNextPhase(space);
 
         bytes32 salt = bytes32(uint256(5));
-        bytes32 commitment = keccak256(abi.encodePacked(uint256(1), salt));
+        bytes32 commitment = _commitment(space, address(voter2), 1, salt);
 
         try voter2.commit(space, commitment) {
             revert("expected non-whitelist commit revert");
@@ -153,7 +161,7 @@ contract VoteChainMVPTest {
         admin.registerVoter(space, address(voter1));
 
         bytes32 salt = bytes32(uint256(7));
-        bytes32 commitment = keccak256(abi.encodePacked(uint256(1), salt));
+        bytes32 commitment = _commitment(space, address(voter1), 1, salt);
 
         try voter1.commit(space, commitment) {
             revert("expected wrong phase revert");
@@ -167,7 +175,7 @@ contract VoteChainMVPTest {
         admin.transitionToNextPhase(space);
 
         bytes32 salt = bytes32(uint256(9));
-        bytes32 commitment = keccak256(abi.encodePacked(uint256(1), salt));
+        bytes32 commitment = _commitment(space, address(voter1), 1, salt);
 
         voter1.commit(space, commitment);
 
@@ -184,7 +192,7 @@ contract VoteChainMVPTest {
 
         bytes32 correctSalt = bytes32(uint256(123));
         bytes32 wrongSalt = bytes32(uint256(456));
-        bytes32 commitment = keccak256(abi.encodePacked(uint256(1), correctSalt));
+        bytes32 commitment = _commitment(space, address(voter1), 1, correctSalt);
 
         voter1.commit(space, commitment);
 
@@ -192,6 +200,27 @@ contract VoteChainMVPTest {
 
         try voter1.reveal(space, 1, wrongSalt) {
             revert("expected commitment mismatch revert");
+        } catch {}
+    }
+
+    function test_copycat_commit_cannot_reveal_after_original_reveals() external {
+        (, AdminClient admin, VoterClient voter1, VoterClient voter2, , ElectionSpace space) = _createApprovedElection(2);
+
+        admin.registerVoter(space, address(voter1));
+        admin.registerVoter(space, address(voter2));
+        admin.transitionToNextPhase(space);
+
+        bytes32 salt = bytes32(uint256(777));
+        bytes32 voter1Commitment = _commitment(space, address(voter1), 1, salt);
+
+        voter1.commit(space, voter1Commitment);
+        voter2.commit(space, voter1Commitment);
+
+        admin.transitionToNextPhase(space);
+        voter1.reveal(space, 1, salt);
+
+        try voter2.reveal(space, 1, salt) {
+            revert("expected copycat reveal mismatch");
         } catch {}
     }
 
@@ -206,7 +235,7 @@ contract VoteChainMVPTest {
         require(uint8(space.status()) == uint8(ElectionSpace.ElectionStatus.Suspended), "must be suspended");
 
         bytes32 salt = bytes32(uint256(99));
-        bytes32 commitment = keccak256(abi.encodePacked(uint256(1), salt));
+        bytes32 commitment = _commitment(space, address(voter1), 1, salt);
 
         try voter1.commit(space, commitment) {
             revert("expected suspended election revert");
@@ -228,7 +257,7 @@ contract VoteChainMVPTest {
         require(uint8(space.status()) == uint8(ElectionSpace.ElectionStatus.Terminated), "must be terminated");
 
         bytes32 salt = bytes32(uint256(44));
-        bytes32 commitment = keccak256(abi.encodePacked(uint256(1), salt));
+        bytes32 commitment = _commitment(space, address(voter1), 1, salt);
 
         try voter1.commit(space, commitment) {
             revert("expected terminated election revert");

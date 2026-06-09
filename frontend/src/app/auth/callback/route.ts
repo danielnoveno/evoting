@@ -4,11 +4,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { Database } from '@/lib/supabase/database.types'
 import { getSupabaseBrowserConfig, isSupabaseConfigured } from '@/lib/supabase/config'
 
+function safeInternalPath(value: string | null, fallback = '/pemilih') {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return fallback
+  try {
+    const parsed = new URL(value, 'https://votechain.local')
+    if (parsed.origin !== 'https://votechain.local') return fallback
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`
+  } catch {
+    return fallback
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
   const code = searchParams.get('code')
   const next = searchParams.get('next')
-  const nextPath = next?.startsWith('/') ? next : '/pemilih'
+  const nextPath = safeInternalPath(next)
 
   const isAuthAdmin = nextPath.startsWith('/portal-admin') || nextPath.startsWith('/superadmin') || nextPath.startsWith('/admin')
   const errorRedirectUrl = new URL(isAuthAdmin ? '/portal-admin' : '/hubungkan-dompet', request.url)

@@ -1278,3 +1278,79 @@ with check (
   and owner = auth.uid()
   and app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
+
+-- 2026-06-09 security hardening: proposal-scoped child policies and tx proof integrity.
+-- Keep this helper server-side only through RLS; it mirrors proposal_drafts restricted access.
+create or replace function app.can_manage_proposal(target_proposal_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = app, public
+as $$
+  select exists (
+    select 1
+    from app.proposal_drafts d
+    where d.id = target_proposal_id
+      and (
+        app.has_role(array['super_admin'::app.app_role])
+        or (
+          app.has_role(array['admin'::app.app_role])
+          and (
+            d.created_by = app.current_profile_id()
+            or exists (
+              select 1 from app.admin_registry r
+              where lower(r.email) = app.auth_email()
+                and r.access_scope = 'all'
+                and r.status != 'inactive'
+            )
+            or exists (
+              select 1 from app.admin_space_access a
+              where lower(a.admin_email) = app.auth_email()
+                and a.proposal_draft_id = d.id
+            )
+          )
+        )
+      )
+  );
+$$;
+
+drop policy if exists "proposal_candidates_manage_parent_owner_or_admin" on app.proposal_candidates;
+drop policy if exists "proposal_candidates_manage_scoped_admin" on app.proposal_candidates;
+create policy "proposal_candidates_manage_scoped_admin"
+on app.proposal_candidates
+for all
+using (app.can_manage_proposal(proposal_draft_id))
+with check (app.can_manage_proposal(proposal_draft_id));
+
+drop policy if exists "whitelist_jobs_manage_parent_owner_or_admin" on app.whitelist_import_jobs;
+drop policy if exists "whitelist_jobs_manage_scoped_admin" on app.whitelist_import_jobs;
+create policy "whitelist_jobs_manage_scoped_admin"
+on app.whitelist_import_jobs
+for all
+using (app.can_manage_proposal(proposal_draft_id))
+with check (created_by = app.current_profile_id() and app.can_manage_proposal(proposal_draft_id));
+
+drop policy if exists "whitelist_entries_manage_parent_owner_or_admin" on app.proposal_whitelist_entries;
+drop policy if exists "whitelist_entries_manage_scoped_admin" on app.proposal_whitelist_entries;
+create policy "whitelist_entries_manage_scoped_admin"
+on app.proposal_whitelist_entries
+for all
+using (app.can_manage_proposal(proposal_draft_id))
+with check (app.can_manage_proposal(proposal_draft_id));
+
+drop policy if exists "tx_audit_log_insert_owner_or_admin" on app.tx_audit_log;
+drop policy if exists "tx_audit_log_insert_pending_owner_or_admin" on app.tx_audit_log;
+create policy "tx_audit_log_insert_pending_owner_or_admin"
+on app.tx_audit_log
+for insert
+with check (
+  status = 'pending'
+  and source = 'frontend'
+  and (
+    wallet_address in (
+      select wallet_address from app.app_profiles where user_id = auth.uid()
+    )
+    or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
+  )
+);
