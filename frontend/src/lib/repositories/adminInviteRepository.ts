@@ -9,6 +9,7 @@ export type AdminInvitePreview = {
   walletAddress: string | null
   role: 'admin' | 'super_admin'
   expiresAt: string
+  status?: 'pending' | 'active' | 'inactive'
 }
 
 export type CreateAdminInviteInput = {
@@ -73,6 +74,7 @@ function parseInvitePreview(payload: unknown): AdminInvitePreview {
     walletAddress: typeof data.walletAddress === 'string' ? data.walletAddress : null,
     role,
     expiresAt: data.expiresAt,
+    status: typeof data.status === 'string' ? data.status as 'pending' | 'active' | 'inactive' : undefined,
   }
 }
 
@@ -160,6 +162,39 @@ export async function resendAdminInvite(email: string): Promise<ResendInviteResu
     emailStatus: payload.emailStatus === 'sent' ? 'sent' : 'failed',
     emailId: typeof payload.emailId === 'string' ? payload.emailId : undefined,
     emailError: typeof payload.emailError === 'string' ? payload.emailError : undefined,
+  }
+}
+
+export async function claimAdminInvite(token: string): Promise<ActivateAdminInviteResult> {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend login belum dikonfigurasi.')
+
+  const { data, error } = await client.auth.getSession()
+  if (error || !data.session?.access_token) throw new RepositoryError('Sesi login SSO belum aktif. Silakan masuk terlebih dahulu.')
+
+  const response = await fetch('/api/admin-invites/claim', {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${data.session.access_token}`
+    },
+    body: JSON.stringify({ token }),
+  })
+
+  if (!response.ok) throw await readApiError(response, 'Klaim undangan gagal.')
+
+  const payload: unknown = await response.json()
+  if (!isRecord(payload) || typeof payload.email !== 'string') {
+    throw new RepositoryError('Respons klaim tidak valid.')
+  }
+
+  const role = payload.role
+  if (role !== 'admin' && role !== 'super_admin') throw new RepositoryError('Role klaim tidak valid.')
+
+  return {
+    email: payload.email,
+    displayName: typeof payload.organizationName === 'string' ? payload.organizationName : null,
+    role,
   }
 }
 

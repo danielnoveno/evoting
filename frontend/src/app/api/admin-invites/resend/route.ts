@@ -33,7 +33,7 @@ function getRequestOrigin(request: NextRequest) {
 
 function createActivationLink(request: NextRequest, token: string) {
   const origin = getRequestOrigin(request)
-  const url = new URL('/portal-admin', origin)
+  const url = new URL('/auth/aktivasi-admin', origin)
   url.searchParams.set('invite', token)
   return url.toString()
 }

@@ -46,7 +46,7 @@ function getRequestOrigin(request: NextRequest) {
 
 function createActivationLink(request: NextRequest, token: string) {
   const origin = getRequestOrigin(request)
-  const url = new URL('/portal-admin', origin)
+  const url = new URL('/auth/aktivasi-admin', origin)
   url.searchParams.set('invite', token)
   return url.toString()
 }
@@ -58,6 +58,7 @@ function toInviteResponse(row: InviteRow) {
     walletAddress: row.wallet_address,
     role: row.assigned_role,
     expiresAt: row.activation_expires_at ?? '',
+    status: row.status,
   }
 }
 
