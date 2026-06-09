@@ -8,7 +8,7 @@ import VoteChainRegistryArtifact from '@/lib/abi/VoteChainRegistry.json'
 const registryAbi = VoteChainRegistryArtifact.abi
 
 // Default registry address for Base Sepolia - should be updated after deployment
-export const REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || '0xe5EC7c2C0308eB11C5254Fd6f0a20478edb8ff41'
+export const REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || '0x7928524CdFc035136b629E796EA4e7C54A6Ef3c0'
 
 interface ElectionSpaceCreatedEvent {
   proposalId: number
