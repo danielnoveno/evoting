@@ -156,6 +156,10 @@ export async function signOutCurrentSession() {
 
     throw new RepositoryError('Gagal mengakhiri sesi akun. Coba lagi.')
   }
+
+  // Pastikan token browser benar-benar hilang. Pada beberapa kondisi network/OAuth,
+  // global sign out sukses tetapi cache lokal masih sempat dibaca ulang oleh UI.
+  await clearLocalAuthSession()
 }
 
 // MFA Functions

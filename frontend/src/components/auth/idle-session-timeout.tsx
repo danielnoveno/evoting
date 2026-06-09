@@ -55,8 +55,13 @@ export function IdleSessionTimeout() {
   ), [isAppProtectedRoute, pathname])
 
   const shouldTrackSession = useMemo(() => (
-    isAppProtectedRoute || (pathname.startsWith('/portal-admin') && Boolean(authSession))
+    Boolean(authSession) && (isAppProtectedRoute || pathname.startsWith('/portal-admin'))
   ), [authSession, isAppProtectedRoute, pathname])
+
+  const clearAuthQueryCache = useCallback(() => {
+    queryClient.setQueryData(authSessionQueryKey, null)
+    queryClient.removeQueries({ queryKey: ['profile'] })
+  }, [queryClient])
 
   const idleTimeoutMs = useMemo(() => {
     if (currentProfile?.role === 'admin' || currentProfile?.role === 'super_admin') return ADMIN_IDLE_TIMEOUT_MS
@@ -103,11 +108,10 @@ export function IdleSessionTimeout() {
     setShowExpired(false)
 
     await signOutCurrentSession().catch(() => undefined)
-    void queryClient.invalidateQueries({ queryKey: authSessionQueryKey })
-    void queryClient.invalidateQueries({ queryKey: ['profile'] })
+    clearAuthQueryCache()
 
     router.replace(targetPath)
-  }, [clearTimers, queryClient, router])
+  }, [clearAuthQueryCache, clearTimers, router])
 
   const handleTimeout = useCallback(async () => {
     if (hasTimedOutRef.current) return
@@ -117,13 +121,12 @@ export function IdleSessionTimeout() {
     const targetPath = getRoleAwareLoginPath(pathname, currentProfile?.role)
 
     await signOutCurrentSession().catch(() => undefined)
-    void queryClient.invalidateQueries({ queryKey: authSessionQueryKey })
-    void queryClient.invalidateQueries({ queryKey: ['profile'] })
+    clearAuthQueryCache()
 
     // Simpan target path dan tampilkan modal, jangan redirect langsung
     setExpiredTargetPath(targetPath)
     setShowExpired(true)
-  }, [clearTimers, currentProfile?.role, pathname, queryClient])
+  }, [clearAuthQueryCache, clearTimers, currentProfile?.role, pathname])
 
   const scheduleFromLastActivity = useCallback((lastActivityAt: number) => {
     if (!shouldTrackSession) return
@@ -175,8 +178,7 @@ export function IdleSessionTimeout() {
       clearTimers()
       hasTimedOutRef.current = false
       setShowWarning(false)
-      setShowExpired(false)
-      setExpiredTargetPath(null)
+      if (!showExpired) setExpiredTargetPath(null)
       return
     }
 
@@ -208,7 +210,7 @@ export function IdleSessionTimeout() {
       }
       document.removeEventListener('visibilitychange', checkClock)
     }
-  }, [checkClock, clearTimers, markActivity, scheduleFromLastActivity, shouldTrackSession, writeLastActivityAt])
+  }, [checkClock, clearTimers, markActivity, scheduleFromLastActivity, shouldTrackSession, showExpired, writeLastActivityAt])
 
   useEffect(() => {
     return () => {
