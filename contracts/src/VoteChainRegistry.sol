@@ -62,8 +62,8 @@ contract VoteChainRegistry {
     error NotProposalOwner();
     error SpaceNotFound();
 
-    constructor() {
-        superAdmin = msg.sender;
+    constructor(address _initialSuperAdmin) {
+        superAdmin = _initialSuperAdmin;
     }
 
     modifier onlySuperAdmin() {

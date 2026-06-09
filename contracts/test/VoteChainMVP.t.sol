@@ -48,7 +48,7 @@ contract VoteChainMVPTest {
         internal
         returns (VoteChainRegistry registry, AdminClient admin, VoterClient voter1, VoterClient voter2, uint256 spaceId, ElectionSpace space)
     {
-        registry = new VoteChainRegistry();
+        registry = new VoteChainRegistry(address(this));
         admin = new AdminClient();
         voter1 = new VoterClient();
         voter2 = new VoterClient();
@@ -64,7 +64,7 @@ contract VoteChainMVPTest {
     }
 
     function test_super_admin_can_crud_admin_and_create_space() external {
-        VoteChainRegistry registry = new VoteChainRegistry();
+        VoteChainRegistry registry = new VoteChainRegistry(address(this));
         AdminClient admin = new AdminClient();
 
         registry.setAdmin(address(admin), true);
@@ -81,7 +81,7 @@ contract VoteChainMVPTest {
     }
 
     function test_super_admin_can_deploy_for_offchain_proposal_admin() external {
-        VoteChainRegistry registry = new VoteChainRegistry();
+        VoteChainRegistry registry = new VoteChainRegistry(address(this));
         AdminClient admin = new AdminClient();
 
         (uint256 proposalId, uint256 spaceId, address spaceAddress) = registry.createElectionForAdmin(
@@ -102,7 +102,7 @@ contract VoteChainMVPTest {
     }
 
     function test_non_admin_cannot_submit_proposal() external {
-        VoteChainRegistry registry = new VoteChainRegistry();
+        VoteChainRegistry registry = new VoteChainRegistry(address(this));
         AdminClient nonAdmin = new AdminClient();
 
         try nonAdmin.submitProposal(registry, 2) returns (uint256) {
