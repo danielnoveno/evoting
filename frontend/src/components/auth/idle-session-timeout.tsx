@@ -6,16 +6,17 @@ import { useQueryClient } from '@tanstack/react-query'
 import { authSessionQueryKey, useAuthSession } from '@/hooks/use-auth-session'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { signOutCurrentSession } from '@/lib/repositories/authRepository'
-import { useToast } from '@/components/ui/toast-provider'
 import { LogOut, Clock } from 'lucide-react'
 
 const ADMIN_IDLE_TIMEOUT_MS = 1 * 60 * 1000 // TODO: kembalikan ke 15 menit setelah testing
 const VOTER_IDLE_TIMEOUT_MS = 1 * 60 * 1000 // TODO: kembalikan ke 30 menit setelah testing
 const WARNING_BEFORE_MS = 20 * 1000 // peringatan 20 detik sebelum timeout
+const LAST_ACTIVITY_STORAGE_KEY = 'votechain:last-activity-at'
 // Hindari `mousemove` dan `visibilitychange` supaya testing idle timeout tidak
 // terus-terusan reset hanya karena cursor bergerak kecil atau tab berubah fokus.
 // Timer hanya diperpanjang lewat aktivitas yang lebih disengaja.
 const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'scroll', 'touchstart', 'pointerdown'] as const
+const CLOCK_CHECK_EVENTS = ['focus', 'pageshow'] as const
 
 function getRoleAwareLoginPath(pathname: string, role: string | null | undefined) {
   if (role === 'super_admin' || role === 'admin') return '/portal-admin?reason=session-timeout'
@@ -29,7 +30,6 @@ export function IdleSessionTimeout() {
   const pathname = usePathname()
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { showToast } = useToast()
   const { data: authSession } = useAuthSession()
   const { data: currentProfile } = useCurrentProfile()
   const timeoutRef = useRef<number | null>(null)
@@ -64,6 +64,19 @@ export function IdleSessionTimeout() {
     }
   }, [])
 
+  const readLastActivityAt = useCallback(() => {
+    const storedValue = window.localStorage.getItem(LAST_ACTIVITY_STORAGE_KEY)
+    const parsedValue = storedValue ? Number.parseInt(storedValue, 10) : Number.NaN
+    if (Number.isFinite(parsedValue) && parsedValue > 0) return parsedValue
+    const now = Date.now()
+    window.localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(now))
+    return now
+  }, [])
+
+  const writeLastActivityAt = useCallback((timestamp: number) => {
+    window.localStorage.setItem(LAST_ACTIVITY_STORAGE_KEY, String(timestamp))
+  }, [])
+
   const handleForceLogout = useCallback(async (targetPath: string) => {
     hasTimedOutRef.current = true
     clearTimers()
@@ -93,30 +106,50 @@ export function IdleSessionTimeout() {
     setShowExpired(true)
   }, [clearTimers, currentProfile?.role, pathname, queryClient])
 
-  const handleExtendSession = useCallback(() => {
-    setShowWarning(false)
-    hasTimedOutRef.current = false
-    resetTimer()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const resetTimer = useCallback(() => {
+  const scheduleFromLastActivity = useCallback((lastActivityAt: number) => {
     if (!isProtectedContext || !authSession) return
     clearTimers()
 
-    // Timer untuk peringatan (muncul WARNING_BEFORE_MS sebelum timeout)
-    const warningMs = Math.max(0, idleTimeoutMs - WARNING_BEFORE_MS)
-    warningRef.current = window.setTimeout(() => {
-      if (!hasTimedOutRef.current) {
-        setShowWarning(true)
-      }
-    }, warningMs)
+    const elapsedMs = Date.now() - lastActivityAt
+    const remainingMs = idleTimeoutMs - elapsedMs
 
-    // Timer untuk timeout eksekusi
+    if (remainingMs <= 0) {
+      void handleTimeout()
+      return
+    }
+
+    const warningMs = remainingMs - WARNING_BEFORE_MS
+    if (warningMs <= 0) {
+      setShowWarning(true)
+    } else {
+      warningRef.current = window.setTimeout(() => {
+        if (!hasTimedOutRef.current) setShowWarning(true)
+      }, warningMs)
+    }
+
     timeoutRef.current = window.setTimeout(() => {
       void handleTimeout()
-    }, idleTimeoutMs)
+    }, remainingMs)
   }, [authSession, clearTimers, handleTimeout, idleTimeoutMs, isProtectedContext])
+
+  const markActivity = useCallback(() => {
+    if (!isProtectedContext || !authSession || hasTimedOutRef.current) return
+    const now = Date.now()
+    writeLastActivityAt(now)
+    setShowWarning(false)
+    scheduleFromLastActivity(now)
+  }, [authSession, isProtectedContext, scheduleFromLastActivity, writeLastActivityAt])
+
+  const checkClock = useCallback(() => {
+    if (!isProtectedContext || !authSession || hasTimedOutRef.current) return
+    const lastActivityAt = readLastActivityAt()
+    scheduleFromLastActivity(lastActivityAt)
+  }, [authSession, isProtectedContext, readLastActivityAt, scheduleFromLastActivity])
+
+  const handleExtendSession = useCallback(() => {
+    hasTimedOutRef.current = false
+    markActivity()
+  }, [markActivity])
 
   useEffect(() => {
     if (!isProtectedContext || !authSession) {
@@ -132,20 +165,29 @@ export function IdleSessionTimeout() {
     setShowWarning(false)
     setShowExpired(false)
     setExpiredTargetPath(null)
-    resetTimer()
+    const lastActivityAt = readLastActivityAt()
+    scheduleFromLastActivity(lastActivityAt)
 
     for (const eventName of ACTIVITY_EVENTS) {
-      window.addEventListener(eventName, resetTimer, { passive: true })
+      window.addEventListener(eventName, markActivity, { passive: true })
     }
+
+    for (const eventName of CLOCK_CHECK_EVENTS) {
+      window.addEventListener(eventName, checkClock, { passive: true })
+    }
+    document.addEventListener('visibilitychange', checkClock, { passive: true })
 
     return () => {
       clearTimers()
       for (const eventName of ACTIVITY_EVENTS) {
-        window.removeEventListener(eventName, resetTimer)
+        window.removeEventListener(eventName, markActivity)
       }
+      for (const eventName of CLOCK_CHECK_EVENTS) {
+        window.removeEventListener(eventName, checkClock)
+      }
+      document.removeEventListener('visibilitychange', checkClock)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authSession, isProtectedContext])
+  }, [authSession, checkClock, clearTimers, isProtectedContext, markActivity, readLastActivityAt, scheduleFromLastActivity])
 
   useEffect(() => {
     return () => {
