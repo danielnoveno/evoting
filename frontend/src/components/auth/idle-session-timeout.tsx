@@ -9,9 +9,9 @@ import { signOutCurrentSession } from '@/lib/repositories/authRepository'
 import { useToast } from '@/components/ui/toast-provider'
 import { LogOut, Clock } from 'lucide-react'
 
-const ADMIN_IDLE_TIMEOUT_MS = 15 * 60 * 1000
-const VOTER_IDLE_TIMEOUT_MS = 30 * 60 * 1000
-const WARNING_BEFORE_MS = 60 * 1000 // tampilkan peringatan 1 menit sebelum timeout
+const ADMIN_IDLE_TIMEOUT_MS = 1 * 60 * 1000 // TODO: kembalikan ke 15 menit setelah testing
+const VOTER_IDLE_TIMEOUT_MS = 1 * 60 * 1000 // TODO: kembalikan ke 30 menit setelah testing
+const WARNING_BEFORE_MS = 20 * 1000 // peringatan 20 detik sebelum timeout
 const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'pointerdown', 'visibilitychange'] as const
 
 function getRoleAwareLoginPath(pathname: string, role: string | null | undefined) {
