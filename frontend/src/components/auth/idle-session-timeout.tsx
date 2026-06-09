@@ -8,9 +8,9 @@ import { useCurrentProfile } from '@/hooks/use-profile'
 import { signOutCurrentSession } from '@/lib/repositories/authRepository'
 import { LogOut, Clock } from 'lucide-react'
 
-const ADMIN_IDLE_TIMEOUT_MS = 1 * 60 * 1000 // TODO: kembalikan ke 15 menit setelah testing
-const VOTER_IDLE_TIMEOUT_MS = 1 * 60 * 1000 // TODO: kembalikan ke 30 menit setelah testing
-const WARNING_BEFORE_MS = 20 * 1000 // peringatan 20 detik sebelum timeout
+const ADMIN_IDLE_TIMEOUT_MS = 15 * 60 * 1000 // 15 menit untuk admin/superadmin
+const VOTER_IDLE_TIMEOUT_MS = 30 * 60 * 1000 // 30 menit untuk pemilih
+const WARNING_BEFORE_MS = 60 * 1000 // peringatan 1 menit sebelum timeout
 const LAST_ACTIVITY_STORAGE_KEY = 'votechain:last-activity-at'
 const SESSION_DEBUG_STORAGE_KEY = 'votechain:session-debug'
 // Hindari `mousemove` dan `visibilitychange` supaya testing idle timeout tidak
