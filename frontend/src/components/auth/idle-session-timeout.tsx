@@ -35,6 +35,7 @@ export function IdleSessionTimeout() {
   const { data: currentProfile } = useCurrentProfile()
   const timeoutRef = useRef<number | null>(null)
   const warningRef = useRef<number | null>(null)
+  const intervalRef = useRef<number | null>(null)
   const hasTimedOutRef = useRef(false)
 
   const [showWarning, setShowWarning] = useState(false)
@@ -43,12 +44,19 @@ export function IdleSessionTimeout() {
   const [isDebugEnabled, setIsDebugEnabled] = useState(false)
   const [debugTick, setDebugTick] = useState(0)
 
-  const isProtectedContext = useMemo(() => (
+  const isAppProtectedRoute = useMemo(() => (
     pathname.startsWith('/pemilih')
     || pathname.startsWith('/admin')
     || pathname.startsWith('/superadmin')
-    || pathname.startsWith('/portal-admin')
   ), [pathname])
+
+  const isProtectedContext = useMemo(() => (
+    isAppProtectedRoute || pathname.startsWith('/portal-admin')
+  ), [isAppProtectedRoute, pathname])
+
+  const shouldTrackSession = useMemo(() => (
+    isAppProtectedRoute || (pathname.startsWith('/portal-admin') && Boolean(authSession))
+  ), [authSession, isAppProtectedRoute, pathname])
 
   const idleTimeoutMs = useMemo(() => {
     if (currentProfile?.role === 'admin' || currentProfile?.role === 'super_admin') return ADMIN_IDLE_TIMEOUT_MS
@@ -56,7 +64,7 @@ export function IdleSessionTimeout() {
     return VOTER_IDLE_TIMEOUT_MS
   }, [currentProfile?.role, pathname])
 
-  const clearTimers = useCallback(() => {
+  const clearDelayTimers = useCallback(() => {
     if (timeoutRef.current !== null) {
       window.clearTimeout(timeoutRef.current)
       timeoutRef.current = null
@@ -66,6 +74,14 @@ export function IdleSessionTimeout() {
       warningRef.current = null
     }
   }, [])
+
+  const clearTimers = useCallback(() => {
+    clearDelayTimers()
+    if (intervalRef.current !== null) {
+      window.clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }, [clearDelayTimers])
 
   const readLastActivityAt = useCallback(() => {
     const storedValue = window.localStorage.getItem(LAST_ACTIVITY_STORAGE_KEY)
@@ -110,8 +126,8 @@ export function IdleSessionTimeout() {
   }, [clearTimers, currentProfile?.role, pathname, queryClient])
 
   const scheduleFromLastActivity = useCallback((lastActivityAt: number) => {
-    if (!isProtectedContext || !authSession) return
-    clearTimers()
+    if (!shouldTrackSession) return
+    clearDelayTimers()
 
     const elapsedMs = Date.now() - lastActivityAt
     const remainingMs = idleTimeoutMs - elapsedMs
@@ -133,21 +149,21 @@ export function IdleSessionTimeout() {
     timeoutRef.current = window.setTimeout(() => {
       void handleTimeout()
     }, remainingMs)
-  }, [authSession, clearTimers, handleTimeout, idleTimeoutMs, isProtectedContext])
+  }, [clearDelayTimers, handleTimeout, idleTimeoutMs, shouldTrackSession])
 
   const markActivity = useCallback(() => {
-    if (!isProtectedContext || !authSession || hasTimedOutRef.current) return
+    if (!shouldTrackSession || hasTimedOutRef.current) return
     const now = Date.now()
     writeLastActivityAt(now)
     setShowWarning(false)
     scheduleFromLastActivity(now)
-  }, [authSession, isProtectedContext, scheduleFromLastActivity, writeLastActivityAt])
+  }, [scheduleFromLastActivity, shouldTrackSession, writeLastActivityAt])
 
   const checkClock = useCallback(() => {
-    if (!isProtectedContext || !authSession || hasTimedOutRef.current) return
+    if (!shouldTrackSession || hasTimedOutRef.current) return
     const lastActivityAt = readLastActivityAt()
     scheduleFromLastActivity(lastActivityAt)
-  }, [authSession, isProtectedContext, readLastActivityAt, scheduleFromLastActivity])
+  }, [readLastActivityAt, scheduleFromLastActivity, shouldTrackSession])
 
   const handleExtendSession = useCallback(() => {
     hasTimedOutRef.current = false
@@ -155,7 +171,7 @@ export function IdleSessionTimeout() {
   }, [markActivity])
 
   useEffect(() => {
-    if (!isProtectedContext || !authSession) {
+    if (!shouldTrackSession) {
       clearTimers()
       hasTimedOutRef.current = false
       setShowWarning(false)
@@ -168,8 +184,10 @@ export function IdleSessionTimeout() {
     setShowWarning(false)
     setShowExpired(false)
     setExpiredTargetPath(null)
-    const lastActivityAt = readLastActivityAt()
-    scheduleFromLastActivity(lastActivityAt)
+    const now = Date.now()
+    writeLastActivityAt(now)
+    scheduleFromLastActivity(now)
+    intervalRef.current = window.setInterval(checkClock, 1000)
 
     for (const eventName of ACTIVITY_EVENTS) {
       window.addEventListener(eventName, markActivity, { passive: true })
@@ -190,7 +208,7 @@ export function IdleSessionTimeout() {
       }
       document.removeEventListener('visibilitychange', checkClock)
     }
-  }, [authSession, checkClock, clearTimers, isProtectedContext, markActivity, readLastActivityAt, scheduleFromLastActivity])
+  }, [checkClock, clearTimers, markActivity, scheduleFromLastActivity, shouldTrackSession, writeLastActivityAt])
 
   useEffect(() => {
     return () => {
