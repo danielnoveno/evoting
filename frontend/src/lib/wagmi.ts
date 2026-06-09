@@ -1,5 +1,6 @@
 import { http, createConfig } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
+import { injected } from 'wagmi/connectors'
 import { baseAccountConnector } from '@/lib/base-account-connector'
 
 export const wagmiConfig = createConfig({
@@ -12,6 +13,9 @@ export const wagmiConfig = createConfig({
         options: 'smartWalletOnly',
       },
     }),
+    // Injected connector (MetaMask, Rabby, dll.) — diperlukan untuk
+    // superadmin yang wallet EOA-nya terdaftar di on-chain registry.
+    injected({ shimDisconnect: true }),
   ],
   ssr: true,
   transports: {

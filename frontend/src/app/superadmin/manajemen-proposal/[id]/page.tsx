@@ -75,6 +75,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
     isConnected,
     chainId,
     isSuperAdmin,
+    superAdminAddress,
     isWritePending, 
     isConfirming, 
     isConfirmed, 
@@ -337,7 +338,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         showToast({
           title: isSuperAdmin === false ? 'Wallet bukan superadmin kontrak' : 'Validasi wallet belum siap',
           description: isSuperAdmin === false 
-            ? `Gunakan wallet superadmin. Wallet tersambung: ${userAddress?.slice(0, 6)}...${userAddress?.slice(-4)}. Pastikan alamat ini terdaftar di VoteChain Registry.` 
+            ? `Wallet tersambung: ${userAddress?.slice(0, 6)}...${userAddress?.slice(-4)} bukan superadmin kontrak. Superadmin on-chain: ${superAdminAddress ? `${(superAdminAddress as string).slice(0, 6)}...${(superAdminAddress as string).slice(-4)}` : '(memuat...)'}. Hubungkan wallet superadmin via ekstensi browser (MetaMask/Rabby) dengan private key deployer, atau gunakan Smart Wallet yang terdaftar.` 
             : 'Tunggu beberapa detik sampai peran wallet terbaca, lalu coba deploy lagi.',
           tone: 'error',
         })

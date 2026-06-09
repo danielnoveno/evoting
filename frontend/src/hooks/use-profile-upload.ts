@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { profileQueryKeys } from './use-profile'
+import { compressImage } from '@/lib/image-compression'
 
 export function useProfileImageUpload() {
   const queryClient = useQueryClient()
@@ -12,14 +13,18 @@ export function useProfileImageUpload() {
       const client = getSupabaseBrowserClient()
       if (!client) throw new Error('Supabase client not initialized')
 
-      const ext = file.name.split('.').pop()
+      // Compress image: convert to WebP at 50% quality
+      const compressed = await compressImage(file, 0.5)
+
+      const ext = 'webp'
       const filePath = `avatars/${userId}-${Date.now()}.${ext}`
 
       // 1. Upload the file to 'public-assets' bucket
       const { data, error: uploadError } = await client.storage
         .from('public-assets')
-        .upload(filePath, file, {
+        .upload(filePath, compressed, {
           cacheControl: '3600',
+          contentType: 'image/webp',
           upsert: true,
         })
 

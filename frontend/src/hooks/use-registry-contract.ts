@@ -47,6 +47,16 @@ export function useRegistryContract() {
     }
   })
 
+  // Baca alamat superAdmin dari on-chain (digunakan untuk pesan error deploy)
+  const { data: superAdminAddress } = useReadContract({
+    address: REGISTRY_ADDRESS as `0x${string}`,
+    abi: registryAbi,
+    functionName: 'superAdmin',
+    query: {
+      enabled: !!REGISTRY_ADDRESS && REGISTRY_ADDRESS !== '0x0000000000000000000000000000000000000000',
+    }
+  })
+
   // Write functions
   const reviewProposal = (proposalId: number, approve: boolean) => {
     writeContract({
@@ -112,8 +122,6 @@ export function useRegistryContract() {
     title: string,
     metadataURI: string,
     candidateCount: number,
-    commitDuration: number,
-    revealDuration: number
   ) => {
     writeContract({
       address: REGISTRY_ADDRESS as `0x${string}`,
@@ -125,6 +133,7 @@ export function useRegistryContract() {
 
   return {
     isSuperAdmin,
+    superAdminAddress,
     userAddress,
     isConnected,
     chainId,

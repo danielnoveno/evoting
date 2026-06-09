@@ -2,6 +2,7 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
+import { compressImage } from '@/lib/image-compression'
 
 export function useCandidateAssetUpload() {
   return useMutation({
@@ -9,13 +10,17 @@ export function useCandidateAssetUpload() {
       const client = getSupabaseBrowserClient()
       if (!client) throw new Error('Supabase client not initialized')
 
-      const ext = file.name.split('.').pop()
+      // Compress image: convert to WebP at 50% quality
+      const compressed = await compressImage(file, 0.5)
+
+      const ext = 'webp'
       const filePath = `candidates/${electionId}/${candidateId}-${Date.now()}.${ext}`
 
       const { data, error } = await client.storage
         .from('public-assets')
-        .upload(filePath, file, {
+        .upload(filePath, compressed, {
           cacheControl: '3600',
+          contentType: 'image/webp',
           upsert: false,
         })
 

@@ -16,12 +16,14 @@ import { useMFAFactors, useEnrollMFA, useVerifyMFA, useUnenrollMFA } from '@/hoo
 import { usePlatformSettings, useUpdatePlatformSettings } from '@/hooks/use-platform-settings'
 import { useResetPassword } from '@/hooks/use-auth-session'
 import { useAccount, useBalance } from 'wagmi'
+import { baseSepolia } from 'wagmi/chains'
 
 export default function SuperadminProfilePage() {
   const { showToast } = useToast()
   const { address: connectedWallet, isConnected, chainId } = useAccount()
   const walletBalanceQuery = useBalance({
     address: connectedWallet,
+    chainId: baseSepolia.id,
     query: {
       enabled: Boolean(connectedWallet),
       refetchInterval: 30_000,
