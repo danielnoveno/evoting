@@ -107,11 +107,13 @@ export function IdleSessionTimeout() {
     setShowWarning(false)
     setShowExpired(false)
 
-    await signOutCurrentSession().catch(() => undefined)
+    // Sign out in background, then redirect
+    void signOutCurrentSession().catch(() => undefined)
     clearAuthQueryCache()
 
-    router.replace(targetPath)
-  }, [clearAuthQueryCache, clearTimers, router])
+    // Gunakan window.location.href untuk memastikan seluruh state terhapus total
+    window.location.href = targetPath
+  }, [clearAuthQueryCache, clearTimers])
 
   const handleTimeout = useCallback(async () => {
     if (hasTimedOutRef.current) return
@@ -120,12 +122,14 @@ export function IdleSessionTimeout() {
 
     const targetPath = getRoleAwareLoginPath(pathname, currentProfile?.role)
 
-    await signOutCurrentSession().catch(() => undefined)
-    clearAuthQueryCache()
-
-    // Simpan target path dan tampilkan modal, jangan redirect langsung
+    // Langsung tampilkan modal expired, jangan tunggu signout selesai
     setExpiredTargetPath(targetPath)
     setShowExpired(true)
+    
+    // Lakukan signout di background
+    void signOutCurrentSession()
+      .then(() => clearAuthQueryCache())
+      .catch(() => undefined)
   }, [clearAuthQueryCache, clearTimers, currentProfile?.role, pathname])
 
   const scheduleFromLastActivity = useCallback((lastActivityAt: number) => {

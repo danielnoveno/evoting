@@ -147,19 +147,17 @@ export async function signOutCurrentSession() {
   const client = getSupabaseBrowserClient()
   if (!client) return
 
-  const { error } = await client.auth.signOut()
-  if (error) {
-    if (isInvalidStoredSession(error)) {
-      await clearLocalAuthSession()
-      return
+  try {
+    const { error } = await client.auth.signOut()
+    if (error && !isInvalidStoredSession(error)) {
+      console.warn('[Auth Repository] Server sign-out failed, clearing local session anyway:', error)
     }
-
-    throw new RepositoryError('Gagal mengakhiri sesi akun. Coba lagi.')
+  } catch (err) {
+    console.error('[Auth Repository] Unexpected error during server sign-out:', err)
+  } finally {
+    // ALWAYS clear local session to ensure cookies are removed even if network fails
+    await clearLocalAuthSession()
   }
-
-  // Pastikan token browser benar-benar hilang. Pada beberapa kondisi network/OAuth,
-  // global sign out sukses tetapi cache lokal masih sempat dibaca ulang oleh UI.
-  await clearLocalAuthSession()
 }
 
 // MFA Functions

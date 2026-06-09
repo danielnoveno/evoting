@@ -32,6 +32,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       allowedRoles={['admin', 'super_admin']}
       fallbackTitle="Akses admin tidak tersedia"
       fallbackDescription="Halaman ini hanya dapat dibuka oleh admin platform atau super admin yang memiliki sesi backend aktif."
+      loginHref="/portal-admin"
     >
       <ConsoleShell
         role="admin"
