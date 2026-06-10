@@ -53,10 +53,10 @@ insert into app.admin_registry (
 ) values (
   'novenoow@gmail.com',
   'admin',
-  'FTI Admin',
+  'Organisasi Hima test',
   'pending',
   'all',
-  'FTI UAJY'
+  'HIMAFORKA-test'
 ) on conflict (email) do update set
   assigned_role = 'admin',
   description = excluded.description,

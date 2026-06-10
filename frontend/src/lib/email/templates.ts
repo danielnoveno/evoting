@@ -9,6 +9,10 @@ export function buildAdminActivationEmail(params: {
   const roleName = isSuperadmin ? 'Superadmin' : 'Admin Organisasi'
   const subject = `Aktivasi Akun ${roleName} — Votein Portal Admin`
 
+  const activationInstruction = isSuperadmin
+    ? 'Silakan klik tombol di bawah ini untuk verifikasi menggunakan akun kampus (SSO) dan mengaktifkan akses portal admin.'
+    : 'Silakan klik tombol di bawah ini untuk membuat password dan mengaktifkan akun admin organisasi kamu.'
+
   const html = `<div style="margin:0;padding:0;background:#F8FAFC;font-family:Inter,Arial,sans-serif;color:#0F172A;">
   <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
     <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:28px;">
@@ -31,7 +35,7 @@ export function buildAdminActivationEmail(params: {
       </h2>
       <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#475569;">
         Halo <strong>${params.displayName}</strong>, kamu telah diundang untuk menjadi <strong>${roleName.toLowerCase()}</strong> di platform Votein. 
-        Silakan klik tombol di bawah ini untuk mengaktifkan akun dan membuat password kamu.
+        ${activationInstruction}
       </p>
       <a href="${params.activationLink}"
          style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;padding:12px 18px;background:#0F172A;color:#FFFFFF;text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import {
   ShieldCheck,
   Loader2,
@@ -11,10 +11,14 @@ import {
   AlertTriangle,
   Mail,
   Lock,
+  KeyRound,
+  Eye,
+  EyeOff,
+  AlertCircle,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast-provider'
 import { useAuthSession, useMicrosoftCampusLogin, useGoogleLogin } from '@/hooks/use-auth-session'
-import { useAdminInvitePreview, useClaimAdminInvite } from '@/hooks/use-admin-invite'
+import { useAdminInvitePreview, useClaimAdminInvite, useActivateAdminInvite } from '@/hooks/use-admin-invite'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { ScrollReveal, FloatingShape } from '@/components/public/parallax'
 import { AsciiBackground } from '@/components/public/ascii-background'
@@ -33,30 +37,38 @@ function ActivationContent() {
   const inviteToken = searchParams.get('invite')?.trim() ?? ''
   const invitePreviewQuery = useAdminInvitePreview(inviteToken)
   const claimInviteMutation = useClaimAdminInvite()
+  const activateInviteMutation = useActivateAdminInvite()
 
   const [mounted, setMounted] = useState(false)
   const [claimStarted, setClaimStarted] = useState(false)
+
+  // Password form state
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
 
   useEffect(() => { setMounted(true) }, [])
 
   const authSession = authSessionQuery.data
   const invitePreview = invitePreviewQuery.data
+  const isSuperAdmin = invitePreview?.role === 'super_admin'
+  const isAdmin = invitePreview?.role === 'admin'
   const isCorrectAccount = invitePreview && authSession?.user?.email?.toLowerCase() === invitePreview.email.toLowerCase()
 
-  // Auto-claim if logged in with correct account
+  // Auto-claim trigger — only for super_admin SSO flow
   useEffect(() => {
-    if (mounted && inviteToken && authSession && isCorrectAccount && !claimStarted && invitePreview?.status !== 'active') {
+    if (mounted && inviteToken && authSession && isCorrectAccount && !claimStarted && invitePreview?.status !== 'active' && isSuperAdmin) {
       setClaimStarted(true)
       claimInviteMutation.mutate(inviteToken, {
         onSuccess: () => {
           showToast({ 
             tone: 'success', 
             title: 'Akun Diaktifkan', 
-            description: `Selamat datang, ${invitePreview.displayName || 'Admin'}. Akun organisasi Anda telah aktif.` 
+            description: `Selamat datang, ${invitePreview.displayName || 'Superadmin'}. Akun Anda telah aktif.` 
           })
-          window.setTimeout(() => {
-            router.replace('/portal-admin')
-          }, 2000)
+          window.setTimeout(() => { router.replace('/portal-admin') }, 2000)
         },
         onError: (err) => {
           setClaimStarted(false)
@@ -64,14 +76,58 @@ function ActivationContent() {
         }
       })
     }
-  }, [mounted, inviteToken, authSession, isCorrectAccount, claimStarted, invitePreview, claimInviteMutation, router, showToast])
+  }, [mounted, inviteToken, authSession, isCorrectAccount, claimStarted, invitePreview, claimInviteMutation, router, showToast, isSuperAdmin])
+
+  const handleSSOLogin = useCallback((provider: 'microsoft' | 'google') => {
+    const mutation = provider === 'microsoft' ? microsoftLoginMutation : googleLoginMutation
+    mutation.mutate({ nextPath: `/auth/aktivasi-admin?invite=${inviteToken}` })
+  }, [microsoftLoginMutation, googleLoginMutation, inviteToken])
+
+  // --- Password form validation ---
+  const validatePassword = useCallback((): boolean => {
+    setPasswordError(null)
+    if (password.length < 8) {
+      setPasswordError('Password minimal 8 karakter.')
+      return false
+    }
+    if (password !== confirmPassword) {
+      setPasswordError('Konfirmasi password tidak cocok.')
+      return false
+    }
+    return true
+  }, [password, confirmPassword])
+
+  const handlePasswordActivation = useCallback(() => {
+    if (!validatePassword()) return
+    activateInviteMutation.mutate(
+      { token: inviteToken, password },
+      {
+        onSuccess: (result) => {
+          showToast({
+            tone: 'success',
+            title: 'Akun Diaktifkan',
+            description: `Selamat datang, ${result.displayName || 'Admin'}. Akun organisasi Anda telah aktif.`
+          })
+          window.setTimeout(() => { router.replace('/portal-admin') }, 2000)
+        },
+      }
+    )
+  }, [inviteToken, password, validatePassword, activateInviteMutation, showToast, router])
+
+  // Clear password error on input change
+  useEffect(() => {
+    if (passwordError) setPasswordError(null)
+  }, [password, confirmPassword])
 
   if (!mounted) return null
 
-  const handleSSOLogin = (provider: 'microsoft' | 'google') => {
-    const mutation = provider === 'microsoft' ? microsoftLoginMutation : googleLoginMutation
-    mutation.mutate({ nextPath: `/auth/aktivasi-admin?invite=${inviteToken}` })
-  }
+  const pageTitle = isSuperAdmin ? 'Aktivasi Akun Superadmin' : 'Aktivasi Akun Admin Organisasi'
+  const pageSubtitle = isSuperAdmin
+    ? 'Gunakan akun kampus (SSO) untuk memverifikasi identitas dan mengaktifkan akses Anda ke portal admin Votein.'
+    : 'Buat password untuk akun admin organisasi Anda. Password digunakan untuk masuk ke portal admin Votein.'
+  const isActivating = claimInviteMutation.isPending || activateInviteMutation.isPending
+  const isActivationSuccess = claimInviteMutation.isSuccess || activateInviteMutation.isSuccess
+  const activationError = claimInviteMutation.error || activateInviteMutation.error
 
   return (
     <main className="flex min-h-screen flex-col bg-slate-50">
@@ -92,14 +148,14 @@ function ActivationContent() {
           <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white p-8 shadow-2xl md:p-12">
             <div className="flex flex-col items-center text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                <ShieldCheck className="h-8 w-8" />
+                {isSuperAdmin ? <ShieldCheck className="h-8 w-8" /> : <KeyRound className="h-8 w-8" />}
               </div>
               
               <h1 className="mt-6 text-[24px] font-bold tracking-tight text-slate-900 md:text-[28px]">
-                Aktivasi Akun Admin Organisasi
+                {pageTitle}
               </h1>
               <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
-                Gunakan akun kampus (SSO) untuk memverifikasi identitas dan mengaktifkan akses Anda ke portal admin Votein.
+                {pageSubtitle}
               </p>
             </div>
 
@@ -129,7 +185,7 @@ function ActivationContent() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700">Institusi / Organisasi</p>
-                        <p className="mt-1 truncate text-[16px] font-semibold text-slate-900">{invitePreview.displayName || 'Admin Organisasi'}</p>
+                        <p className="mt-1 truncate text-[16px] font-semibold text-slate-900">{invitePreview.displayName || (isSuperAdmin ? 'Superadmin' : 'Admin Organisasi')}</p>
                         <div className="mt-3 flex items-center gap-2 text-[13px] text-slate-600">
                           <Mail className="h-3.5 w-3.5" />
                           <span className="truncate">{invitePreview.email}</span>
@@ -138,13 +194,15 @@ function ActivationContent() {
                     </div>
                   </div>
 
-                  {claimInviteMutation.isPending || (claimStarted && !claimInviteMutation.isError) ? (
+                  {/* ── Loading state ── */}
+                  {isActivating ? (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
                       <p className="mt-4 font-medium text-slate-900">Mengaktifkan akun Anda...</p>
                       <p className="mt-1 text-[13px] text-slate-500">Mohon tunggu sebentar, kami sedang memproses data organisasi.</p>
                     </div>
-                  ) : claimInviteMutation.isSuccess ? (
+                  ) : isActivationSuccess ? (
+                    /* ── Success state ── */
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                         <CheckCircle2 className="h-10 w-10" />
@@ -152,7 +210,8 @@ function ActivationContent() {
                       <h3 className="mt-6 text-[20px] font-bold text-slate-900">Aktivasi Berhasil!</h3>
                       <p className="mt-2 text-[14px] text-slate-600">Akun Anda telah aktif. Mengarahkan Anda ke portal admin...</p>
                     </div>
-                  ) : (
+                  ) : isSuperAdmin ? (
+                    /* ── SUPERADMIN: SSO flow ── */
                     <div className="space-y-4">
                       {!authSession ? (
                         <div className="space-y-4">
@@ -160,7 +219,7 @@ function ActivationContent() {
                             <div className="flex gap-3">
                               <Lock className="h-4 w-4 shrink-0 text-amber-600" />
                               <p className="text-[12px] leading-5 text-amber-800">
-                                Sesuai kebijakan keamanan platform, aktivasi admin <strong>wajib</strong> menggunakan Single Sign-On (SSO) kampus. Tidak ada password manual yang diperlukan.
+                                Sesuai kebijakan keamanan platform, aktivasi superadmin <strong>wajib</strong> menggunakan Single Sign-On (SSO) kampus. Tidak ada password manual yang diperlukan.
                               </p>
                             </div>
                           </div>
@@ -195,7 +254,7 @@ function ActivationContent() {
                           </div>
                           <button
                             onClick={() => claimInviteMutation.mutate(inviteToken)}
-                            className="flex h-12 w-full items-center justify-center rounded-xl bg-blue-600 font-bold text-white transition hover:bg-blue-700 shadow-lg shadow-blue-200"
+                            className="flex h-12 w-full items-center justify-center rounded-xl bg-slate-900 font-bold text-white transition hover:bg-slate-800"
                           >
                             Konfirmasi Aktivasi Akun
                           </button>
@@ -216,12 +275,94 @@ function ActivationContent() {
                         </div>
                       )}
                     </div>
+                  ) : (
+                    /* ── ADMIN ORGANISASI: Password-based activation ── */
+                    <div className="space-y-5">
+                      <div className="rounded-xl bg-amber-50 p-4">
+                        <div className="flex gap-3">
+                          <KeyRound className="h-4 w-4 shrink-0 text-amber-600" />
+                          <p className="text-[12px] leading-5 text-amber-800">
+                            Buat password untuk akun admin organisasi Anda. Password digunakan setiap kali masuk ke portal admin.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Password field */}
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-semibold text-slate-600">
+                          Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Minimal 8 karakter"
+                            className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 pr-9 text-[14px] text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-3 focus:ring-slate-900/10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            tabIndex={-1}
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        <p className="mt-1 text-[12px] text-slate-400">Minimal 8 karakter</p>
+                      </div>
+
+                      {/* Confirm password field */}
+                      <div>
+                        <label className="mb-1.5 block text-[12px] font-semibold text-slate-600">
+                          Konfirmasi Password
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Ulangi password yang sama"
+                            className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 pr-9 text-[14px] text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-3 focus:ring-slate-900/10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            tabIndex={-1}
+                          >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Inline password error */}
+                      {passwordError && (
+                        <div className="flex items-center gap-1.5 text-[12px] text-red-600">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                          <span>{passwordError}</span>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={handlePasswordActivation}
+                        disabled={!password || !confirmPassword || activateInviteMutation.isPending}
+                        className="flex h-11 w-full items-center justify-center rounded-md bg-slate-900 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {activateInviteMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Aktivasi Akun'
+                        )}
+                      </button>
+                    </div>
                   )}
 
-                  {claimInviteMutation.error && (
-                    <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-4">
+                  {/* ── Activation error ── */}
+                  {activationError && (
+                    <div className="rounded-xl border border-red-100 bg-red-50 p-4">
                       <p className="text-center text-[13px] font-medium text-red-700">
-                        {getRepositoryErrorMessage(claimInviteMutation.error, 'Gagal mengaktifkan akun. Silakan coba lagi.')}
+                        {getRepositoryErrorMessage(activationError, 'Gagal mengaktifkan akun. Silakan coba lagi.')}
                       </p>
                     </div>
                   )}
