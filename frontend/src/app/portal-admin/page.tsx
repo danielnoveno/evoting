@@ -398,6 +398,52 @@ function PortalAdminContent() {
                   </div>
                 )}
 
+                {authSession && !isConnected && (
+                  <div className="mt-8 w-full">
+                    <h2 className="text-[20px] font-semibold text-slate-900">Sambungkan Dompet Digital</h2>
+                    <p className="mt-3 text-[13px] leading-6 text-slate-600">
+                      Langkah kedua adalah menyambungkan dompet digital yang akan digunakan sebagai identitas administratif Anda. Dompet ini berfungsi untuk menandatangani aksi dan memvalidasi akses ke dashboard admin.
+                    </p>
+
+                    <div className="mt-8 rounded-xl border border-blue-100 bg-blue-50/50 p-5">
+                      <div className="flex gap-3">
+                        <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                          <ShieldCheck className="h-3 w-3" />
+                        </div>
+                        <div className="space-y-3">
+                          <h3 className="text-[13px] font-bold text-blue-900">Keamanan Administratif</h3>
+                          <p className="text-[12px] leading-5 text-blue-800/80">
+                            Akses ke panel pengelolaan memerlukan verifikasi dua lapis. Akun institusi memastikan identitas personal Anda, sementara dompet digital menjamin integritas aksi yang dilakukan pada blockchain.
+                          </p>
+                          <div className="rounded-lg bg-white/60 p-3 text-[11px] leading-relaxed text-blue-900/70 border border-blue-100/50">
+                            <span className="font-bold text-blue-900 block mb-1">Penting:</span>
+                            Pastikan Anda menggunakan dompet yang sama setiap kali masuk ke portal admin untuk menjaga konsistensi data audit.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-8 space-y-4">
+                      {[
+                        'Gunakan Smart Wallet (Coinbase Wallet) untuk pengalaman terbaik.',
+                        'Dompet digital menyimpan kunci unik untuk mengakses data pemilihan.',
+                        'Tidak ada biaya gas untuk proses masuk atau navigasi dashboard.',
+                      ].map((item) => (
+                        <div key={item} className="flex items-center gap-3 text-[13px] text-slate-600">
+                          <span className="h-1.5 w-1.5 rounded-full bg-blue-500 ring-4 ring-blue-50" />
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+
+                    {formError && (
+                      <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-[12px] leading-5 text-red-600">
+                        {formError}
+                      </div>
+                    )}
+                  </div>
+                )}
+
 
                 {isConnected && authSession && !isWalletBound && (
                   <div className="mt-8 w-full">
