@@ -59,17 +59,10 @@ function PortalAdminContent() {
   const bindWalletMutation = useBindCurrentWallet()
   const microsoftLoginMutation = useMicrosoftCampusLogin()
   const googleLoginMutation = useGoogleLogin()
-  const emailLoginMutation = useEmailPasswordLogin()
-  const resetPasswordMutation = useResetPassword()
 
   const [mounted, setMounted] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   const [formError, setFormError] = useState('')
   const [bindError, setBindError] = useState('')
-  const [authMode, setAuthMode] = useState<'login' | 'forgot'>('login')
-  const [passwordLoginOpen, setPasswordLoginOpen] = useState(false)
   const [redirectState, setRedirectState] = useState<{
     target: string
     label: string
@@ -165,38 +158,6 @@ function PortalAdminContent() {
   const handleGoogleLogin = async () => {
     setFormError('')
     googleLoginMutation.mutate({ nextPath: '/portal-admin' })
-  }
-
-  const handleEmailLogin = (event: React.FormEvent) => {
-    event.preventDefault()
-    setFormError('')
-    if (!email || !password) return setFormError('Email dan password wajib diisi.')
-    emailLoginMutation.mutate(
-      { email, password },
-      {
-        onSuccess: () => {
-          showToast({ tone: 'success', title: 'Login Berhasil', description: 'Akun admin organisasi Anda telah terverifikasi.' })
-        },
-        onError: (err) => {
-          setFormError(getRepositoryErrorMessage(err, 'Email atau password salah.'))
-        },
-      }
-    )
-  }
-
-  const handleResetPassword = (event: React.FormEvent) => {
-    event.preventDefault()
-    setFormError('')
-    if (!email) return setFormError('Email wajib diisi.')
-    resetPasswordMutation.mutate(email, {
-      onSuccess: () => {
-        showToast({ tone: 'success', title: 'Email Terkirim', description: 'Instruksi reset password telah dikirim ke email Anda.' })
-        setAuthMode('login')
-      },
-      onError: (err) => {
-        setFormError(getRepositoryErrorMessage(err, 'Gagal mengirim instruksi reset password.'))
-      },
-    })
   }
 
   const handleBind = () => {
@@ -400,88 +361,7 @@ function PortalAdminContent() {
                       </button>
                     </div>
 
-                    {/* ── Email / Password toggle ── */}
-                    <div className="relative my-6">
-                      <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                        <div className="w-full border-t border-slate-200" />
-                      </div>
-                      <div className="relative flex justify-center">
-                        <button
-                          type="button"
-                          onClick={() => setPasswordLoginOpen(!passwordLoginOpen)}
-                          className="inline-flex items-center gap-1.5 bg-white px-3 text-[12px] font-medium text-slate-400 transition hover:text-slate-600"
-                        >
-                          {passwordLoginOpen ? 'Sembunyikan' : 'Login dengan Password'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {passwordLoginOpen && (
-                      <form onSubmit={authMode === 'forgot' ? handleResetPassword : handleEmailLogin} className="space-y-4">
-                        <div>
-                          <label className="mb-1.5 block text-[12px] font-semibold text-slate-600">Email</label>
-                          <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="email@contoh.com"
-                            className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-[14px] text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-3 focus:ring-slate-900/10"
-                          />
-                        </div>
-
-                        {authMode === 'login' && (
-                          <div>
-                            <label className="mb-1.5 block text-[12px] font-semibold text-slate-600">Password</label>
-                            <div className="relative">
-                              <input
-                                type={showPassword ? 'text' : 'password'}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Masukkan password"
-                                className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 pr-9 text-[14px] text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:outline-none focus:ring-3 focus:ring-slate-900/10"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                                tabIndex={-1}
-                              >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        <button
-                          type="submit"
-                          disabled={
-                            (authMode === 'login' ? emailLoginMutation.isPending : resetPasswordMutation.isPending) || !email
-                          }
-                          className="flex h-10 w-full items-center justify-center rounded-md bg-slate-900 text-[13px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          {authMode === 'login' ? (
-                            emailLoginMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Masuk ke Portal Admin'
-                          ) : (
-                            resetPasswordMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Kirim Instruksi Reset'
-                          )}
-                        </button>
-
-                        <div className="flex items-center justify-between">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAuthMode(authMode === 'login' ? 'forgot' : 'login')
-                              setFormError('')
-                            }}
-                            className="text-[12px] font-medium text-blue-600 hover:underline"
-                          >
-                            {authMode === 'login' ? 'Lupa password?' : 'Kembali ke login'}
-                          </button>
-                        </div>
-                      </form>
-                    )}
-
-                    <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-5">
+                    <div className="mt-8 rounded-xl border border-blue-100 bg-blue-50/50 p-5">
                       <div className="flex gap-3">
                         <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
                           <Building2 className="h-3 w-3" />
