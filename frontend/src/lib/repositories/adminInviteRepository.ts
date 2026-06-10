@@ -197,27 +197,3 @@ export async function claimAdminInvite(token: string): Promise<ActivateAdminInvi
     role,
   }
 }
-
-export async function activateAdminInvite(token: string, password: string): Promise<ActivateAdminInviteResult> {
-  const response = await fetch('/api/admin-invites/activate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, password }),
-  })
-
-  if (!response.ok) throw await readApiError(response, 'Aktivasi akun gagal.')
-
-  const payload: unknown = await response.json()
-  if (!isRecord(payload) || typeof payload.email !== 'string') {
-    throw new RepositoryError('Respons aktivasi tidak valid.')
-  }
-
-  const role = payload.role
-  if (role !== 'admin' && role !== 'super_admin') throw new RepositoryError('Role aktivasi tidak valid.')
-
-  return {
-    email: payload.email,
-    displayName: typeof payload.displayName === 'string' ? payload.displayName : null,
-    role,
-  }
-}
