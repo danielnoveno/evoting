@@ -78,8 +78,10 @@ export function VoterShell({ children }: { children: ReactNode }) {
   return (
     <RoleGate
       allowedRoles={['voter', 'admin', 'super_admin']}
-      fallbackTitle="Akses portal pemilih tidak tersedia"
-      fallbackDescription="Masuk kembali dengan akun yang memiliki akses pemilih untuk membuka halaman ini."
+      fallbackTitle={locale === 'Bahasa Indonesia' ? 'Sesi Telah Berakhir' : 'Session Timeout'}
+      fallbackDescription={locale === 'Bahasa Indonesia' 
+        ? 'Sesi Anda telah berakhir atau akses tidak valid demi keamanan. Silakan masuk kembali untuk melanjutkan penggunaan portal pemilih.'
+        : 'Your session has ended or access is invalid for your protection. Please log in again to continue using the voter portal.'}
     >
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <div className="flex min-h-screen">

@@ -28,8 +28,10 @@ export function SuperadminShell({ children }: { children: ReactNode }) {
   return (
     <RoleGate
       allowedRoles={['super_admin']}
-      fallbackTitle="Akses super admin tidak tersedia"
-      fallbackDescription="Halaman ini hanya dapat dibuka oleh super admin yang memiliki sesi backend aktif."
+      fallbackTitle={locale === 'Bahasa Indonesia' ? 'Sesi Telah Berakhir' : 'Session Timeout'}
+      fallbackDescription={locale === 'Bahasa Indonesia' 
+        ? 'Sesi Anda telah berakhir atau akses tidak valid demi keamanan. Silakan masuk kembali untuk melanjutkan pengelolaan platform.'
+        : 'Your session has ended or access is invalid for your protection. Please log in again to continue managing the platform.'}
       loginHref="/portal-admin"
     >
       <ConsoleShell
