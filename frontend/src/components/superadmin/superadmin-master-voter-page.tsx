@@ -273,8 +273,8 @@ export function SuperadminMasterVoterPage() {
       return
     }
 
-    if (!/^\d{10}$/.test(nim)) {
-      showToast({ tone: 'error', title: 'NIM tidak valid', description: 'NIM harus berupa 10 digit angka.' })
+    if (!/^\d{9,10}$/.test(nim)) {
+      showToast({ tone: 'error', title: 'NIM tidak valid', description: 'NIM harus berupa 9 atau 10 digit angka.' })
       return
     }
 
@@ -350,8 +350,8 @@ export function SuperadminMasterVoterPage() {
         continue
       }
 
-      if (!/^\d{10}$/.test(nim)) {
-        tempErrors.push(`Baris ${i + 1}: NIM "${nim}" tidak valid (harus tepat 10 digit angka numerik).`)
+      if (!/^\d{9,10}$/.test(nim)) {
+        tempErrors.push(`Baris ${i + 1}: NIM "${nim}" tidak valid (harus 9 atau 10 digit angka numerik).`)
         continue
       }
 

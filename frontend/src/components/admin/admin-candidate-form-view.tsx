@@ -67,8 +67,8 @@ export function AdminCandidateFormView({
 
     if (!idVal.trim()) {
       nextErrors.identityNumber = 'Nomor identitas wajib diisi.'
-    } else if (!/^\d{10}$/.test(idVal.trim())) {
-      nextErrors.identityNumber = 'Nomor identitas harus berupa angka numerik tepat 10 digit.'
+    } else if (!/^\d{9,10}$/.test(idVal.trim())) {
+      nextErrors.identityNumber = 'Nomor identitas harus berupa angka numerik 9 atau 10 digit.'
     }
 
     if (!visVal.trim()) {
