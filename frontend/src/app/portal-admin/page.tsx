@@ -108,6 +108,13 @@ function PortalAdminContent() {
   const completedSteps = (authSession ? 1 : 0) + (isAdminAccessValidated ? 1 : 0)
   const currentStepLabel = !authSession ? 'Verifikasi admin' : !isConnected ? 'Sambungkan dompet digital' : !isWalletBound ? 'Validasi otoritas' : 'Akses siap'
 
+  // Auto-bind if both are ready but not yet bound
+  useEffect(() => {
+    if (mounted && isConnected && authSession && !isWalletBound && !bindWalletMutation.isPending && !bindWalletMutation.isSuccess && !bindError && !bindingBlocked) {
+      handleBind()
+    }
+  }, [mounted, isConnected, authSession, isWalletBound, bindWalletMutation.isPending, bindWalletMutation.isSuccess, bindError, bindingBlocked])
+
   useEffect(() => {
     if (mounted && isConnected && authSession && isWalletBound) {
       if (currentProfile?.role === 'super_admin') {

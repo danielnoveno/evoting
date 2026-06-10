@@ -68,7 +68,7 @@ function ActivationContent() {
             title: 'Akun Diaktifkan', 
             description: `Selamat datang, ${invitePreview.displayName || 'Superadmin'}. Akun Anda telah aktif.` 
           })
-          window.setTimeout(() => { router.replace('/portal-admin') }, 2000)
+          window.setTimeout(() => { router.replace(isSuperAdmin ? '/portal-admin' : '/hubungkan-dompet?activate=admin') }, 2000)
         },
         onError: (err) => {
           setClaimStarted(false)
@@ -108,7 +108,7 @@ function ActivationContent() {
             title: 'Akun Diaktifkan',
             description: `Selamat datang, ${result.displayName || 'Admin'}. Akun organisasi Anda telah aktif.`
           })
-          window.setTimeout(() => { router.replace('/portal-admin') }, 2000)
+          window.setTimeout(() => { router.replace(isSuperAdmin ? '/portal-admin' : '/hubungkan-dompet?activate=admin') }, 2000)
         },
       }
     )

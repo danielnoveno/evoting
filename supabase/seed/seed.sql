@@ -70,7 +70,7 @@ insert into app.admin_registry (
   assigned_role,
   description,
   status,
-  access_scope,
+access_scope,
   wallet_address
 ) values (
   '220711663@students.uajy.ac.id',

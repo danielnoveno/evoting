@@ -152,6 +152,13 @@ function ConnectWalletContent() {
         ? activationMode ? `${activationContext === 'admin' ? 'Aktivasi admin' : 'Aktivasi voter'} · tahap 3 dari 3` : '3. Aktifkan hak suara'
         : activationMode ? `${activationContext === 'admin' ? 'Aktivasi admin' : 'Aktivasi voter'} selesai` : 'Selesai, akses siap'
 
+  // Auto-bind if both are ready but not yet bound
+  useEffect(() => {
+    if (mounted && isConnected && authSession && !isWalletBound && !bindWalletMutation.isPending && !bindWalletMutation.isSuccess && !bindError && !bindingBlocked) {
+      handleBind()
+    }
+  }, [mounted, isConnected, authSession, isWalletBound, bindWalletMutation.isPending, bindWalletMutation.isSuccess, bindError, bindingBlocked])
+
   // Auto-redirect if everything is ready
   useEffect(() => {
     if (mounted && currentProfile) {

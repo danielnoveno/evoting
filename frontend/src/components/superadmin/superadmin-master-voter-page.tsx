@@ -4,7 +4,7 @@ import { AlertTriangle, Check, ChevronLeft, ChevronRight, Database, Download, Fi
 import { type ChangeEvent, type DragEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { SuperadminSectionCard, SuperadminShell, SuperadminAvatar, SuperadminTabButton, SuperadminSectionHeading, SuperadminTextInput, SuperadminFieldLabel, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
+import { SuperadminSectionCard, SuperadminShell, SuperadminAvatar, SuperadminTabButton, SuperadminSectionHeading, SuperadminTextInput, SuperadminFieldLabel, SuperadminToolbarButton, SuperadminSelectInput } from '@/components/superadmin/superadmin-shell'
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -51,6 +51,21 @@ function getInitials(name: string) {
     .toUpperCase() || 'VT'
 }
 
+const PRODI_OPTIONS = [
+  'Informatika',
+  'Sistem Informasi',
+  'Teknik Industri',
+  'Arsitektur',
+  'Teknik Sipil',
+  'Manajemen',
+  'Akuntansi',
+  'Ekonomi Pembangunan',
+  'Hukum',
+  'Biologi',
+  'Ilmu Komunikasi',
+  'Sosiologi',
+] as const
+
 export function SuperadminMasterVoterPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -88,6 +103,25 @@ export function SuperadminMasterVoterPage() {
       params.delete('tab')
     }
     router.replace(`/superadmin/data-voter?${params.toString()}`)
+  }
+
+  // Handle NPM change with auto-email
+  const handleNpmChange = (npm: string) => {
+    // Only allow numbers
+    const cleanNpm = npm.replace(/\D/g, '')
+    
+    setFormData(prev => {
+      const newData = { ...prev, nim: cleanNpm }
+      
+      // Auto-append email if it hasn't been manually edited to something else or is empty
+      if (cleanNpm && (!prev.email || prev.email === `${prev.nim}@students.uajy.ac.id`)) {
+        newData.email = `${cleanNpm}@students.uajy.ac.id`
+      } else if (!cleanNpm && prev.email === `${prev.nim}@students.uajy.ac.id`) {
+        newData.email = ''
+      }
+      
+      return newData
+    })
   }
 
   const filteredVoters = voters.filter((voter) => {
@@ -614,7 +648,7 @@ export function SuperadminMasterVoterPage() {
                     </DataTableHeaderCell>
                     <DataTableHeaderCell>
                       <div className="flex items-center gap-1.5 uppercase tracking-[0.08em] text-slate-400">
-                        NIM / Identitas
+                        NPM / Identitas
                         <ChevronsUpDown className="h-3.5 w-3.5" />
                       </div>
                     </DataTableHeaderCell>
@@ -669,6 +703,7 @@ export function SuperadminMasterVoterPage() {
                         <DataTableCell className="font-mono text-[13px] text-slate-600">{voter.email}</DataTableCell>
                         <DataTableCell>
                           <span
+                            title={voter.syncStatus === 'Belum Sinkron' ? 'Data ini ada di database platform tetapi belum didaftarkan ke smart contract (blockchain).' : 'Data ini sudah didaftarkan ke smart contract dan siap untuk voting.'}
                             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ${
                               voter.syncStatus === 'Tersinkronisasi'
                                 ? 'bg-emerald-50 text-emerald-600'
@@ -730,10 +765,10 @@ export function SuperadminMasterVoterPage() {
 
             <div className="mt-8 grid gap-5 xl:grid-cols-2">
               <label className="block">
-                <SuperadminFieldLabel required>NIM (Nomor Induk Mahasiswa)</SuperadminFieldLabel>
+                <SuperadminFieldLabel required>NPM (Nomor Pokok Mahasiswa)</SuperadminFieldLabel>
                 <SuperadminTextInput
                   value={formData.nim}
-                  onChange={(event) => setFormData((current) => ({ ...current, nim: event.target.value }))}
+                  onChange={(event) => handleNpmChange(event.target.value)}
                   placeholder="Cth: 2207116630"
                 />
               </label>
@@ -757,12 +792,16 @@ export function SuperadminMasterVoterPage() {
               </label>
 
               <label className="block">
-                <SuperadminFieldLabel required>Fakultas / Program Studi</SuperadminFieldLabel>
-                <SuperadminTextInput
+                <SuperadminFieldLabel required>Program Studi</SuperadminFieldLabel>
+                <SuperadminSelectInput
                   value={formData.faculty}
                   onChange={(event) => setFormData((current) => ({ ...current, faculty: event.target.value }))}
-                  placeholder="Cth: Informatika"
-                />
+                >
+                  <option value="" disabled>Pilih Program Studi</option>
+                  {PRODI_OPTIONS.map(prodi => (
+                    <option key={prodi} value={prodi}>{prodi}</option>
+                  ))}
+                </SuperadminSelectInput>
               </label>
             </div>
           </AppSectionCard>
