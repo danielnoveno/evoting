@@ -5,6 +5,7 @@ import { useDisconnect } from 'wagmi'
 import { getCurrentSession, signInWithEmailPassword, signOutCurrentSession, signUpWithEmailPassword, resetPasswordForEmail, updatePassword } from '@/lib/repositories/authRepository'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { getPublicAppOrigin } from '@/lib/supabase/config'
+import { clearManualLogoutMarker, markManualLogoutStarted } from '@/lib/auth-session-events'
 
 export const authSessionQueryKey = ['auth', 'session'] as const
 
@@ -22,6 +23,7 @@ export function useEmailPasswordLogin() {
   return useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) => signInWithEmailPassword(email, password),
     onSuccess: () => {
+      clearManualLogoutMarker()
       void queryClient.invalidateQueries({ queryKey: authSessionQueryKey })
       void queryClient.invalidateQueries({ queryKey: ['profile'] })
     },
@@ -113,6 +115,9 @@ export function useLogoutSession() {
 
   return useMutation({
     mutationFn: signOutCurrentSession,
+    onMutate: () => {
+      markManualLogoutStarted()
+    },
     onSettled: () => {
       disconnect()
       void queryClient.invalidateQueries({ queryKey: authSessionQueryKey })

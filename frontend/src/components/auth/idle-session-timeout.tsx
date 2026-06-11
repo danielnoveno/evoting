@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { authSessionQueryKey, useAuthSession } from '@/hooks/use-auth-session'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { signOutCurrentSession } from '@/lib/repositories/authRepository'
+import { MANUAL_LOGOUT_EVENT, isManualLogoutInProgress } from '@/lib/auth-session-events'
 import { LogOut, Clock } from 'lucide-react'
 
 const ADMIN_IDLE_TIMEOUT_MS = 15 * 60 * 1000 // 15 menit untuk admin/superadmin
@@ -116,6 +117,15 @@ export function IdleSessionTimeout() {
   }, [clearAuthQueryCache, clearTimers])
 
   const handleTimeout = useCallback(async () => {
+    if (isManualLogoutInProgress()) {
+      hasTimedOutRef.current = true
+      clearTimers()
+      setShowWarning(false)
+      setShowExpired(false)
+      setExpiredTargetPath(null)
+      return
+    }
+
     if (hasTimedOutRef.current) return
     hasTimedOutRef.current = true
     clearTimers()
@@ -134,6 +144,7 @@ export function IdleSessionTimeout() {
 
   const scheduleFromLastActivity = useCallback((lastActivityAt: number) => {
     if (!shouldTrackSession) return
+    if (isManualLogoutInProgress()) return
     clearDelayTimers()
 
     const elapsedMs = Date.now() - lastActivityAt
@@ -178,6 +189,15 @@ export function IdleSessionTimeout() {
   }, [markActivity])
 
   useEffect(() => {
+    if (isManualLogoutInProgress()) {
+      hasTimedOutRef.current = true
+      clearTimers()
+      setShowWarning(false)
+      setShowExpired(false)
+      setExpiredTargetPath(null)
+      return
+    }
+
     if (!shouldTrackSession) {
       clearTimers()
       hasTimedOutRef.current = false
@@ -215,6 +235,19 @@ export function IdleSessionTimeout() {
       document.removeEventListener('visibilitychange', checkClock)
     }
   }, [checkClock, clearTimers, markActivity, scheduleFromLastActivity, shouldTrackSession, showExpired, writeLastActivityAt])
+
+  useEffect(() => {
+    const suppressTimeoutModal = () => {
+      hasTimedOutRef.current = true
+      clearTimers()
+      setShowWarning(false)
+      setShowExpired(false)
+      setExpiredTargetPath(null)
+    }
+
+    window.addEventListener(MANUAL_LOGOUT_EVENT, suppressTimeoutModal)
+    return () => window.removeEventListener(MANUAL_LOGOUT_EVENT, suppressTimeoutModal)
+  }, [clearTimers])
 
   useEffect(() => {
     return () => {
