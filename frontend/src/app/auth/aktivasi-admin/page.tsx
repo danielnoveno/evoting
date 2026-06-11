@@ -57,7 +57,7 @@ function ActivationContent() {
           description: `Selamat datang, ${invitePreview?.displayName || 'Admin'}. Akun Anda telah aktif.` 
         })
         window.setTimeout(() => { 
-          router.replace(isSuperAdmin ? '/portal-admin' : '/hubungkan-dompet?activate=admin') 
+          router.replace(isSuperAdmin ? '/portal-admin' : '/hubungkan-dompet?activate=admin&redirect=%2Fadmin') 
         }, 2000)
       },
       onError: (err) => {

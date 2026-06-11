@@ -95,6 +95,7 @@ function mapCandidate(row: CandidateRow): PublicElectionCandidateRecord {
 function getPonderGraphqlUrl(): string | null {
   const rawUrl = process.env.NEXT_PUBLIC_PONDER_URL?.trim()
   if (!rawUrl) return null
+  if (typeof window !== 'undefined') return '/api/indexer/graphql'
   return rawUrl.endsWith('/graphql') ? rawUrl : `${rawUrl.replace(/\/$/, '')}/graphql`
 }
 
