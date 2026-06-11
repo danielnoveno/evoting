@@ -17,20 +17,27 @@ import { usePlatformSettings, useUpdatePlatformSettings } from '@/hooks/use-plat
 import { useResetPassword } from '@/hooks/use-auth-session'
 import { useAccount, useBalance } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
+import { isAddress, type Address } from 'viem'
 
 export default function SuperadminProfilePage() {
   const { showToast } = useToast()
-  const { address: connectedWallet, isConnected, chainId } = useAccount()
+  const { address: connectedWallet, isConnected, isReconnecting, chainId } = useAccount()
+  const { platform, setPlatform } = useSuperadminPlatformStore()
+  const { data: profile, isLoading: isProfileLoading } = useCurrentProfile()
+  const profileWalletAddress = profile?.walletAddress?.trim()
+  const savedProfileWallet = profileWalletAddress && isAddress(profileWalletAddress)
+    ? (profileWalletAddress as Address)
+    : undefined
+  const balanceWalletAddress = connectedWallet ?? savedProfileWallet
+  const walletReadMode = connectedWallet ? 'connected' : savedProfileWallet ? 'saved-profile' : 'none'
   const walletBalanceQuery = useBalance({
-    address: connectedWallet,
+    address: balanceWalletAddress,
     chainId: baseSepolia.id,
     query: {
-      enabled: Boolean(connectedWallet),
+      enabled: Boolean(balanceWalletAddress),
       refetchInterval: 30_000,
     },
   })
-  const { platform, setPlatform } = useSuperadminPlatformStore()
-  const { data: profile, isLoading: isProfileLoading } = useCurrentProfile()
   
   const { data: mfaFactors, isLoading: isMfaLoading } = useMFAFactors()
   const enrollMutation = useEnrollMFA()
@@ -184,6 +191,23 @@ export default function SuperadminProfilePage() {
     ? `${Number(walletBalanceQuery.data.formatted).toLocaleString('id-ID', { maximumFractionDigits: 6 })} ${walletBalanceQuery.data.symbol}`
     : '-'
   const isBaseSepolia = chainId === 84532
+  const walletStatusTone = isConnected && isBaseSepolia
+    ? 'bg-emerald-50 text-emerald-700'
+    : isConnected || walletReadMode === 'saved-profile'
+      ? 'bg-amber-50 text-amber-700'
+      : 'bg-slate-100 text-slate-600'
+  const walletStatusLabel = isReconnecting
+    ? 'Memulihkan koneksi'
+    : isConnected
+      ? isBaseSepolia ? 'Base Sepolia' : 'Network perlu dicek'
+      : walletReadMode === 'saved-profile'
+        ? 'Wallet akun tersimpan'
+        : 'Belum tersambung'
+  const walletHelperCopy = walletReadMode === 'connected'
+    ? 'Saldo ini digunakan sebagai gas fee saat superadmin melakukan deploy pemilihan. Angka diperbarui otomatis berkala.'
+    : walletReadMode === 'saved-profile'
+      ? 'Koneksi wallet belum aktif setelah reload, tetapi saldo alamat profil tetap dibaca dari Base Sepolia. Sambungkan ulang sebelum melakukan deploy atau transaksi.'
+      : 'Sambungkan Smart Wallet superadmin untuk melihat saldo gas deploy.'
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -296,15 +320,15 @@ export default function SuperadminProfilePage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Saldo Wallet Tersambung</p>
-                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${isConnected && isBaseSepolia ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                        {isConnected ? (isBaseSepolia ? 'Base Sepolia' : 'Network perlu dicek') : 'Belum tersambung'}
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${walletStatusTone}`}>
+                        {walletStatusLabel}
                       </span>
                     </div>
                     <p className="mt-3 text-[24px] font-semibold tracking-[-0.03em] text-slate-900">
                       {walletBalanceQuery.isLoading ? 'Memuat saldo...' : balanceLabel}
                     </p>
                     <p className="mt-2 font-mono text-[12px] break-all text-slate-500">
-                      {connectedWallet ?? 'Sambungkan Smart Wallet superadmin untuk melihat saldo gas deploy.'}
+                      {balanceWalletAddress ?? 'Belum ada wallet profil yang dapat dibaca.'}
                     </p>
                     {walletBalanceQuery.isError ? (
                       <p className="mt-3 rounded-2xl bg-red-50 px-3 py-2 text-[13px] leading-6 text-red-700">
@@ -312,7 +336,7 @@ export default function SuperadminProfilePage() {
                       </p>
                     ) : (
                       <p className="mt-3 rounded-2xl bg-slate-50 px-3 py-2 text-[13px] leading-6 text-slate-600">
-                        Saldo ini digunakan sebagai gas fee saat superadmin melakukan deploy pemilihan. Angka diperbarui otomatis berkala.
+                        {walletHelperCopy}
                       </p>
                     )}
                   </div>
