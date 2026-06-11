@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import {
   ShieldCheck,
   Loader2,
@@ -20,6 +20,23 @@ import { ScrollReveal, FloatingShape } from '@/components/public/parallax'
 import { AsciiBackground } from '@/components/public/ascii-background'
 import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
 import Link from 'next/link'
+import { AuthSuccessRedirectModal } from '@/components/auth/auth-success-redirect-modal'
+
+function getActivationRedirectModalContent(isSuperAdmin: boolean) {
+  if (isSuperAdmin) {
+    return {
+      title: 'Akses Superadmin Aktif',
+      description: 'Akun Superadmin berhasil diaktifkan. Anda akan diarahkan ke halaman validasi portal admin.',
+      targetLabel: 'Portal Admin',
+    }
+  }
+
+  return {
+    title: 'Akses Admin Aktif',
+    description: 'Akun admin organisasi berhasil diaktifkan. Anda akan diarahkan untuk menghubungkan Smart Wallet admin.',
+    targetLabel: 'Aktivasi Wallet Admin',
+  }
+}
 
 function ActivationContent() {
   const router = useRouter()
@@ -36,8 +53,16 @@ function ActivationContent() {
 
   const [mounted, setMounted] = useState(false)
   const [claimStarted, setClaimStarted] = useState(false)
+  const [redirectModal, setRedirectModal] = useState<ReturnType<typeof getActivationRedirectModalContent> | null>(null)
+  const redirectTimerRef = useRef<number | null>(null)
 
   useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current)
+    }
+  }, [])
 
   const authSession = authSessionQuery.data
   const invitePreview = invitePreviewQuery.data
@@ -56,9 +81,10 @@ function ActivationContent() {
           title: 'Akun Diaktifkan', 
           description: `Selamat datang, ${invitePreview?.displayName || 'Admin'}. Akun Anda telah aktif.` 
         })
-        window.setTimeout(() => { 
+        setRedirectModal(getActivationRedirectModalContent(isSuperAdmin))
+        redirectTimerRef.current = window.setTimeout(() => { 
           router.replace(isSuperAdmin ? '/portal-admin' : '/hubungkan-dompet?activate=admin&redirect=%2Fadmin') 
-        }, 2000)
+        }, 2200)
       },
       onError: (err) => {
         setClaimStarted(false)
@@ -258,7 +284,16 @@ function ActivationContent() {
           </div>
         </ScrollReveal>
       </div>
-      
+
+      {redirectModal ? (
+        <AuthSuccessRedirectModal
+          open
+          title={redirectModal.title}
+          description={redirectModal.description}
+          targetLabel={redirectModal.targetLabel}
+        />
+      ) : null}
+       
       <PublicFooter />
     </main>
   )

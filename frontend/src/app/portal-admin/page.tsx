@@ -28,6 +28,7 @@ import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
 import Link from 'next/link'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { WalletAddress } from '@/components/ui/wallet-address'
+import { AuthSuccessRedirectModal } from '@/components/auth/auth-success-redirect-modal'
 
 function sameWalletAddress(left: string | null | undefined, right: string | null | undefined): boolean {
   if (!left || !right) return false
@@ -115,8 +116,8 @@ function PortalAdminContent() {
         redirectStartedRef.current = true
         setRedirectState({
           target: '/superadmin',
-          label: 'Portal Utama Admin',
-          description: 'Akses berhasil divalidasi. Anda akan diarahkan ke portal utama admin.',
+          label: 'Dashboard Superadmin',
+          description: 'Akses Superadmin berhasil divalidasi. Anda akan diarahkan ke dashboard pengelolaan platform.',
         })
         showToast({ tone: 'success', title: 'Akses Diterima', description: 'Selamat datang di Portal Utama Admin.' })
         redirectTimerRef.current = window.setTimeout(() => {
@@ -128,7 +129,7 @@ function PortalAdminContent() {
         setRedirectState({
           target: '/admin',
           label: 'Dashboard Admin Organisasi',
-          description: 'Akses berhasil divalidasi. Anda akan diarahkan ke dashboard admin organisasi.',
+          description: 'Akun dan dompet admin berhasil divalidasi. Anda akan diarahkan ke dashboard organisasi.',
         })
         showToast({ tone: 'success', title: 'Akses Diterima', description: 'Selamat datang di Dashboard Admin.' })
         redirectTimerRef.current = window.setTimeout(() => {
@@ -547,21 +548,11 @@ function PortalAdminContent() {
         </ScrollReveal>
 
         {redirectState && (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="admin-redirect-title" aria-describedby="admin-redirect-description">
-            <div className="w-full max-w-[360px] rounded-xl border border-slate-200 bg-white p-6 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
-                <Loader2 className="h-7 w-7 animate-spin" aria-hidden="true" />
-              </div>
-              <h2 id="admin-redirect-title" className="mt-5 text-[16px] font-semibold text-slate-900">Akses Berhasil Divalidasi</h2>
-              <p id="admin-redirect-description" className="mt-3 text-[13px] leading-6 text-slate-600">
-                {redirectState.description}
-              </p>
-              <div className="mt-5 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3" aria-live="polite">
-                <p className="text-[12px] font-semibold text-slate-900">Mengarahkan ke {redirectState.label}...</p>
-                <p className="mt-1 text-[12px] leading-5 text-slate-400">Mohon tunggu sebentar, proses ini berjalan otomatis.</p>
-              </div>
-            </div>
-          </div>
+          <AuthSuccessRedirectModal
+            open
+            description={redirectState.description}
+            targetLabel={redirectState.label}
+          />
         )}
       </div>
 

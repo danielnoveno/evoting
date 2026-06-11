@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react'
+import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import {
   CheckCircle2,
   Check,
@@ -30,6 +30,7 @@ import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
 import Link from 'next/link'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { WalletAddress } from '@/components/ui/wallet-address'
+import { AuthSuccessRedirectModal } from '@/components/auth/auth-success-redirect-modal'
 
 function sameWalletAddress(left: string | null | undefined, right: string | null | undefined): boolean {
   if (!left || !right) return false
@@ -40,6 +41,30 @@ function resolveRedirectTarget(redirectParam: string | null, activationContext: 
   if (redirectParam?.startsWith('/') && !redirectParam.startsWith('//')) return redirectParam
   if (activationContext === 'admin') return '/admin'
   return '/pemilih'
+}
+
+function getRedirectModalContent(target: string, role: string | null | undefined) {
+  if (role === 'super_admin' || target.startsWith('/superadmin')) {
+    return {
+      title: 'Login Berhasil',
+      description: 'Akses Superadmin berhasil divalidasi. Anda akan diarahkan ke dashboard pengelolaan platform.',
+      targetLabel: 'Dashboard Superadmin',
+    }
+  }
+
+  if (role === 'admin' || target.startsWith('/admin')) {
+    return {
+      title: 'Akses Admin Aktif',
+      description: 'Akun dan dompet admin berhasil divalidasi. Anda akan diarahkan ke dashboard organisasi.',
+      targetLabel: 'Dashboard Admin Organisasi',
+    }
+  }
+
+  return {
+    title: 'Akses Pemilih Aktif',
+    description: 'Akun kampus dan Smart Wallet berhasil terhubung. Kamu akan diarahkan ke dashboard pemilih.',
+    targetLabel: 'Dashboard Pemilih',
+  }
 }
 
 function getWalletConnectionErrorMessage(error: { message?: string }) {
@@ -102,8 +127,17 @@ function ConnectWalletContent() {
   const [formError, setFormError] = useState('')
   const [bindError, setBindError] = useState('')
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
+  const [redirectModal, setRedirectModal] = useState<ReturnType<typeof getRedirectModalContent> | null>(null)
+  const redirectStartedRef = useRef(false)
+  const redirectTimerRef = useRef<number | null>(null)
 
   useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current)
+    }
+  }, [])
 
   // Handle errors from URL parameters (e.g., after failed OAuth)
   useEffect(() => {
@@ -181,10 +215,12 @@ function ConnectWalletContent() {
     }
 
     if (mounted && isConnected && authSession && isWalletBound) {
-      const timer = setTimeout(() => {
-         router.push(redirectTarget)
-      }, 1500)
-      return () => clearTimeout(timer)
+      if (redirectStartedRef.current) return
+      redirectStartedRef.current = true
+      setRedirectModal(getRedirectModalContent(redirectTarget, currentProfile?.role))
+      redirectTimerRef.current = window.setTimeout(() => {
+        router.push(redirectTarget)
+      }, 2200)
     }
   }, [mounted, isConnected, authSession, isWalletBound, router, redirectParam, redirectTarget, currentProfile])
 
@@ -688,6 +724,15 @@ function ConnectWalletContent() {
             </ScrollReveal> */}
           </div>
         </div>
+
+        {redirectModal ? (
+          <AuthSuccessRedirectModal
+            open
+            title={redirectModal.title}
+            description={redirectModal.description}
+            targetLabel={redirectModal.targetLabel}
+          />
+        ) : null}
 
         <PublicFooter />
       </main>
