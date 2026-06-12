@@ -9,6 +9,7 @@ import type { Address } from 'viem'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { findElection, formatDateTime, useVoterStore } from '@/lib/voter-store'
 import { generateCommitment, generateSalt, saveVoteCommitment } from '@/lib/vote-commitment-storage'
 import { backendRuntimeConfig } from '@/lib/supabase/config'
@@ -208,9 +209,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                   <div className="mt-4 space-y-3.5">
                     <div>
                       <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Visi</h4>
-                      <p className="mt-1 text-[12.5px] leading-relaxed text-slate-700 line-clamp-3">
-                        {candidate.vision}
-                      </p>
+                      <RichTextRenderer value={candidate.vision} className="mt-1 text-[12.5px] leading-relaxed text-slate-700 line-clamp-3" />
                     </div>
 
                     <div>
@@ -219,7 +218,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                         {candidate.mission.map((item, mIndex) => (
                           <li key={mIndex} className="text-[12px] leading-relaxed text-slate-600 flex items-start gap-1.5">
                             <span className="text-slate-400 font-bold select-none shrink-0">•</span>
-                            <span className="line-clamp-2">{item}</span>
+                            <RichTextRenderer value={item} className="line-clamp-2" />
                           </li>
                         ))}
                       </ul>

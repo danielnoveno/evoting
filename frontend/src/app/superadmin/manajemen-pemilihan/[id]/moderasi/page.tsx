@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import { SuperadminDetailIntro, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
+import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { type SuperadminElectionState } from '@/lib/superadmin-data'
 import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -233,7 +234,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
                     <div>
                       <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">{candidate.ballotNumber}</p>
                       <p className="mt-2 text-[18px] font-semibold text-slate-900">{candidate.name}</p>
-                      <p className="mt-2 max-w-[420px] text-[15px] leading-7 text-slate-800">{candidate.vision}</p>
+                      <RichTextRenderer value={candidate.vision} className="mt-2 max-w-[420px] text-[15px] leading-7 text-slate-800" />
                     </div>
                   </div>
                   <div className="flex items-center gap-6 self-end lg:self-auto">

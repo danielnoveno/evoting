@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/toast-provider'
-import { ArrowLeft, FileText, Save, ShieldCheck, Trash2, Upload, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, FileText, Save, ShieldCheck, Trash2, Upload, X } from 'lucide-react'
 import { ScrollReveal } from '@/components/public/parallax'
 import { useCandidateAssetUpload } from '@/hooks/use-candidate-asset-upload'
 import { useSaveProposalDraft } from '@/hooks/use-save-proposal-draft'
@@ -11,6 +11,7 @@ import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { uploadProposalDocument } from '@/lib/repositories/proposalDocumentRepository'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { RequiredAsterisk } from '@/components/ui/required-asterisk'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import type { ProposalCandidateInput, ProposalDraftStatus } from '@/lib/repositories/types'
 
 export interface ProposalFormData {
@@ -38,6 +39,11 @@ const EMPTY_CANDIDATE: ProposalCandidateInput = {
 }
 
 type ProposalFormErrors = Partial<Record<'title' | 'category' | 'candidateCount' | 'voterCount' | 'commitDate' | 'revealDate' | 'endedDate' | 'dateRange', string>>
+type ValidationIssue = {
+  fieldKey: string
+  label: string
+  message: string
+}
 
 const MIN_GAP_MINUTES = 60
 const MAX_SUPPORTING_DOCUMENT_SIZE = 10 * 1024 * 1024
@@ -93,6 +99,7 @@ export function ProposalForm({
     whitelistWallets: initialData?.whitelistWallets || '',
   })
   const [errors, setErrors] = useState<ProposalFormErrors>({})
+  const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([])
   const isSubmitting = saveProposalDraft.isPending || isUploadingDocument || isUploadingCandidatePhotos
 
   useEffect(() => {
@@ -170,6 +177,74 @@ export function ProposalForm({
     return nextErrors
   }
 
+  const getCandidateMissingFields = (candidate: ProposalCandidateInput) => {
+    const missingFields: string[] = []
+    if (!candidate.name.trim()) missingFields.push('Nama lengkap')
+    if (!candidate.studentId?.trim()) missingFields.push('NPM/NIM')
+    if (!candidate.vision?.trim()) missingFields.push('Visi')
+    if (Array.isArray(candidate.mission) ? candidate.mission.length === 0 : !candidate.mission?.trim()) missingFields.push('Misi')
+    return missingFields
+  }
+
+  const getCandidateFirstMissingFieldKey = (index: number, candidate: ProposalCandidateInput) => {
+    if (!candidate.name.trim()) return `candidate-${index}-name`
+    if (!candidate.studentId?.trim()) return `candidate-${index}-studentId`
+    if (!candidate.vision?.trim()) return `candidate-${index}-vision`
+    if (Array.isArray(candidate.mission) ? candidate.mission.length === 0 : !candidate.mission?.trim()) return `candidate-${index}-mission`
+    return `candidate-${index}-name`
+  }
+
+  const getValidationIssues = (data: ProposalFormData, nextErrors: ProposalFormErrors): ValidationIssue[] => {
+    const issues: ValidationIssue[] = []
+
+    if (nextErrors.title) issues.push({ fieldKey: 'title', label: 'Nama Pemilihan', message: nextErrors.title })
+    if (nextErrors.category) issues.push({ fieldKey: 'category', label: 'Nama Organisasi / Kategori', message: nextErrors.category })
+    if (nextErrors.commitDate) issues.push({ fieldKey: 'commitDate', label: 'Mulai Commit', message: 'Tanggal dan jam mulai commit wajib diisi.' })
+    if (nextErrors.revealDate) issues.push({ fieldKey: 'revealDate', label: 'Mulai Reveal', message: 'Tanggal dan jam mulai reveal wajib diisi.' })
+    if (nextErrors.endedDate) issues.push({ fieldKey: 'endedDate', label: 'Selesai', message: 'Tanggal dan jam selesai wajib diisi.' })
+    if (nextErrors.dateRange) issues.push({ fieldKey: 'commitDate', label: 'Urutan Waktu', message: nextErrors.dateRange })
+
+    data.candidateEntries.forEach((candidate, index) => {
+      const missingFields = getCandidateMissingFields(candidate)
+      if (missingFields.length === 0) return
+
+      const hasAnyCandidateValue = Boolean(
+        candidate.name.trim()
+        || candidate.studentId?.trim()
+        || candidate.faculty?.trim()
+        || candidate.bio?.trim()
+        || candidate.vision?.trim()
+        || (Array.isArray(candidate.mission) ? candidate.mission.length > 0 : candidate.mission?.trim())
+        || candidate.youtubeUrl?.trim()
+        || candidate.avatarPath?.trim()
+      )
+
+      const namedCandidatesCount = data.candidateEntries.filter((entry) => entry.name.trim()).length
+      if (!hasAnyCandidateValue && namedCandidatesCount >= 2) return
+
+      issues.push({
+        fieldKey: getCandidateFirstMissingFieldKey(index, candidate),
+        label: `Kandidat ${index + 1}`,
+        message: `${missingFields.join(', ')} wajib diisi.`,
+      })
+    })
+
+    return issues
+  }
+
+  const focusFirstValidationIssue = (issues: ValidationIssue[]) => {
+    const firstIssue = issues[0]
+    if (!firstIssue) return
+
+    window.requestAnimationFrame(() => {
+      const target = document.querySelector(`[data-validation-field="${firstIssue.fieldKey}"]`)
+      if (!target) return
+
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      if (target instanceof HTMLElement) target.focus({ preventScroll: true })
+    })
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     if (isReadOnly) return
     const { name, value } = e.target
@@ -181,6 +256,7 @@ export function ProposalForm({
     setFormData((prev) => {
       const next = { ...prev, [name]: parsedValue } as ProposalFormData
       setErrors(validateForm(next))
+      setValidationIssues([])
       return next
     })
   }
@@ -189,6 +265,7 @@ export function ProposalForm({
     if (isReadOnly) return
     setFormData((prev) => {
       const nextEntries = prev.candidateEntries.map((c, i) => i === index ? { ...c, [field]: value } : c)
+      setValidationIssues([])
       return { ...prev, candidateEntries: nextEntries }
     })
   }
@@ -369,8 +446,15 @@ export function ProposalForm({
     if (isReadOnly) return
     const nextErrors = validateForm(formData)
     if (Object.keys(nextErrors).length > 0) {
+      const issues = getValidationIssues(formData, nextErrors)
       setErrors(nextErrors)
-      showToast({ title: 'Gagal validasi', description: 'Cek kembali isian formulir.', tone: 'error' })
+      setValidationIssues(issues)
+      focusFirstValidationIssue(issues)
+      showToast({
+        title: 'Gagal validasi',
+        description: issues.length > 0 ? `Lengkapi: ${issues.slice(0, 3).map((issue) => issue.label).join(', ')}${issues.length > 3 ? ', dan lainnya.' : '.'}` : 'Cek kembali isian formulir.',
+        tone: 'error',
+      })
       return
     }
 
@@ -476,17 +560,33 @@ export function ProposalForm({
 
       <div className="grid gap-x-8 gap-y-10 lg:grid-cols-[minmax(0,1fr)_400px]">
         <div>
+          {validationIssues.length > 0 ? (
+            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800" role="alert">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div>
+                  <p className="text-[13px] font-semibold">Lengkapi field berikut sebelum mengajukan proposal:</p>
+                  <ul className="mt-2 space-y-1 text-[12px] leading-6">
+                    {validationIssues.map((issue) => (
+                      <li key={`${issue.fieldKey}-${issue.message}`}>• <strong>{issue.label}:</strong> {issue.message}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <section className="space-y-4">
             <h2 className="text-[14px] font-bold uppercase tracking-widest">Informasi Dasar</h2>
             <div className="grid gap-4">
               <label className="block">
                 <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama Pemilihan <RequiredAsterisk /></span>
-                <input name="title" value={formData.title} onChange={handleChange} disabled={isReadOnly} placeholder="Masukkan nama pemilihan..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                <input data-validation-field="title" name="title" value={formData.title} onChange={handleChange} disabled={isReadOnly} placeholder="Masukkan nama pemilihan..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                 {errors.title && <p className="mt-1 text-[12px] text-red-500">{errors.title}</p>}
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama Organisasi / Kategori <RequiredAsterisk /></span>
-                <input name="category" value={formData.category} onChange={handleChange} disabled={isReadOnly} placeholder="Contoh: Himpunan Mahasiswa Informatika" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                <input data-validation-field="category" name="category" value={formData.category} onChange={handleChange} disabled={isReadOnly} placeholder="Contoh: Himpunan Mahasiswa Informatika" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                 {errors.category && <p className="mt-1 text-[12px] text-red-500">{errors.category}</p>}
               </label>
               <label className="block">
@@ -557,15 +657,18 @@ export function ProposalForm({
             <div className="grid sm:grid-cols-3 gap-4">
               <label className="block">
                 <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Commit <RequiredAsterisk /></span>
-                <input type="datetime-local" name="commitDate" value={formData.commitDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                <input data-validation-field="commitDate" type="datetime-local" name="commitDate" value={formData.commitDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                {errors.commitDate && <p className="mt-1 text-[12px] text-red-500">{errors.commitDate}</p>}
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Reveal <RequiredAsterisk /></span>
-                <input type="datetime-local" name="revealDate" value={formData.revealDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                <input data-validation-field="revealDate" type="datetime-local" name="revealDate" value={formData.revealDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                {errors.revealDate && <p className="mt-1 text-[12px] text-red-500">{errors.revealDate}</p>}
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Selesai (Off-Chain) <RequiredAsterisk /></span>
-                <input type="datetime-local" name="endedDate" value={formData.endedDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                <input data-validation-field="endedDate" type="datetime-local" name="endedDate" value={formData.endedDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                {errors.endedDate && <p className="mt-1 text-[12px] text-red-500">{errors.endedDate}</p>}
               </label>
             </div>
             {errors.dateRange && <p className="text-red-500 text-[12px]">{errors.dateRange}</p>}
@@ -668,11 +771,11 @@ export function ProposalForm({
                   <div className="grid gap-4 sm:grid-cols-2">
                     <label className="block">
                       <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama lengkap <RequiredAsterisk /></span>
-                      <input value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Contoh: Daniel Noveno" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                      <input data-validation-field={`candidate-${i}-name`} value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Contoh: Daniel Noveno" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                     </label>
                     <label className="block">
                       <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">NPM/NIM <RequiredAsterisk /></span>
-                      <input value={c.studentId || ''} onChange={e => handleCandidateChange(i, 'studentId', e.target.value)} disabled={isReadOnly} placeholder="Contoh: 220711663" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                      <input data-validation-field={`candidate-${i}-studentId`} value={c.studentId || ''} onChange={e => handleCandidateChange(i, 'studentId', e.target.value)} disabled={isReadOnly} placeholder="Contoh: 220711663" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                     </label>
                     <label className="block">
                       <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Fakultas/Prodi <span className="font-normal text-slate-400">(opsional)</span></span>
@@ -684,15 +787,15 @@ export function ProposalForm({
                     </label>
                     <label className="block sm:col-span-2">
                       <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Bio singkat <span className="font-normal text-slate-400">(opsional)</span></span>
-                      <textarea value={c.bio || ''} onChange={e => handleCandidateChange(i, 'bio', e.target.value)} disabled={isReadOnly} placeholder="Tuliskan latar belakang atau pengalaman organisasi kandidat secara singkat." className="min-h-[96px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                      <RichTextEditor value={c.bio || ''} onChange={(value) => handleCandidateChange(i, 'bio', value)} disabled={isReadOnly} placeholder="Tuliskan latar belakang atau pengalaman organisasi kandidat secara singkat." minHeightClassName="min-h-[96px]" />
                     </label>
                     <label className="block sm:col-span-2">
                       <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Visi kandidat <RequiredAsterisk /></span>
-                      <textarea value={c.vision || ''} onChange={e => handleCandidateChange(i, 'vision', e.target.value)} disabled={isReadOnly} placeholder="Tuliskan visi utama kandidat secara ringkas." className="min-h-[96px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                      <RichTextEditor dataValidationField={`candidate-${i}-vision`} value={c.vision || ''} onChange={(value) => handleCandidateChange(i, 'vision', value)} disabled={isReadOnly} placeholder="Tuliskan visi utama kandidat secara ringkas." minHeightClassName="min-h-[96px]" />
                     </label>
                     <label className="block sm:col-span-2">
                       <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Misi kandidat <RequiredAsterisk /></span>
-                      <textarea value={Array.isArray(c.mission) ? c.mission.join('\n') : c.mission || ''} onChange={e => handleCandidateChange(i, 'mission', e.target.value)} disabled={isReadOnly} placeholder="Tulis satu poin misi per baris." className="min-h-[120px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                      <RichTextEditor dataValidationField={`candidate-${i}-mission`} value={Array.isArray(c.mission) ? c.mission.join('\n') : c.mission || ''} onChange={(value) => handleCandidateChange(i, 'mission', value)} disabled={isReadOnly} placeholder="Tulis satu poin misi per baris. Gunakan toolbar untuk membuat numbering atau bullet." minHeightClassName="min-h-[120px]" />
                       <span className="mt-1.5 block text-[12px] text-slate-400">Setiap baris akan disimpan sebagai satu poin misi.</span>
                     </label>
                   </div>

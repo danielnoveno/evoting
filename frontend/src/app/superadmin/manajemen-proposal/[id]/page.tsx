@@ -19,6 +19,7 @@ import { useProposalCandidates } from '@/hooks/use-proposal-relations'
 import { REGISTRY_ADDRESS, useRegistryContract } from '@/hooks/use-registry-contract'
 import { createProposalDocumentPreviewUrl, createProposalDocumentSignedUrl } from '@/lib/repositories/proposalDocumentRepository'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import type { SuperadminProposalDetail } from '@/lib/superadmin-data'
 import type { Address } from 'viem'
 import { useConnect } from 'wagmi'
@@ -563,11 +564,11 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                       <div className="mt-4 space-y-4 text-[14px] leading-6 text-slate-700">
                         <div>
                           <p className="font-semibold text-slate-900">Bio singkat</p>
-                          <p className="mt-1">{candidate.bio || 'Bio kandidat belum diisi oleh admin.'}</p>
+                          <RichTextRenderer value={candidate.bio} emptyFallback="Bio kandidat belum diisi oleh admin." className="mt-1" />
                         </div>
                         <div>
                           <p className="font-semibold text-slate-900">Visi</p>
-                          <p className="mt-1">{candidate.vision || 'Visi kandidat belum diisi oleh admin.'}</p>
+                          <RichTextRenderer value={candidate.vision} emptyFallback="Visi kandidat belum diisi oleh admin." className="mt-1" />
                         </div>
                         <div>
                           <p className="font-semibold text-slate-900">Misi</p>
@@ -576,7 +577,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                               {candidate.mission.map((mission, missionIndex) => (
                                 <li key={`${candidate.id}-${missionIndex}`} className="flex gap-2">
                                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-slate-600">{missionIndex + 1}</span>
-                                  <span>{mission}</span>
+                                  <RichTextRenderer value={mission} />
                                 </li>
                               ))}
                             </ol>

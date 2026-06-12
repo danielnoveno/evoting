@@ -10,6 +10,7 @@ import { basescanTxUrl, findElection, formatDateTime, formatNumber, useVoterStor
 import { loadVoteCommitment, saveVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
+import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 
 function DetailRow({
   icon: Icon,
@@ -172,7 +173,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
                 </div>
                 <div>
                   <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate?.name ?? 'Pilihan tersimpan terdeteksi'}</h2>
-                  <p className="mt-1 text-[14px] text-slate-600">{selectedCandidate?.vision ?? 'Detail kandidat asli tetap mengikuti data di browser dan baru dibuka saat konfirmasi suara.'}</p>
+                  <RichTextRenderer value={selectedCandidate?.vision} emptyFallback="Detail kandidat asli tetap mengikuti data di browser dan baru dibuka saat konfirmasi suara." className="mt-1 text-[14px] text-slate-600" />
                 </div>
               </div>
             </article>
@@ -281,7 +282,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat terpilih</p>
               <h2 className="mt-4 text-[24px] font-semibold text-slate-900">{selectedCandidate.name}</h2>
-              <p className="mt-2 text-[18px] text-slate-700">{selectedCandidate.vision}</p>
+              <RichTextRenderer value={selectedCandidate.vision} className="mt-2 text-[18px] text-slate-700" />
             </div>
             <div className="flex h-[96px] w-[96px] items-center justify-center rounded-3xl bg-slate-200 text-[24px] font-semibold text-slate-600">
               {selectedCandidate.name.slice(0, 2).toUpperCase()}

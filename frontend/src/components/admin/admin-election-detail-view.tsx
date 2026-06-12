@@ -19,6 +19,7 @@ import { useElectionContract } from '@/hooks/use-election-contract'
 import { useElectionResults } from '@/hooks/use-election-results'
 import { useElectionAuditLogs } from '@/hooks/use-election-audit-logs'
 import { RequiredAsterisk } from '@/components/ui/required-asterisk'
+import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import type { PublicElectionCandidateResultRecord } from '@/lib/repositories/types'
 
 function QuickActionIcon({ icon }: { icon: 'download' | 'share' | 'audit' | 'report' }) {
@@ -414,7 +415,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
               </div>
               <div className="mt-4 rounded-2xl bg-slate-100 p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Visi Misi Singkat</p>
-                <p className="mt-2 text-[13px] leading-6 text-slate-800">{candidate.summary}</p>
+                <RichTextRenderer value={candidate.summary} className="mt-2 text-[13px] leading-6 text-slate-800" />
               </div>
                 <div className="mt-6 flex items-center justify-end gap-4">
                   {canAddCandidate ? (

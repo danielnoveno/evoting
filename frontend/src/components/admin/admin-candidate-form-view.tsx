@@ -12,6 +12,7 @@ import { AdminElectionRecord } from '@/lib/admin-election-data'
 import { ScrollReveal } from '@/components/public/parallax'
 import { useCandidateAssetUpload } from '@/hooks/use-candidate-asset-upload'
 import { RequiredAsterisk } from '@/components/ui/required-asterisk'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
 
 type CandidatePrefill = {
   fullName: string
@@ -303,14 +304,7 @@ export function AdminCandidateFormView({
               </div>
               <div>
                 <label htmlFor="cand-bio" className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{form.bioLabel}</label>
-                <input
-                  id="cand-bio"
-                  type="text"
-                  placeholder={form.bioPlaceholder}
-                  value={bio}
-                  onChange={(event) => setBio(event.target.value)}
-                  className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[16px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all"
-                />
+                <RichTextEditor value={bio} onChange={setBio} placeholder={form.bioPlaceholder} minHeightClassName="min-h-[112px]" />
               </div>
             </div>
           </article>
@@ -320,31 +314,27 @@ export function AdminCandidateFormView({
             <div className="mt-8 grid sm:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="cand-vision" className="mb-3 block text-[14px] font-semibold text-slate-700">{form.visionLabel} <RequiredAsterisk /></label>
-                <textarea
-                  id="cand-vision"
-                  placeholder={form.visionPlaceholder}
+                <RichTextEditor
                   value={vision}
-                  onChange={(event) => {
-                    const val = event.target.value
+                  onChange={(val) => {
                     setVision(val)
                     setErrors((prev) => ({ ...prev, vision: validateForm(fullName, identityNumber, val, mission).vision }))
                   }}
-                  className={`min-h-[120px] w-full rounded-[22px] border bg-slate-200/80 px-5 py-4 text-[16px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all ${errors.vision ? 'border-red-500 focus:border-red-500' : 'border-transparent'}`}
+                  placeholder={form.visionPlaceholder}
+                  minHeightClassName="min-h-[120px]"
                 />
                 {errors.vision && <p className="mt-2 text-[12px] text-red-600 font-medium">{errors.vision}</p>}
               </div>
               <div>
                 <label htmlFor="cand-mission" className="mb-3 block text-[14px] font-semibold text-slate-700">{form.missionLabel} <RequiredAsterisk /></label>
-                <textarea
-                  id="cand-mission"
-                  placeholder={form.missionPlaceholder}
+                <RichTextEditor
                   value={mission}
-                  onChange={(event) => {
-                    const val = event.target.value
+                  onChange={(val) => {
                     setMission(val)
                     setErrors((prev) => ({ ...prev, mission: validateForm(fullName, identityNumber, vision, val).mission }))
                   }}
-                  className={`min-h-[150px] w-full rounded-[22px] border bg-slate-200/80 px-5 py-4 text-[16px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all ${errors.mission ? 'border-red-500 focus:border-red-500' : 'border-transparent'}`}
+                  placeholder={form.missionPlaceholder}
+                  minHeightClassName="min-h-[150px]"
                 />
                 {errors.mission && <p className="mt-2 text-[12px] text-red-600 font-medium">{errors.mission}</p>}
               </div>
