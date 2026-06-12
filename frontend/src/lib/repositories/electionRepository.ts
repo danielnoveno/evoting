@@ -21,6 +21,7 @@ type TxAuditRow = Database['app']['Tables']['tx_audit_log']['Row']
 type NotificationRow = Database['app']['Tables']['notification_jobs']['Row']
 
 let notificationBackendUnavailable = false
+let indexerBackendUnavailable = false
 
 function isMissingNotificationBackend(error: { code?: string; message?: string; details?: string }) {
   const text = `${error.code ?? ''} ${error.message ?? ''} ${error.details ?? ''}`.toLowerCase()
@@ -93,10 +94,17 @@ function mapCandidate(row: CandidateRow): PublicElectionCandidateRecord {
 }
 
 function getPonderGraphqlUrl(): string | null {
+  if (indexerBackendUnavailable) return null
   const rawUrl = process.env.NEXT_PUBLIC_PONDER_URL?.trim()
   if (!rawUrl) return null
   if (typeof window !== 'undefined') return '/api/indexer/graphql'
   return rawUrl.endsWith('/graphql') ? rawUrl : `${rawUrl.replace(/\/$/, '')}/graphql`
+}
+
+function markIndexerUnavailable(status: number) {
+  if (status === 404 || status === 503) {
+    indexerBackendUnavailable = true
+  }
 }
 
 function asFiniteNumber(value: unknown): number {
@@ -285,18 +293,37 @@ export async function listPublicElections(): Promise<PublicElectionRecord[]> {
   ))
 }
 
-export async function listVoterWhitelistedElections(walletAddress: string): Promise<PublicElectionRecord[]> {
+export async function listVoterWhitelistedElections(walletAddress: string | string[]): Promise<PublicElectionRecord[]> {
   const client = getSupabaseBrowserClient()
   if (!client) return []
 
-  const normalizedWalletAddress = walletAddress.trim().toLowerCase()
-  if (!normalizedWalletAddress) return []
+  const walletAddresses = (Array.isArray(walletAddress) ? walletAddress : [walletAddress])
+    .map((address) => address.trim())
+    .filter(Boolean)
+  const walletVariants = Array.from(new Set(walletAddresses.flatMap((address) => [address, address.toLowerCase()])))
+  if (walletVariants.length === 0) return []
+
+  const whitelistOrFilter = walletVariants
+    .map((address) => `wallet_address.ilike.${address}`)
+    .join(',')
+
+  const { data: matchedWhitelist, error: matchedWhitelistError } = await client
+    .schema('app')
+    .from('proposal_whitelist_entries')
+    .select('*')
+    .or(whitelistOrFilter)
+
+  if (matchedWhitelistError) throw new RepositoryError('Gagal memeriksa whitelist pemilih. Coba lagi.')
+
+  const matchedProposalIds = Array.from(new Set((matchedWhitelist ?? []).map((entry) => entry.proposal_draft_id)))
+  if (matchedProposalIds.length === 0) return []
 
   const { data: proposals, error } = await client
     .schema('app')
     .from('proposal_drafts')
     .select('*')
-    .in('status', ['deployed', 'archived'])
+    .in('id', matchedProposalIds)
+    .in('status', ['approved', 'deployed', 'archived'])
     .order('created_at', { ascending: false })
 
   if (error) throw new RepositoryError('Gagal memuat data pemilihan dari Supabase.')
@@ -315,15 +342,8 @@ export async function listVoterWhitelistedElections(walletAddress: string): Prom
   if (whitelistError) throw new RepositoryError('Gagal memuat whitelist pemilihan dari Supabase.')
 
   const whitelistRows = whitelist ?? []
-  const whitelistedProposalIds = new Set(
-    whitelistRows
-      .filter((entry) => entry.wallet_address.trim().toLowerCase() === normalizedWalletAddress)
-      .map((entry) => entry.proposal_draft_id),
-  )
 
-  return rows
-    .filter((row) => whitelistedProposalIds.has(row.id))
-    .map((row) => mapElection(
+  return rows.map((row) => mapElection(
       row,
       candidates ?? [],
       whitelistRows.filter((entry) => entry.proposal_draft_id === row.id),
@@ -368,7 +388,11 @@ export async function getPublicElectionResults(spaceAddress?: string | null): Pr
     }),
   })
 
-  if (!response.ok) throw new RepositoryError('Gagal memuat hasil dari indexer Ponder.')
+  if (!response.ok) {
+    markIndexerUnavailable(response.status)
+    if (response.status === 404 || response.status === 503) return null
+    throw new RepositoryError('Gagal memuat hasil dari indexer Ponder.')
+  }
 
   const payload: unknown = await response.json()
   if (!isPonderElectionResultsResponse(payload)) {
@@ -417,7 +441,11 @@ export async function listPonderAuditLogs(spaceAddress?: string | null, limit = 
     }),
   })
 
-  if (!response.ok) throw new RepositoryError('Gagal memuat jejak audit dari indexer Ponder.')
+  if (!response.ok) {
+    markIndexerUnavailable(response.status)
+    if (response.status === 404 || response.status === 503) return null
+    throw new RepositoryError('Gagal memuat jejak audit dari indexer Ponder.')
+  }
 
   const payload: unknown = await response.json()
   if (!isPonderAuditResponse(payload)) throw new RepositoryError('Format audit indexer tidak dikenali.')
@@ -468,7 +496,11 @@ export async function listVoterOnchainProofs(walletAddress?: string | null, spac
     }),
   })
 
-  if (!response.ok) throw new RepositoryError('Gagal memuat bukti pemilih dari indexer Ponder.')
+  if (!response.ok) {
+    markIndexerUnavailable(response.status)
+    if (response.status === 404 || response.status === 503) return []
+    throw new RepositoryError('Gagal memuat bukti pemilih dari indexer Ponder.')
+  }
 
   const payload: unknown = await response.json()
   if (!isPonderVoterProofResponse(payload)) throw new RepositoryError('Format bukti pemilih indexer tidak dikenali.')
