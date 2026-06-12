@@ -32,6 +32,10 @@ function asObject(value: Json): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 function asStringArray(value: Json): string[] {
   if (!Array.isArray(value)) return []
   return value.filter((item): item is string => typeof item === 'string')
@@ -296,6 +300,24 @@ export async function listPublicElections(): Promise<PublicElectionRecord[]> {
 export async function listVoterWhitelistedElections(walletAddress: string | string[]): Promise<PublicElectionRecord[]> {
   const client = getSupabaseBrowserClient()
   if (!client) return []
+
+  if (typeof window !== 'undefined') {
+    const { data: sessionData } = await client.auth.getSession()
+    const accessToken = sessionData.session?.access_token
+    if (accessToken) {
+      const response = await fetch('/api/voter/elections', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+
+      if (response.ok) {
+        const payload: unknown = await response.json()
+        if (isRecord(payload) && Array.isArray(payload.elections)) {
+          return payload.elections as PublicElectionRecord[]
+        }
+      }
+    }
+  }
 
   const walletAddresses = (Array.isArray(walletAddress) ? walletAddress : [walletAddress])
     .map((address) => address.trim())
