@@ -20,6 +20,8 @@ import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
 import { Copy } from 'lucide-react'
+import { useRegistryContract } from '@/hooks/use-registry-contract'
+import type { Address } from 'viem'
 
 export default function SuperadminSuperadminDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -29,6 +31,7 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
   const deleteAdminMutation = useDeleteAdminRegistry()
   const resetPasswordMutation = useResetPassword()
   const resendInviteMutation = useResendAdminInvite()
+  const { addSuperAdmin, removeSuperAdmin, userAddress, superAdminAddress, registryAddress, isWritePending } = useRegistryContract()
 
   const [activationLink, setActivationLink] = useState('')
   const [lastEmailStatus, setLastEmailStatus] = useState<'sent' | 'failed' | null>(null)
@@ -41,8 +44,36 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
   const seedRecord = useMemo(() => directoryRecord ? mapDirectoryAdmin(directoryRecord) : null, [directoryRecord])
   const { showToast } = useToast()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [onchainAction, setOnchainAction] = useState<'add' | 'remove' | null>(null)
   const enabled = seedRecord?.status !== 'Nonaktif'
   const isActive = directoryRecord?.profile || directoryRecord?.registryStatus === 'active'
+  const candidateWallet = seedRecord?.blockchainIdentity ?? ''
+  const hasValidCandidateWallet = /^0x[a-fA-F0-9]{40}$/.test(candidateWallet)
+  const isRootSuperadminWallet = Boolean(userAddress && superAdminAddress && userAddress.toLowerCase() === String(superAdminAddress).toLowerCase())
+
+  const handleOnchainSuperadminAction = async (action: 'add' | 'remove') => {
+    if (!hasValidCandidateWallet) {
+      showToast({ tone: 'error', title: 'Wallet belum valid', description: 'Superadmin ini belum memiliki wallet valid untuk didaftarkan on-chain.' })
+      return
+    }
+
+    if (!isRootSuperadminWallet) {
+      showToast({ tone: 'error', title: 'Butuh root superadmin', description: 'Hanya root superadmin on-chain yang dapat menambah atau mencabut superadmin fakultas.' })
+      return
+    }
+
+    setOnchainAction(action)
+    try {
+      const txHash = action === 'add'
+        ? await addSuperAdmin(candidateWallet as Address)
+        : await removeSuperAdmin(candidateWallet as Address)
+      showToast({ tone: 'success', title: action === 'add' ? 'Superadmin on-chain didaftarkan' : 'Superadmin on-chain dicabut', description: `Transaksi dikirim: ${txHash.slice(0, 10)}...` })
+    } catch (error) {
+      showToast({ tone: 'error', title: 'Transaksi gagal', description: error instanceof Error ? error.message : 'Coba lagi setelah wallet siap.' })
+    } finally {
+      setOnchainAction(null)
+    }
+  }
 
   if (adminDirectoryQuery.isLoading) {
     return (
@@ -235,6 +266,37 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
                     <p className="mt-1 text-[14px] text-emerald-700 leading-relaxed">Superadmin memiliki hak untuk menambah, mengubah, or menghapus akses admin organisasi lainnya pada blockchain.</p>
                   </div>
                 </div>
+              </div>
+
+              <div className="rounded-[24px] border border-blue-100 bg-blue-50 p-6">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-blue-700">Registry On-Chain</p>
+                <p className="mt-2 break-all font-mono text-[12px] text-blue-900">{registryAddress}</p>
+                <p className="mt-4 text-[14px] leading-6 text-blue-800">
+                  Root superadmin on-chain: <span className="font-mono">{superAdminAddress ? String(superAdminAddress) : 'Memuat...'}</span>
+                </p>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    disabled={isWritePending || onchainAction !== null || !hasValidCandidateWallet}
+                    onClick={() => void handleOnchainSuperadminAction('add')}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 text-[13px] font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
+                  >
+                    {onchainAction === 'add' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                    Daftarkan On-Chain
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isWritePending || onchainAction !== null || !hasValidCandidateWallet}
+                    onClick={() => void handleOnchainSuperadminAction('remove')}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 text-[13px] font-semibold text-red-700 ring-1 ring-red-200 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    {onchainAction === 'remove' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    Cabut On-Chain
+                  </button>
+                </div>
+                {!isRootSuperadminWallet ? (
+                  <p className="mt-3 text-[12px] leading-5 text-blue-800">Sambungkan root superadmin wallet untuk mengubah daftar superadmin on-chain.</p>
+                ) : null}
               </div>
 
               <div className="rounded-[24px] bg-slate-50 border border-slate-100 p-6">

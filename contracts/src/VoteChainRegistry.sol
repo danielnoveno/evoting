@@ -36,11 +36,13 @@ contract VoteChainRegistry {
     uint256 public nextSpaceId = 1;
 
     mapping(address => bool) public isPlatformAdmin;
+    mapping(address => bool) public superAdmins;
     mapping(uint256 => Proposal) public proposals;
     mapping(uint256 => ChangeProposal) public changeProposals;
     mapping(uint256 => address) public spaceById;
 
     event AdminUpserted(address indexed admin, bool isActive);
+    event SuperAdminUpserted(address indexed admin, bool isActive, address indexed rootSuperAdmin);
     event ProposalSubmitted(uint256 indexed proposalId, address indexed proposer, uint256 candidateCount);
     event ProposalReviewed(uint256 indexed proposalId, ProposalStatus indexed decision, address indexed reviewer);
     event ChangeProposalSubmitted(uint256 indexed changeId, uint256 indexed spaceId, address proposer);
@@ -54,6 +56,7 @@ contract VoteChainRegistry {
     );
 
     error NotSuperAdmin();
+    error NotRootSuperAdmin();
     error NotPlatformAdmin();
     error InvalidAdmin();
     error InvalidCandidateCount();
@@ -63,17 +66,39 @@ contract VoteChainRegistry {
     error SpaceNotFound();
 
     constructor(address _initialSuperAdmin) {
+        if (_initialSuperAdmin == address(0)) revert InvalidAdmin();
         superAdmin = _initialSuperAdmin;
+        superAdmins[_initialSuperAdmin] = true;
+        emit SuperAdminUpserted(_initialSuperAdmin, true, _initialSuperAdmin);
     }
 
     modifier onlySuperAdmin() {
-        if (msg.sender != superAdmin) revert NotSuperAdmin();
+        if (!superAdmins[msg.sender]) revert NotSuperAdmin();
+        _;
+    }
+
+    modifier onlyRootSuperAdmin() {
+        if (msg.sender != superAdmin) revert NotRootSuperAdmin();
         _;
     }
 
     modifier onlyPlatformAdminOrSuper() {
-        if (!isPlatformAdmin[msg.sender] && msg.sender != superAdmin) revert NotPlatformAdmin();
+        if (!isPlatformAdmin[msg.sender] && !superAdmins[msg.sender]) revert NotPlatformAdmin();
         _;
+    }
+
+    function addSuperAdmin(address admin) external onlyRootSuperAdmin {
+        if (admin == address(0)) revert InvalidAdmin();
+
+        superAdmins[admin] = true;
+        emit SuperAdminUpserted(admin, true, msg.sender);
+    }
+
+    function removeSuperAdmin(address admin) external onlyRootSuperAdmin {
+        if (admin == address(0) || admin == superAdmin) revert InvalidAdmin();
+
+        superAdmins[admin] = false;
+        emit SuperAdminUpserted(admin, false, msg.sender);
     }
 
     function setAdmin(address admin, bool isActive) external onlySuperAdmin {
@@ -84,7 +109,7 @@ contract VoteChainRegistry {
     }
 
     function isSuperAdmin(address account) external view returns (bool) {
-        return account == superAdmin;
+        return superAdmins[account];
     }
 
     function submitProposal(string calldata title, string calldata metadataURI, uint256 candidateCount)
@@ -130,7 +155,7 @@ contract VoteChainRegistry {
         if (proposal.status != ProposalStatus.Approved) {
             revert InvalidProposalStatus(proposal.status, ProposalStatus.Approved);
         }
-        if (msg.sender != proposal.proposer && msg.sender != superAdmin) revert NotProposalOwner();
+        if (msg.sender != proposal.proposer && !superAdmins[msg.sender]) revert NotProposalOwner();
 
         spaceId = nextSpaceId;
         nextSpaceId += 1;

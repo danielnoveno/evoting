@@ -78,7 +78,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
     isConnected,
     chainId,
     isSuperAdmin,
+    isSuperAdminLoading,
     superAdminAddress,
+    registryAddress,
     isWritePending, 
     isConfirming, 
     isConfirmed, 
@@ -418,9 +420,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             </span>
             <span className="rounded-xl bg-slate-100 px-3 py-2 font-mono text-[13px] text-slate-500"># {proposal.proposalCode}</span>
             {isConnected && userAddress && (
-              <span className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-[13px] font-medium ${isSuperAdmin ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
-                {isSuperAdmin ? <ShieldCheck className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}
-                {isSuperAdmin ? 'Superadmin:' : 'Bukan Superadmin:'} {userAddress.slice(0, 6)}...{userAddress.slice(-4)}
+              <span className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-[13px] font-medium ${isSuperAdmin === true ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : isSuperAdmin === false ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                {isSuperAdmin === true ? <ShieldCheck className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}
+                {isSuperAdminLoading || typeof isSuperAdmin === 'undefined' ? 'Validasi Superadmin:' : isSuperAdmin ? 'Superadmin:' : 'Bukan Superadmin:'} {userAddress.slice(0, 6)}...{userAddress.slice(-4)}
               </span>
             )}
           </>
@@ -481,6 +483,27 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           </div>
         </section>
       )}
+
+      {isConnected && userAddress ? (
+        <section className={`mt-6 rounded-2xl border p-5 ${isSuperAdmin === false ? 'border-red-200 bg-red-50 text-red-900' : 'border-slate-200 bg-white text-slate-800'}`}>
+          <div className="flex items-start gap-3">
+            {isSuperAdmin === true ? <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" /> : <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />}
+            <div>
+              <h2 className="text-[15px] font-semibold text-slate-900">Validasi wallet deploy</h2>
+              <div className="mt-2 space-y-1 text-[13px] leading-6">
+                <p>Wallet transaksi tersambung: <span className="font-mono">{userAddress}</span></p>
+                <p>Registry yang dibaca frontend: <span className="font-mono">{registryAddress}</span></p>
+                <p>Superadmin on-chain di registry ini: <span className="font-mono">{superAdminAddress ? String(superAdminAddress) : 'Memuat...'}</span></p>
+              </div>
+              {isSuperAdmin === false ? (
+                <p className="mt-3 text-[13px] leading-6 text-red-800">
+                  Wallet kamu sudah tersambung, tetapi registry yang sedang dibaca frontend belum menetapkan wallet ini sebagai superadmin. Jika baru migrasi/deploy ulang, pastikan environment Vercel <span className="font-mono">NEXT_PUBLIC_REGISTRY_ADDRESS</span> mengarah ke registry baru, lalu redeploy frontend.
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-6 lg:grid-cols-4">
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">

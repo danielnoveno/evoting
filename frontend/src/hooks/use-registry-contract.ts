@@ -37,7 +37,7 @@ export function useRegistryContract() {
   })
 
   // Read functions
-  const { data: isSuperAdmin } = useReadContract({
+  const { data: isSuperAdmin, isLoading: isSuperAdminLoading, isFetching: isSuperAdminFetching } = useReadContract({
     address: REGISTRY_ADDRESS as `0x${string}`,
     abi: registryAbi,
     functionName: 'isSuperAdmin',
@@ -90,6 +90,24 @@ export function useRegistryContract() {
     })
   }, [writeContractAsync])
 
+  const addSuperAdmin = useCallback((admin: Address) => {
+    return writeContractAsync({
+      address: REGISTRY_ADDRESS as Address,
+      abi: registryAbi,
+      functionName: 'addSuperAdmin',
+      args: [admin],
+    })
+  }, [writeContractAsync])
+
+  const removeSuperAdmin = useCallback((admin: Address) => {
+    return writeContractAsync({
+      address: REGISTRY_ADDRESS as Address,
+      abi: registryAbi,
+      functionName: 'removeSuperAdmin',
+      args: [admin],
+    })
+  }, [writeContractAsync])
+
   const parseElectionSpaceCreated = useCallback((receipt?: { logs?: Log[] } | null): ElectionSpaceCreatedEvent | null => {
     if (!receipt || !receipt.logs) return null
     for (const log of receipt.logs) {
@@ -133,13 +151,17 @@ export function useRegistryContract() {
 
   return {
     isSuperAdmin,
+    isSuperAdminLoading: isSuperAdminLoading || isSuperAdminFetching,
     superAdminAddress,
+    registryAddress: REGISTRY_ADDRESS,
     userAddress,
     isConnected,
     chainId,
     reviewProposal,
     createElection,
     createElectionForAdmin,
+    addSuperAdmin,
+    removeSuperAdmin,
     submitProposal,
     parseElectionSpaceCreated,
     hash,
