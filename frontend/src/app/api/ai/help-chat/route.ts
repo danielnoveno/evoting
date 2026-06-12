@@ -17,6 +17,28 @@ interface HelpChatPayload {
 const MAX_MESSAGE_LENGTH = 1200
 const MAX_HISTORY_ITEMS = 12
 
+function buildFallbackReply(message: string) {
+  const keyword = message.toLowerCase()
+
+  if (keyword.includes('bukti') || keyword.includes('transaksi') || keyword.includes('basescan') || keyword.includes('hash')) {
+    return 'Bukti transaksi dapat dilihat dari detail pemilihan setelah suara berhasil diproses. Cari bagian “Bukti Transaksi” atau “Riwayat Transaksi”, lalu buka tautan Basescan jika tersedia. Jika hash transaksi belum muncul, tunggu beberapa saat dan muat ulang halaman. Jika tetap belum tersedia, hubungi admin pemilihan.'
+  }
+
+  if (keyword.includes('konfirmasi') || keyword.includes('reveal')) {
+    return 'Konfirmasi suara hanya bisa dilakukan pada tahap konfirmasi yang sedang dibuka. Pastikan Anda memakai browser yang sama dengan saat mengunci pilihan karena kode pencocokan disimpan di browser tersebut. Jika tombol belum muncul, cek status tahap pemilihan atau muat ulang halaman. Jika kode hilang atau tahap sudah berakhir, hubungi admin.'
+  }
+
+  if (keyword.includes('login') || keyword.includes('masuk') || keyword.includes('akun')) {
+    return 'Pastikan Anda masuk menggunakan akun yang terdaftar untuk pemilihan ini. Jika sesi kedaluwarsa, keluar lalu masuk kembali. Jika akun belum terdaftar atau akses ditolak, hubungi admin pemilihan agar data pemilih dapat diperiksa.'
+  }
+
+  if (keyword.includes('pilih') || keyword.includes('kandidat') || keyword.includes('suara')) {
+    return 'Untuk memilih, buka pemilihan yang aktif lalu ikuti tahap yang tersedia di dashboard pemilih. Pada tahap pertama pilihan dikunci terlebih dahulu, lalu pada tahap konfirmasi pilihan dicocokkan agar dapat dihitung. Pastikan tidak menutup halaman sebelum proses selesai dan simpan bukti transaksi jika tersedia.'
+  }
+
+  return 'Maaf, asisten otomatis sedang memakai jawaban cadangan. Untuk bantuan cepat, cek FAQ di halaman ini, pastikan sesi login masih aktif, dan ikuti status tahap pemilihan yang tampil di dashboard. Jika masalah menyangkut akun, akses, atau kode konfirmasi yang hilang, hubungi admin pemilihan.'
+}
+
 function sanitizeText(value: unknown, maxLength: number) {
   return String(value ?? '').replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, maxLength)
 }
@@ -78,20 +100,27 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       return NextResponse.json(
         {
-          error: 'Fitur asisten otomatis belum dikonfigurasi. Gunakan email bantuan untuk sementara.',
+          reply: buildFallbackReply(payload.message),
+          source: 'fallback',
         },
-        { status: 503 },
       )
     }
 
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
-    const result = await model.generateContent(buildPrompt(payload))
-    const text = sanitizeText(result.response.text(), 1600)
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.0-flash' })
+    let text = ''
+
+    try {
+      const result = await model.generateContent(buildPrompt(payload))
+      text = sanitizeText(result.response.text(), 1600)
+    } catch (geminiError) {
+      console.error('Help chat Gemini API error:', geminiError)
+      return NextResponse.json({ reply: buildFallbackReply(payload.message), source: 'fallback' })
+    }
 
     return NextResponse.json({ reply: text || 'Maaf, asisten belum dapat menyiapkan jawaban. Silakan coba lagi atau hubungi admin.' })
   } catch (error) {
-    console.error('Help chat Gemini API error:', error)
+    console.error('Help chat API error:', error)
     return jsonError('Gagal memuat jawaban bantuan. Coba lagi beberapa saat.', 500)
   }
 }
