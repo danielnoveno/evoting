@@ -251,7 +251,7 @@ export function HasilSections({ id }: { id: string }) {
               ))}
               {!auditQuery.isLoading && logs.length === 0 ? (
                 <article className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-[14px] leading-7 text-slate-500">
-                  Belum ada transaksi audit Supabase untuk pemilihan ini. Jalankan query seed audit atau tunggu transaksi nyata dari frontend/on-chain.
+                  Belum ada transaksi audit untuk pemilihan ini. Data akan tampil setelah transaksi nyata tercatat dari frontend/on-chain.
                 </article>
               ) : null}
             </StaggerContainer>

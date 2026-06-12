@@ -3,7 +3,6 @@ import { ponder } from "@/generated";
 import {
   candidateResult,
   chainEvent,
-  changeProposal,
   election,
   proposal,
   voteCommit,
@@ -109,8 +108,6 @@ ponder.on("VoteChainRegistry:ProposalReviewed", async ({ event, context }) => {
 });
 
 ponder.on("VoteChainRegistry:ElectionSpaceCreated", async ({ event, context }) => {
-  const existingProposal = await context.db.find(proposal, { id: event.args.proposalId });
-
   await insertChainEvent(context, event, {
     actionType: "deploy_space",
     spaceAddress: event.args.space,
@@ -119,8 +116,6 @@ ponder.on("VoteChainRegistry:ElectionSpaceCreated", async ({ event, context }) =
     actor: event.args.owner,
     metadata: {
       candidateCount: event.args.candidateCount,
-      title: existingProposal?.title ?? "Untitled",
-      metadataURI: existingProposal?.metadataURI ?? "",
     },
   });
 
@@ -132,8 +127,8 @@ ponder.on("VoteChainRegistry:ElectionSpaceCreated", async ({ event, context }) =
       proposalId: event.args.proposalId,
       owner: event.args.owner,
       candidateCount: Number(event.args.candidateCount),
-      title: existingProposal?.title ?? "Untitled",
-      metadataURI: existingProposal?.metadataURI ?? "",
+      title: `Pemilihan #${event.args.spaceId.toString()}`,
+      metadataURI: "",
       phase: INITIAL_PHASE_REGISTRATION,
       status: INITIAL_STATUS_ACTIVE,
       whitelistedCount: 0,
@@ -150,46 +145,12 @@ ponder.on("VoteChainRegistry:ElectionSpaceCreated", async ({ event, context }) =
       proposalId: event.args.proposalId,
       owner: event.args.owner,
       candidateCount: Number(event.args.candidateCount),
-      title: existingProposal?.title ?? "Untitled",
-      metadataURI: existingProposal?.metadataURI ?? "",
+      title: `Pemilihan #${event.args.spaceId.toString()}`,
+      metadataURI: "",
       lastUpdatedAt: event.block.timestamp,
       lastUpdatedBlock: event.block.number,
       lastUpdatedTx: event.transaction.hash,
     });
-});
-
-ponder.on("VoteChainRegistry:ChangeProposalSubmitted", async ({ event, context }) => {
-  const spaceAddress = await context.db.find(election, { spaceId: event.args.spaceId });
-
-  await insertChainEvent(context, event, {
-    actionType: "change_proposal_submitted",
-    spaceId: event.args.spaceId,
-    spaceAddress: spaceAddress?.id,
-    actor: event.args.proposer,
-  });
-
-  // Note: We need metadata from the contract or event to populate title/metadataURI
-  // Assuming the event args would ideally have these, or we fetch them.
-  // For now, we use a placeholder or assume the user will update the event in future.
-  // In the current contract, the event only has changeId, spaceId, proposer.
-});
-
-ponder.on("ElectionSpace:ElectionMetadataUpdated", async ({ event, context }) => {
-  await insertChainEvent(context, event, {
-    actionType: "metadata_updated",
-    spaceAddress: event.log.address,
-    spaceId: event.args.spaceId,
-    actor: event.args.actor,
-    metadata: { title: event.args.title, metadataURI: event.args.metadataURI },
-  });
-
-  await context.db.update(election, { id: event.log.address }).set({
-    title: event.args.title,
-    metadataURI: event.args.metadataURI,
-    lastUpdatedAt: event.block.timestamp,
-    lastUpdatedBlock: event.block.number,
-    lastUpdatedTx: event.transaction.hash,
-  });
 });
 
 ponder.on("ElectionSpace:PhaseChanged", async ({ event, context }) => {

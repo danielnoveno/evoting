@@ -2,7 +2,6 @@
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import type { Database } from '@/lib/supabase/database.types'
-import { getCurrentProfile } from '@/lib/repositories/profileRepository'
 import type { WhitelistEntryRecord, WhitelistImportJobRecord } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
 
@@ -140,37 +139,45 @@ export async function createWhitelistEntry(input: {
 }): Promise<WhitelistEntryRecord> {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
-  const normalizedWalletAddress = input.walletAddress.trim().toLowerCase()
+  const { data: sessionData } = await client.auth.getSession()
+  const accessToken = sessionData.session?.access_token
+  if (!accessToken) throw new RepositoryError('Sesi admin belum aktif untuk menambahkan whitelist.')
 
-  const { data, error } = await client
-    .schema('app')
-    .from('proposal_whitelist_entries')
-    .insert({
-      proposal_draft_id: input.proposalDraftId,
-      wallet_address: normalizedWalletAddress,
-      voter_name: input.voterName ?? null,
-      source: 'manual',
-      validation_status: 'valid',
-      sync_status: 'pending',
-    })
-    .select('*')
-    .single()
+  const response = await fetch(`/api/admin/proposals/${input.proposalDraftId}/whitelist`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ walletAddress: input.walletAddress, voterName: input.voterName ?? null }),
+  })
 
-  if (error) throw new RepositoryError('Gagal menambahkan pemilih ke whitelist. Coba lagi.')
-  return mapWhitelistRow(data)
+  const payload: unknown = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    const message = payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+      ? payload.error
+      : 'Gagal menambahkan pemilih ke whitelist. Coba lagi.'
+    throw new RepositoryError(message)
+  }
+  if (!payload || typeof payload !== 'object' || !('entry' in payload)) throw new RepositoryError('Respons whitelist tidak dikenali.')
+  return payload.entry as WhitelistEntryRecord
 }
 
 export async function deleteWhitelistEntry(id: string): Promise<void> {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+  const { data: sessionData } = await client.auth.getSession()
+  const accessToken = sessionData.session?.access_token
+  if (!accessToken) throw new RepositoryError('Sesi admin belum aktif untuk menghapus whitelist.')
 
-  const { error } = await client
-    .schema('app')
-    .from('proposal_whitelist_entries')
-    .delete()
-    .eq('id', id)
-
-  if (error) throw new RepositoryError('Gagal menghapus pemilih dari whitelist. Coba lagi.')
+  const response = await fetch(`/api/admin/whitelist/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => ({}))
+    const message = payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+      ? payload.error
+      : 'Gagal menghapus pemilih dari whitelist. Coba lagi.'
+    throw new RepositoryError(message)
+  }
 }
 
 export async function updateWhitelistSyncStatus(input: {
@@ -180,18 +187,22 @@ export async function updateWhitelistSyncStatus(input: {
 }): Promise<void> {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+  const { data: sessionData } = await client.auth.getSession()
+  const accessToken = sessionData.session?.access_token
+  if (!accessToken) throw new RepositoryError('Sesi admin belum aktif untuk sinkronisasi whitelist.')
 
-  const { error } = await client
-    .schema('app')
-    .from('proposal_whitelist_entries')
-    .update({
-      sync_status: 'synced',
-      latest_sync_tx_hash: input.txHash,
-    })
-    .eq('proposal_draft_id', input.proposalDraftId)
-    .in('wallet_address', input.walletAddresses)
-
-  if (error) throw new RepositoryError('Gagal memperbarui status sinkronisasi whitelist.')
+  const response = await fetch(`/api/admin/proposals/${input.proposalDraftId}/whitelist-sync`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ txHash: input.txHash, walletAddresses: input.walletAddresses }),
+  })
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => ({}))
+    const message = payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+      ? payload.error
+      : 'Gagal memperbarui status sinkronisasi whitelist.'
+    throw new RepositoryError(message)
+  }
 }
 
 export async function createWhitelistEntriesBulk(input: {
@@ -206,64 +217,22 @@ export async function createWhitelistEntriesBulk(input: {
 }): Promise<{ importJob: WhitelistImportJobRecord; entries: WhitelistEntryRecord[] }> {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+  const { data: sessionData } = await client.auth.getSession()
+  const accessToken = sessionData.session?.access_token
+  if (!accessToken) throw new RepositoryError('Sesi admin belum aktif untuk memproses CSV whitelist.')
 
-  const profile = await getCurrentProfile()
-  if (!profile) throw new RepositoryError('Sesi admin belum aktif untuk memproses CSV whitelist.')
-
-  const normalizedFileName = input.fileName.trim() || 'whitelist-import.csv'
-  const filePath = `imports/${input.proposalDraftId}/${Date.now()}-${normalizedFileName.replace(/\s+/g, '-').toLowerCase()}`
-
-  const uploadPayload = new Blob([input.rawContent], { type: 'text/csv;charset=utf-8' })
-  const { error: uploadError } = await client.storage
-    .from('proof-exports')
-    .upload(filePath, uploadPayload, {
-      contentType: 'text/csv',
-      upsert: false,
-    })
-
-  if (uploadError) {
-    throw new RepositoryError('Gagal mengunggah file CSV ke storage. Coba lagi.')
+  const response = await fetch(`/api/admin/proposals/${input.proposalDraftId}/whitelist-import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(input),
+  })
+  const payload: unknown = await response.json().catch(() => ({}))
+  if (!response.ok) {
+    const message = payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+      ? payload.error
+      : 'Gagal memproses file CSV whitelist. Coba lagi.'
+    throw new RepositoryError(message)
   }
-
-  const { data: importJobData, error: importJobError } = await client
-    .schema('app')
-    .from('whitelist_import_jobs')
-    .insert({
-      proposal_draft_id: input.proposalDraftId,
-      created_by: profile.id,
-      file_path: filePath,
-      file_name: normalizedFileName,
-      row_count: input.entries.length,
-      invalid_count: input.invalidCount ?? 0,
-      status: input.entries.length > 0 ? 'valid' : 'invalid',
-    })
-    .select('*')
-    .single()
-
-  if (importJobError || !importJobData) {
-    throw new RepositoryError('Gagal mencatat pekerjaan impor whitelist. Coba lagi.')
-  }
-
-  const payload = input.entries.map((entry) => ({
-    proposal_draft_id: input.proposalDraftId,
-    import_job_id: importJobData.id,
-    wallet_address: entry.walletAddress.trim().toLowerCase(),
-    voter_name: entry.voterName ?? null,
-    source: 'csv' as const,
-    validation_status: 'valid' as const,
-    sync_status: 'pending' as const,
-  }))
-
-  const { data, error } = await client
-    .schema('app')
-    .from('proposal_whitelist_entries')
-    .insert(payload)
-    .select('*')
-
-  if (error) throw new RepositoryError('Gagal memproses file CSV whitelist. Coba lagi.')
-
-  return {
-    importJob: mapWhitelistImportJobRow(importJobData),
-    entries: (data ?? []).map(mapWhitelistRow),
-  }
+  if (!payload || typeof payload !== 'object' || !('importJob' in payload) || !('entries' in payload)) throw new RepositoryError('Respons impor whitelist tidak dikenali.')
+  return payload as { importJob: WhitelistImportJobRecord; entries: WhitelistEntryRecord[] }
 }

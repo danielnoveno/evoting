@@ -71,9 +71,9 @@ function getFallbackDetail(title: string, code: string): ModerationDetail {
     participationNote: 'Belum ada partisipasi',
     phaseTitle: 'Monitoring Aktif',
     nextPhase: 'Reveal & Tally',
-    blockNumber: '#19,480,000',
-    blockSyncLabel: 'Terakhir sinkron 1 menit lalu',
-    contractAddress: '0x0000...84532',
+    blockNumber: 'Menunggu data',
+    blockSyncLabel: 'Belum ada sinkronisasi indexer',
+    contractAddress: 'Belum tersedia',
     contractUrl: 'https://sepolia.basescan.org/',
     suspensionNote: 'Penangguhan akan menghentikan pemilihan ini sampai proses tinjauan selesai.',
     candidateSectionTitle: `Monitoring Kandidat ${title}`,
@@ -126,7 +126,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
         status: (p.status === 'deployed' ? 'Aktif' : 'Selesai') as SuperadminElectionState,
         note: p.status === 'deployed' ? 'Online' : 'Final',
         phaseLabel: p.status === 'deployed' ? 'Fase Berjalan' : 'Pemilihan Selesai',
-        totalVoters: String(p.candidateCount * 10),
+        totalVoters: '0',
         participation: '0%'
       }
     }

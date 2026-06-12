@@ -240,7 +240,7 @@ export default function AdminProposalPage() {
                 {!isLoading && paginatedRows.length === 0 ? (
                   <tr>
                     <td className="px-6 py-10 text-center text-[14px] leading-7 text-slate-500" colSpan={6}>
-                      Belum ada proposal dari Supabase. Buat proposal baru atau jalankan query seed yang disiapkan.
+                      Belum ada proposal dari Supabase. Buat proposal baru untuk memulai proses review.
                     </td>
                   </tr>
                 ) : null}

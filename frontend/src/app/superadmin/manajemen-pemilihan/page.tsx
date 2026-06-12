@@ -57,7 +57,7 @@ export default function SuperadminElectionManagementPage() {
         status: (p.status === 'deployed' ? 'Aktif' : 'Selesai') as SuperadminElectionState,
         note: p.status === 'deployed' ? 'Online' : 'Final',
         phaseLabel: p.status === 'deployed' ? 'Fase Berjalan' : 'Pemilihan Selesai',
-        totalVoters: p.candidateCount * 10,
+        totalVoters: 0,
         participation: '0%'
       }))
   }, [proposalRowsRaw])

@@ -92,7 +92,7 @@ export function useAdminElectionList() {
     return query.data
       .filter(p => p.status === 'deployed')
       .map((p, index) => {
-        const voterTarget = String(p.candidateCount * 10)
+        const voterTarget = '0'
 
         return {
           id: p.id,
@@ -106,7 +106,7 @@ export function useAdminElectionList() {
           secondaryActionLabel: 'Statistik',
           actionTone: 'blue',
           periodLabel: 'Mei - Juni 2026',
-          turnoutLabel: `${voterTarget} pemilih terdaftar`,
+          turnoutLabel: p.deployedSpaceAddress ? 'Menunggu data whitelist' : 'Belum deploy',
           detail: makeEmptyDetail(p, voterTarget),
           commits: p.status === 'deployed' ? {
             total: '0',

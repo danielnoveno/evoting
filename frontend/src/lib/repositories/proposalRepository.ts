@@ -430,6 +430,26 @@ export async function updateProposalStatus(input: ProposalStatusUpdateInput): Pr
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
 
+  if (typeof window !== 'undefined') {
+    const { data: sessionData } = await client.auth.getSession()
+    const accessToken = sessionData.session?.access_token
+    if (!accessToken) throw new RepositoryError('Sesi pengguna belum aktif untuk memperbarui proposal.')
+    const response = await fetch(`/api/proposals/${input.id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(input),
+    })
+    const payload: unknown = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      const message = payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+        ? payload.error
+        : 'Gagal memperbarui status proposal. Coba lagi.'
+      throw new RepositoryError(message)
+    }
+    if (!payload || typeof payload !== 'object' || !('proposal' in payload)) throw new RepositoryError('Respons status proposal tidak dikenali.')
+    return payload.proposal as ProposalDraftRecord
+  }
+
   const { data: beforeRow } = await client.schema('app').from('proposal_drafts').select('*').eq('id', input.id).maybeSingle()
 
   const payload: Partial<Database['app']['Tables']['proposal_drafts']['Update']> = {

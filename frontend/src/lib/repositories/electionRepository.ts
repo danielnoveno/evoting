@@ -266,6 +266,19 @@ function mapElection(row: ProposalRow, candidates: CandidateRow[], whitelistRows
 }
 
 export async function listPublicElections(): Promise<PublicElectionRecord[]> {
+  if (typeof window !== 'undefined') {
+    const response = await fetch('/api/public/elections', { method: 'GET' })
+    const payload: unknown = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      const message = isRecord(payload) && typeof payload.error === 'string'
+        ? payload.error
+        : 'Gagal memuat data pemilihan publik.'
+      throw new RepositoryError(message)
+    }
+    if (isRecord(payload) && Array.isArray(payload.elections)) return payload.elections as PublicElectionRecord[]
+    return []
+  }
+
   const client = getSupabaseBrowserClient()
   if (!client) return []
 
@@ -374,6 +387,18 @@ export async function listVoterWhitelistedElections(walletAddress: string | stri
 }
 
 export async function getPublicElectionById(id: string): Promise<PublicElectionRecord | null> {
+  if (typeof window !== 'undefined') {
+    const response = await fetch(`/api/public/elections/${id}`, { method: 'GET' })
+    const payload: unknown = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      const message = isRecord(payload) && typeof payload.error === 'string'
+        ? payload.error
+        : 'Gagal memuat detail pemilihan publik.'
+      throw new RepositoryError(message)
+    }
+    if (isRecord(payload) && payload.election && typeof payload.election === 'object') return payload.election as PublicElectionRecord
+    return null
+  }
   const elections = await listPublicElections()
   return elections.find((election) => election.id === id) ?? null
 }
