@@ -80,6 +80,7 @@ export interface ProposalDraftRecord {
   id: string
   title: string
   description: string | null
+  bannerImagePath: string | null
   organizationName: string | null
   candidateCount: number
   status: ProposalDraftStatus
@@ -132,6 +133,7 @@ export interface PublicElectionRecord {
   id: string
   title: string
   description: string | null
+  bannerImagePath: string | null
   organizationName: string | null
   status: ProposalDraftStatus
   phase: PublicElectionPhase
@@ -216,6 +218,7 @@ export interface ProposalDraftUpsertInput {
   title: string
   organizationName?: string | null
   description?: string | null
+  bannerImagePath?: string | null
   candidateCount: number
   commitStartAt?: string | null
   revealStartAt?: string | null

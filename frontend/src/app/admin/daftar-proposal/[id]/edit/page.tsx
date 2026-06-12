@@ -45,6 +45,7 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
     title: liveProposal?.title ?? proposal?.title ?? 'Proposal',
     category: liveProposal?.organizationName ?? proposal?.category ?? 'Organisasi',
     description: liveProposal?.description ?? `Deskripsi default untuk proposal ${liveProposal?.title ?? proposal?.title}.`,
+    bannerImagePath: liveProposal?.bannerImagePath ?? '',
     candidateCount: liveProposal?.candidateCount ?? 2,
     voterCount: proposal ? parseInt(proposal.votersEstimate.replace(/,/g, ''), 10) || 0 : 0,
     commitDate: toDatetimeLocal(liveProposal?.commitStartAt ?? null, '2026-06-12T09:00'),

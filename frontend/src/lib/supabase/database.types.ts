@@ -107,6 +107,7 @@ export type Database = {
           created_by: string
           title: string
           description: string | null
+          banner_image_path: string | null
           organization_name: string | null
           theme_color: string
           rules_text: string | null
@@ -130,6 +131,7 @@ export type Database = {
           created_by: string
           title: string
           description?: string | null
+          banner_image_path?: string | null
           organization_name?: string | null
           theme_color?: string
           rules_text?: string | null
@@ -153,6 +155,7 @@ export type Database = {
           created_by?: string
           title?: string
           description?: string | null
+          banner_image_path?: string | null
           organization_name?: string | null
           theme_color?: string
           rules_text?: string | null

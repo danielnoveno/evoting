@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/toast-provider'
-import { AlertTriangle, ArrowLeft, FileText, Save, ShieldCheck, Trash2, Upload, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, FileImage, FileText, Save, ShieldCheck, Trash2, Upload, X } from 'lucide-react'
 import { ScrollReveal } from '@/components/public/parallax'
 import { useCandidateAssetUpload } from '@/hooks/use-candidate-asset-upload'
 import { useSaveProposalDraft } from '@/hooks/use-save-proposal-draft'
@@ -18,6 +18,7 @@ export interface ProposalFormData {
   title: string
   category: string
   description: string
+  bannerImagePath: string
   candidateCount: number
   voterCount: number
   commitDate: string
@@ -48,6 +49,7 @@ type ValidationIssue = {
 const MIN_GAP_MINUTES = 60
 const MAX_SUPPORTING_DOCUMENT_SIZE = 10 * 1024 * 1024
 const MAX_CANDIDATE_PHOTO_SIZE = 5 * 1024 * 1024
+const MAX_BANNER_IMAGE_SIZE = 5 * 1024 * 1024
 
 interface ProposalFormProps {
   proposalId?: string
@@ -79,7 +81,10 @@ export function ProposalForm({
   const saveProposalDraft = useSaveProposalDraft()
   const uploadCandidateAsset = useCandidateAssetUpload()
   const [supportingDocument, setSupportingDocument] = useState<File | null>(null)
+  const [bannerImageFile, setBannerImageFile] = useState<File | null>(null)
+  const [bannerImagePreview, setBannerImagePreview] = useState<string | null>(null)
   const [isUploadingDocument, setIsUploadingDocument] = useState(false)
+  const [isUploadingBannerImage, setIsUploadingBannerImage] = useState(false)
   const [candidatePhotoFiles, setCandidatePhotoFiles] = useState<Record<number, File>>({})
   const [candidatePhotoPreviews, setCandidatePhotoPreviews] = useState<Record<number, string>>({})
   const [isUploadingCandidatePhotos, setIsUploadingCandidatePhotos] = useState(false)
@@ -90,6 +95,7 @@ export function ProposalForm({
     title: initialData?.title || '',
     category: initialData?.category || 'Internal Organisasi',
     description: initialData?.description || '',
+    bannerImagePath: initialData?.bannerImagePath || '',
     candidateCount: initialData?.candidateCount ?? 2,
     voterCount: initialData?.voterCount ?? 0,
     commitDate: initialData?.commitDate || '',
@@ -100,7 +106,7 @@ export function ProposalForm({
   })
   const [errors, setErrors] = useState<ProposalFormErrors>({})
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([])
-  const isSubmitting = saveProposalDraft.isPending || isUploadingDocument || isUploadingCandidatePhotos
+  const isSubmitting = saveProposalDraft.isPending || isUploadingDocument || isUploadingCandidatePhotos || isUploadingBannerImage
 
   useEffect(() => {
     return () => {
@@ -109,11 +115,18 @@ export function ProposalForm({
   }, [candidatePhotoPreviews])
 
   useEffect(() => {
+    return () => {
+      if (bannerImagePreview) URL.revokeObjectURL(bannerImagePreview)
+    }
+  }, [bannerImagePreview])
+
+  useEffect(() => {
     if (initialData) {
       setFormData({
         title: initialData.title || '',
         category: initialData.category || 'Internal Organisasi',
         description: initialData.description || '',
+        bannerImagePath: initialData.bannerImagePath || '',
         candidateCount: initialData.candidateCount ?? 2,
         voterCount: initialData.voterCount ?? 0,
         commitDate: initialData.commitDate || '',
@@ -302,6 +315,59 @@ export function ProposalForm({
     setSupportingDocument(file)
   }
 
+  const processBannerImageFile = (file: File) => {
+    const isImage = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp' || /\.(jpe?g|png|webp)$/i.test(file.name)
+    if (!isImage) {
+      showToast({
+        title: 'Format banner belum didukung',
+        description: 'Gunakan gambar banner dalam format JPG, PNG, atau WebP.',
+        tone: 'error',
+      })
+      return
+    }
+
+    if (file.size > MAX_BANNER_IMAGE_SIZE) {
+      showToast({
+        title: 'Ukuran banner terlalu besar',
+        description: 'Maksimal ukuran banner adalah 5 MB.',
+        tone: 'error',
+      })
+      return
+    }
+
+    setBannerImageFile(file)
+    setBannerImagePreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return URL.createObjectURL(file)
+    })
+  }
+
+  const handleBannerImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) return
+    const file = event.target.files?.[0] ?? null
+    event.target.value = ''
+    if (!file) return
+    processBannerImageFile(file)
+  }
+
+  const handleBannerImageDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+    if (isReadOnly) return
+    event.preventDefault()
+    const file = event.dataTransfer.files?.[0]
+    if (!file) return
+    processBannerImageFile(file)
+  }
+
+  const removeBannerImage = () => {
+    if (isReadOnly) return
+    setBannerImageFile(null)
+    setBannerImagePreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return null
+    })
+    setFormData((prev) => ({ ...prev, bannerImagePath: '' }))
+  }
+
   const processCandidatePhotoFile = (index: number, file: File) => {
     const isImage = file.type === 'image/jpeg' || file.type === 'image/png' || /\.(jpe?g|png)$/i.test(file.name)
     if (!isImage) {
@@ -483,11 +549,34 @@ export function ProposalForm({
       }
     }
 
+    let bannerImagePath = formData.bannerImagePath
+    if (bannerImageFile) {
+      setIsUploadingBannerImage(true)
+      try {
+        bannerImagePath = await uploadCandidateAsset.mutateAsync({
+          file: bannerImageFile,
+          candidateId: 'banner',
+          electionId: proposalId ?? 'proposal-drafts',
+        })
+      } catch (error) {
+        showToast({
+          title: 'Gagal mengunggah banner',
+          description: error instanceof Error ? error.message : 'Coba unggah ulang gambar banner.',
+          tone: 'error',
+        })
+        setIsUploadingBannerImage(false)
+        return
+      } finally {
+        setIsUploadingBannerImage(false)
+      }
+    }
+
     saveProposalDraft.mutate({
       id: proposalId,
       title: formData.title,
       organizationName: formData.category || 'Organisasi',
       description: formData.description,
+      bannerImagePath: bannerImagePath || null,
       candidateCount: candidateEntries.length,
       commitStartAt: new Date(formData.commitDate).toISOString(),
       revealStartAt: new Date(formData.revealDate).toISOString(),
@@ -547,7 +636,7 @@ export function ProposalForm({
           {extraActions}
           {!isReadOnly && (
             <button onClick={handleSubmit} disabled={isSubmitting} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-black px-6 text-white disabled:cursor-not-allowed disabled:opacity-60">
-              <Save className="h-4 w-4" /> {isUploadingCandidatePhotos ? 'Mengunggah foto...' : isUploadingDocument ? 'Mengunggah dokumen...' : saveProposalDraft.isPending ? 'Menyimpan...' : submitLabel}
+              <Save className="h-4 w-4" /> {isUploadingBannerImage ? 'Mengunggah banner...' : isUploadingCandidatePhotos ? 'Mengunggah foto...' : isUploadingDocument ? 'Mengunggah dokumen...' : saveProposalDraft.isPending ? 'Menyimpan...' : submitLabel}
             </button>
           )}
         </div>
@@ -583,6 +672,32 @@ export function ProposalForm({
                 <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Deskripsi</span>
                 <textarea name="description" value={formData.description} onChange={handleChange} disabled={isReadOnly} placeholder="Tuliskan deskripsi pemilihan..." className="h-32 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
               </label>
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <span className="block text-[12px] font-semibold text-slate-600">Banner Pemilihan <span className="font-normal text-slate-400">(opsional)</span></span>
+                    <p className="mt-1 text-[12px] leading-5 text-slate-400">Gambar akan tampil sebagai background card dengan linear-gradient overlay.</p>
+                  </div>
+                  {(bannerImagePreview || formData.bannerImagePath) && !isReadOnly ? (
+                    <button type="button" onClick={removeBannerImage} className="inline-flex h-9 items-center justify-center rounded-xl text-[13px] font-medium text-red-600 hover:bg-red-50">
+                      Hapus banner
+                    </button>
+                  ) : null}
+                </div>
+                <label
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={handleBannerImageDrop}
+                  className="group block cursor-pointer rounded-2xl focus-within:outline-none focus-within:ring-4 focus-within:ring-slate-900/5"
+                >
+                  <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" className="sr-only" onChange={handleBannerImageChange} disabled={isReadOnly} />
+                  <BannerPreviewCard
+                    imageUrl={bannerImagePreview ?? formData.bannerImagePath}
+                    title={formData.title || 'Nama Pemilihan'}
+                    description={formData.description || 'Deskripsi singkat pemilihan akan tampil di area ini.'}
+                    isReadOnly={isReadOnly}
+                  />
+                </label>
+              </div>
             </div>
           </section>
         </div>
@@ -824,5 +939,31 @@ export function ProposalForm({
         }}
       />
     </ScrollReveal>
+  )
+}
+
+function BannerPreviewCard({ imageUrl, title, description, isReadOnly }: { imageUrl?: string | null; title: string; description: string; isReadOnly: boolean }) {
+  return (
+    <div
+      className="relative min-h-[190px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 bg-cover bg-center transition-colors duration-150 group-hover:border-slate-300"
+      style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(15,23,42,0.96)_0%,rgba(15,23,42,0.84)_42%,rgba(15,23,42,0.62)_70%,rgba(15,23,42,0.48)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(110,231,183,0.16),transparent_30%)]" />
+      <div className="relative flex min-h-[190px] flex-col justify-between p-6 text-white sm:p-7">
+        <div className="flex items-center justify-between gap-3">
+          <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-100">Preview Banner</span>
+          {!isReadOnly ? <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-slate-100">Klik untuk ganti gambar</span> : null}
+        </div>
+        <div className="max-w-[520px] pt-10">
+          <h3 className="text-[24px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[30px]">{title}</h3>
+          <p className="mt-3 line-clamp-2 text-[14px] leading-6 text-slate-200">{description}</p>
+          <div className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 text-[13px] font-medium text-white">
+            <FileImage className="h-4 w-4" />
+            {imageUrl ? 'Gradient overlay aktif' : 'Unggah gambar banner'}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

@@ -245,6 +245,7 @@ function mapElection(row: ProposalRow, candidates: CandidateRow[], whitelistRows
     id: row.id,
     title: row.title,
     description: row.description,
+    bannerImagePath: row.banner_image_path,
     organizationName: row.organization_name,
     status: row.status,
     phase,
