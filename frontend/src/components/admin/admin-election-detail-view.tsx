@@ -37,12 +37,26 @@ function CandidateImage({ tone }: { tone: 'dark' | 'neutral' }) {
   )
 }
 
-function StatusBadge({ status }: { status: 'verified' | 'pending' }) {
+function StatusBadge({ status }: { status: 'synced' | 'valid' | 'pending' }) {
+  if (status === 'synced') {
+    return (
+      <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
+        Tersinkron On-Chain
+      </span>
+    )
+  }
+
+  if (status === 'valid') {
+    return (
+      <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">
+        Valid Database
+      </span>
+    )
+  }
+
   return (
-    <span className={status === 'verified'
-      ? 'inline-flex rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700'
-      : 'inline-flex rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700'}>
-      {status === 'verified' ? 'Terverifikasi On-Chain' : 'Pending'}
+    <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700">
+      Pending
     </span>
   )
 }
@@ -156,7 +170,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       id: record.id,
       wallet: record.walletAddress,
       name: record.voterName ?? 'Nama belum diisi',
-      status: record.syncStatus === 'synced' || record.validationStatus === 'valid' ? 'verified' as const : 'pending' as const,
+      status: record.syncStatus === 'synced' ? 'synced' as const : record.validationStatus === 'valid' ? 'valid' as const : 'pending' as const,
       addedAt: new Intl.DateTimeFormat('id-ID', {
         day: '2-digit',
         month: 'short',
@@ -201,11 +215,21 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   }
 
   const handleManualWhitelistSave = () => {
-    if (!manualWallet.trim()) {
+    const normalizedWallet = manualWallet.trim()
+    if (!normalizedWallet) {
       showToast({
         tone: 'error',
         title: 'Alamat wallet wajib diisi',
         description: 'Masukkan alamat wallet sebelum menambahkan pemilih manual.',
+      })
+      return
+    }
+
+    if (!/^0x[a-fA-F0-9]{40}$/.test(normalizedWallet)) {
+      showToast({
+        tone: 'error',
+        title: 'Format wallet tidak valid',
+        description: 'Alamat wallet harus diawali 0x dan berisi 40 karakter heksadesimal.',
       })
       return
     }
@@ -219,7 +243,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     createWhitelistEntry.mutate(
       {
         proposalDraftId: election.id,
-        walletAddress: manualWallet,
+        walletAddress: manualWallet.trim().toLowerCase(),
         voterName: manualName || null,
       },
       {
@@ -228,7 +252,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           showToast({
             tone: 'success',
             title: 'Pemilih berhasil ditambahkan',
-            description: `Wallet ${manualWallet} telah ditambahkan ke whitelist.`,
+            description: `Wallet ${manualWallet.trim().toLowerCase()} telah ditambahkan ke whitelist database. Jalankan sinkronisasi untuk mendaftarkan on-chain.`,
           })
           setManualWallet('')
           setManualName('')
@@ -506,7 +530,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         <article className="rounded-[28px] border border-slate-200 bg-white p-6 xl:col-span-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total Pemilih</p>
           <div className="mt-5 flex items-end gap-3">
-            <p className="text-[56px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.whitelist.total}</p>
+            <p className="text-[56px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{whitelistRecords.length}</p>
             <p className="pb-2 text-[22px] text-slate-500">/ {election.detail.whitelist.target}</p>
           </div>
           <div className="mt-6 h-2 rounded-full bg-slate-100">
@@ -613,7 +637,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             </table>
           </div>
           <div className="flex items-center justify-between px-6 py-5 text-[14px] text-slate-500">
-            <p>Menampilkan {filteredWhitelistRecords.length} dari {election.detail.whitelist.total} pemilih</p>
+            <p>Menampilkan {filteredWhitelistRecords.length} dari {whitelistRecords.length} pemilih</p>
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => showToast({ tone: 'info', title: 'Pagination', description: 'Navigasi halaman sedang disiapkan.' })} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">‹</button>
               <button type="button" onClick={() => showToast({ tone: 'info', title: 'Pagination', description: 'Navigasi halaman sedang disiapkan.' })} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">›</button>

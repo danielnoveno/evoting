@@ -48,7 +48,7 @@ export default function VoterDashboardPage() {
         <section className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
           <h1 className="text-[24px] font-semibold text-slate-900">Belum ada ruang voting</h1>
           <p className="mx-auto mt-3 max-w-xl text-[14px] leading-7 text-slate-600">
-            Tidak ada pemilihan dari Supabase yang dapat ditampilkan untuk portal pemilih. Jalankan query seed atau deploy space terlebih dahulu.
+            Belum ada pemilihan yang terhubung dengan wallet Anda. Pastikan alamat wallet sudah masuk whitelist dan pemilihan sudah di-deploy.
           </p>
           <Link href="/pemilihan" className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B]">
             Lihat Daftar Publik

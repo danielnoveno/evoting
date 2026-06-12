@@ -285,6 +285,51 @@ export async function listPublicElections(): Promise<PublicElectionRecord[]> {
   ))
 }
 
+export async function listVoterWhitelistedElections(walletAddress: string): Promise<PublicElectionRecord[]> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return []
+
+  const normalizedWalletAddress = walletAddress.trim().toLowerCase()
+  if (!normalizedWalletAddress) return []
+
+  const { data: proposals, error } = await client
+    .schema('app')
+    .from('proposal_drafts')
+    .select('*')
+    .in('status', ['deployed', 'archived'])
+    .order('created_at', { ascending: false })
+
+  if (error) throw new RepositoryError('Gagal memuat data pemilihan dari Supabase.')
+
+  const rows = proposals ?? []
+  if (rows.length === 0) return []
+
+  const ids = rows.map((row) => row.id)
+
+  const [{ data: candidates, error: candidatesError }, { data: whitelist, error: whitelistError }] = await Promise.all([
+    client.schema('app').from('proposal_candidates').select('*').in('proposal_draft_id', ids),
+    client.schema('app').from('proposal_whitelist_entries').select('*').in('proposal_draft_id', ids),
+  ])
+
+  if (candidatesError) throw new RepositoryError('Gagal memuat kandidat pemilihan dari Supabase.')
+  if (whitelistError) throw new RepositoryError('Gagal memuat whitelist pemilihan dari Supabase.')
+
+  const whitelistRows = whitelist ?? []
+  const whitelistedProposalIds = new Set(
+    whitelistRows
+      .filter((entry) => entry.wallet_address.trim().toLowerCase() === normalizedWalletAddress)
+      .map((entry) => entry.proposal_draft_id),
+  )
+
+  return rows
+    .filter((row) => whitelistedProposalIds.has(row.id))
+    .map((row) => mapElection(
+      row,
+      candidates ?? [],
+      whitelistRows.filter((entry) => entry.proposal_draft_id === row.id),
+    ))
+}
+
 export async function getPublicElectionById(id: string): Promise<PublicElectionRecord | null> {
   const elections = await listPublicElections()
   return elections.find((election) => election.id === id) ?? null

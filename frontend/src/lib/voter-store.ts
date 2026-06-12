@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { clearAllVoteCommitments } from '@/lib/vote-commitment-storage'
-import { getPublicElectionResults, listPublicElections, listVoterOnchainProofs } from '@/lib/repositories/electionRepository'
+import { getPublicElectionResults, listVoterOnchainProofs, listVoterWhitelistedElections } from '@/lib/repositories/electionRepository'
 import { getCurrentProfile } from '@/lib/repositories/profileRepository'
 import type { PublicElectionRecord, PublicElectionResultRecord, VoterOnchainProofRecord } from '@/lib/repositories/types'
 
@@ -255,10 +255,9 @@ function mergeLocalElectionState(live: VoterElection, local?: VoterElection): Vo
 
 async function buildLiveStore(): Promise<VoterStore> {
   const local = readStore()
-  const [profile, elections] = await Promise.all([
-    getCurrentProfile().catch(() => null),
-    listPublicElections().catch(() => []),
-  ])
+  const profile = await getCurrentProfile().catch(() => null)
+  const activeWallet = profile?.walletAddress ?? local.profile.wallet
+  const elections = await listVoterWhitelistedElections(activeWallet).catch(() => [])
 
   const resultEntries = await Promise.all(elections.map(async (item) => ({
     id: item.id,

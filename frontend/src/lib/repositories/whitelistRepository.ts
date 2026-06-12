@@ -119,13 +119,14 @@ export async function listWhitelistEntriesByJobId(importJobId: string): Promise<
 export async function getWhitelistStatus(proposalDraftId: string, walletAddress: string): Promise<WhitelistEntryRecord | null> {
   const client = getSupabaseBrowserClient()
   if (!client) return null
+  const normalizedWalletAddress = walletAddress.trim().toLowerCase()
 
   const { data, error } = await client
     .schema('app')
     .from('proposal_whitelist_entries')
     .select('*')
     .eq('proposal_draft_id', proposalDraftId)
-    .eq('wallet_address', walletAddress)
+    .eq('wallet_address', normalizedWalletAddress)
     .maybeSingle()
 
   if (error) throw new RepositoryError('Gagal memuat status whitelist. Coba lagi.')
@@ -139,15 +140,18 @@ export async function createWhitelistEntry(input: {
 }): Promise<WhitelistEntryRecord> {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+  const normalizedWalletAddress = input.walletAddress.trim().toLowerCase()
 
   const { data, error } = await client
     .schema('app')
     .from('proposal_whitelist_entries')
     .insert({
       proposal_draft_id: input.proposalDraftId,
-      wallet_address: input.walletAddress,
+      wallet_address: normalizedWalletAddress,
       voter_name: input.voterName ?? null,
       source: 'manual',
+      validation_status: 'valid',
+      sync_status: 'pending',
     })
     .select('*')
     .single()
@@ -243,9 +247,11 @@ export async function createWhitelistEntriesBulk(input: {
   const payload = input.entries.map((entry) => ({
     proposal_draft_id: input.proposalDraftId,
     import_job_id: importJobData.id,
-    wallet_address: entry.walletAddress,
+    wallet_address: entry.walletAddress.trim().toLowerCase(),
     voter_name: entry.voterName ?? null,
     source: 'csv' as const,
+    validation_status: 'valid' as const,
+    sync_status: 'pending' as const,
   }))
 
   const { data, error } = await client
