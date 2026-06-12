@@ -37,7 +37,7 @@ const EMPTY_CANDIDATE: ProposalCandidateInput = {
   avatarPath: '',
 }
 
-type ProposalFormErrors = Partial<Record<'title' | 'candidateCount' | 'voterCount' | 'commitDate' | 'revealDate' | 'endedDate' | 'dateRange', string>>
+type ProposalFormErrors = Partial<Record<'title' | 'category' | 'candidateCount' | 'voterCount' | 'commitDate' | 'revealDate' | 'endedDate' | 'dateRange', string>>
 
 const MIN_GAP_MINUTES = 60
 const MAX_SUPPORTING_DOCUMENT_SIZE = 10 * 1024 * 1024
@@ -65,7 +65,7 @@ export function ProposalForm({
   submitLabel = 'Ajukan Proposal',
   submitStatus = 'submitted',
   successMessageTitle = 'Proposal Berhasil Diajukan',
-  successMessageDesc = 'Data proposal tersimpan di Supabase dan masuk antrean review superadmin.',
+  successMessageDesc = 'Data proposal tersimpan di Supabase and masuk antrean review superadmin.',
   extraActions
 }: ProposalFormProps) {
   const router = useRouter()
@@ -120,14 +120,30 @@ export function ProposalForm({
 
   const validateForm = (data: ProposalFormData) => {
     const nextErrors: ProposalFormErrors = {}
-    const filledCandidateCount = data.candidateEntries.filter((candidate) => candidate.name.trim()).length
+    const filledCandidates = data.candidateEntries.filter((candidate) => candidate.name.trim())
+    const filledCandidateCount = filledCandidates.length
 
     if (!data.title.trim()) {
       nextErrors.title = 'Nama pemilihan wajib diisi.'
     }
 
+    if (!data.category.trim()) {
+      nextErrors.category = 'Nama organisasi wajib diisi.'
+    }
+
     if (filledCandidateCount < 2) {
-      nextErrors.candidateCount = 'Minimal isi 2 kandidat dengan nama lengkap.'
+      nextErrors.candidateCount = 'Minimal isi 2 kandidat dengan data lengkap (Nama, NPM, Visi, Misi).'
+    }
+
+    // Check if filled candidates have all required fields
+    const hasIncompleteCandidate = filledCandidates.some(c => 
+      !c.studentId?.trim() || 
+      !c.vision?.trim() || 
+      (Array.isArray(c.mission) ? c.mission.length === 0 : !c.mission?.trim())
+    )
+
+    if (hasIncompleteCandidate && !nextErrors.candidateCount) {
+      nextErrors.candidateCount = 'Pastikan NPM, Visi, dan Misi setiap kandidat sudah diisi.'
     }
 
     if (!data.commitDate) nextErrors.commitDate = 'Wajib diisi.'
@@ -466,6 +482,12 @@ export function ProposalForm({
               <label className="block">
                 <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama Pemilihan <RequiredAsterisk /></span>
                 <input name="title" value={formData.title} onChange={handleChange} disabled={isReadOnly} placeholder="Masukkan nama pemilihan..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                {errors.title && <p className="mt-1 text-[12px] text-red-500">{errors.title}</p>}
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama Organisasi / Kategori <RequiredAsterisk /></span>
+                <input name="category" value={formData.category} onChange={handleChange} disabled={isReadOnly} placeholder="Contoh: Himpunan Mahasiswa Informatika" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                {errors.category && <p className="mt-1 text-[12px] text-red-500">{errors.category}</p>}
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Deskripsi</span>
@@ -649,7 +671,7 @@ export function ProposalForm({
                       <input value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Contoh: Daniel Noveno" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                     </label>
                     <label className="block">
-                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">NPM/NIM <span className="font-normal text-slate-400">(opsional)</span></span>
+                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">NPM/NIM <RequiredAsterisk /></span>
                       <input value={c.studentId || ''} onChange={e => handleCandidateChange(i, 'studentId', e.target.value)} disabled={isReadOnly} placeholder="Contoh: 220711663" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                     </label>
                     <label className="block">
@@ -665,11 +687,11 @@ export function ProposalForm({
                       <textarea value={c.bio || ''} onChange={e => handleCandidateChange(i, 'bio', e.target.value)} disabled={isReadOnly} placeholder="Tuliskan latar belakang atau pengalaman organisasi kandidat secara singkat." className="min-h-[96px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                     </label>
                     <label className="block sm:col-span-2">
-                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Visi kandidat</span>
+                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Visi kandidat <RequiredAsterisk /></span>
                       <textarea value={c.vision || ''} onChange={e => handleCandidateChange(i, 'vision', e.target.value)} disabled={isReadOnly} placeholder="Tuliskan visi utama kandidat secara ringkas." className="min-h-[96px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                     </label>
                     <label className="block sm:col-span-2">
-                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Misi kandidat</span>
+                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Misi kandidat <RequiredAsterisk /></span>
                       <textarea value={Array.isArray(c.mission) ? c.mission.join('\n') : c.mission || ''} onChange={e => handleCandidateChange(i, 'mission', e.target.value)} disabled={isReadOnly} placeholder="Tulis satu poin misi per baris." className="min-h-[120px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                       <span className="mt-1.5 block text-[12px] text-slate-400">Setiap baris akan disimpan sebagai satu poin misi.</span>
                     </label>

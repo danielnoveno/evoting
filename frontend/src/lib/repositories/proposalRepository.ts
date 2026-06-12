@@ -9,6 +9,8 @@ import { RepositoryError } from '@/lib/repositories/errors'
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 type ProposalCandidateRow = Database['app']['Tables']['proposal_candidates']['Row']
 type ProposalStatus = Database['app']['Tables']['proposal_drafts']['Row']['status']
+type ProfileRow = Database['app']['Tables']['app_profiles']['Row']
+type AdminRegistryRow = Database['app']['Tables']['admin_registry']['Row']
 
 function asStringArray(value: Json): string[] {
   if (!Array.isArray(value)) return []
@@ -64,15 +66,61 @@ function mapProposalRow(row: ProposalRow): ProposalDraftRecord {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     createdBy: row.created_by,
+    creatorDisplayName: null,
+    creatorOrganizationName: null,
     createdByWalletAddress: null,
   }
 }
 
-function withCreatorWallet(proposal: ProposalDraftRecord, walletAddress?: string | null): ProposalDraftRecord {
+function withCreatorAccount(
+  proposal: ProposalDraftRecord,
+  creator?: Pick<ProfileRow, 'display_name' | 'email' | 'wallet_address'> | null,
+  registry?: Pick<AdminRegistryRow, 'organization_name'> | null,
+): ProposalDraftRecord {
   return {
     ...proposal,
-    createdByWalletAddress: walletAddress ?? null,
+    creatorDisplayName: creator?.display_name ?? null,
+    creatorOrganizationName: registry?.organization_name ?? creator?.display_name ?? null,
+    createdByWalletAddress: creator?.wallet_address ?? null,
   }
+}
+
+async function withCreatorAccounts(proposals: ProposalDraftRecord[]): Promise<ProposalDraftRecord[]> {
+  const client = getSupabaseBrowserClient()
+  if (!client || proposals.length === 0) return proposals
+
+  const creatorIds = Array.from(new Set(proposals.map((proposal) => proposal.createdBy).filter(Boolean)))
+  if (creatorIds.length === 0) return proposals
+
+  const { data: profiles, error: profilesError } = await client
+    .schema('app')
+    .from('app_profiles')
+    .select('id, display_name, email, wallet_address')
+    .in('id', creatorIds)
+
+  if (profilesError) throw new RepositoryError('Gagal memuat akun admin pengaju. Coba lagi.')
+
+  const profilesById = new Map((profiles ?? []).map((profile) => [profile.id, profile]))
+  const creatorEmails = Array.from(new Set((profiles ?? []).map((profile) => profile.email?.trim().toLowerCase()).filter((email): email is string => Boolean(email))))
+
+  let registriesByEmail = new Map<string, Pick<AdminRegistryRow, 'organization_name'>>()
+
+  if (creatorEmails.length > 0) {
+    const { data: registries, error: registriesError } = await client
+      .schema('app')
+      .from('admin_registry')
+      .select('email, organization_name')
+      .in('email', creatorEmails)
+
+    if (registriesError) throw new RepositoryError('Gagal memuat nama organisasi admin pengaju. Coba lagi.')
+    registriesByEmail = new Map((registries ?? []).map((registry) => [registry.email.toLowerCase(), registry]))
+  }
+
+  return proposals.map((proposal) => {
+    const creator = profilesById.get(proposal.createdBy) ?? null
+    const registry = creator?.email ? registriesByEmail.get(creator.email.toLowerCase()) ?? null : null
+    return withCreatorAccount(proposal, creator, registry)
+  })
 }
 
 function mapProposalCandidateRow(row: ProposalCandidateRow): ProposalCandidateRecord {
@@ -103,7 +151,7 @@ export async function listProposalDrafts(): Promise<ProposalDraftRecord[]> {
     .order('created_at', { ascending: false })
 
   if (error) throw new RepositoryError('Gagal memuat daftar proposal. Coba lagi.')
-  return (data ?? []).map(mapProposalRow)
+  return withCreatorAccounts((data ?? []).map(mapProposalRow))
 }
 
 export async function getProposalDraftById(id: string): Promise<ProposalDraftRecord | null> {
@@ -124,12 +172,23 @@ export async function getProposalDraftById(id: string): Promise<ProposalDraftRec
   const { data: creator, error: creatorError } = await client
     .schema('app')
     .from('app_profiles')
-    .select('wallet_address')
+    .select('display_name, email, wallet_address')
     .eq('id', data.created_by)
     .maybeSingle()
 
   if (creatorError) throw new RepositoryError('Gagal memuat wallet admin pengaju. Coba lagi.')
-  return withCreatorWallet(proposal, creator?.wallet_address)
+
+  const { data: registry, error: registryError } = creator?.email
+    ? await client
+      .schema('app')
+      .from('admin_registry')
+      .select('organization_name')
+      .eq('email', creator.email.toLowerCase())
+      .maybeSingle()
+    : { data: null, error: null }
+
+  if (registryError) throw new RepositoryError('Gagal memuat nama organisasi admin pengaju. Coba lagi.')
+  return withCreatorAccount(proposal, creator, registry)
 }
 
 export async function listProposalCandidates(proposalDraftId: string): Promise<ProposalCandidateRecord[]> {

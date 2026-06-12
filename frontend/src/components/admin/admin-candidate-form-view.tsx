@@ -42,6 +42,7 @@ export function AdminCandidateFormView({
   const { showToast } = useToast()
   const [fullName, setFullName] = useState(prefill?.fullName ?? '')
   const [identityNumber, setIdentityNumber] = useState(prefill?.identityNumber ?? '')
+  const [faculty, setFaculty] = useState(prefill?.faculty ?? '')
   const [bio, setBio] = useState(prefill?.bio ?? '')
   const [vision, setVision] = useState(prefill?.vision ?? '')
   const [mission, setMission] = useState(prefill?.mission ?? '')
@@ -86,10 +87,11 @@ export function AdminCandidateFormView({
   const isDirty = useMemo(() => {
     return fullName !== (prefill?.fullName ?? '')
       || identityNumber !== (prefill?.identityNumber ?? '')
+      || faculty !== (prefill?.faculty ?? '')
       || bio !== (prefill?.bio ?? '')
       || vision !== (prefill?.vision ?? '')
       || mission !== (prefill?.mission ?? '')
-  }, [bio, fullName, identityNumber, mission, prefill, vision])
+  }, [bio, faculty, fullName, identityNumber, mission, prefill, vision])
 
   const handleSaveClick = () => {
     const nextErrors = validateForm(fullName, identityNumber, vision, mission)
@@ -133,7 +135,7 @@ export function AdminCandidateFormView({
       id: candidateId ?? `cand-local-${Date.now()}`,
       number: candidateId ? prefill?.identityNumber?.slice(-2) || '99' : String(election.detail.candidates.length + 1).padStart(2, '0'),
       name: normalizedName,
-      faculty: prefill?.faculty ?? 'Profil kandidat',
+      faculty: faculty.trim() || 'Profil kandidat',
       summary: generatedSummary,
       imageTone: 'neutral',
       identityNumber: identityNumber.trim(),
@@ -287,6 +289,17 @@ export function AdminCandidateFormView({
                   className={`h-14 w-full rounded-2xl border bg-white px-5 text-[16px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all ${errors.fullName ? 'border-red-500 focus:border-red-500' : 'border-slate-200'}`}
                 />
                 {errors.fullName && <p className="mt-2 text-[12px] text-red-600 font-medium">{errors.fullName}</p>}
+              </div>
+              <div>
+                <label htmlFor="cand-faculty" className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Fakultas / Prodi</label>
+                <input
+                  id="cand-faculty"
+                  type="text"
+                  placeholder="Masukkan fakultas atau program studi kandidat..."
+                  value={faculty}
+                  onChange={(event) => setFaculty(event.target.value)}
+                  className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[16px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all"
+                />
               </div>
               <div>
                 <label htmlFor="cand-bio" className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{form.bioLabel}</label>

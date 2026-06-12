@@ -84,6 +84,8 @@ export interface ProposalDraftRecord {
   createdAt: string
   updatedAt: string
   createdBy: string
+  creatorDisplayName: string | null
+  creatorOrganizationName: string | null
   createdByWalletAddress: string | null
 }
 

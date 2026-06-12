@@ -24,7 +24,7 @@ import {
   RowActionMenu,
 } from '@/components/ui/data-table'
 
-type SortField = 'tanggal' | 'organisasi' | 'jenis' | 'status'
+type SortField = 'tanggal' | 'organisasi' | 'pemilihan' | 'status'
 const PAGE_SIZE = 10
 const PROPOSAL_STATUS_FILTERS = ['Semua', 'Menunggu Review', 'Perlu Revisi', 'Disetujui', 'Berjalan'] as const
 type ProposalStatusFilter = (typeof PROPOSAL_STATUS_FILTERS)[number]
@@ -40,8 +40,8 @@ export default function SuperadminProposalManagementPage() {
     if (!proposalRowsRaw) return []
     return proposalRowsRaw.map(p => ({
       id: p.id,
-      organizationName: p.organizationName ?? 'Organisasi Tanpa Nama',
-      proposalType: 'Internal Organisasi', // Fallback type
+      organizationName: p.creatorOrganizationName ?? p.creatorDisplayName ?? p.organizationName ?? 'Organisasi Tanpa Nama',
+      electionName: p.title || 'Nama pemilihan belum diisi',
       submittedAt: new Date(p.createdAt).toLocaleDateString('id-ID'),
       status: p.status === 'draft' ? 'Draf' : p.status === 'submitted' ? 'Menunggu Review' : p.status === 'revision_requested' ? 'Perlu Revisi' : p.status === 'approved' ? 'Disetujui' : p.status === 'deployed' ? 'Berjalan' : p.status
     }))
@@ -68,14 +68,14 @@ export default function SuperadminProposalManagementPage() {
     }
 
     if (normalizedQuery) {
-      rows = rows.filter((row) => row.organizationName.toLowerCase().includes(normalizedQuery) || row.id.toLowerCase().includes(normalizedQuery) || row.proposalType.toLowerCase().includes(normalizedQuery))
+      rows = rows.filter((row) => row.organizationName.toLowerCase().includes(normalizedQuery) || row.id.toLowerCase().includes(normalizedQuery) || row.electionName.toLowerCase().includes(normalizedQuery))
     }
 
     return [...rows].sort((left, right) => {
       const direction = sortDirection === 'asc' ? 1 : -1
 
       if (sortField === 'organisasi') return left.organizationName.localeCompare(right.organizationName) * direction
-      if (sortField === 'jenis') return left.proposalType.localeCompare(right.proposalType) * direction
+      if (sortField === 'pemilihan') return left.electionName.localeCompare(right.electionName) * direction
       if (sortField === 'status') return left.status.localeCompare(right.status) * direction
       return left.submittedAt.localeCompare(right.submittedAt) * direction
     })
@@ -140,8 +140,8 @@ export default function SuperadminProposalManagementPage() {
             <DataTable className="[border-spacing:0_10px]">
               <DataTableHead className="bg-transparent">
                 <DataTableHeaderRow>
-                  <DataTableHeaderCell><SortHeader field="organisasi" label="Organisasi / ID" /></DataTableHeaderCell>
-                  <DataTableHeaderCell><SortHeader field="jenis" label="Jenis Proposal" /></DataTableHeaderCell>
+                  <DataTableHeaderCell><SortHeader field="organisasi" label="Organisasi" /></DataTableHeaderCell>
+                  <DataTableHeaderCell><SortHeader field="pemilihan" label="Nama Pemilihan" /></DataTableHeaderCell>
                   <DataTableHeaderCell><SortHeader field="tanggal" label="Tanggal Diajukan" /></DataTableHeaderCell>
                   <DataTableHeaderCell><SortHeader field="status" label="Status" /></DataTableHeaderCell>
                   <DataTableHeaderCell className="text-center">Aksi</DataTableHeaderCell>
@@ -173,7 +173,7 @@ export default function SuperadminProposalManagementPage() {
                       <p className="mt-1 font-mono text-[12px] text-slate-500">{proposal.id}</p>
                     </DataTableCell>
                     <DataTableCell>
-                      <p className="text-[15px] text-slate-900">{proposal.proposalType}</p>
+                      <p className="text-[15px] text-slate-900">{proposal.electionName}</p>
                     </DataTableCell>
                     <DataTableCell>
                       <p className="font-mono text-[13px] text-slate-600">{proposal.submittedAt}</p>
