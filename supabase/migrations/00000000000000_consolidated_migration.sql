@@ -90,6 +90,7 @@ create table if not exists app.proposal_drafts (
   created_by uuid not null references app.app_profiles(id) on delete restrict,
   title text not null,
   description text,
+  banner_image_path text,
   organization_name text,
   theme_color text not null default '#0F172A',
   rules_text text,
