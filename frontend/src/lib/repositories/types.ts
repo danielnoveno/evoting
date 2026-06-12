@@ -63,7 +63,18 @@ export interface AdminRegistryInput {
 }
 
 export type ProposalDraftStatus = 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived'
-export type ProposalListStatus = 'DRAF' | 'MENUNGGU REVIEW' | 'PERLU REVISI' | 'DISETUJUI' | 'DITOLAK'
+export type ProposalListStatus = 'DRAF' | 'MENUNGGU REVIEW' | 'PERLU REVISI' | 'DISETUJUI' | 'DITOLAK' | 'DIBATALKAN'
+
+export interface ProposalActivityRecord {
+  id: string
+  proposalDraftId: string
+  eventType: string
+  title: string
+  description: string
+  actorLabel: string
+  message: string | null
+  createdAt: string
+}
 
 export interface ProposalDraftRecord {
   id: string

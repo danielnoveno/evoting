@@ -5,12 +5,14 @@ import { AdminShell } from '@/components/admin/admin-shell'
 import { OnboardingTour } from '@/components/admin/onboarding-tour'
 import { adminProposalContent, ProposalStatus } from '@/lib/admin-proposal-data'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { BarChart2, CheckCircle2, ChevronLeft, ChevronRight, Eye, Hourglass, PlusCircle, Rocket, ShieldCheck, FileKey, Pencil } from 'lucide-react'
+import { BarChart2, CheckCircle2, ChevronLeft, ChevronRight, Eye, Hourglass, PlusCircle, Rocket, ShieldCheck, FileKey, Pencil, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast-provider'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAdminProposalList } from '@/hooks/use-admin-proposal-list'
+import { useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 function getStatusBadgeClass(status: ProposalStatus) {
   switch (status) {
@@ -24,10 +26,15 @@ function getStatusBadgeClass(status: ProposalStatus) {
       return 'bg-slate-200 text-slate-800'
     case 'DITOLAK':
       return 'bg-red-100 text-red-700'
+    case 'DIBATALKAN':
+      return 'bg-slate-100 text-slate-500'
     default:
       return 'bg-slate-100 text-slate-800'
   }
 }
+
+const STATUS_FILTERS = ['Semua', 'DRAF', 'MENUNGGU REVIEW', 'PERLU REVISI', 'DISETUJUI', 'DITOLAK', 'DIBATALKAN'] as const
+type StatusFilter = (typeof STATUS_FILTERS)[number]
 
 function getIconComponent(iconKey: string) {
   switch (iconKey) {
@@ -62,24 +69,33 @@ export default function AdminProposalPage() {
   const { showToast } = useToast()
   const router = useRouter()
   const { rows: proposals, stats, error, isLoading } = useAdminProposalList()
+  const updateStatus = useUpdateProposalStatus()
 
   const [currentPage, setCurrentPage] = useState(1)
+  const [activeStatus, setActiveStatus] = useState<StatusFilter>('Semua')
+  const [proposalToCancel, setProposalToCancel] = useState<{ id: string; title: string } | null>(null)
   const itemsPerPage = 4
-  const actualTotalItems = proposals.length
+  const filteredProposals = useMemo(() => activeStatus === 'Semua' ? proposals : proposals.filter((proposal) => proposal.status === activeStatus), [activeStatus, proposals])
+  const actualTotalItems = filteredProposals.length
 
   const paginatedRows = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage
     const end = start + itemsPerPage
-    return proposals.slice(start, end)
-  }, [proposals, currentPage])
+    return filteredProposals.slice(start, end)
+  }, [filteredProposals, currentPage])
 
   const totalPages = Math.max(1, Math.ceil(actualTotalItems / itemsPerPage))
 
-  const handleActionClick = (actionName: string) => {
-    showToast({
-      title: `Fitur ${actionName} belum tersedia`,
-      description: 'Fitur ini sedang disiapkan untuk peninjauan proposal.',
-      tone: 'info',
+  const handleCancelProposal = () => {
+    if (!proposalToCancel) return
+    updateStatus.mutate({ id: proposalToCancel.id, status: 'archived' }, {
+      onSuccess: () => {
+        showToast({ title: 'Pengajuan dibatalkan', description: 'Proposal dipindahkan ke status dibatalkan.', tone: 'success' })
+        setProposalToCancel(null)
+      },
+      onError: (cancelError) => {
+        showToast({ title: 'Gagal membatalkan proposal', description: getRepositoryErrorMessage(cancelError, 'Coba lagi beberapa saat.'), tone: 'error' })
+      }
     })
   }
 
@@ -132,6 +148,18 @@ export default function AdminProposalPage() {
           <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-50">
             <h2 className="text-[18px] font-semibold text-slate-900">Daftar Pengajuan Terbaru</h2>
           </div>
+          <div className="flex flex-wrap gap-2 px-6 pb-5">
+            {STATUS_FILTERS.map((status) => (
+              <button
+                key={status}
+                type="button"
+                onClick={() => { setActiveStatus(status); setCurrentPage(1) }}
+                className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition ${activeStatus === status ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
           
           <div className="overflow-x-auto">
             <table className="min-w-full">
@@ -163,7 +191,6 @@ export default function AdminProposalPage() {
                   >
                     <td className="px-6 py-5">
                       <p className="font-semibold text-slate-900 text-[15px]">{row.title}</p>
-                      <p className="mt-1 text-[12px] text-slate-400">Kategori: {row.category}</p>
                     </td>
                     <td className="px-6 py-5 font-medium">{row.date}</td>
                     <td className="px-6 py-5">
@@ -196,6 +223,16 @@ export default function AdminProposalPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Link>
+                        {row.status === 'DRAF' || row.status === 'MENUNGGU REVIEW' || row.status === 'PERLU REVISI' ? (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setProposalToCancel({ id: row.id, title: row.title }) }}
+                            className="text-slate-400 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50"
+                            aria-label={`Batalkan proposal ${row.title}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -238,6 +275,16 @@ export default function AdminProposalPage() {
           </div>
         </section>
       </ScrollReveal>
+      <ConfirmDialog
+        open={Boolean(proposalToCancel)}
+        title="Batalkan pengajuan proposal?"
+        description={proposalToCancel ? `Proposal “${proposalToCancel.title}” akan ditandai dibatalkan dan tidak masuk antrean review.` : 'Proposal akan dibatalkan.'}
+        confirmLabel="Ya, batalkan"
+        cancelLabel="Kembali"
+        tone="danger"
+        onConfirm={handleCancelProposal}
+        onCancel={() => setProposalToCancel(null)}
+      />
 
       {/* Verification Banner */}
       <ScrollReveal variant="zoom-in" delay={250} duration={800}>

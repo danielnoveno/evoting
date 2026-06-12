@@ -24,8 +24,9 @@ function mapStatus(status: ProposalDraftRecord['status']): ProposalListStatus {
       return 'PERLU REVISI'
     case 'rejected':
       return 'DITOLAK'
-    case 'draft':
     case 'archived':
+      return 'DIBATALKAN'
+    case 'draft':
     default:
       return 'DRAF'
   }
@@ -40,7 +41,7 @@ export function mapProposalDraftToListItem(item: ProposalDraftRecord): ProposalL
   return {
     id: item.id,
     title: item.title,
-    category: item.organizationName ?? 'Organisasi',
+    category: item.organizationName ?? item.creatorOrganizationName ?? 'Organisasi',
     date: formatDateLabel(item.createdAt),
     votersEstimate: String(item.candidateCount),
     hash: shortenHash(item.proposalTxHash ?? item.deploymentTxHash),

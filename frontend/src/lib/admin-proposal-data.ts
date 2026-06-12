@@ -1,4 +1,4 @@
-export type ProposalStatus = 'DISETUJUI' | 'MENUNGGU REVIEW' | 'PERLU REVISI' | 'DRAF' | 'DITOLAK'
+export type ProposalStatus = 'DISETUJUI' | 'MENUNGGU REVIEW' | 'PERLU REVISI' | 'DRAF' | 'DITOLAK' | 'DIBATALKAN'
 
 export interface ProposalRow {
   id: string

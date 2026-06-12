@@ -115,11 +115,15 @@ export function useLogoutSession() {
 
   return useMutation({
     mutationFn: signOutCurrentSession,
-    onMutate: () => {
+    onMutate: async () => {
       markManualLogoutStarted()
+      await queryClient.cancelQueries({ queryKey: authSessionQueryKey })
+      await queryClient.cancelQueries({ queryKey: ['profile'] })
+      queryClient.setQueryData(authSessionQueryKey, null)
+      queryClient.removeQueries({ queryKey: ['profile'] })
+      disconnect()
     },
     onSettled: () => {
-      disconnect()
       void queryClient.invalidateQueries({ queryKey: authSessionQueryKey })
       void queryClient.invalidateQueries({ queryKey: ['profile'] })
     },

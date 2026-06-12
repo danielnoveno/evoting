@@ -13,7 +13,7 @@ import {
 } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
-import { useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
+import { useProposalActivities, useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
 import { useProposalDocuments } from '@/hooks/use-proposal-documents'
 import { useProposalCandidates } from '@/hooks/use-proposal-relations'
 import { REGISTRY_ADDRESS, useRegistryContract } from '@/hooks/use-registry-contract'
@@ -22,7 +22,7 @@ import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import type { SuperadminProposalDetail } from '@/lib/superadmin-data'
 import type { Address } from 'viem'
-import { useConnect } from 'wagmi'
+import { useConnect, useDisconnect } from 'wagmi'
 
 type DecisionType = 'approve' | 'revise' | 'reject' | 'deploy' | null
 
@@ -63,9 +63,11 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const router = useRouter()
   const { showToast } = useToast()
   const { connect, connectors, isPending: isConnectPending } = useConnect()
+  const { disconnect } = useDisconnect()
   const proposalQuery = useProposalDraft(params.id)
   const proposalDocumentsQuery = useProposalDocuments(params.id)
   const proposalCandidatesQuery = useProposalCandidates(params.id)
+  const proposalActivitiesQuery = useProposalActivities(params.id)
   const updateStatus = useUpdateProposalStatus()
   
   // Real contract integration
@@ -89,6 +91,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const liveProposal = proposalQuery.data
   const proposalDocuments = proposalDocumentsQuery.data ?? []
   const proposalCandidates = proposalCandidatesQuery.data ?? []
+  const proposalActivities = proposalActivitiesQuery.data ?? []
 
   const proposal = useMemo<SuperadminProposalDetail | null>(() => {
     if (!liveProposal) return null
@@ -118,9 +121,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           { label: 'Whitelist', status: 'Mitigated' },
         ],
       },
-      timeline: [
-        { id: 't1', title: 'Proposal Diajukan', actor: `Oleh: ${liveProposal.organizationName ?? 'Admin'}`, time: new Date(liveProposal.createdAt).toLocaleString('id-ID') },
-      ],
+      timeline: proposalActivities.length > 0
+        ? proposalActivities.map((activity) => ({ id: activity.id, title: activity.title, actor: activity.message ? `${activity.actorLabel} • ${activity.message}` : activity.actorLabel, time: new Date(activity.createdAt).toLocaleString('id-ID') }))
+        : [{ id: 't1', title: 'Proposal Diajukan', actor: `Oleh: ${liveProposal.organizationName ?? 'Admin'}`, time: new Date(liveProposal.createdAt).toLocaleString('id-ID') }],
       documents: proposalDocuments.map((document) => ({
         id: document.id,
         name: document.fileName,
@@ -132,7 +135,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         uploadedAt: new Date(document.createdAt).toLocaleString('id-ID'),
       })),
     }
-  }, [liveProposal, proposalDocuments])
+  }, [liveProposal, proposalDocuments, proposalActivities])
   
   const [decisionType, setDecisionType] = useState<DecisionType>(null)
   const [note, setNote] = useState('')
@@ -289,7 +292,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       return
     }
 
-    connect(
+    if (isConnected) disconnect()
+
+    window.setTimeout(() => connect(
       { connector, chainId: BASE_SEPOLIA_CHAIN_ID },
       {
         onSuccess: () => {
@@ -307,7 +312,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           })
         },
       },
-    )
+    ), isConnected ? 250 : 0)
   }
 
   const handleConfirmAction = async () => {
@@ -339,7 +344,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         showToast({
           title: isSuperAdmin === false ? 'Wallet bukan superadmin kontrak' : 'Validasi wallet belum siap',
           description: isSuperAdmin === false 
-            ? `Wallet tersambung: ${userAddress?.slice(0, 6)}...${userAddress?.slice(-4)} bukan superadmin kontrak. Superadmin on-chain: ${superAdminAddress ? `${(superAdminAddress as string).slice(0, 6)}...${(superAdminAddress as string).slice(-4)}` : '(memuat...)'}. Hubungkan wallet superadmin via ekstensi browser (MetaMask/Rabby) dengan private key deployer, atau gunakan Smart Wallet yang terdaftar.` 
+            ? `Smart Wallet tersambung: ${userAddress?.slice(0, 6)}...${userAddress?.slice(-4)} belum terdaftar sebagai superadmin di kontrak. Superadmin on-chain: ${superAdminAddress ? `${(superAdminAddress as string).slice(0, 6)}...${(superAdminAddress as string).slice(-4)}` : '(memuat...)'}. Deploy hanya bisa memakai Smart Wallet yang sudah diberi hak superadmin on-chain.` 
             : 'Tunggu beberapa detik sampai peran wallet terbaca, lalu coba deploy lagi.',
           tone: 'error',
         })
@@ -385,7 +390,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       const title = decisionType === 'revise' ? 'Permintaan revisi dikirim' : 'Proposal ditolak'
       const status = decisionType === 'revise' ? 'revision_requested' : 'rejected'
       
-      updateStatus.mutate({ id: params.id, status }, {
+      updateStatus.mutate({ id: params.id, status, message: note.trim() || null }, {
         onSuccess: () => {
           showToast({ tone: decisionType === 'reject' ? 'error' : 'success', title, description: 'Status proposal berhasil diperbarui.' })
           setDecisionType(null)
@@ -783,13 +788,14 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             </div>
 
             <div className="mt-6 border-t border-slate-100 pt-6">
-              <label className="block text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Catatan Internal (Opsional)</label>
+              <label className="block text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">{decisionType === 'revise' ? 'Pesan Revisi untuk Admin (Opsional)' : 'Catatan Internal (Opsional)'}</label>
               <textarea
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
-                placeholder="Tambahkan catatan untuk log audit..."
+                placeholder={decisionType === 'revise' ? 'Contoh: Mohon lengkapi visi kandidat 2 dan perbaiki jadwal reveal.' : 'Tambahkan catatan untuk log audit...'}
                 className="mt-3 h-32 w-full rounded-[20px] bg-slate-100 px-4 py-3 text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
               />
+              {decisionType === 'revise' ? <p className="mt-2 text-[12px] leading-5 text-slate-500">Pesan ini akan tampil untuk admin organisasi dan tercatat di riwayat aktivitas proposal.</p> : null}
             </div>
           </section>
 
@@ -855,7 +861,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       <ConfirmDialog
         open={decisionType !== null}
         title={decisionMeta.title}
-        description={note.trim() ? `Catatan audit: ${note}` : decisionType === 'approve' || decisionType === 'deploy' ? 'Superadmin akan membayar gas fee untuk deploy pemilihan ke Base Sepolia.' : 'Status proposal akan diperbarui di Supabase untuk ditindaklanjuti admin.'}
+        description={note.trim() ? `Pesan: ${note}` : decisionType === 'approve' || decisionType === 'deploy' ? 'Superadmin akan membayar gas fee untuk deploy pemilihan ke Base Sepolia.' : 'Status proposal akan diperbarui di Supabase untuk ditindaklanjuti admin.'}
         confirmLabel={decisionMeta.confirmLabel}
         tone={decisionType === 'reject' ? 'danger' : 'default'}
         onCancel={() => {

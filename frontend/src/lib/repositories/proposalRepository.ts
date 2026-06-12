@@ -3,7 +3,7 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import type { Database, Json } from '@/lib/supabase/database.types'
 import { getCurrentProfile } from '@/lib/repositories/profileRepository'
-import type { ProposalCandidateRecord, ProposalDraftRecord, ProposalDraftUpsertInput } from '@/lib/repositories/types'
+import type { ProposalActivityRecord, ProposalCandidateRecord, ProposalDraftRecord, ProposalDraftUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
 
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
@@ -44,6 +44,18 @@ export interface ProposalStatusUpdateInput {
   txHash?: string
   onchainProposalId?: number | null
   deployment?: DeploymentRecordInput
+  message?: string | null
+}
+
+type NotificationPayload = {
+  proposalId: string
+  eventType: string
+  title: string
+  description: string
+  actorLabel?: string
+  message?: string | null
+  link?: string
+  type?: 'info' | 'success' | 'warning'
 }
 
 function mapProposalRow(row: ProposalRow): ProposalDraftRecord {
@@ -138,6 +150,89 @@ function mapProposalCandidateRow(row: ProposalCandidateRow): ProposalCandidateRe
     avatarPath: row.avatar_path,
     sortOrder: row.sort_order,
   }
+}
+
+function activityTitleForStatus(status: ProposalStatus) {
+  switch (status) {
+    case 'submitted': return 'Proposal diajukan'
+    case 'revision_requested': return 'Superadmin meminta revisi'
+    case 'approved': return 'Proposal disetujui'
+    case 'rejected': return 'Proposal ditolak'
+    case 'deployed': return 'Pemilihan berhasil di-deploy'
+    case 'archived': return 'Pengajuan proposal dibatalkan'
+    case 'draft':
+    default: return 'Proposal diperbarui'
+  }
+}
+
+function activityDescriptionForStatus(status: ProposalStatus, message?: string | null) {
+  if (message?.trim()) return message.trim()
+  switch (status) {
+    case 'submitted': return 'Admin organisasi mengirim proposal untuk direview superadmin.'
+    case 'revision_requested': return 'Superadmin meminta admin organisasi memperbaiki proposal.'
+    case 'approved': return 'Proposal disetujui untuk proses deploy.'
+    case 'rejected': return 'Proposal ditolak oleh superadmin.'
+    case 'deployed': return 'Proposal sudah menjadi ruang pemilihan di blockchain.'
+    case 'archived': return 'Admin organisasi membatalkan pengajuan proposal.'
+    case 'draft':
+    default: return 'Proposal diperbarui.'
+  }
+}
+
+async function listSuperadminProfileIds(): Promise<string[]> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return []
+  const { data, error } = await client.schema('app').from('app_profiles').select('id').eq('role', 'super_admin')
+  if (error) return []
+  return (data ?? []).map((row) => row.id)
+}
+
+async function insertNotification(targetProfileId: string | null, payload: NotificationPayload) {
+  const client = getSupabaseBrowserClient()
+  if (!client) return
+  await client.schema('app').from('notification_jobs').insert({
+    target_profile_id: targetProfileId,
+    channel: 'in_app',
+    template_key: 'proposal_activity',
+    status: 'queued',
+    payload,
+  })
+}
+
+async function notifySuperadmins(payload: NotificationPayload) {
+  const superadminIds = await listSuperadminProfileIds()
+  await Promise.all(superadminIds.map((id) => insertNotification(id, payload).catch(() => undefined)))
+}
+
+export async function listProposalActivities(proposalDraftId: string): Promise<ProposalActivityRecord[]> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return []
+
+  const { data, error } = await client
+    .schema('app')
+    .from('notification_jobs')
+    .select('*')
+    .eq('template_key', 'proposal_activity')
+    .contains('payload', { proposalId: proposalDraftId })
+    .order('created_at', { ascending: false })
+
+  if (error) return []
+
+  return (data ?? []).map((row) => {
+    const payload = typeof row.payload === 'object' && row.payload !== null && !Array.isArray(row.payload) ? row.payload : {}
+    const getString = (key: string) => typeof payload[key] === 'string' ? payload[key] : ''
+    const message = getString('message') || null
+    return {
+      id: row.id,
+      proposalDraftId,
+      eventType: getString('eventType') || 'proposal_activity',
+      title: getString('title') || row.template_key,
+      description: getString('description') || message || 'Aktivitas proposal tercatat.',
+      actorLabel: getString('actorLabel') || 'Sistem',
+      message,
+      createdAt: row.created_at,
+    }
+  })
 }
 
 export async function listProposalDrafts(): Promise<ProposalDraftRecord[]> {
@@ -312,12 +407,30 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
     }
   }
 
-  return mapProposalRow(data)
+  const proposal = mapProposalRow(data)
+
+  if (input.status === 'submitted') {
+    const payload: NotificationPayload = {
+      proposalId: proposal.id,
+      eventType: input.id ? 'resubmitted' : 'submitted',
+      title: input.id ? 'Proposal diajukan ulang' : 'Proposal baru diajukan',
+      description: `${proposal.title} menunggu review superadmin.`,
+      actorLabel: 'Admin Organisasi',
+      link: `/superadmin/manajemen-proposal/${proposal.id}`,
+      type: 'info',
+    }
+    void notifySuperadmins(payload).catch(() => undefined)
+    void insertNotification(proposal.createdBy, { ...payload, title: 'Proposal berhasil dikirim', description: `${proposal.title} sudah masuk antrean review superadmin.`, link: `/admin/daftar-proposal/${proposal.id}`, type: 'success' }).catch(() => undefined)
+  }
+
+  return proposal
 }
 
 export async function updateProposalStatus(input: ProposalStatusUpdateInput): Promise<ProposalDraftRecord> {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const { data: beforeRow } = await client.schema('app').from('proposal_drafts').select('*').eq('id', input.id).maybeSingle()
 
   const payload: Partial<Database['app']['Tables']['proposal_drafts']['Update']> = {
     status: input.status,
@@ -353,6 +466,22 @@ export async function updateProposalStatus(input: ProposalStatusUpdateInput): Pr
     .single()
 
   if (error) throw new RepositoryError('Gagal memperbarui status proposal. Coba lagi.')
+
+  const title = activityTitleForStatus(input.status)
+  const description = activityDescriptionForStatus(input.status, input.message)
+  const activityPayload: NotificationPayload = {
+    proposalId: input.id,
+    eventType: beforeRow?.status === 'revision_requested' && input.status === 'submitted' ? 'resubmitted' : input.status,
+    title: beforeRow?.status === 'revision_requested' && input.status === 'submitted' ? 'Proposal diajukan ulang' : title,
+    description,
+    actorLabel: input.status === 'revision_requested' || input.status === 'approved' || input.status === 'rejected' || input.status === 'deployed' ? 'Superadmin' : 'Admin Organisasi',
+    message: input.message?.trim() || null,
+    link: input.status === 'revision_requested' ? `/admin/daftar-proposal/${input.id}` : `/superadmin/manajemen-proposal/${input.id}`,
+    type: input.status === 'revision_requested' ? 'warning' : input.status === 'rejected' || input.status === 'archived' ? 'info' : 'success',
+  }
+
+  if (input.status === 'submitted') void notifySuperadmins(activityPayload).catch(() => undefined)
+  if (beforeRow?.created_by) void insertNotification(beforeRow.created_by, { ...activityPayload, link: `/admin/daftar-proposal/${input.id}` }).catch(() => undefined)
 
   if (input.deployment) {
     const { error: mapError } = await client

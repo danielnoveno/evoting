@@ -38,7 +38,7 @@ const EMPTY_CANDIDATE: ProposalCandidateInput = {
   avatarPath: '',
 }
 
-type ProposalFormErrors = Partial<Record<'title' | 'category' | 'candidateCount' | 'voterCount' | 'commitDate' | 'revealDate' | 'endedDate' | 'dateRange', string>>
+type ProposalFormErrors = Partial<Record<'title' | 'candidateCount' | 'voterCount' | 'commitDate' | 'revealDate' | 'endedDate' | 'dateRange', string>>
 type ValidationIssue = {
   fieldKey: string
   label: string
@@ -134,10 +134,6 @@ export function ProposalForm({
       nextErrors.title = 'Nama pemilihan wajib diisi.'
     }
 
-    if (!data.category.trim()) {
-      nextErrors.category = 'Nama organisasi wajib diisi.'
-    }
-
     if (filledCandidateCount < 2) {
       nextErrors.candidateCount = 'Minimal isi 2 kandidat dengan data lengkap (Nama, NPM, Visi, Misi).'
     }
@@ -198,7 +194,6 @@ export function ProposalForm({
     const issues: ValidationIssue[] = []
 
     if (nextErrors.title) issues.push({ fieldKey: 'title', label: 'Nama Pemilihan', message: nextErrors.title })
-    if (nextErrors.category) issues.push({ fieldKey: 'category', label: 'Nama Organisasi / Kategori', message: nextErrors.category })
     if (nextErrors.commitDate) issues.push({ fieldKey: 'commitDate', label: 'Mulai Commit', message: 'Tanggal dan jam mulai commit wajib diisi.' })
     if (nextErrors.revealDate) issues.push({ fieldKey: 'revealDate', label: 'Mulai Reveal', message: 'Tanggal dan jam mulai reveal wajib diisi.' })
     if (nextErrors.endedDate) issues.push({ fieldKey: 'endedDate', label: 'Selesai', message: 'Tanggal dan jam selesai wajib diisi.' })
@@ -491,7 +486,7 @@ export function ProposalForm({
     saveProposalDraft.mutate({
       id: proposalId,
       title: formData.title,
-      organizationName: formData.category,
+      organizationName: formData.category || 'Organisasi',
       description: formData.description,
       candidateCount: candidateEntries.length,
       commitStartAt: new Date(formData.commitDate).toISOString(),
@@ -583,11 +578,6 @@ export function ProposalForm({
                 <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama Pemilihan <RequiredAsterisk /></span>
                 <input data-validation-field="title" name="title" value={formData.title} onChange={handleChange} disabled={isReadOnly} placeholder="Masukkan nama pemilihan..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                 {errors.title && <p className="mt-1 text-[12px] text-red-500">{errors.title}</p>}
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama Organisasi / Kategori <RequiredAsterisk /></span>
-                <input data-validation-field="category" name="category" value={formData.category} onChange={handleChange} disabled={isReadOnly} placeholder="Contoh: Himpunan Mahasiswa Informatika" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-                {errors.category && <p className="mt-1 text-[12px] text-red-500">{errors.category}</p>}
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Deskripsi</span>

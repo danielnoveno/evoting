@@ -3,7 +3,7 @@
 import { notFound, useRouter } from 'next/navigation'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { ProposalForm, ProposalFormData } from '@/components/admin/proposal-form'
-import { useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
+import { useProposalActivities, useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { Send } from 'lucide-react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -22,8 +22,10 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
   const proposalQuery = useProposalDraft(params.id)
   const candidateQuery = useProposalCandidates(params.id)
   const whitelistQuery = useProposalWhitelistEntries(params.id)
+  const activitiesQuery = useProposalActivities(params.id)
   const updateStatus = useUpdateProposalStatus()
   const liveProposal = proposalQuery.data
+  const latestRevisionMessage = (activitiesQuery.data ?? []).find((activity) => activity.eventType === 'revision_requested')?.message
   if (!liveProposal && !proposalQuery.isLoading) notFound()
 
   const initialData: Partial<ProposalFormData> = {
@@ -88,6 +90,12 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
           )
         }
       />
+      {liveProposal?.status === 'revision_requested' && latestRevisionMessage ? (
+        <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+          <p className="text-[13px] font-semibold uppercase tracking-[0.08em]">Pesan revisi dari superadmin</p>
+          <p className="mt-2 text-[14px] leading-7">{latestRevisionMessage}</p>
+        </section>
+      ) : null}
     </AdminShell>
   )
 }

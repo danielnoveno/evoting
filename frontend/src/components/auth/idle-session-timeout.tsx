@@ -171,12 +171,12 @@ export function IdleSessionTimeout() {
       setShowWarning(true)
     } else {
       warningRef.current = window.setTimeout(() => {
-        if (!hasTimedOutRef.current) setShowWarning(true)
+        if (!hasTimedOutRef.current && !isManualLogoutInProgress()) setShowWarning(true)
       }, warningMs)
     }
 
     timeoutRef.current = window.setTimeout(() => {
-      void handleTimeout()
+      if (!isManualLogoutInProgress()) void handleTimeout()
     }, remainingMs)
   }, [clearDelayTimers, handleTimeout, idleTimeoutMs, shouldTrackSession])
 
