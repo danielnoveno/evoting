@@ -20,12 +20,10 @@ import {
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { signOutCurrentSession } from '@/lib/repositories/authRepository'
-import { AuthField } from '@/components/auth/auth-shell'
 import { useToast } from '@/components/ui/toast-provider'
 import { authSessionQueryKey, useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useEmailPasswordLogin, useEmailPasswordSignUp } from '@/hooks/use-auth-session'
 import { useBindCurrentWallet, useCurrentProfile, useProfileByWallet } from '@/hooks/use-profile'
-import { ScrollReveal, FloatingShape } from '@/components/public/parallax'
-import { AsciiBackground } from '@/components/public/ascii-background'
+import { ScrollReveal } from '@/components/public/parallax'
 import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
 import Link from 'next/link'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
@@ -358,22 +356,10 @@ function ConnectWalletContent() {
   if (!mounted) return null
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden bg-slate-50 pb-10">
+    <main className="flex min-h-screen flex-col bg-slate-50 pb-10">
       <PublicNavbar activePath="/hubungkan-dompet" minimal />
-      
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden p-4 md:p-8">
-        {/* Decorative Background Elements */}
-        <AsciiBackground />
-        
-        <FloatingShape
-          speed={-0.06}
-          className="left-[-80px] top-[120px] h-[320px] w-[320px] rounded-full bg-gradient-to-br from-emerald-100/40 to-teal-50/20 blur-3xl"
-        />
-        <FloatingShape
-          speed={0.04}
-          className="right-[-60px] top-[60px] h-[260px] w-[260px] rounded-full bg-gradient-to-bl from-slate-100/60 to-blue-50/20 blur-3xl"
-        />
-
+       
+      <div className="relative flex flex-1 items-center justify-center p-4 md:p-8">
         <div className="relative z-10 w-full max-w-[1100px] px-2 sm:px-0">
           <ScrollReveal variant="fade-up">
             <section className="relative overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -381,7 +367,7 @@ function ConnectWalletContent() {
                 <X className="h-4 w-4" />
               </Link>
 
-              <div className="grid max-h-[84vh] overflow-y-auto xl:grid-cols-[0.5fr_0.5fr]">
+              <div className="grid xl:grid-cols-[0.5fr_0.5fr]">
                 <aside className="border-b border-slate-100 bg-white p-6 xl:border-b-0 xl:border-r xl:p-8">
                   <div className="flex items-start justify-between gap-5">
                     <div>
@@ -425,6 +411,36 @@ function ConnectWalletContent() {
                   <div className="relative mt-10 space-y-5">
                     <div className="absolute bottom-16 left-[18px] top-12 border-l border-dashed border-slate-300" aria-hidden="true" />
 
+                    {isAdminActivationFlow ? (
+                      <>
+                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${!authSession ? 'bg-slate-100' : 'bg-white'}`}>
+                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${authSession ? 'bg-emerald-50 text-emerald-600' : 'bg-[#0F172A] text-white'}`}>
+                        {authSession ? <Check className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-[14px] font-semibold text-slate-900">Verifikasi Akun Kampus</h2>
+                        <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
+                          {authSession ? 'Identitas kampus sudah diverifikasi.' : 'Masuk dengan email yang didaftarkan sebagai Admin Organisasi.'}
+                        </p>
+                      </div>
+                      {!authSession && <ChevronRight className="h-4 w-4 text-slate-400" />}
+                    </div>
+
+                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${authSession && !isConnected ? 'bg-slate-100' : 'bg-white'} ${!authSession ? 'opacity-50' : ''}`}>
+                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isConnected ? 'bg-emerald-50 text-emerald-600' : authSession ? 'bg-[#0F172A] text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className={authSession ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Sambungkan Smart Wallet Admin</h2>
+                        <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
+                          {isConnected ? 'Smart Wallet sudah tersambung.' : 'Gunakan Smart Wallet sebagai identitas administratif Anda.'}
+                        </p>
+                      </div>
+                      {authSession && !isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
+                    </div>
+                      </>
+                    ) : (
+                      <>
                     <div className={`relative flex items-center gap-4 rounded-lg p-4 ${!isConnected ? 'bg-slate-100' : 'bg-white'}`}>
                       <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isConnected ? 'bg-emerald-50 text-emerald-600' : 'bg-[#0F172A] text-white'}`}>
                         {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
@@ -432,7 +448,7 @@ function ConnectWalletContent() {
                       <div className="min-w-0 flex-1">
                         <h2 className="text-[14px] font-semibold text-slate-900">Sambungkan Smart Wallet</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isConnected ? 'Smart Wallet sudah tersambung.' : activationContext === 'admin' ? 'Gunakan Smart Wallet sebagai kunci digital administratif Anda.' : 'Smart Wallet dipakai sebagai identitas digital yang aman dan mudah.'}
+                          {isConnected ? 'Smart Wallet sudah tersambung.' : 'Smart Wallet dipakai sebagai identitas digital yang aman dan mudah.'}
                         </p>
                       </div>
                       {!isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -445,11 +461,13 @@ function ConnectWalletContent() {
                       <div className="min-w-0 flex-1">
                         <h2 className={isConnected ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Verifikasi Akun Kampus</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {authSession ? 'Identitas kampus sudah diverifikasi.' : activationContext === 'admin' ? 'Masuk dengan email yang didaftarkan sebagai Admin Organisasi.' : 'Ini memastikan yang masuk benar-benar mahasiswa UAJY.'}
+                          {authSession ? 'Identitas kampus sudah diverifikasi.' : 'Ini memastikan yang masuk benar-benar mahasiswa UAJY.'}
                         </p>
                       </div>
                       {isConnected && !authSession && <ChevronRight className="h-4 w-4 text-slate-400" />}
                     </div>
+                      </>
+                    )}
 
                     <div className={`relative flex items-center gap-4 rounded-lg p-4 ${isConnected && authSession && !isWalletBound ? 'bg-slate-100' : 'bg-white'} ${!isConnected || !authSession ? 'opacity-50' : ''}`}>
                       <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isWalletBound ? 'bg-emerald-50 text-emerald-600' : isConnected && authSession ? 'bg-[#0F172A] text-white' : 'bg-slate-100 text-slate-400'}`}>
@@ -496,7 +514,7 @@ function ConnectWalletContent() {
                           {[
                             'Smart Wallet dapat dibuat secara instan hanya dengan biometrik atau passkey ponsel Anda.',
                             'Tidak perlu biaya gas untuk pendaftaran dompet di jaringan Base Sepolia.',
-                            'Keamanan tingkat tinggi yang menjaga privasi pilihan suara Anda tetap terenkripsi.',
+                            activationContext === 'admin' ? 'Aksi admin memerlukan akun kampus dan dompet yang sesuai.' : 'Alur commit–reveal membantu menjaga pilihan tetap tertutup sampai fase reveal.',
                           ].map((item) => (
                             <div key={item} className="flex items-center gap-3 text-[13px] text-slate-600">
                               <span className="h-3 w-3 rounded-full border-2 border-blue-500 bg-blue-50" />

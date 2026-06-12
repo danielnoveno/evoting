@@ -65,13 +65,32 @@
 /* Ensure Tailwind flex utilities are not overridden by OnchainKit CSS */
 .flex { display: flex !important; }
 .flex-col { flex-direction: column !important; }
-.sm\:flex-row { flex-direction: row !important; }
+.flex-row { flex-direction: row !important; }
+
 @media (min-width: 640px) {
+  .sm\:flex { display: flex !important; }
+  .sm\:flex-col { flex-direction: column !important; }
   .sm\:flex-row { flex-direction: row !important; }
 }
 @media (min-width: 768px) {
   .md\:flex { display: flex !important; }
+  .md\:flex-col { flex-direction: column !important; }
   .md\:flex-row { flex-direction: row !important; }
+}
+@media (min-width: 1024px) {
+  .lg\:flex { display: flex !important; }
+  .lg\:flex-col { flex-direction: column !important; }
+  .lg\:flex-row { flex-direction: row !important; }
+}
+@media (min-width: 1280px) {
+  .xl\:flex { display: flex !important; }
+  .xl\:flex-col { flex-direction: column !important; }
+  .xl\:flex-row { flex-direction: row !important; }
+}
+@media (min-width: 1536px) {
+  .2xl\:flex { display: flex !important; }
+  .2xl\:flex-col { flex-direction: column !important; }
+  .2xl\:flex-row { flex-direction: row !important; }
 }
 
 html {

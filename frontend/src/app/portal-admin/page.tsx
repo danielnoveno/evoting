@@ -14,16 +14,12 @@ import {
   X,
   Copy,
   ShieldCheck,
-  AlertTriangle,
-  Eye,
-  EyeOff,
 } from 'lucide-react'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { useToast } from '@/components/ui/toast-provider'
-import { useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useEmailPasswordLogin, useResetPassword } from '@/hooks/use-auth-session'
+import { useAuthSession, useMicrosoftCampusLogin, useGoogleLogin } from '@/hooks/use-auth-session'
 import { useBindCurrentWallet, useCurrentProfile, useProfileByWallet } from '@/hooks/use-profile'
-import { ScrollReveal, FloatingShape } from '@/components/public/parallax'
-import { AsciiBackground } from '@/components/public/ascii-background'
+import { ScrollReveal } from '@/components/public/parallax'
 import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
 import Link from 'next/link'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
@@ -223,24 +219,12 @@ function PortalAdminContent() {
   if (!mounted) return null
 
   return (
-    <main className="flex h-screen flex-col overflow-hidden bg-slate-50 pb-10">
+    <main className="flex min-h-screen flex-col bg-slate-50 pb-10">
       <PublicNavbar activePath="/portal-admin" minimal />
-      
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden p-4 md:p-8">
-        {/* Decorative Background Elements */}
-        <AsciiBackground />
-        
-        <FloatingShape
-          speed={-0.06}
-          className="left-[-80px] top-[120px] h-[320px] w-[320px] rounded-full bg-gradient-to-br from-blue-100/40 to-indigo-50/20 blur-3xl"
-        />
-        <FloatingShape
-          speed={0.04}
-          className="right-[-60px] top-[60px] h-[260px] w-[260px] rounded-full bg-gradient-to-bl from-slate-100/60 to-purple-50/20 blur-3xl"
-        />
-
+       
+      <div className="relative flex flex-1 items-center justify-center p-4 md:p-8">
         <ScrollReveal variant="fade-up" duration={800} className="relative z-10 w-full max-w-[1040px]">
-          <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-2xl xl:grid xl:grid-cols-[380px_1fr]">
+          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white xl:grid xl:grid-cols-[380px_1fr]">
             <aside className="relative hidden flex-col justify-between bg-slate-50/50 p-8 xl:flex">
               <div className="relative z-10">
                 <div className="flex items-center justify-between">
@@ -251,7 +235,7 @@ function PortalAdminContent() {
                     </Link>
                     <h1 className="text-[24px] font-semibold leading-tight text-slate-900">Portal Admin</h1>
                     <p className="mt-1 text-[13px] leading-6 text-slate-400">
-                      Akses untuk Tata Usaha UAJY.
+                      Akses admin organisasi dan pengelola platform.
                     </p>
                   </div>
 
@@ -308,14 +292,14 @@ function PortalAdminContent() {
               </div>
 
               <div className="relative z-10">
-                <div className="rounded-xl bg-[#0F172A] p-5 text-white shadow-xl">
+                <div className="rounded-xl border border-slate-800 bg-[#0F172A] p-5 text-white">
                   <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
                       <ShieldCheck className="h-4 w-4 text-emerald-400" />
                     </div>
                     <div>
-                      <h3 className="text-[13px] font-bold">Secure Gateway</h3>
-                      <p className="text-[11px] text-slate-400">Verifikasi dua lapis (SSO & Wallet)</p>
+                      <h3 className="text-[13px] font-semibold">Gerbang Admin</h3>
+                      <p className="text-[11px] text-slate-400">Verifikasi SSO dan wallet</p>
                     </div>
                   </div>
                 </div>
@@ -330,7 +314,7 @@ function PortalAdminContent() {
                   <div className="mt-8 w-full">
                     <h2 className="text-[20px] font-semibold text-slate-900">Verifikasi Admin</h2>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Masuk dengan akun kampus untuk memeriksa apakah akun memiliki otoritas admin atau Tata Usaha.
+                      Masuk dengan akun kampus untuk memeriksa apakah akun memiliki otoritas admin organisasi atau pengelola platform.
                     </p>
 
                     {isConnected && <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50 p-4">

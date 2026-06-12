@@ -3,7 +3,6 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import {
-  ShieldCheck,
   Loader2,
   ArrowLeft,
   Building2,
@@ -16,11 +15,10 @@ import { useToast } from '@/components/ui/toast-provider'
 import { useAuthSession, useMicrosoftCampusLogin, useGoogleLogin } from '@/hooks/use-auth-session'
 import { useAdminInvitePreview, useClaimAdminInvite } from '@/hooks/use-admin-invite'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
-import { ScrollReveal, FloatingShape } from '@/components/public/parallax'
-import { AsciiBackground } from '@/components/public/ascii-background'
 import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
 import Link from 'next/link'
 import { AuthSuccessRedirectModal } from '@/components/auth/auth-success-redirect-modal'
+import { AuthCard, AuthHeader, AuthTitle } from '@/components/auth/auth-shell'
 
 function getActivationRedirectModalContent(isSuperAdmin: boolean) {
   if (isSuperAdmin) {
@@ -117,59 +115,38 @@ function ActivationContent() {
     <main className="flex min-h-screen flex-col bg-slate-50">
       <PublicNavbar activePath="/auth/aktivasi-admin" minimal />
       
-      <div className="relative flex flex-1 items-center justify-center p-4 md:p-8">
-        <AsciiBackground />
-        <FloatingShape
-          speed={-0.06}
-          className="left-[-80px] top-[120px] h-[320px] w-[320px] rounded-full bg-gradient-to-br from-blue-100/40 to-indigo-50/20 blur-3xl"
-        />
-        <FloatingShape
-          speed={0.04}
-          className="right-[-60px] top-[60px] h-[260px] w-[260px] rounded-full bg-gradient-to-bl from-slate-100/60 to-purple-50/20 blur-3xl"
-        />
+      <div className="flex flex-1 items-center justify-center px-4 py-6 md:px-5 lg:px-6">
+        <AuthCard className="max-w-[480px]">
+            <AuthHeader />
+            <AuthTitle title={pageTitle} body={pageSubtitle} />
 
-        <ScrollReveal variant="fade-up" duration={800} className="relative z-10 w-full max-w-[600px]">
-          <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white p-8 shadow-2xl md:p-12">
-            <div className="flex flex-col items-center text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                {isSuperAdmin ? <ShieldCheck className="h-8 w-8" /> : <Building2 className="h-8 w-8" />}
-              </div>
-              
-              <h1 className="mt-6 text-[24px] font-bold tracking-tight text-slate-900 md:text-[28px]">
-                {pageTitle}
-              </h1>
-              <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
-                {pageSubtitle}
-              </p>
-            </div>
-
-            <div className="mt-10 space-y-6">
+            <div className="mt-8 space-y-5">
               {invitePreviewQuery.isLoading ? (
                 <div className="space-y-4">
-                  <div className="h-20 animate-pulse rounded-2xl bg-slate-50" />
-                  <div className="h-12 animate-pulse rounded-xl bg-slate-50" />
+                  <div className="h-20 animate-pulse rounded-lg border border-slate-100 bg-slate-50" />
+                  <div className="h-11 animate-pulse rounded-md bg-slate-50" />
                 </div>
               ) : invitePreviewQuery.error && !isActivationSuccess ? (
-                <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-center">
-                  <AlertTriangle className="mx-auto h-8 w-8 text-red-500" />
+                <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-center">
+                  <AlertTriangle className="mx-auto h-7 w-7 text-red-600" />
                   <h3 className="mt-3 font-semibold text-red-900">Link Aktivasi Tidak Valid</h3>
                   <p className="mt-2 text-[13px] leading-relaxed text-red-700">
                     {getRepositoryErrorMessage(invitePreviewQuery.error, 'Undangan mungkin sudah kadaluwarsa atau sudah digunakan.')}
                   </p>
-                  <Link href="/portal-admin" className="mt-5 inline-flex font-semibold text-blue-600 hover:underline">
+                  <Link href="/portal-admin" className="mt-5 inline-flex text-[13px] font-semibold text-slate-900 hover:underline">
                     Kembali ke Login Portal →
                   </Link>
                 </div>
               ) : invitePreview || isActivationSuccess ? (
                 <>
                   {invitePreview && (
-                    <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-6">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                       <div className="flex items-start gap-4">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-slate-900 ring-1 ring-slate-200">
                           <Building2 className="h-5 w-5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[11px] font-bold uppercase tracking-wider text-blue-700">Institusi / Organisasi</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-500">Institusi / Organisasi</p>
                           <p className="mt-1 truncate text-[16px] font-semibold text-slate-900">{invitePreview.displayName || (isSuperAdmin ? 'Superadmin' : 'Admin Organisasi')}</p>
                           <div className="mt-3 flex items-center gap-2 text-[13px] text-slate-600">
                             <Mail className="h-3.5 w-3.5" />
@@ -183,15 +160,15 @@ function ActivationContent() {
                   {/* ── Loading state ── */}
                   {isActivating ? (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+                      <Loader2 className="h-9 w-9 animate-spin text-slate-900" />
                       <p className="mt-4 font-medium text-slate-900">Mengaktifkan akun Anda...</p>
                       <p className="mt-1 text-[13px] text-slate-500">Mohon tunggu sebentar, kami sedang memproses data organisasi.</p>
                     </div>
                   ) : isActivationSuccess ? (
                     /* ── Success state ── */
                     <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                        <CheckCircle2 className="h-10 w-10" />
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                        <CheckCircle2 className="h-8 w-8" />
                       </div>
                       <h3 className="mt-6 text-[20px] font-bold text-slate-900">Aktivasi Berhasil!</h3>
                       <p className="mt-2 text-[14px] text-slate-600">Akun Anda telah aktif. Mengarahkan Anda ke portal admin...</p>
@@ -201,7 +178,7 @@ function ActivationContent() {
                     <div className="space-y-4">
                       {!authSession ? (
                         <div className="space-y-4">
-                          <div className="rounded-xl bg-amber-50 p-4">
+                          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                             <div className="flex gap-3">
                               <Lock className="h-4 w-4 shrink-0 text-amber-600" />
                               <p className="text-[12px] leading-5 text-amber-800">
@@ -212,7 +189,7 @@ function ActivationContent() {
 
                           <button
                             onClick={() => handleSSOLogin('microsoft')}
-                            className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white font-semibold text-slate-900 transition hover:bg-slate-50"
+                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
                           >
                             <svg className="h-5 w-5" viewBox="0 0 23 23" fill="none">
                               <path d="M0 0H11V11H0V0Z" fill="#F25022"/>
@@ -225,7 +202,7 @@ function ActivationContent() {
                           
                           <button
                             onClick={() => handleSSOLogin('google')}
-                            className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white font-semibold text-slate-900 transition hover:bg-slate-50"
+                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
                           >
                             <img src="https://www.google.com/favicon.ico" className="h-5 w-5" alt="Google" />
                             Verifikasi dengan Google Workspace
@@ -233,14 +210,14 @@ function ActivationContent() {
                         </div>
                       ) : isCorrectAccount ? (
                         <div className="space-y-4">
-                          <div className="rounded-xl bg-emerald-50 p-4">
+                            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                             <p className="text-center text-[13px] font-medium text-emerald-800">
                               Anda sudah masuk dengan akun yang sesuai: <strong>{authSession.user.email}</strong>
                             </p>
                           </div>
                           <button
                             onClick={handleClaim}
-                            className="flex h-12 w-full items-center justify-center rounded-xl bg-slate-900 font-bold text-white transition hover:bg-slate-800"
+                            className="inline-flex h-10 w-full items-center justify-center rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B]"
                           >
                             Konfirmasi Aktivasi Akun
                           </button>
@@ -254,7 +231,7 @@ function ActivationContent() {
                           </div>
                           <button
                             onClick={() => handleSSOLogin('microsoft')}
-                            className="flex h-12 w-full items-center justify-center rounded-xl bg-slate-900 font-bold text-white transition hover:bg-slate-800"
+                            className="inline-flex h-10 w-full items-center justify-center rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B]"
                           >
                             Ganti Akun SSO
                           </button>
@@ -275,14 +252,13 @@ function ActivationContent() {
               ) : null}
             </div>
 
-            <div className="mt-12 flex items-center justify-center border-t border-slate-100 pt-8">
+            <div className="mt-8 flex items-center justify-center border-t border-slate-100 pt-6">
               <Link href="/" className="inline-flex items-center gap-2 text-[13px] font-medium text-slate-400 transition hover:text-slate-900">
                 <ArrowLeft className="h-4 w-4" />
                 Kembali ke Beranda
               </Link>
             </div>
-          </div>
-        </ScrollReveal>
+        </AuthCard>
       </div>
 
       {redirectModal ? (
