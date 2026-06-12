@@ -35,12 +35,28 @@ contract ElectionSpace {
     mapping(address => bytes32) public commitmentOf;
     mapping(uint256 => uint256) public voteCount;
 
-    event PhaseChanged(uint256 indexed spaceId, Phase indexed previousPhase, Phase indexed newPhase, address actor);
-    event WhitelistUpdated(uint256 indexed spaceId, address indexed voter, bool isRegistered, address actor);
+    event PhaseChanged(
+        uint256 indexed spaceId, Phase indexed previousPhase, Phase indexed newPhase, address actor
+    );
+    event WhitelistUpdated(
+        uint256 indexed spaceId, address indexed voter, bool isRegistered, address actor
+    );
     event Committed(uint256 indexed spaceId, address indexed voter, bytes32 indexed commitment);
-    event Revealed(uint256 indexed spaceId, address indexed voter, uint256 indexed candidateId, uint256 newVoteCount);
-    event ElectionStatusChanged(uint256 indexed spaceId, ElectionStatus indexed status, address indexed actor, string reasonCode);
-    event ElectionMetadataUpdated(uint256 indexed spaceId, string title, string metadataURI, address actor);
+    event Revealed(
+        uint256 indexed spaceId,
+        address indexed voter,
+        uint256 indexed candidateId,
+        uint256 newVoteCount
+    );
+    event ElectionStatusChanged(
+        uint256 indexed spaceId,
+        ElectionStatus indexed status,
+        address indexed actor,
+        string reasonCode
+    );
+    event ElectionMetadataUpdated(
+        uint256 indexed spaceId, string title, string metadataURI, address actor
+    );
 
     error NotAuthorized();
     error NotRegistry();
@@ -66,7 +82,9 @@ contract ElectionSpace {
         string memory _title,
         string memory _metadataURI
     ) {
-        if (_registry == address(0) || _spaceAdmin == address(0)) revert NotAuthorized();
+        if (_registry == address(0) || _spaceAdmin == address(0)) {
+            revert NotAuthorized();
+        }
         if (_candidateCount == 0) revert InvalidCandidate();
 
         registry = _registry;
@@ -183,7 +201,8 @@ contract ElectionSpace {
         if (hasRevealed[msg.sender]) revert AlreadyRevealed();
         if (candidateId == 0 || candidateId > candidateCount) revert InvalidCandidate();
 
-        bytes32 recomputed = keccak256(abi.encode(candidateId, salt, msg.sender, address(this), block.chainid));
+        bytes32 recomputed =
+            keccak256(abi.encode(candidateId, salt, msg.sender, address(this), block.chainid));
         if (recomputed != commitmentOf[msg.sender]) revert CommitmentMismatch();
 
         hasRevealed[msg.sender] = true;
@@ -197,7 +216,10 @@ contract ElectionSpace {
         return voteCount[candidateId];
     }
 
-    function setSuspended(bool suspended, address actor, string calldata reasonCode) external onlyRegistry {
+    function setSuspended(bool suspended, address actor, string calldata reasonCode)
+        external
+        onlyRegistry
+    {
         if (status == ElectionStatus.Terminated) revert ElectionTerminated();
 
         status = suspended ? ElectionStatus.Suspended : ElectionStatus.Active;
@@ -209,8 +231,13 @@ contract ElectionSpace {
         emit ElectionStatusChanged(spaceId, status, actor, reasonCode);
     }
 
-    function updateMetadata(string calldata _title, string calldata _metadataURI, address actor) external onlyRegistry {
-        if (currentPhase != Phase.Registration) revert WrongPhase(Phase.Registration, currentPhase);
+    function updateMetadata(string calldata _title, string calldata _metadataURI, address actor)
+        external
+        onlyRegistry
+    {
+        if (currentPhase != Phase.Registration) {
+            revert WrongPhase(Phase.Registration, currentPhase);
+        }
         title = _title;
         metadataURI = _metadataURI;
         emit ElectionMetadataUpdated(spaceId, _title, _metadataURI, actor);

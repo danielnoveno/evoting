@@ -5,6 +5,14 @@
     "dev:frontend:wasm": "npm --prefix frontend run dev:wasm",
     "build:frontend": "npm --prefix frontend run build",
     "build:frontend:wasm": "npm --prefix frontend run build:wasm",
-    "typecheck:frontend": "npm --prefix frontend run typecheck"
+    "typecheck:frontend": "npm --prefix frontend run typecheck",
+    "validate": "node .docs/opencode/workflows/full-automation-test-pass.mjs",
+    "validate:quick": "node .docs/opencode/workflows/full-automation-test-pass.mjs --quick",
+    "validate:frontend": "node .docs/opencode/workflows/full-automation-test-pass.mjs --frontend-only",
+    "validate:contracts": "node .docs/opencode/workflows/full-automation-test-pass.mjs --contracts-only",
+    "validate:indexer": "node .docs/opencode/workflows/full-automation-test-pass.mjs --indexer-only",
+    "validate:ai-boundary": "node .docs/opencode/workflows/full-automation-test-pass.mjs --ai-boundary-only",
+    "validate:onchain-proof": "node .docs/opencode/workflows/full-automation-test-pass.mjs --onchain-proof-only",
+    "validate:all": "node .docs/opencode/workflows/full-automation-test-pass.mjs --all"
   }
 }

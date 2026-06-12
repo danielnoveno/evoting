@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {ElectionSpace} from "./ElectionSpace.sol";
+import { ElectionSpace } from "./ElectionSpace.sol";
 
 contract VoteChainRegistry {
     enum ProposalStatus {
@@ -43,10 +43,18 @@ contract VoteChainRegistry {
 
     event AdminUpserted(address indexed admin, bool isActive);
     event SuperAdminUpserted(address indexed admin, bool isActive, address indexed rootSuperAdmin);
-    event ProposalSubmitted(uint256 indexed proposalId, address indexed proposer, uint256 candidateCount);
-    event ProposalReviewed(uint256 indexed proposalId, ProposalStatus indexed decision, address indexed reviewer);
-    event ChangeProposalSubmitted(uint256 indexed changeId, uint256 indexed spaceId, address proposer);
-    event ChangeProposalReviewed(uint256 indexed changeId, ProposalStatus indexed decision, address indexed reviewer);
+    event ProposalSubmitted(
+        uint256 indexed proposalId, address indexed proposer, uint256 candidateCount
+    );
+    event ProposalReviewed(
+        uint256 indexed proposalId, ProposalStatus indexed decision, address indexed reviewer
+    );
+    event ChangeProposalSubmitted(
+        uint256 indexed changeId, uint256 indexed spaceId, address proposer
+    );
+    event ChangeProposalReviewed(
+        uint256 indexed changeId, ProposalStatus indexed decision, address indexed reviewer
+    );
     event ElectionSpaceCreated(
         uint256 indexed spaceId,
         address indexed space,
@@ -112,11 +120,11 @@ contract VoteChainRegistry {
         return superAdmins[account];
     }
 
-    function submitProposal(string calldata title, string calldata metadataURI, uint256 candidateCount)
-        external
-        onlyPlatformAdminOrSuper
-        returns (uint256 proposalId)
-    {
+    function submitProposal(
+        string calldata title,
+        string calldata metadataURI,
+        uint256 candidateCount
+    ) external onlyPlatformAdminOrSuper returns (uint256 proposalId) {
         if (candidateCount == 0) revert InvalidCandidateCount();
 
         proposalId = nextProposalId;
@@ -149,7 +157,10 @@ contract VoteChainRegistry {
         emit ProposalReviewed(proposalId, proposal.status, msg.sender);
     }
 
-    function createElectionFromProposal(uint256 proposalId) external returns (uint256 spaceId, address spaceAddress) {
+    function createElectionFromProposal(uint256 proposalId)
+        external
+        returns (uint256 spaceId, address spaceAddress)
+    {
         Proposal storage proposal = proposals[proposalId];
         if (proposal.proposer == address(0)) revert ProposalNotFound();
         if (proposal.status != ProposalStatus.Approved) {
@@ -173,7 +184,9 @@ contract VoteChainRegistry {
 
         proposal.status = ProposalStatus.Deployed;
 
-        emit ElectionSpaceCreated(spaceId, spaceAddress, proposalId, proposal.proposer, proposal.candidateCount);
+        emit ElectionSpaceCreated(
+            spaceId, spaceAddress, proposalId, proposal.proposer, proposal.candidateCount
+        );
     }
 
     function createElectionForAdmin(
@@ -205,12 +218,7 @@ contract VoteChainRegistry {
         nextSpaceId += 1;
 
         ElectionSpace space = new ElectionSpace(
-            address(this),
-            spaceAdmin,
-            spaceId,
-            candidateCount,
-            title,
-            metadataURI
+            address(this), spaceAdmin, spaceId, candidateCount, title, metadataURI
         );
         spaceAddress = address(space);
         spaceById[spaceId] = spaceAddress;

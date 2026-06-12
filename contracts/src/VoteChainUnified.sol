@@ -55,13 +55,19 @@ contract VoteChainUnified {
     }
 
     modifier onlyElectionAdmin(uint256 electionId) {
-        if (elections[electionId].admin != msg.sender && msg.sender != superAdmin) revert NotElectionAdmin();
+        if (elections[electionId].admin != msg.sender && msg.sender != superAdmin) {
+            revert NotElectionAdmin();
+        }
         _;
     }
 
     // --- Manajemen Pemilihan ---
 
-    function createElection(string calldata title, uint256 candidateCount, address admin) external onlySuperAdmin returns (uint256 electionId) {
+    function createElection(string calldata title, uint256 candidateCount, address admin)
+        external
+        onlySuperAdmin
+        returns (uint256 electionId)
+    {
         electionId = nextElectionId++;
         Election storage e = elections[electionId];
         e.title = title;
@@ -86,17 +92,27 @@ contract VoteChainUnified {
 
     // --- Manajemen Pemilih ---
 
-    function registerVoter(uint256 electionId, address voter) external onlyElectionAdmin(electionId) {
+    function registerVoter(uint256 electionId, address voter)
+        external
+        onlyElectionAdmin(electionId)
+    {
         Election storage e = elections[electionId];
-        if (e.currentPhase != Phase.Registration) revert WrongPhase(Phase.Registration, e.currentPhase);
-        
+        if (e.currentPhase != Phase.Registration) {
+            revert WrongPhase(Phase.Registration, e.currentPhase);
+        }
+
         e.isWhitelisted[voter] = true;
         emit WhitelistUpdated(electionId, voter, true);
     }
 
-    function registerVoters(uint256 electionId, address[] calldata voters) external onlyElectionAdmin(electionId) {
+    function registerVoters(uint256 electionId, address[] calldata voters)
+        external
+        onlyElectionAdmin(electionId)
+    {
         Election storage e = elections[electionId];
-        if (e.currentPhase != Phase.Registration) revert WrongPhase(Phase.Registration, e.currentPhase);
+        if (e.currentPhase != Phase.Registration) {
+            revert WrongPhase(Phase.Registration, e.currentPhase);
+        }
 
         for (uint256 i = 0; i < voters.length; i++) {
             e.isWhitelisted[voters[i]] = true;
@@ -142,12 +158,20 @@ contract VoteChainUnified {
         return e.voteCount[candidateId];
     }
 
-    function getElectionInfo(uint256 electionId) external view returns (string memory title, uint256 candidateCount, Phase currentPhase, address admin) {
+    function getElectionInfo(uint256 electionId)
+        external
+        view
+        returns (string memory title, uint256 candidateCount, Phase currentPhase, address admin)
+    {
         Election storage e = elections[electionId];
         return (e.title, e.candidateCount, e.currentPhase, e.admin);
     }
 
-    function checkVoterStatus(uint256 electionId, address voter) external view returns (bool whitelisted, bool committed, bool revealed) {
+    function checkVoterStatus(uint256 electionId, address voter)
+        external
+        view
+        returns (bool whitelisted, bool committed, bool revealed)
+    {
         Election storage e = elections[electionId];
         return (e.isWhitelisted[voter], e.hasCommitted[voter], e.hasRevealed[voter]);
     }

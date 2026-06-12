@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {ElectionSpace} from "../src/ElectionSpace.sol";
-import {VoteChainRegistry} from "../src/VoteChainRegistry.sol";
+import { ElectionSpace } from "../src/ElectionSpace.sol";
+import { VoteChainRegistry } from "../src/VoteChainRegistry.sol";
 
 contract AdminClient {
     function addSuperAdmin(VoteChainRegistry registry, address admin) external {
@@ -22,7 +22,10 @@ contract AdminClient {
         );
     }
 
-    function submitProposal(VoteChainRegistry registry, uint256 candidateCount) external returns (uint256) {
+    function submitProposal(VoteChainRegistry registry, uint256 candidateCount)
+        external
+        returns (uint256)
+    {
         return registry.submitProposal("Pemilihan Ketua", "ipfs://proposal", candidateCount);
     }
 
@@ -67,7 +70,14 @@ contract VoteChainMVPTest {
 
     function _createApprovedElection(uint256 candidateCount)
         internal
-        returns (VoteChainRegistry registry, AdminClient admin, VoterClient voter1, VoterClient voter2, uint256 spaceId, ElectionSpace space)
+        returns (
+            VoteChainRegistry registry,
+            AdminClient admin,
+            VoterClient voter1,
+            VoterClient voter2,
+            uint256 spaceId,
+            ElectionSpace space
+        )
     {
         registry = new VoteChainRegistry(address(this));
         admin = new AdminClient();
@@ -106,18 +116,18 @@ contract VoteChainMVPTest {
         AdminClient admin = new AdminClient();
 
         (uint256 proposalId, uint256 spaceId, address spaceAddress) = registry.createElectionForAdmin(
-            address(admin),
-            "Pemilihan Ketua HIMAFORKA",
-            "supabase://proposal-drafts/example",
-            2
+            address(admin), "Pemilihan Ketua HIMAFORKA", "supabase://proposal-drafts/example", 2
         );
 
         ElectionSpace space = ElectionSpace(spaceAddress);
         require(proposalId == 1, "proposalId should be 1");
         require(spaceId == 1, "spaceId should be 1");
         require(space.spaceAdmin() == address(admin), "admin should own space");
-        (, , VoteChainRegistry.ProposalStatus status, , , address reviewer,) = registry.proposals(proposalId);
-        require(uint8(status) == uint8(VoteChainRegistry.ProposalStatus.Deployed), "proposal deployed");
+        (,, VoteChainRegistry.ProposalStatus status,,, address reviewer,) =
+            registry.proposals(proposalId);
+        require(
+            uint8(status) == uint8(VoteChainRegistry.ProposalStatus.Deployed), "proposal deployed"
+        );
         require(reviewer == address(this), "superadmin reviewer recorded");
         require(registry.spaceById(1) == spaceAddress, "registry mapping mismatch");
     }
@@ -151,8 +161,11 @@ contract VoteChainMVPTest {
         require(proposalId == 1, "proposalId should be 1");
         require(spaceId == 1, "spaceId should be 1");
         require(space.spaceAdmin() == address(spaceAdmin), "space admin mismatch");
-        (, , VoteChainRegistry.ProposalStatus status, , , address reviewer,) = registry.proposals(proposalId);
-        require(uint8(status) == uint8(VoteChainRegistry.ProposalStatus.Deployed), "proposal deployed");
+        (,, VoteChainRegistry.ProposalStatus status,,, address reviewer,) =
+            registry.proposals(proposalId);
+        require(
+            uint8(status) == uint8(VoteChainRegistry.ProposalStatus.Deployed), "proposal deployed"
+        );
         require(reviewer == address(facultyTu), "faculty TU reviewer recorded");
         require(registry.spaceById(spaceId) == spaceAddress, "registry mapping mismatch");
     }
@@ -178,9 +191,11 @@ contract VoteChainMVPTest {
         registry.addSuperAdmin(address(facultyTu));
         registry.removeSuperAdmin(address(facultyTu));
 
-        try facultyTu.createElectionForAdmin(registry, address(spaceAdmin)) returns (uint256, uint256, address) {
+        try facultyTu.createElectionForAdmin(registry, address(spaceAdmin)) returns (
+            uint256, uint256, address
+        ) {
             revert("expected removed superadmin deploy revert");
-        } catch {}
+        } catch { }
     }
 
     function test_normal_wallet_cannot_manage_super_admin_or_deploy() external {
@@ -191,17 +206,19 @@ contract VoteChainMVPTest {
 
         try normalWallet.addSuperAdmin(registry, address(facultyTu)) {
             revert("expected normal wallet add superadmin revert");
-        } catch {}
+        } catch { }
 
         registry.addSuperAdmin(address(facultyTu));
 
         try normalWallet.removeSuperAdmin(registry, address(facultyTu)) {
             revert("expected normal wallet remove superadmin revert");
-        } catch {}
+        } catch { }
 
-        try normalWallet.createElectionForAdmin(registry, address(spaceAdmin)) returns (uint256, uint256, address) {
+        try normalWallet.createElectionForAdmin(registry, address(spaceAdmin)) returns (
+            uint256, uint256, address
+        ) {
             revert("expected normal wallet deploy revert");
-        } catch {}
+        } catch { }
     }
 
     function test_non_admin_cannot_submit_proposal() external {
@@ -210,15 +227,14 @@ contract VoteChainMVPTest {
 
         try nonAdmin.submitProposal(registry, 2) returns (uint256) {
             revert("expected non-admin revert");
-        } catch {}
+        } catch { }
     }
 
     function test_commit_reveal_happy_path() external {
         (
             VoteChainRegistry registry,
             AdminClient admin,
-            VoterClient voter1,
-            ,
+            VoterClient voter1,,
             uint256 spaceId,
             ElectionSpace space
         ) = _createApprovedElection(2);
@@ -242,11 +258,15 @@ contract VoteChainMVPTest {
         require(result == 1, "final result mismatch");
 
         registry.suspendSpace(spaceId, "AUDIT_CHECK");
-        require(uint8(space.status()) == uint8(ElectionSpace.ElectionStatus.Suspended), "space should be suspended");
+        require(
+            uint8(space.status()) == uint8(ElectionSpace.ElectionStatus.Suspended),
+            "space should be suspended"
+        );
     }
 
     function test_non_whitelisted_cannot_commit() external {
-        (, AdminClient admin, , VoterClient voter2, , ElectionSpace space) = _createApprovedElection(2);
+        (, AdminClient admin,, VoterClient voter2,, ElectionSpace space) =
+            _createApprovedElection(2);
 
         admin.transitionToNextPhase(space);
 
@@ -255,11 +275,12 @@ contract VoteChainMVPTest {
 
         try voter2.commit(space, commitment) {
             revert("expected non-whitelist commit revert");
-        } catch {}
+        } catch { }
     }
 
     function test_wrong_phase_commit_rejected() external {
-        (, AdminClient admin, VoterClient voter1, , , ElectionSpace space) = _createApprovedElection(2);
+        (, AdminClient admin, VoterClient voter1,,, ElectionSpace space) =
+            _createApprovedElection(2);
 
         admin.registerVoter(space, address(voter1));
 
@@ -268,11 +289,12 @@ contract VoteChainMVPTest {
 
         try voter1.commit(space, commitment) {
             revert("expected wrong phase revert");
-        } catch {}
+        } catch { }
     }
 
     function test_double_commit_rejected() external {
-        (, AdminClient admin, VoterClient voter1, , , ElectionSpace space) = _createApprovedElection(2);
+        (, AdminClient admin, VoterClient voter1,,, ElectionSpace space) =
+            _createApprovedElection(2);
 
         admin.registerVoter(space, address(voter1));
         admin.transitionToNextPhase(space);
@@ -284,11 +306,12 @@ contract VoteChainMVPTest {
 
         try voter1.commit(space, commitment) {
             revert("expected double commit revert");
-        } catch {}
+        } catch { }
     }
 
     function test_reveal_with_wrong_salt_rejected() external {
-        (, AdminClient admin, VoterClient voter1, , , ElectionSpace space) = _createApprovedElection(2);
+        (, AdminClient admin, VoterClient voter1,,, ElectionSpace space) =
+            _createApprovedElection(2);
 
         admin.registerVoter(space, address(voter1));
         admin.transitionToNextPhase(space);
@@ -303,11 +326,12 @@ contract VoteChainMVPTest {
 
         try voter1.reveal(space, 1, wrongSalt) {
             revert("expected commitment mismatch revert");
-        } catch {}
+        } catch { }
     }
 
     function test_copycat_commit_cannot_reveal_after_original_reveals() external {
-        (, AdminClient admin, VoterClient voter1, VoterClient voter2, , ElectionSpace space) = _createApprovedElection(2);
+        (, AdminClient admin, VoterClient voter1, VoterClient voter2,, ElectionSpace space) =
+            _createApprovedElection(2);
 
         admin.registerVoter(space, address(voter1));
         admin.registerVoter(space, address(voter2));
@@ -324,25 +348,33 @@ contract VoteChainMVPTest {
 
         try voter2.reveal(space, 1, salt) {
             revert("expected copycat reveal mismatch");
-        } catch {}
+        } catch { }
     }
 
     function test_super_admin_suspend_blocks_actions() external {
-        (VoteChainRegistry registry, AdminClient admin, VoterClient voter1, , uint256 spaceId, ElectionSpace space) =
-            _createApprovedElection(2);
+        (
+            VoteChainRegistry registry,
+            AdminClient admin,
+            VoterClient voter1,,
+            uint256 spaceId,
+            ElectionSpace space
+        ) = _createApprovedElection(2);
 
         admin.registerVoter(space, address(voter1));
         admin.transitionToNextPhase(space);
 
         registry.suspendSpace(spaceId, "RULE_VIOLATION");
-        require(uint8(space.status()) == uint8(ElectionSpace.ElectionStatus.Suspended), "must be suspended");
+        require(
+            uint8(space.status()) == uint8(ElectionSpace.ElectionStatus.Suspended),
+            "must be suspended"
+        );
 
         bytes32 salt = bytes32(uint256(99));
         bytes32 commitment = _commitment(space, address(voter1), 1, salt);
 
         try voter1.commit(space, commitment) {
             revert("expected suspended election revert");
-        } catch {}
+        } catch { }
 
         registry.unsuspendSpace(spaceId, "RESOLVED");
         voter1.commit(space, commitment);
@@ -350,24 +382,32 @@ contract VoteChainMVPTest {
     }
 
     function test_super_admin_terminate_blocks_actions() external {
-        (VoteChainRegistry registry, AdminClient admin, VoterClient voter1, , uint256 spaceId, ElectionSpace space) =
-            _createApprovedElection(2);
+        (
+            VoteChainRegistry registry,
+            AdminClient admin,
+            VoterClient voter1,,
+            uint256 spaceId,
+            ElectionSpace space
+        ) = _createApprovedElection(2);
 
         admin.registerVoter(space, address(voter1));
         admin.transitionToNextPhase(space);
 
         registry.terminateSpace(spaceId, "TERMINATED_BY_POLICY");
-        require(uint8(space.status()) == uint8(ElectionSpace.ElectionStatus.Terminated), "must be terminated");
+        require(
+            uint8(space.status()) == uint8(ElectionSpace.ElectionStatus.Terminated),
+            "must be terminated"
+        );
 
         bytes32 salt = bytes32(uint256(44));
         bytes32 commitment = _commitment(space, address(voter1), 1, salt);
 
         try voter1.commit(space, commitment) {
             revert("expected terminated election revert");
-        } catch {}
+        } catch { }
 
         try admin.transitionToNextPhase(space) {
             revert("expected admin phase transition revert on terminated");
-        } catch {}
+        } catch { }
     }
 }
