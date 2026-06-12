@@ -1,10 +1,10 @@
 'use client'
 
-import { ArrowRight, CircleCheck, ExternalLink, Hourglass, Fingerprint, CheckCircle2 } from 'lucide-react'
+import { Archive, ArrowRight, CalendarDays, CircleCheck, ExternalLink, Hourglass, Fingerprint, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import { VoterPageSkeleton, VoterShell } from '@/components/voter/voter-shell'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { useToast } from '@/components/ui/toast-provider'
+import type { VoterElection } from '@/lib/voter-store'
 import {
   getElectionViewState,
   formatNumber,
@@ -30,6 +30,112 @@ const logToneIcon = {
   warning: Hourglass,
 } as const
 
+function formatDashboardDateTime(value: string) {
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value))
+}
+
+function getCountdownParts(value: string) {
+  const diff = Math.max(0, new Date(value).getTime() - Date.now())
+  const totalSeconds = Math.floor(diff / 1000)
+  const days = Math.floor(totalSeconds / 86400)
+  const hours = Math.floor((totalSeconds % 86400) / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  return { days, hours, minutes, seconds }
+}
+
+function CountdownTile({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="min-w-[70px] rounded-xl border border-white/15 bg-white/10 px-3 py-3 text-center text-white backdrop-blur-sm">
+      <p className="text-[34px] font-semibold leading-none tracking-[-0.04em] md:text-[44px]">{String(value).padStart(2, '0')}</p>
+      <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-200">{label}</p>
+    </div>
+  )
+}
+
+function UpcomingHeroCard({ election }: { election: VoterElection }) {
+  const countdown = getCountdownParts(election.deadlineIso)
+
+  return (
+    <article id={`pemilihan-${election.id}`} className="overflow-hidden rounded-xl border border-slate-300 bg-slate-900 p-6 text-white md:p-8">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-200">Acara Pemilihan Mendatang</p>
+          <h2 className="mt-4 text-[36px] font-semibold leading-none tracking-[-0.05em] text-white md:text-[52px]">{election.title}</h2>
+          <p className="mt-3 max-w-2xl text-[14px] leading-7 text-slate-200">{election.summary}</p>
+
+          <div className="mt-6 grid gap-2 text-[14px] leading-7 text-slate-100">
+            <p>
+              Waktu Mulai: <span className="font-semibold text-white">{formatDashboardDateTime(election.deadlineIso)} WIB</span>
+            </p>
+            <p>
+              Total Partisipan Terdaftar: <span className="font-semibold text-white">{formatNumber(election.totalParticipants)}</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="w-full lg:max-w-[460px]">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-200">Hitung mundur ke pembukaan suara:</p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <CountdownTile label="Hari" value={countdown.days} />
+            <CountdownTile label="Jam" value={countdown.hours} />
+            <CountdownTile label="Menit" value={countdown.minutes} />
+            <CountdownTile label="Detik" value={countdown.seconds} />
+          </div>
+          <button type="button" disabled className="mt-5 inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-md border border-amber-300/60 bg-white/5 px-5 text-[13px] font-semibold text-amber-100">
+            Belum Dibuka
+          </button>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+function ScheduleStateBanner({ hasUpcoming, onlyPast, upcomingCount }: { hasUpcoming: boolean; onlyPast: boolean; upcomingCount: number }) {
+  if (hasUpcoming) {
+    return (
+      <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[13px] font-semibold text-amber-900">Pemilihan mendatang sudah ditampilkan di atas.</p>
+            <p className="mt-1 text-[13px] leading-6 text-amber-800">Tombol memilih akan aktif setelah admin membuka tahap memilih.</p>
+          </div>
+          {upcomingCount > 1 ? <span className="text-[12px] font-semibold text-amber-900">+{upcomingCount - 1} pemilihan mendatang lain</span> : null}
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="mt-6 rounded-xl border border-slate-200 bg-white px-5 py-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+            {onlyPast ? <Archive className="h-4 w-4" /> : <CalendarDays className="h-4 w-4" />}
+          </div>
+          <div>
+            <p className="text-[15px] font-semibold text-slate-900">{onlyPast ? 'Belum ada pemilihan mendatang' : 'Tidak ada jadwal pemilihan baru'}</p>
+            <p className="mt-1 max-w-3xl text-[13px] leading-6 text-slate-600">
+              {onlyPast
+                ? 'Saat ini hanya ada riwayat pemilihan yang sudah selesai. Anda tetap dapat membuka hasil dan bukti transaksi dari arsip.'
+                : 'Jika seharusnya ada pemilihan pada periode ini, hubungi admin organisasi untuk memastikan wallet Anda sudah masuk whitelist.'}
+            </p>
+          </div>
+        </div>
+        <Link href="/pemilih/bukti-saya" className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 hover:bg-slate-50">
+          Lihat Bukti Saya
+        </Link>
+      </div>
+    </section>
+  )
+}
+
 export default function VoterDashboardPage() {
   const { store, loading } = useVoterStore()
 
@@ -46,19 +152,28 @@ export default function VoterDashboardPage() {
     return (
       <VoterShell>
         <section className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
-          <h1 className="text-[24px] font-semibold text-slate-900">Belum ada ruang voting</h1>
+          <h1 className="text-[24px] font-semibold text-slate-900">Belum ada pemilihan untuk akun ini</h1>
           <p className="mx-auto mt-3 max-w-xl text-[14px] leading-7 text-slate-600">
-            Belum ada pemilihan yang terhubung dengan wallet Anda. Pastikan alamat wallet sudah masuk whitelist dan pemilihan sudah di-deploy.
+            Wallet Anda belum terhubung ke pemilihan pada periode ini. Jika seharusnya terdaftar, hubungi admin organisasi untuk memastikan alamat wallet sudah masuk whitelist.
           </p>
-          <Link href="/pemilihan" className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B]">
-            Lihat Daftar Publik
-          </Link>
+          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link href="/pemilihan" className="inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B]">
+              Lihat Daftar Publik
+            </Link>
+            <Link href="/pemilih/bantuan" className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-900 hover:bg-slate-50">
+              Buka Bantuan
+            </Link>
+          </div>
         </section>
       </VoterShell>
     )
   }
+  const upcomingElections = elections.filter((election) => election.phase === 'registration')
+  const pastElections = elections.filter((election) => election.phase === 'ended')
+  const onlyPastElections = pastElections.length === elections.length
   const featuredElection = elections.find((election) => election.phase === 'commit' && !election.commitProof)
     ?? elections.find((election) => election.phase === 'reveal' && !election.revealProof)
+    ?? upcomingElections[0]
     ?? elections[0]
   const secondaryElection = elections.find((election) => election.id !== featuredElection.id) ?? featuredElection
   const logs = getRecentLogs(store)
@@ -69,7 +184,11 @@ export default function VoterDashboardPage() {
   const pendingReveal = store.elections.filter((election) => getElectionViewState(election).canReveal).length
   const completed = store.elections.filter((election) => election.phase === 'ended').length
   const participationRate = Math.round((participated / store.elections.length) * 100)
-  const featuredLabel = 'Pemilihan aktif'
+  const featuredLabel = featuredElection.phase === 'registration'
+    ? 'Pemilihan mendatang'
+    : featuredElection.phase === 'ended'
+      ? 'Pemilihan terakhir'
+      : 'Pemilihan aktif'
 
   return (
     <VoterShell>
@@ -84,6 +203,9 @@ export default function VoterDashboardPage() {
 
       <ScrollReveal variant="fade-up" delay={100} duration={800}>
         <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.72fr)]">
+        {featuredElection.phase === 'registration' ? (
+          <UpcomingHeroCard election={featuredElection} />
+        ) : (
         <article id={`pemilihan-${featuredElection.id}`} className="rounded-xl border border-slate-200 bg-white p-6 transition-colors duration-300 hover:border-slate-300">
 
           {(() => {
@@ -252,6 +374,7 @@ export default function VoterDashboardPage() {
             )
           })()}
         </article>
+        )}
 
         <article className="rounded-xl border border-slate-200 bg-white p-6">
           <div className="flex items-center justify-between gap-4">
@@ -284,6 +407,10 @@ export default function VoterDashboardPage() {
           )}
         </article>
       </section>
+      </ScrollReveal>
+
+      <ScrollReveal variant="fade-up" delay={125} duration={800}>
+        <ScheduleStateBanner hasUpcoming={upcomingElections.length > 0} onlyPast={onlyPastElections} upcomingCount={upcomingElections.length} />
       </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={150} duration={800}>
@@ -328,22 +455,7 @@ export default function VoterDashboardPage() {
       </section>
       </ScrollReveal>
 
-      <StaggerContainer stagger={120} variant="fade-up" className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,0.82fr)_minmax(0,0.8fr)_minmax(0,0.82fr)]">
-        <article className="rounded-xl border border-slate-200 bg-white p-6">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-            <Hourglass className="h-5 w-5" />
-          </div>
-          <span className="mt-6 inline-flex rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-800 border border-amber-200">Menunggu</span>
-          <h3 className="mt-5 text-[24px] font-semibold text-slate-900">{elections.find((election) => election.phase === 'registration')?.title ?? 'Belum ada pemilihan lain'}</h3>
-          <p className="mt-4 text-[16px] leading-8 text-slate-800">
-            Pendaftaran kandidat masih dibuka. Voting akan dimulai setelah admin membuka tahap memilih sesuai urutan resmi.
-          </p>
-          <div className="mt-10 flex items-center justify-between border-t border-slate-100 pt-5 text-[14px]">
-            <span className="text-slate-400">Status</span>
-            <span className="font-semibold text-slate-900">Pra-registrasi</span>
-          </div>
-        </article>
-
+      <StaggerContainer stagger={120} variant="fade-up" className="mt-6 grid gap-6 xl:grid-cols-2">
         <article id="tour-voter-participation-stats" className="rounded-xl border border-slate-100 bg-slate-50 p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">Partisipasi Anda</p>
 
