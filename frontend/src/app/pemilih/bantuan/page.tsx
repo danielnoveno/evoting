@@ -1,10 +1,17 @@
 'use client'
 
-import { ChevronDown, ChevronUp, ExternalLink, Mail, MessageSquare, Search, ShieldCheck, Vote, Wrench } from 'lucide-react'
+import { AlertCircle, Bot, ChevronDown, ChevronUp, ExternalLink, Loader2, Mail, MessageSquare, Search, Send, ShieldCheck, UserCircle2, Vote, Wrench } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
 import { VoterShell } from '@/components/voter/voter-shell'
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
+
+type ChatMessage = {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+}
 
 const categories = [
   {
@@ -55,6 +62,152 @@ function HelpAccordion({ question, answer, openByDefault = false }: { question: 
         {open ? <ChevronUp className="h-5 w-5 text-slate-500" /> : <ChevronDown className="h-5 w-5 text-slate-500" />}
       </button>
       {open ? <div className="px-6 pb-6 text-[15px] leading-8 text-slate-800">{answer}</div> : null}
+    </article>
+  )
+}
+
+const suggestedQuestions = [
+  'Saya belum bisa konfirmasi suara, harus bagaimana?',
+  'Kenapa pilihan saya perlu dikunci dulu?',
+  'Bagaimana cara melihat bukti transaksi?',
+] as const
+
+function HelpChatCard() {
+  const { showToast } = useToast()
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: 'welcome',
+      role: 'assistant',
+      content: 'Halo! Saya Asisten Bantuan Otomatis VoteChain. Tanyakan kendala seputar login, memilih kandidat, konfirmasi suara, atau bukti transaksi.',
+    },
+  ])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const sendMessage = async (messageText?: string) => {
+    const question = (messageText ?? input).trim()
+    if (!question) return
+    if (question.length > 1200) {
+      setError('Pertanyaan terlalu panjang. Ringkas menjadi maksimal 1200 karakter.')
+      return
+    }
+
+    setError('')
+    setLoading(true)
+    setInput('')
+
+    const userMessage: ChatMessage = { id: `user-${Date.now()}`, role: 'user', content: question }
+    const nextMessages = [...messages, userMessage]
+    setMessages(nextMessages)
+
+    try {
+      const client = getSupabaseBrowserClient()
+      const { data: sessionData } = client ? await client.auth.getSession() : { data: { session: null } }
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) throw new Error('Sesi pemilih tidak ditemukan. Silakan masuk kembali.')
+
+      const response = await fetch('/api/ai/help-chat', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: question,
+          history: messages.map((item) => ({ role: item.role, content: item.content })),
+        }),
+      })
+
+      const payload: unknown = await response.json()
+      const record = typeof payload === 'object' && payload !== null ? payload as Record<string, unknown> : {}
+      if (!response.ok) throw new Error(typeof record.error === 'string' ? record.error : 'Jawaban bantuan gagal dimuat.')
+
+      const reply = typeof record.reply === 'string' ? record.reply : 'Maaf, asisten belum dapat menyiapkan jawaban.'
+      setMessages((current) => [...current, { id: `assistant-${Date.now()}`, role: 'assistant', content: reply }])
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Jawaban bantuan gagal dimuat. Coba lagi.'
+      setError(message)
+      showToast({ tone: 'error', title: 'Chat bantuan gagal', description: message })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <article className="rounded-[32px] border border-blue-200 bg-white p-6 md:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+            <MessageSquare className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-700">Otomatis 24/7</div>
+            <h3 className="mt-4 text-[24px] font-semibold text-slate-900 sm:text-[28px]">Asisten Bantuan Otomatis</h3>
+            <p className="mt-3 text-[15px] leading-8 text-slate-800">Dapatkan panduan cepat tentang alur voting, konfirmasi suara, dan bukti transaksi. Untuk masalah akun, tetap hubungi admin.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
+        <div className="max-h-[360px] space-y-4 overflow-y-auto pr-1" aria-live="polite">
+          {messages.map((message) => {
+            const isUser = message.role === 'user'
+            return (
+              <div key={message.id} className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
+                {!isUser ? <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-blue-700"><Bot className="h-4 w-4" /></div> : null}
+                <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-[14px] leading-7 ${isUser ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-800'}`}>
+                  {message.content}
+                </div>
+                {isUser ? <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white"><UserCircle2 className="h-4 w-4" /></div> : null}
+              </div>
+            )
+          })}
+          {loading ? (
+            <div className="flex items-center gap-3 text-[14px] text-slate-600">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Sedang menyiapkan jawaban...
+            </div>
+          ) : null}
+        </div>
+
+        {error ? (
+          <div className="mt-4 flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] leading-6 text-red-700">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        ) : null}
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {suggestedQuestions.map((question) => (
+            <button key={question} type="button" onClick={() => sendMessage(question)} disabled={loading} className="rounded-full border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">
+              {question}
+            </button>
+          ))}
+        </div>
+
+        <form
+          className="mt-4 flex flex-col gap-3 sm:flex-row"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void sendMessage()
+          }}
+        >
+          <label htmlFor="help-chat-input" className="sr-only">Tulis pertanyaan bantuan</label>
+          <textarea
+            id="help-chat-input"
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            placeholder="Contoh: Kenapa tombol konfirmasi suara belum muncul?"
+            className="min-h-[48px] flex-1 resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[14px] leading-6 text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10"
+            disabled={loading}
+          />
+          <button id="tour-voter-help-chat-btn" type="submit" disabled={loading || !input.trim()} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 text-[14px] font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Kirim
+          </button>
+        </form>
+      </div>
     </article>
   )
 }
@@ -159,16 +312,7 @@ export default function VoterHelpPage() {
           </button>
         </article>
 
-        <article className="rounded-[32px] border border-blue-200 bg-white p-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-            <MessageSquare className="h-5 w-5" />
-          </div>
-          <h3 className="mt-6 text-[24px] font-semibold text-slate-900 sm:text-[28px]">Live Chat 24/7</h3>
-          <p className="mt-4 text-[15px] leading-8 text-slate-800">Bicara langsung dengan tim dukungan teknis saat Anda perlu bantuan cepat ketika proses voting sedang berjalan.</p>
-          <button id="tour-voter-help-chat-btn" type="button" onClick={() => showToast({ tone: 'success', title: 'Tim bantuan siap membantu', description: 'Jika diperlukan, lanjutkan melalui email bantuan untuk pendampingan lebih lanjut.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-blue-600 px-6 text-[14px] font-semibold text-white hover:bg-blue-700 sm:w-auto">
-            Mulai Chat Sekarang
-          </button>
-        </article>
+        <HelpChatCard />
 
       </StaggerContainer>
 
