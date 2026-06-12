@@ -3,6 +3,7 @@
 import { Activity, CheckCircle2, Link2, TriangleAlert, Users, Vote } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
 import { SuperadminInteractiveCard, SuperadminShell } from '@/components/superadmin/superadmin-shell'
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { AppPageHeader } from '@/components/ui/app-page-header'
@@ -10,6 +11,41 @@ import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { superadminDashboardData } from '@/lib/superadmin-data'
 import { useSuperadminAdminsStore, useSuperadminElectionsStore, useSuperadminProposalsStore, useSuperadminRiskAlertsStore } from '@/lib/superadmin-store'
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
+
+type DashboardMetrics = {
+  totalAdmins: number
+  activeSpaces: number
+  pendingProposals: number
+  totalVoters: number
+}
+
+function isDashboardMetrics(value: unknown): value is DashboardMetrics {
+  if (!value || typeof value !== 'object') return false
+  const record = value as Record<string, unknown>
+  return typeof record.totalAdmins === 'number'
+    && typeof record.activeSpaces === 'number'
+    && typeof record.pendingProposals === 'number'
+    && typeof record.totalVoters === 'number'
+}
+
+async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return { totalAdmins: 0, activeSpaces: 0, pendingProposals: 0, totalVoters: 0 }
+
+  const { data: sessionData } = await client.auth.getSession()
+  const accessToken = sessionData.session?.access_token
+  if (!accessToken) return { totalAdmins: 0, activeSpaces: 0, pendingProposals: 0, totalVoters: 0 }
+
+  const response = await fetch('/api/superadmin/dashboard-metrics', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!response.ok) throw new Error('Gagal memuat statistik dashboard superadmin.')
+
+  const payload: unknown = await response.json()
+  if (!isDashboardMetrics(payload)) throw new Error('Format statistik dashboard tidak valid.')
+  return payload
+}
 
 const metricIcons = {
   admins: Users,
@@ -30,16 +66,22 @@ export default function SuperadminDashboardPage() {
   const { elections } = useSuperadminElectionsStore()
   const { proposals } = useSuperadminProposalsStore()
   const { alerts } = useSuperadminRiskAlertsStore()
+  const dashboardMetrics = useQuery({
+    queryKey: ['superadmin', 'dashboard-metrics'],
+    queryFn: fetchDashboardMetrics,
+    retry: false,
+  })
   const [range, setRange] = useState<(typeof superadminDashboardData.chart.ranges)[number]>('7H')
 
   const maxValue = useMemo(() => Math.max(...superadminDashboardData.chart.series[range]), [range])
   const metrics = useMemo(() => superadminDashboardData.metrics.map((metric) => {
-    if (metric.id === 'admins') return { ...metric, value: String(admins.length) }
-    if (metric.id === 'spaces') return { ...metric, value: String(elections.filter((item) => item.status === 'Aktif').length) }
-    if (metric.id === 'proposals') return { ...metric, value: String(proposals.filter((item) => item.status === 'Menunggu Review').length) }
-    if (metric.id === 'voters') return metric
+    const live = dashboardMetrics.data
+    if (metric.id === 'admins') return { ...metric, value: String(live?.totalAdmins ?? admins.length), hint: live ? 'data live' : metric.hint }
+    if (metric.id === 'spaces') return { ...metric, value: String(live?.activeSpaces ?? elections.filter((item) => item.status === 'Aktif').length), hint: live ? 'data live' : metric.hint }
+    if (metric.id === 'proposals') return { ...metric, value: String(live?.pendingProposals ?? proposals.filter((item) => item.status === 'Menunggu Review').length), hint: live ? 'data live' : metric.hint }
+    if (metric.id === 'voters') return { ...metric, value: String(live?.totalVoters ?? 0), hint: live ? 'data live' : metric.hint }
     return metric
-  }), [admins.length, elections, proposals])
+  }), [admins.length, dashboardMetrics.data, elections, proposals])
 
   return (
     <SuperadminShell>

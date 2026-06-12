@@ -5,6 +5,10 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { profileQueryKeys } from './use-profile'
 import { compressImage } from '@/lib/image-compression'
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 export function useProfileImageUpload() {
   const queryClient = useQueryClient()
 
@@ -16,39 +20,29 @@ export function useProfileImageUpload() {
       // Compress image: convert to WebP at 50% quality
       const compressed = await compressImage(file, 0.5)
 
-      const ext = 'webp'
-      const filePath = `avatars/${userId}-${Date.now()}.${ext}`
+      const { data: sessionData } = await client.auth.getSession()
+      const accessToken = sessionData.session?.access_token
+      if (!accessToken) throw new Error('Sesi pengguna tidak ditemukan. Silakan masuk ulang.')
 
-      // 1. Upload the file to 'public-assets' bucket
-      const { data, error: uploadError } = await client.storage
-        .from('public-assets')
-        .upload(filePath, compressed, {
-          cacheControl: '3600',
-          contentType: 'image/webp',
-          upsert: true,
-        })
+      const formData = new FormData()
+      formData.append('file', compressed, `${userId}-${Date.now()}.webp`)
 
-      if (uploadError) {
-        throw new Error(uploadError.message)
+      const response = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: formData,
+      })
+
+      const payload: unknown = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        const message = isRecord(payload) && typeof payload.error === 'string'
+          ? payload.error
+          : 'Gagal mengunggah foto.'
+        throw new Error(message)
       }
 
-      // 2. Get the public URL
-      const { data: publicUrlData } = client.storage
-        .from('public-assets')
-        .getPublicUrl(data.path)
-
-      const avatarUrl = publicUrlData.publicUrl
-
-      // 3. Update the profile table
-      const { error: updateError } = await client
-        .schema('app')
-        .from('app_profiles')
-        .update({ avatar_url: avatarUrl })
-        .eq('user_id', userId)
-
-      if (updateError) {
-        throw new Error(updateError.message)
-      }
+      const avatarUrl = isRecord(payload) && typeof payload.avatarUrl === 'string' ? payload.avatarUrl : null
+      if (!avatarUrl) throw new Error('Respons unggahan foto tidak valid.')
 
       return avatarUrl
     },
