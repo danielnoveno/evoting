@@ -300,7 +300,9 @@ export default function VoterHelpPage() {
       </section>
       </ScrollReveal>
 
-      <StaggerContainer stagger={150} variant="fade-up" className="mt-6 grid gap-6 xl:grid-cols-2">
+      <StaggerContainer stagger={150} variant="fade-up" className="mt-6 grid gap-6">
+        <HelpChatCard />
+
         <article className="rounded-[32px] border border-slate-100 bg-white p-8">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-900">
             <Mail className="h-5 w-5" />
@@ -311,8 +313,6 @@ export default function VoterHelpPage() {
             bantuan@portalsuara.id
           </button>
         </article>
-
-        <HelpChatCard />
 
       </StaggerContainer>
 
