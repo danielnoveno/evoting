@@ -2,6 +2,7 @@
 
 import { Archive, ArrowRight, CalendarDays, CircleCheck, ExternalLink, Hourglass, Fingerprint, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { VoterPageSkeleton, VoterShell } from '@/components/voter/voter-shell'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import type { VoterElection } from '@/lib/voter-store'
@@ -52,23 +53,39 @@ function getCountdownParts(value: string) {
 
 function CountdownTile({ label, value }: { label: string; value: number }) {
   return (
-    <div className="min-w-[70px] rounded-xl border border-white/15 bg-white/10 px-3 py-3 text-center text-white backdrop-blur-sm">
-      <p className="text-[34px] font-semibold leading-none tracking-[-0.04em] md:text-[44px]">{String(value).padStart(2, '0')}</p>
+    <div className="min-w-[82px] rounded-xl border border-white/15 bg-white/10 px-3 py-3 text-center text-white backdrop-blur-sm md:min-w-[96px]">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-200">{label}</p>
+      <p className="mt-1 text-[38px] font-semibold leading-none tracking-[-0.04em] md:text-[52px]">{String(value).padStart(2, '0')}</p>
       <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-200">{label}</p>
     </div>
   )
 }
 
+function useLiveCountdown(targetIso: string) {
+  const [countdown, setCountdown] = useState(() => getCountdownParts(targetIso))
+
+  useEffect(() => {
+    setCountdown(getCountdownParts(targetIso))
+    const interval = window.setInterval(() => {
+      setCountdown(getCountdownParts(targetIso))
+    }, 1000)
+
+    return () => window.clearInterval(interval)
+  }, [targetIso])
+
+  return countdown
+}
+
 function UpcomingHeroCard({ election }: { election: VoterElection }) {
-  const countdown = getCountdownParts(election.deadlineIso)
+  const countdown = useLiveCountdown(election.deadlineIso)
 
   return (
-    <article id={`pemilihan-${election.id}`} className="overflow-hidden rounded-xl border border-slate-300 bg-slate-900 p-6 text-white md:p-8">
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+    <article id={`pemilihan-${election.id}`} className="overflow-hidden rounded-xl border border-slate-700 bg-slate-800 p-6 text-white md:p-8">
+      <div className="flex min-h-[220px] flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-200">Acara Pemilihan Mendatang</p>
-          <h2 className="mt-4 text-[36px] font-semibold leading-none tracking-[-0.05em] text-white md:text-[52px]">{election.title}</h2>
-          <p className="mt-3 max-w-2xl text-[14px] leading-7 text-slate-200">{election.summary}</p>
+          <p className="text-[16px] font-semibold uppercase tracking-[0.04em] text-white md:text-[18px]">Acara Pemilihan Mendatang</p>
+          <h2 className="mt-3 text-[44px] font-semibold leading-none tracking-[-0.05em] text-white md:text-[60px]">{election.title}</h2>
+          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-slate-200">{election.summary}</p>
 
           <div className="mt-6 grid gap-2 text-[14px] leading-7 text-slate-100">
             <p>
@@ -80,8 +97,8 @@ function UpcomingHeroCard({ election }: { election: VoterElection }) {
           </div>
         </div>
 
-        <div className="w-full lg:max-w-[460px]">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-200">Hitung mundur ke pembukaan suara:</p>
+        <div className="w-full lg:max-w-[560px]">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-100">Hitung mundur ke pembukaan suara:</p>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <CountdownTile label="Hari" value={countdown.days} />
             <CountdownTile label="Jam" value={countdown.hours} />
@@ -99,17 +116,8 @@ function UpcomingHeroCard({ election }: { election: VoterElection }) {
 
 function ScheduleStateBanner({ hasUpcoming, onlyPast, upcomingCount }: { hasUpcoming: boolean; onlyPast: boolean; upcomingCount: number }) {
   if (hasUpcoming) {
-    return (
-      <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[13px] font-semibold text-amber-900">Pemilihan mendatang sudah ditampilkan di atas.</p>
-            <p className="mt-1 text-[13px] leading-6 text-amber-800">Tombol memilih akan aktif setelah admin membuka tahap memilih.</p>
-          </div>
-          {upcomingCount > 1 ? <span className="text-[12px] font-semibold text-amber-900">+{upcomingCount - 1} pemilihan mendatang lain</span> : null}
-        </div>
-      </section>
-    )
+    if (upcomingCount <= 1) return null
+    return <p className="mt-3 text-[12px] font-semibold text-slate-500">+{upcomingCount - 1} pemilihan mendatang lain tersedia.</p>
   }
 
   return (
@@ -202,7 +210,7 @@ export default function VoterDashboardPage() {
       </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={100} duration={800}>
-        <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.72fr)]">
+        <section className={featuredElection.phase === 'registration' ? 'mt-10' : 'mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.72fr)]'}>
         {featuredElection.phase === 'registration' ? (
           <UpcomingHeroCard election={featuredElection} />
         ) : (
@@ -376,7 +384,7 @@ export default function VoterDashboardPage() {
         </article>
         )}
 
-        <article className="rounded-xl border border-slate-200 bg-white p-6">
+        {featuredElection.phase !== 'registration' ? <article className="rounded-xl border border-slate-200 bg-white p-6">
           <div className="flex items-center justify-between gap-4">
             <span className="rounded bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-800">
               {getPhaseLabel(secondaryElection.phase)}
@@ -405,13 +413,15 @@ export default function VoterDashboardPage() {
               {secondaryAction.label}
             </Link>
           )}
-        </article>
+        </article> : null}
       </section>
       </ScrollReveal>
 
-      <ScrollReveal variant="fade-up" delay={125} duration={800}>
-        <ScheduleStateBanner hasUpcoming={upcomingElections.length > 0} onlyPast={onlyPastElections} upcomingCount={upcomingElections.length} />
-      </ScrollReveal>
+      {upcomingElections.length > 1 || onlyPastElections ? (
+        <ScrollReveal variant="fade-up" delay={125} duration={800}>
+          <ScheduleStateBanner hasUpcoming={upcomingElections.length > 0} onlyPast={onlyPastElections} upcomingCount={upcomingElections.length} />
+        </ScrollReveal>
+      ) : null}
 
       <ScrollReveal variant="fade-up" delay={150} duration={800}>
         <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
