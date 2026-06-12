@@ -47,6 +47,32 @@ function getWalletConnectionErrorMessage(error: { message?: string }) {
   return 'Coba lagi dari perangkat atau browser yang mendukung Smart Wallet.'
 }
 
+function safeInternalPath(value: string | null, fallback: string) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return fallback
+  try {
+    const parsed = new URL(value, 'https://votechain.local')
+    if (parsed.origin !== 'https://votechain.local') return fallback
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`
+  } catch {
+    return fallback
+  }
+}
+
+function resolveAdminRedirectTarget(redirectParam: string | null, role: string | null | undefined) {
+  const fallback = role === 'super_admin' ? '/superadmin' : '/admin'
+  const safeRedirect = safeInternalPath(redirectParam, fallback)
+
+  if (role === 'super_admin') {
+    return safeRedirect.startsWith('/superadmin') ? safeRedirect : '/superadmin'
+  }
+
+  if (role === 'admin') {
+    return safeRedirect.startsWith('/admin') ? safeRedirect : '/admin'
+  }
+
+  return safeRedirect.startsWith('/superadmin') || safeRedirect.startsWith('/admin') ? safeRedirect : '/portal-admin'
+}
+
 function PortalAdminContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -84,6 +110,7 @@ function PortalAdminContent() {
 
   const authSession = authSessionQuery.data
   const currentProfile = currentProfileQuery.data
+  const requestedRedirect = safeInternalPath(searchParams.get('redirect'), '/portal-admin')
   const connectedWalletProfile = connectedWalletProfileQuery.data
   const isWalletBound = sameWalletAddress(currentProfile?.walletAddress, address)
   const accountHasDifferentWallet = Boolean(address && currentProfile?.walletAddress && !isWalletBound)
@@ -114,30 +141,32 @@ function PortalAdminContent() {
       if (currentProfile?.role === 'super_admin') {
         if (redirectStartedRef.current) return
         redirectStartedRef.current = true
+        const redirectTarget = resolveAdminRedirectTarget(searchParams.get('redirect'), currentProfile.role)
         setRedirectState({
-          target: '/superadmin',
+          target: redirectTarget,
           label: 'Dashboard Superadmin',
           description: 'Akses Superadmin berhasil divalidasi. Anda akan diarahkan ke dashboard pengelolaan platform.',
         })
         showToast({ tone: 'success', title: 'Akses Diterima', description: 'Selamat datang di Portal Utama Admin.' })
         redirectTimerRef.current = window.setTimeout(() => {
-          router.replace('/superadmin')
+          router.replace(redirectTarget)
         }, 2200)
       } else if (currentProfile?.role === 'admin') {
         if (redirectStartedRef.current) return
         redirectStartedRef.current = true
+        const redirectTarget = resolveAdminRedirectTarget(searchParams.get('redirect'), currentProfile.role)
         setRedirectState({
-          target: '/admin',
+          target: redirectTarget,
           label: 'Dashboard Admin Organisasi',
           description: 'Akun dan dompet admin berhasil divalidasi. Anda akan diarahkan ke dashboard organisasi.',
         })
         showToast({ tone: 'success', title: 'Akses Diterima', description: 'Selamat datang di Dashboard Admin.' })
         redirectTimerRef.current = window.setTimeout(() => {
-          router.replace('/admin')
+          router.replace(redirectTarget)
         }, 2200)
       }
     }
-  }, [mounted, isConnected, authSession, isWalletBound, currentProfile?.role, router, showToast])
+  }, [mounted, isConnected, authSession, isWalletBound, currentProfile?.role, router, searchParams, showToast])
 
   const handleConnectWallet = async () => {
     setFormError('')
@@ -153,12 +182,12 @@ function PortalAdminContent() {
 
   const handleMicrosoftLogin = async () => {
     setFormError('')
-    microsoftLoginMutation.mutate({ nextPath: '/portal-admin' })
+    microsoftLoginMutation.mutate({ nextPath: `/portal-admin?redirect=${encodeURIComponent(requestedRedirect)}` })
   }
 
   const handleGoogleLogin = async () => {
     setFormError('')
-    googleLoginMutation.mutate({ nextPath: '/portal-admin' })
+    googleLoginMutation.mutate({ nextPath: `/portal-admin?redirect=${encodeURIComponent(requestedRedirect)}` })
   }
 
   const handleBind = () => {

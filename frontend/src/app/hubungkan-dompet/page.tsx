@@ -38,7 +38,14 @@ function sameWalletAddress(left: string | null | undefined, right: string | null
 }
 
 function resolveRedirectTarget(redirectParam: string | null, activationContext: 'admin' | 'voter') {
-  if (redirectParam?.startsWith('/') && !redirectParam.startsWith('//')) return redirectParam
+  if (redirectParam?.startsWith('/') && !redirectParam.startsWith('//')) {
+    try {
+      const parsed = new URL(redirectParam, 'https://votechain.local')
+      if (parsed.origin === 'https://votechain.local') return `${parsed.pathname}${parsed.search}${parsed.hash}`
+    } catch {
+      // Abaikan redirect tidak valid dan gunakan fallback berbasis konteks.
+    }
+  }
   if (activationContext === 'admin') return '/admin'
   return '/pemilih'
 }
@@ -208,8 +215,13 @@ function ConnectWalletContent() {
   // Auto-redirect if everything is ready
   useEffect(() => {
     if (mounted && currentProfile) {
-      if (!redirectParam && (currentProfile.role === 'super_admin' || currentProfile.role === 'admin')) {
+      if (!redirectParam && currentProfile.role === 'super_admin') {
          router.replace('/portal-admin')
+         return
+      }
+
+      if (!redirectParam && currentProfile.role === 'admin') {
+         router.replace('/admin')
          return
       }
     }

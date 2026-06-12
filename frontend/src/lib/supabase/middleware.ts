@@ -12,6 +12,10 @@ function getRequiredRole(pathname: string) {
   return null
 }
 
+function getPathWithSearch(request: NextRequest) {
+  return `${request.nextUrl.pathname}${request.nextUrl.search}`
+}
+
 export async function updateSupabaseSession(request: NextRequest) {
   if (!isSupabaseConfigured()) {
     return NextResponse.next({ request })
@@ -62,11 +66,14 @@ export async function updateSupabaseSession(request: NextRequest) {
 
     if (!session) {
       const requiredRole = getRequiredRole(request.nextUrl.pathname)
-      const redirectUrl = requiredRole === 'admin' || requiredRole === 'super_admin'
+      const redirectUrl = requiredRole === 'super_admin'
         ? new URL('/portal-admin', request.url)
         : new URL('/hubungkan-dompet', request.url)
-      if (requiredRole === 'voter') {
-        redirectUrl.searchParams.set('redirect', request.nextUrl.pathname)
+      if (requiredRole) {
+        redirectUrl.searchParams.set('redirect', getPathWithSearch(request))
+      }
+      if (requiredRole === 'admin') {
+        redirectUrl.searchParams.set('activate', 'admin')
       }
       // When redirecting, we MUST include the headers from our 'response' object 
       // which contains any newly set session cookies from a refresh.
@@ -88,18 +95,21 @@ export async function updateSupabaseSession(request: NextRequest) {
       const role = profile?.role
 
       if (requiredRole === 'super_admin' && role !== 'super_admin') {
-        const portalUrl = new URL('/portal-admin', request.url)
-        return NextResponse.redirect(portalUrl, { headers: response.headers })
+        const fallbackUrl = new URL(role === 'admin' ? '/admin' : '/hubungkan-dompet', request.url)
+        if (role !== 'admin') fallbackUrl.searchParams.set('redirect', '/pemilih')
+        return NextResponse.redirect(fallbackUrl, { headers: response.headers })
       }
 
       if (requiredRole === 'admin' && role !== 'admin' && role !== 'super_admin') {
-        const portalUrl = new URL('/portal-admin', request.url)
-        return NextResponse.redirect(portalUrl, { headers: response.headers })
+        const fallbackUrl = new URL('/hubungkan-dompet', request.url)
+        fallbackUrl.searchParams.set('redirect', '/pemilih')
+        return NextResponse.redirect(fallbackUrl, { headers: response.headers })
       }
 
       if (requiredRole === 'voter' && !role) {
         // Voters with no role yet are redirected to wallet binding
         const bindUrl = new URL('/hubungkan-dompet', request.url)
+        bindUrl.searchParams.set('redirect', getPathWithSearch(request))
         return NextResponse.redirect(bindUrl, { headers: response.headers })
       }
     }

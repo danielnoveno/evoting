@@ -21,8 +21,19 @@ const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'scroll', 'touchstart', 'pointe
 const CLOCK_CHECK_EVENTS = ['focus', 'pageshow'] as const
 
 function getRoleAwareLoginPath(pathname: string, role: string | null | undefined) {
-  if (role === 'super_admin' || role === 'admin') return '/portal-admin?reason=session-timeout'
-  if (pathname.startsWith('/superadmin') || pathname.startsWith('/admin') || pathname.startsWith('/portal-admin')) return '/portal-admin?reason=session-timeout'
+  if (role === 'super_admin') {
+    const redirectTarget = pathname.startsWith('/superadmin') ? pathname : '/superadmin'
+    return `/portal-admin?redirect=${encodeURIComponent(redirectTarget)}&reason=session-timeout`
+  }
+
+  if (role === 'admin') {
+    const redirectTarget = pathname.startsWith('/admin') ? pathname : '/admin'
+    return `/hubungkan-dompet?activate=admin&redirect=${encodeURIComponent(redirectTarget)}&reason=session-timeout`
+  }
+
+  if (pathname.startsWith('/superadmin')) return `/portal-admin?redirect=${encodeURIComponent(pathname)}&reason=session-timeout`
+  if (pathname.startsWith('/admin')) return `/hubungkan-dompet?activate=admin&redirect=${encodeURIComponent(pathname)}&reason=session-timeout`
+  if (pathname.startsWith('/portal-admin')) return '/portal-admin?redirect=%2Fsuperadmin&reason=session-timeout'
 
   const redirectTarget = pathname.startsWith('/pemilih') ? pathname : '/pemilih'
   return `/hubungkan-dompet?redirect=${encodeURIComponent(redirectTarget)}&reason=session-timeout`
