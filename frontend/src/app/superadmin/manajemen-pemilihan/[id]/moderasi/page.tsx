@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity, AlertTriangle, ArrowRight, BadgeCheck, CalendarDays, ExternalLink, Hourglass, Lock, ShieldCheck, Wallet } from 'lucide-react'
+import { Activity, AlertTriangle, ArrowRight, BadgeCheck, CalendarDays, ExternalLink, Hourglass, Lock, ShieldCheck, Wallet, Loader2 } from 'lucide-react'
 import { notFound, useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { SuperadminDetailIntro, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
@@ -10,6 +10,7 @@ import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { type SuperadminElectionState } from '@/lib/superadmin-data'
 import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import { useProposalDraft } from '@/hooks/use-proposal-draft'
 
 type ModerationDetail = {
   network: string
@@ -109,13 +110,40 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
   const router = useRouter()
   const { showToast } = useToast()
   const { elections, setElections } = useSuperadminElectionsStore()
+  const proposalQuery = useProposalDraft(params.id)
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
 
-  const election = useMemo(() => elections.find((item) => item.id === params.id), [elections, params.id])
+  const election = useMemo(() => {
+    const fromStore = elections.find((item) => item.id === params.id)
+    if (fromStore) return fromStore
+    
+    if (proposalQuery.data) {
+      const p = proposalQuery.data
+      return {
+        id: p.id,
+        title: p.title,
+        code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
+        status: (p.status === 'deployed' ? 'Aktif' : 'Selesai') as SuperadminElectionState,
+        note: p.status === 'deployed' ? 'Online' : 'Final',
+        phaseLabel: p.status === 'deployed' ? 'Fase Berjalan' : 'Pemilihan Selesai',
+        totalVoters: String(p.candidateCount * 10),
+        participation: '0%'
+      }
+    }
+    
+    return null
+  }, [elections, params.id, proposalQuery.data])
 
+  if (proposalQuery.isLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>
   if (!election) notFound()
 
   const detail = moderationDetails[election.id] ?? getFallbackDetail(election.title, election.code)
+
+  // Use real contract data for detail if available
+  if (proposalQuery.data?.deployedSpaceAddress) {
+    detail.contractAddress = proposalQuery.data.deployedSpaceAddress
+    detail.contractUrl = `https://sepolia.basescan.org/address/${proposalQuery.data.deployedSpaceAddress}`
+  }
 
   return (
     <SuperadminShell>

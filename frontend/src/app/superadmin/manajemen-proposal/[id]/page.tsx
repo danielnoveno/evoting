@@ -459,7 +459,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             ) : (
               <button
                 type="button"
-                 disabled={isConnectPending || isWritePending || isConfirming || pendingOnchainDecision !== null || proposal.badge === 'Selesai' || proposal.badge === 'Berjalan'}
+                 disabled={isConnectPending || isWritePending || isConfirming || pendingOnchainDecision !== null || proposal.badge === 'Selesai' || proposal.badge === 'Berjalan' || proposal.badge === 'Perlu Revisi'}
                 onClick={() => setDecisionType('approve')}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-5 text-[15px] font-medium text-white hover:bg-slate-800 disabled:opacity-50"
               >
@@ -873,7 +873,17 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             <div className="mt-5 rounded-[20px] bg-slate-50 px-4 py-4 font-mono text-[14px] text-slate-700">
               {proposal.networkConfig.contractAddress}
             </div>
-            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Explorer draft dibuka', description: 'Tautan draft kontrak sedang disiapkan.' })} className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
+            <button
+              type="button"
+              onClick={() => {
+                if (proposal.networkConfig.contractAddress && proposal.networkConfig.contractAddress.startsWith('0x')) {
+                  window.open(`https://sepolia.basescan.org/address/${proposal.networkConfig.contractAddress}`, '_blank')
+                } else {
+                  showToast({ tone: 'info', title: 'Explorer draft dibuka', description: 'Tautan draft kontrak sedang disiapkan.' })
+                }
+              }}
+              className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-900 hover:bg-slate-200"
+            >
               Lihat Draft Explorer
             </button>
           </SuperadminSectionCard>

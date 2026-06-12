@@ -1341,11 +1341,11 @@ with check (app.can_manage_proposal(proposal_draft_id));
 
 drop policy if exists "tx_audit_log_insert_owner_or_admin" on app.tx_audit_log;
 drop policy if exists "tx_audit_log_insert_pending_owner_or_admin" on app.tx_audit_log;
-create policy "tx_audit_log_insert_pending_owner_or_admin"
+create policy "tx_audit_log_insert_frontend_owner_or_admin"
 on app.tx_audit_log
 for insert
 with check (
-  status = 'pending'
+  status in ('pending', 'success', 'failed')
   and source = 'frontend'
   and (
     wallet_address in (
@@ -1353,4 +1353,27 @@ with check (
     )
     or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
   )
+);
+
+create policy "notification_jobs_insert_admin"
+on app.notification_jobs
+for insert
+with check (
+  app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
+);
+
+create policy "tx_audit_log_update_owner_or_admin"
+on app.tx_audit_log
+for update
+using (
+  wallet_address in (
+    select wallet_address from app.app_profiles where user_id = auth.uid()
+  )
+  or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
+)
+with check (
+  wallet_address in (
+    select wallet_address from app.app_profiles where user_id = auth.uid()
+  )
+  or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
