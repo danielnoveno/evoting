@@ -84,12 +84,14 @@ export default function VoterDashboardPage() {
 
       <ScrollReveal variant="fade-up" delay={100} duration={800}>
         <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.72fr)]">
-        <article id="tour-voter-featured-election" className="rounded-xl border border-slate-200 bg-white p-6 transition-colors duration-300 hover:border-slate-300">
+        <article id={`pemilihan-${featuredElection.id}`} className="rounded-xl border border-slate-200 bg-white p-6 transition-colors duration-300 hover:border-slate-300">
 
           {(() => {
             const isCommitPhase = featuredViewState.nextAction === 'commit'
             const isRevealPhase = featuredViewState.nextAction === 'reveal'
             const isEndedPhase = featuredViewState.nextAction === 'results'
+            const isWaitingPhase = featuredViewState.nextAction === 'wait'
+            const hasProof = Boolean(featuredElection.commitProof || featuredElection.revealProof)
 
             return (
               <>
@@ -102,6 +104,12 @@ export default function VoterDashboardPage() {
                     {isCommitPhase && (
                       <p className="mt-4 text-[13px] font-medium text-slate-800 bg-blue-50/50 border border-blue-100 rounded-lg p-3 leading-relaxed">
                         💡 <span className="font-semibold text-blue-900">Langkah pertama:</span> Pilih satu kandidat. Setelah itu, pilihanmu akan dikunci dulu supaya tetap rahasia.
+                      </p>
+                    )}
+
+                    {isWaitingPhase && (
+                      <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-[13px] font-medium leading-relaxed text-slate-700">
+                        Pemilihan belum dibuka. Tombol memilih akan aktif sesuai jadwal yang ditentukan admin.
                       </p>
                     )}
 
@@ -169,6 +177,11 @@ export default function VoterDashboardPage() {
                       Selesai
                     </span>
                   )}
+                  {isWaitingPhase && (
+                    <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600 shrink-0">
+                      Belum Dibuka
+                    </span>
+                  )}
                 </div>
 
                 <div className="mt-8 grid gap-4 sm:grid-cols-2 border-t border-slate-100 pt-6">
@@ -215,13 +228,25 @@ export default function VoterDashboardPage() {
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   )}
-                  <Link 
-                    href="/pemilih/bukti-saya" 
-                    className="inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-6 text-[13px] font-semibold text-slate-800 transition-colors hover:bg-slate-50 focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:outline-none sm:w-auto"
-                    aria-label="Lihat arsip bukti digital Anda"
-                  >
-                    Lihat Bukti Saya
-                  </Link>
+                  {isWaitingPhase && (
+                    <button
+                      type="button"
+                      disabled
+                      className="inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-6 text-[13px] font-semibold text-slate-500 sm:w-auto"
+                      aria-label="Pemilihan belum dibuka"
+                    >
+                      Belum Dibuka
+                    </button>
+                  )}
+                  {hasProof && (
+                    <Link 
+                      href="/pemilih/bukti-saya" 
+                      className="inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-6 text-[13px] font-semibold text-slate-800 transition-colors hover:bg-slate-50 focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:outline-none sm:w-auto"
+                      aria-label="Lihat arsip bukti digital Anda"
+                    >
+                      Lihat Bukti Saya
+                    </Link>
+                  )}
                 </div>
               </>
             )
@@ -248,9 +273,15 @@ export default function VoterDashboardPage() {
             </div>
           </div>
 
-          <Link href={secondaryAction.href} className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-5 text-[13px] font-medium text-slate-900 hover:bg-slate-50">
-            {secondaryAction.label}
-          </Link>
+          {getElectionViewState(secondaryElection).nextAction === 'wait' ? (
+            <button type="button" disabled className="mt-6 inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-5 text-[13px] font-medium text-slate-500">
+              Belum Dibuka
+            </button>
+          ) : (
+            <Link href={secondaryAction.href} className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-5 text-[13px] font-medium text-slate-900 hover:bg-slate-50">
+              {secondaryAction.label}
+            </Link>
+          )}
         </article>
       </section>
       </ScrollReveal>

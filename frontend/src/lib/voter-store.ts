@@ -386,7 +386,7 @@ export function resolveElectionAction(election: VoterElection) {
   if (viewState.nextAction === 'commit') return { label: 'Berikan Suara', href: `/pemilih/pemilihan/${election.id}/pilih-kandidat` }
   if (viewState.nextAction === 'reveal') return { label: 'Konfirmasi Suara', href: `/pemilih/pemilihan/${election.id}/reveal` }
   if (viewState.nextAction === 'results') return { label: 'Lihat Hasil', href: `/pemilih/pemilihan/${election.id}/hasil` }
-  return { label: 'Pantau Jadwal', href: '/pemilih/bukti-saya' }
+  return { label: 'Belum Dibuka', href: `/pemilih#pemilihan-${election.id}` }
 }
 
 export function getElectionResultRows(election: VoterElection) {

@@ -99,6 +99,7 @@ function mapCandidate(row: CandidateRow): PublicElectionCandidateRecord {
 
 function getPonderGraphqlUrl(): string | null {
   if (indexerBackendUnavailable) return null
+  if (process.env.NEXT_PUBLIC_ENABLE_INDEXER !== 'true') return null
   const rawUrl = process.env.NEXT_PUBLIC_PONDER_URL?.trim()
   if (!rawUrl) return null
   if (typeof window !== 'undefined') return '/api/indexer/graphql'
