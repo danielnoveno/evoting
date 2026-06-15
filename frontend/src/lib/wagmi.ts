@@ -1,4 +1,4 @@
-import { http, createConfig } from 'wagmi'
+import { http, fallback, createConfig } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 import { baseAccountConnector } from '@/lib/base-account-connector'
@@ -21,7 +21,22 @@ export const wagmiConfig = createConfig({
   ],
   ssr: true,
   transports: {
-    [baseSepolia.id]: http(BASE_SEPOLIA_RPC_URL),
+    [baseSepolia.id]: fallback([
+      http(BASE_SEPOLIA_RPC_URL, {
+        batch: {
+          batchSize: 1024,
+          wait: 50,
+        },
+        retryCount: 1,
+      }),
+      http('https://sepolia.base.org', {
+        batch: {
+          batchSize: 1024,
+          wait: 50,
+        },
+        retryCount: 3,
+      }),
+    ]),
   },
 })
 

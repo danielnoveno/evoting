@@ -10,7 +10,15 @@ import { LanguageProvider } from '@/lib/contexts/language-context'
 import { IdleSessionTimeout } from '@/components/auth/idle-session-timeout'
 
 export function AppProviders({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient())
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60_000,
+        refetchOnWindowFocus: false,
+        retry: 1,
+      },
+    },
+  }))
 
   return (
     <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
