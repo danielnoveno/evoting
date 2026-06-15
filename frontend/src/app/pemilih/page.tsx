@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, ArrowRight, CalendarDays, CircleCheck, ExternalLink, Hourglass } from 'lucide-react'
+import { Archive, ArrowRight, CalendarDays, CircleCheck, ExternalLink, Hourglass, LayoutGrid } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { VoterPageSkeleton, VoterShell } from '@/components/voter/voter-shell'
@@ -135,10 +135,56 @@ function FeaturedHeroCard({ election }: { election: VoterElection }) {
   )
 }
 
+function OtherElectionCard({ election }: { election: VoterElection }) {
+  const action = resolveElectionAction(election)
+  const viewState = getElectionViewState(election)
+  const isUpcoming = viewState.nextAction === 'wait'
+  const statusLabel = isUpcoming ? 'Mendatang' : election.phase === 'ended' ? 'Selesai' : 'Aktif'
+  
+  return (
+    <article className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 transition hover:border-slate-300 hover:shadow-md">
+      <div>
+        <div className="flex items-center justify-between gap-3">
+          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] ${isUpcoming ? 'bg-amber-50 text-amber-700' : election.phase === 'ended' ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700'}`}>
+            {statusLabel}
+          </span>
+          <span className="text-[12px] text-slate-400 font-mono">ID: {election.id.slice(0, 4).toUpperCase()}</span>
+        </div>
+        <h3 className="mt-4 text-[18px] font-semibold leading-tight text-slate-900 group-hover:text-blue-600">{election.title}</h3>
+        <p className="mt-2 line-clamp-2 text-[13px] leading-6 text-slate-500">{election.summary}</p>
+        
+        <div className="mt-5 space-y-2 text-[12px] text-slate-600">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
+            <span>{formatDashboardDateTime(election.deadlineIso)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="h-3.5 w-3.5 text-slate-400" />
+            <span>{formatNumber(election.totalParticipants)} Peserta</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 border-t border-slate-100 pt-4">
+        {isUpcoming ? (
+          <button type="button" disabled className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-lg bg-slate-50 py-2 text-[12px] font-semibold text-slate-400">
+            Belum Dibuka
+          </button>
+        ) : (
+          <Link href={action.href} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-2 text-[12px] font-semibold text-white transition hover:bg-slate-800">
+            {action.label}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
+      </div>
+    </article>
+  )
+}
+
 function ScheduleStateBanner({ hasUpcoming, onlyPast, upcomingCount }: { hasUpcoming: boolean; onlyPast: boolean; upcomingCount: number }) {
   if (hasUpcoming) {
     if (upcomingCount <= 1) return null
-    return <p className="mt-3 text-[12px] font-semibold text-slate-500">+{upcomingCount - 1} pemilihan mendatang lain tersedia.</p>
+    return <p className="mt-3 text-[12px] font-semibold text-slate-500">+{upcomingCount - 1} pemilihan mendatang lain tersedia di daftar bawah.</p>
   }
 
   return (
@@ -204,6 +250,7 @@ export default function VoterDashboardPage() {
     ?? elections.find((election) => election.phase === 'commit' && !election.commitProof)
     ?? elections.find((election) => election.phase === 'reveal' && !election.revealProof)
     ?? elections[0]
+  const otherElections = elections.filter(e => e.id !== featuredElection.id)
   const logs = getRecentLogs(store)
 
   const participated = store.elections.filter((election) => election.commitProof || election.revealProof).length
@@ -242,7 +289,7 @@ export default function VoterDashboardPage() {
               <p className="mt-1 text-[12px] leading-5 text-slate-500">Pantau komitmen suara, pembukaan fase konfirmasi, dan bukti transaksi yang sudah tersimpan.</p>
             </div>
             <Link href="/pemilih/bukti-saya" className="text-[12px] font-semibold text-slate-700 hover:text-slate-900 sm:text-right">
-              Lihat Semua
+              Lihat Bukti Digital
             </Link>
           </div>
 
@@ -259,15 +306,34 @@ export default function VoterDashboardPage() {
                   <span className="truncate font-semibold text-slate-900">{log.title}</span>
                   <span className="truncate text-slate-500">- {log.detail}</span>
                 </div>
-                <Link href="/pemilih/bukti-saya" className="shrink-0 text-slate-600 hover:text-slate-900">Lihat Semua</Link>
+                <Link href="/pemilih/bukti-saya" className="shrink-0 text-slate-600 hover:text-slate-900">Detail</Link>
               </article>
             )
           })}
+          {logs.length === 0 && (
+            <p className="py-2 text-[13px] italic text-slate-400">Belum ada aktivitas transaksi terekam.</p>
+          )}
           </div>
         </section>
       </ScrollReveal>
 
-      <StaggerContainer stagger={120} variant="fade-up" className="mt-6 grid gap-6 xl:grid-cols-2">
+      {otherElections.length > 0 && (
+        <ScrollReveal variant="fade-up" delay={175} duration={800}>
+          <section id="daftar-pemilihan-saya" className="mt-8">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-[20px] font-semibold text-slate-900">Daftar Pemilihan Saya</h2>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-[12px] font-semibold text-slate-600">{otherElections.length} Pemilihan Lain</span>
+            </div>
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {otherElections.map((election) => (
+                <OtherElectionCard key={election.id} election={election} />
+              ))}
+            </div>
+          </section>
+        </ScrollReveal>
+      )}
+
+      <StaggerContainer stagger={120} variant="fade-up" className="mt-10 grid gap-6 xl:grid-cols-2">
         <article id="tour-voter-participation-stats" className="rounded-xl border border-slate-100 bg-slate-50 p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">Partisipasi Anda</p>
 

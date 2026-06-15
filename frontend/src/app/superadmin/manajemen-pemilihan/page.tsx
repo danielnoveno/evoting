@@ -14,6 +14,8 @@ import {
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { useSuperadminProposalDrafts } from '@/hooks/use-proposal-draft'
 import { SuperadminElectionState, superadminElectionFilters } from '@/lib/superadmin-data'
+import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
+import type { SuperadminElectionRecord } from '@/lib/superadmin-data'
 import {
   DataTable,
   DataTableBody,
@@ -45,22 +47,28 @@ export default function SuperadminElectionManagementPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const { data: proposalRowsRaw, isLoading, error } = useSuperadminProposalDrafts()
+  const { elections: storeElections, setElections } = useSuperadminElectionsStore()
 
   const elections = useMemo(() => {
     if (!proposalRowsRaw) return []
     return proposalRowsRaw
       .filter(p => p.status === 'approved' || p.status === 'deployed')
-      .map(p => ({
-        id: p.id,
-        title: p.title,
-        code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
-        status: (p.status === 'deployed' ? 'Aktif' : 'Selesai') as SuperadminElectionState,
-        note: p.status === 'deployed' ? 'Online' : 'Final',
-        phaseLabel: p.status === 'deployed' ? 'Fase Berjalan' : 'Pemilihan Selesai',
-        totalVoters: 0,
-        participation: '0%'
-      }))
-  }, [proposalRowsRaw])
+      .map(p => {
+        const fromStore = storeElections.find(item => item.id === p.id)
+        const status = (fromStore?.status ?? (p.status === 'deployed' ? 'Aktif' : 'Selesai')) as SuperadminElectionState
+        
+        return {
+          id: p.id,
+          title: p.title,
+          code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
+          status,
+          note: status === 'Ditangguhkan' ? 'Halted' : (p.status === 'deployed' ? 'Online' : 'Final'),
+          phaseLabel: p.status === 'deployed' ? 'Fase Berjalan' : 'Pemilihan Selesai',
+          totalVoters: fromStore?.totalVoters ?? '0',
+          participation: fromStore?.participation ?? '0%'
+        }
+      })
+  }, [proposalRowsRaw, storeElections])
 
   const filteredElections = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()
@@ -86,7 +94,16 @@ export default function SuperadminElectionManagementPage() {
   }, [currentPage, totalPages])
 
   const updateElectionStatus = (id: string, status: SuperadminElectionState, message: string) => {
-    // In a real app, this would call updateProposalStatus mutation
+    setElections((current) => {
+      const existing = current.find(item => item.id === id)
+      if (existing) {
+        return current.map(item => item.id === id ? { ...item, status, note: status === 'Ditangguhkan' ? 'Halted' : 'Online' } : item)
+      } else {
+        const election = elections.find(e => e.id === id)
+        if (!election) return current
+        return [...current, { ...election, status, note: status === 'Ditangguhkan' ? 'Halted' : 'Online' } as unknown as SuperadminElectionRecord]
+      }
+    })
     showToast({ tone: 'success', title: message, description: 'Perubahan berhasil diterapkan pada blockchain.' })
   }
 

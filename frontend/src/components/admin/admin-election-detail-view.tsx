@@ -2,7 +2,7 @@
 
 import { ArrowLeft, CalendarDays, CirclePlus, Download, FileText, Link2, ListChecks, Pencil, RefreshCw, Share2, ShieldCheck, Trash2, Upload } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ModalShell } from '@/components/ui/modal-shell'
@@ -108,14 +108,17 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const whitelistImportSignedUrl = useWhitelistImportSignedUrl()
   const candidatesQuery = useProposalCandidates(election.id)
 
+  const lastProcessedSyncHash = useRef<string | null>(null)
+
   // Track transaction success for whitelist sync
   useEffect(() => {
-    if (isConfirmed && txHash && isSyncing) {
+    if (isConfirmed && txHash && isSyncing && lastProcessedSyncHash.current !== txHash) {
       const unsyncedAddresses = (whitelistQuery.data ?? [])
         .filter(r => r.syncStatus !== 'synced')
         .map(r => r.walletAddress)
 
       if (unsyncedAddresses.length > 0) {
+        lastProcessedSyncHash.current = txHash
         updateWhitelistSyncStatus.mutate({
           proposalDraftId: election.id,
           txHash: txHash,
@@ -130,6 +133,9 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
               title: 'Sinkronisasi Berhasil',
               description: 'Daftar pemilih telah berhasil didaftarkan on-chain.',
             })
+          },
+          onError: () => {
+            lastProcessedSyncHash.current = null // Allow retry
           }
         })
       } else {
