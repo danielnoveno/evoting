@@ -177,11 +177,14 @@ function ConnectWalletContent() {
     connectedWalletProfile?.userId &&
     connectedWalletProfile.userId !== authSession.user.id,
   )
-  const bindingBlocked = accountHasDifferentWallet || connectedWalletOwnedByOther
+  const firstTimeBindingRequiresActivation = Boolean(authSession && !currentProfile && !activationMode)
+  const bindingBlocked = accountHasDifferentWallet || connectedWalletOwnedByOther || firstTimeBindingRequiresActivation
   const bindingBlockMessage = accountHasDifferentWallet
     ? `Akun ${authSession?.user?.email ?? 'ini'} sudah tertaut ke wallet lain. Putuskan dompet tersambung, lalu sambungkan wallet yang sesuai untuk melanjutkan.`
     : connectedWalletOwnedByOther
       ? `Wallet tersambung sudah tertaut ke akun ${connectedWalletProfile?.email ?? 'kampus lain'}. Putuskan dompet tersambung, lalu pilih wallet yang sesuai.`
+      : firstTimeBindingRequiresActivation
+        ? 'Akun ini belum diaktivasi. Gunakan tautan aktivasi dari admin sebelum menghubungkan wallet dan masuk dashboard.'
       : ''
   const isAdminActivationFlow = activationMode && activationContext === 'admin'
   const completedSteps = isAdminActivationFlow
@@ -267,7 +270,8 @@ function ConnectWalletContent() {
       {
         walletAddress: address,
         email: authSession.user.email,
-        displayName: authSession.user.user_metadata?.full_name || authSession.user.user_metadata?.name || null
+        displayName: authSession.user.user_metadata?.full_name || authSession.user.user_metadata?.name || null,
+        roleHint: activationMode ? `${activationContext}-activation` : undefined,
       },
       {
         onSuccess: () => {

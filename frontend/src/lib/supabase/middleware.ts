@@ -88,11 +88,31 @@ export async function updateSupabaseSession(request: NextRequest) {
       const { data: profile } = await client
         .schema('app')
         .from('app_profiles')
-        .select('role')
+        .select('role,email')
         .eq('user_id', session.user.id)
         .maybeSingle()
 
       const role = profile?.role
+
+      if (profile?.email) {
+        const { data: adminRegistry } = await client
+          .schema('app')
+          .from('admin_registry')
+          .select('assigned_role,status')
+          .eq('email', profile.email.toLowerCase())
+          .maybeSingle()
+
+        const hasPendingAdminInvite = adminRegistry
+          && (adminRegistry.assigned_role === 'admin' || adminRegistry.assigned_role === 'super_admin')
+          && adminRegistry.status !== 'active'
+
+        if (hasPendingAdminInvite) {
+          const activationUrl = new URL('/hubungkan-dompet', request.url)
+          activationUrl.searchParams.set('activate', 'admin')
+          activationUrl.searchParams.set('redirect', adminRegistry.assigned_role === 'super_admin' ? '/portal-admin' : '/admin')
+          return NextResponse.redirect(activationUrl, { headers: response.headers })
+        }
+      }
 
       if (requiredRole === 'super_admin' && role !== 'super_admin') {
         const fallbackUrl = new URL(role === 'admin' ? '/admin' : '/hubungkan-dompet', request.url)

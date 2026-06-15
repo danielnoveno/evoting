@@ -125,9 +125,15 @@ async function getRegisteredAdminAccessForEmail(email: string | null | undefined
 
   if (error) throw new RepositoryError('Gagal memeriksa undangan role admin. Coba lagi.')
   if (!data || data.status === 'inactive') return null
-  if ((data.assigned_role === 'admin' || data.assigned_role === 'super_admin') && data.status !== 'active') return null
+  if ((data.assigned_role === 'admin' || data.assigned_role === 'super_admin') && data.status !== 'active') {
+    throw new RepositoryError('Undangan admin organisasi belum aktif. Minta super admin mengirim/menyetujui aktivasi sebelum login sebagai admin.')
+  }
 
   return data
+}
+
+function isActivationRoleHint(value: string | null | undefined): boolean {
+  return value === 'voter-activation' || value === 'admin-activation'
 }
 
 async function requireUser(): Promise<User> {
@@ -215,6 +221,9 @@ export async function upsertCurrentProfile(input: ProfileUpsertInput): Promise<A
   const currentProfile = await getCurrentProfile()
   const profileEmail = getVerifiedProfileEmail(user, currentProfile, input.email)
   const registeredAccess = await getRegisteredAdminAccessForEmail(profileEmail)
+  if (!currentProfile && !registeredAccess && !isActivationRoleHint(input.roleHint)) {
+    throw new RepositoryError('Akun belum diaktivasi. Gunakan tautan aktivasi dari admin sebelum menghubungkan wallet.')
+  }
   if (registeredAccess?.wallet_address && !sameWalletAddress(registeredAccess.wallet_address, input.walletAddress)) {
     throw new RepositoryError('Wallet tersambung tidak sesuai dengan wallet yang didaftarkan pada undangan admin.')
   }
@@ -281,6 +290,9 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
 
   const profileEmail = getVerifiedProfileEmail(user, currentProfile, input.email)
   const registeredAccess = await getRegisteredAdminAccessForEmail(profileEmail)
+  if (!currentProfile && !registeredAccess && !isActivationRoleHint(input.roleHint)) {
+    throw new RepositoryError('Akun belum diaktivasi. Gunakan tautan aktivasi dari admin sebelum menghubungkan wallet.')
+  }
   if (registeredAccess?.wallet_address && !sameWalletAddress(registeredAccess.wallet_address, input.walletAddress)) {
     throw new RepositoryError('Wallet tersambung tidak sesuai dengan wallet yang didaftarkan pada undangan admin.')
   }
