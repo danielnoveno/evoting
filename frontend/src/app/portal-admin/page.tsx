@@ -169,7 +169,7 @@ function PortalAdminContent() {
     try {
       const connector = connectors.find((c) => c.id === 'coinbaseWalletSDK') || connectors[0]
       if (connector) {
-        connect({ connector })
+        connect({ connector }, { onError: (err) => setFormError(getWalletConnectionErrorMessage(err)) })
       }
     } catch (err: any) {
       setFormError(getWalletConnectionErrorMessage(err))
