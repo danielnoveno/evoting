@@ -22,20 +22,9 @@ export const wagmiConfig = createConfig({
   ssr: true,
   transports: {
     [baseSepolia.id]: fallback([
-      http(BASE_SEPOLIA_RPC_URL, {
-        batch: {
-          batchSize: 1024,
-          wait: 50,
-        },
-        retryCount: 1,
-      }),
-      http('https://sepolia.base.org', {
-        batch: {
-          batchSize: 1024,
-          wait: 50,
-        },
-        retryCount: 3,
-      }),
+      http(BASE_SEPOLIA_RPC_URL),
+      http('https://sepolia.base.org'),
+      http('https://base-sepolia-rpc.publicnode.com')
     ]),
   },
 })
