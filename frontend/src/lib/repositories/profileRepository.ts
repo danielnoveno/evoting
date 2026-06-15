@@ -132,8 +132,36 @@ async function getRegisteredAdminAccessForEmail(email: string | null | undefined
   return data
 }
 
-function isActivationRoleHint(value: string | null | undefined): boolean {
-  return value === 'voter-activation' || value === 'admin-activation'
+async function claimActivationToken(input: ProfileUpsertInput, role: 'voter' | 'admin' | 'super_admin' = 'voter') {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const activationToken = input.activationToken?.trim()
+  if (!activationToken) throw new RepositoryError('Token aktivasi tidak ditemukan. Gunakan link aktivasi terbaru dari admin.')
+
+  const { data, error } = await client.auth.getSession()
+  if (error || !data.session?.access_token) throw new RepositoryError('Sesi login belum aktif. Silakan masuk ulang dari link aktivasi.')
+
+  const response = await fetch('/api/activation-tokens/claim', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${data.session.access_token}`,
+    },
+    body: JSON.stringify({
+      token: activationToken,
+      walletAddress: input.walletAddress,
+      role,
+    }),
+  })
+
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null)
+    const message = isObjectRecord(payload) && typeof payload.error === 'string'
+      ? payload.error
+      : 'Token aktivasi tidak valid atau sudah kedaluwarsa.'
+    throw new RepositoryError(message)
+  }
 }
 
 async function requireUser(): Promise<User> {
@@ -221,7 +249,9 @@ export async function upsertCurrentProfile(input: ProfileUpsertInput): Promise<A
   const currentProfile = await getCurrentProfile()
   const profileEmail = getVerifiedProfileEmail(user, currentProfile, input.email)
   const registeredAccess = await getRegisteredAdminAccessForEmail(profileEmail)
-  if (!currentProfile && !registeredAccess && !isActivationRoleHint(input.roleHint)) {
+  if (!currentProfile && !registeredAccess && input.roleHint === 'voter-activation') {
+    await claimActivationToken(input, 'voter')
+  } else if (!currentProfile && !registeredAccess) {
     throw new RepositoryError('Akun belum diaktivasi. Gunakan tautan aktivasi dari admin sebelum menghubungkan wallet.')
   }
   if (registeredAccess?.wallet_address && !sameWalletAddress(registeredAccess.wallet_address, input.walletAddress)) {
@@ -290,7 +320,9 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
 
   const profileEmail = getVerifiedProfileEmail(user, currentProfile, input.email)
   const registeredAccess = await getRegisteredAdminAccessForEmail(profileEmail)
-  if (!currentProfile && !registeredAccess && !isActivationRoleHint(input.roleHint)) {
+  if (!currentProfile && !registeredAccess && input.roleHint === 'voter-activation') {
+    await claimActivationToken(input, 'voter')
+  } else if (!currentProfile && !registeredAccess) {
     throw new RepositoryError('Akun belum diaktivasi. Gunakan tautan aktivasi dari admin sebelum menghubungkan wallet.')
   }
   if (registeredAccess?.wallet_address && !sameWalletAddress(registeredAccess.wallet_address, input.walletAddress)) {

@@ -299,4 +299,5 @@ export interface ProfileUpsertInput {
   email?: string | null
   avatarUrl?: string | null
   roleHint?: string | null
+  activationToken?: string | null
 }

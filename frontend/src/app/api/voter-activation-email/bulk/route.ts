@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { createHash, randomBytes } from 'crypto'
 import { sendVoterActivationEmail } from '@/lib/email/send'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 
@@ -23,6 +24,14 @@ function getRequestOrigin(request: NextRequest) {
   if (configuredOrigin?.trim()) return configuredOrigin.trim().replace(/\/$/, '')
 
   return request.nextUrl.origin.replace(/\/$/, '')
+}
+
+function createActivationToken() {
+  return randomBytes(32).toString('base64url')
+}
+
+function hashToken(token: string) {
+  return createHash('sha256').update(token).digest('hex')
 }
 
 async function requireSuperadmin(request: NextRequest) {
@@ -84,7 +93,24 @@ export async function POST(request: NextRequest) {
       return { email: recipient.email, success: false, error: 'Email institusi voter tidak valid.' }
     }
 
-    const activationLink = `${origin}/hubungkan-dompet?activate=1`
+    const token = createActivationToken()
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString()
+
+    const { error: tokenError } = await auth.client!
+      .from('activation_tokens')
+      .insert({
+        token_hash: hashToken(token),
+        email: recipient.email,
+        role: 'voter',
+        status: 'pending',
+        expires_at: expiresAt,
+      })
+
+    if (tokenError) {
+      return { email: recipient.email, success: false, error: 'Gagal membuat token aktivasi voter.' }
+    }
+
+    const activationLink = `${origin}/hubungkan-dompet?activate=1&token=${encodeURIComponent(token)}`
     const emailResult = await sendVoterActivationEmail({
       displayName: recipient.name,
       email: recipient.email,

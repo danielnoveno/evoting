@@ -85,6 +85,24 @@ create table if not exists app.app_profiles (
   constraint wallet_address_format check (wallet_address ~ '^0x[a-fA-F0-9]{40}$')
 );
 
+create table if not exists app.activation_tokens (
+  id uuid primary key default gen_random_uuid(),
+  token_hash text not null unique,
+  email text not null,
+  role app.app_role not null default 'voter',
+  wallet_address text,
+  status text not null default 'pending',
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  used_by_user_id uuid references auth.users(id) on delete set null,
+  created_by uuid references app.app_profiles(id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  constraint activation_tokens_email_format check (email ~* '^[^\s@]+@[^\s@]+\.[^\s@]+$'),
+  constraint activation_tokens_status_check check (status in ('pending', 'used', 'expired', 'revoked')),
+  constraint activation_tokens_wallet_format check (wallet_address is null or wallet_address ~ '^0x[a-fA-F0-9]{40}$')
+);
+
 create table if not exists app.proposal_drafts (
   id uuid primary key default gen_random_uuid(),
   created_by uuid not null references app.app_profiles(id) on delete restrict,
@@ -291,6 +309,7 @@ create table if not exists indexer.indexer_sync_status (
 );
 
 create index if not exists idx_app_profiles_wallet on app.app_profiles(wallet_address);
+create index if not exists idx_activation_tokens_email_status on app.activation_tokens(email, status, expires_at desc);
 create index if not exists idx_proposal_drafts_created_by on app.proposal_drafts(created_by, status);
 create index if not exists idx_proposal_candidates_proposal on app.proposal_candidates(proposal_draft_id, sort_order);
 create index if not exists idx_whitelist_entries_proposal on app.proposal_whitelist_entries(proposal_draft_id, sync_status);
@@ -303,6 +322,10 @@ create index if not exists idx_notification_jobs_status on app.notification_jobs
 
 create trigger set_app_profiles_updated_at
 before update on app.app_profiles
+for each row execute function app.set_updated_at();
+
+create trigger set_activation_tokens_updated_at
+before update on app.activation_tokens
 for each row execute function app.set_updated_at();
 
 create trigger set_proposal_drafts_updated_at
@@ -373,6 +396,7 @@ as $$
 $$;
 
 alter table app.app_profiles enable row level security;
+alter table app.activation_tokens enable row level security;
 alter table app.proposal_drafts enable row level security;
 alter table app.proposal_candidates enable row level security;
 alter table app.whitelist_import_jobs enable row level security;

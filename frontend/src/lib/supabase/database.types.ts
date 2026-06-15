@@ -48,6 +48,50 @@ export type Database = {
           updated_at?: string
         }
       }
+      activation_tokens: {
+        Row: {
+          id: string
+          token_hash: string
+          email: string
+          role: 'voter' | 'admin' | 'super_admin'
+          wallet_address: string | null
+          status: 'pending' | 'used' | 'expired' | 'revoked'
+          expires_at: string
+          used_at: string | null
+          used_by_user_id: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          token_hash: string
+          email: string
+          role?: 'voter' | 'admin' | 'super_admin'
+          wallet_address?: string | null
+          status?: 'pending' | 'used' | 'expired' | 'revoked'
+          expires_at: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          token_hash?: string
+          email?: string
+          role?: 'voter' | 'admin' | 'super_admin'
+          wallet_address?: string | null
+          status?: 'pending' | 'used' | 'expired' | 'revoked'
+          expires_at?: string
+          used_at?: string | null
+          used_by_user_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       admin_registry: {
         Row: {
           email: string

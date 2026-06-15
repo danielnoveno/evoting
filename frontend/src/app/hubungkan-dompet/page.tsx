@@ -111,6 +111,7 @@ function ConnectWalletContent() {
 
   const redirectParam = searchParams.get('redirect')
   const activateParam = searchParams.get('activate')
+  const activationToken = searchParams.get('token')?.trim() ?? ''
   const authSession = authSessionQuery.data
   const currentProfile = currentProfileQuery.data
   const connectedWalletProfile = connectedWalletProfileQuery.data
@@ -124,6 +125,7 @@ function ConnectWalletContent() {
   }, [currentProfile?.role, activateParam, redirectParam])
 
   const activationMode = activateParam === '1' || activateParam === 'admin' || (Boolean(authSession) && activationContext === 'admin')
+  const voterActivationMissingToken = activationMode && activationContext === 'voter' && !activationToken
   const redirectTarget = useMemo(() => resolveRedirectTarget(redirectParam, activationContext), [redirectParam, activationContext])
 
   const [mounted, setMounted] = useState(false)
@@ -195,13 +197,15 @@ function ConnectWalletContent() {
     connectedWalletProfile.userId !== authSession.user.id,
   )
   const firstTimeBindingRequiresActivation = Boolean(authSession && !currentProfile && !activationMode)
-  const bindingBlocked = accountHasDifferentWallet || connectedWalletOwnedByOther || firstTimeBindingRequiresActivation
+  const bindingBlocked = accountHasDifferentWallet || connectedWalletOwnedByOther || firstTimeBindingRequiresActivation || voterActivationMissingToken
   const bindingBlockMessage = accountHasDifferentWallet
     ? `Akun ${authSession?.user?.email ?? 'ini'} sudah tertaut ke wallet lain. Putuskan dompet tersambung, lalu sambungkan wallet yang sesuai untuk melanjutkan.`
     : connectedWalletOwnedByOther
       ? `Wallet tersambung sudah tertaut ke akun ${connectedWalletProfile?.email ?? 'kampus lain'}. Putuskan dompet tersambung, lalu pilih wallet yang sesuai.`
       : firstTimeBindingRequiresActivation
         ? 'Akun ini belum diaktivasi. Gunakan tautan aktivasi dari admin sebelum menghubungkan wallet dan masuk dashboard.'
+      : voterActivationMissingToken
+        ? 'Link aktivasi tidak membawa token undangan. Minta admin mengirim ulang link aktivasi terbaru.'
       : ''
   const isAdminActivationFlow = activationMode && activationContext === 'admin'
   const completedSteps = isAdminActivationFlow
@@ -289,6 +293,7 @@ function ConnectWalletContent() {
         email: authSession.user.email,
         displayName: authSession.user.user_metadata?.full_name || authSession.user.user_metadata?.name || null,
         roleHint: activationMode ? `${activationContext}-activation` : undefined,
+        activationToken: activationToken || undefined,
       },
       {
         onSuccess: () => {
@@ -304,13 +309,21 @@ function ConnectWalletContent() {
   }
 
   const handleMicrosoftLogin = () => {
-    const activateQuery = isAdminActivationFlow ? 'activate=admin&' : ''
-    microsoftLoginMutation.mutate({ nextPath: `/hubungkan-dompet?${activateQuery}redirect=${encodeURIComponent(redirectTarget)}` })
+    const nextParams = new URLSearchParams()
+    if (isAdminActivationFlow) nextParams.set('activate', 'admin')
+    if (activationMode && activationContext === 'voter') nextParams.set('activate', '1')
+    if (activationToken) nextParams.set('token', activationToken)
+    nextParams.set('redirect', redirectTarget)
+    microsoftLoginMutation.mutate({ nextPath: `/hubungkan-dompet?${nextParams.toString()}` })
   }
 
   const handleGoogleLogin = () => {
-    const activateQuery = isAdminActivationFlow ? 'activate=admin&' : ''
-    googleLoginMutation.mutate({ nextPath: `/hubungkan-dompet?${activateQuery}redirect=${encodeURIComponent(redirectTarget)}` })
+    const nextParams = new URLSearchParams()
+    if (isAdminActivationFlow) nextParams.set('activate', 'admin')
+    if (activationMode && activationContext === 'voter') nextParams.set('activate', '1')
+    if (activationToken) nextParams.set('token', activationToken)
+    nextParams.set('redirect', redirectTarget)
+    googleLoginMutation.mutate({ nextPath: `/hubungkan-dompet?${nextParams.toString()}` })
   }
 
   const handleEmailAuth = (e: FormEvent) => {
