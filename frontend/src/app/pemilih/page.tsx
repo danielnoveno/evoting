@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, ArrowRight, CalendarDays, CircleCheck, ExternalLink, Hourglass, Fingerprint, CheckCircle2, Lightbulb } from 'lucide-react'
+import { Archive, ArrowRight, CalendarDays, CircleCheck, ExternalLink, Hourglass } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { VoterPageSkeleton, VoterShell } from '@/components/voter/voter-shell'
@@ -9,14 +9,10 @@ import type { VoterElection } from '@/lib/voter-store'
 import {
   getElectionViewState,
   formatNumber,
-  getElectionProgress,
-  getPhaseLabel,
   getRecentLogs,
   resolveElectionAction,
   sortDashboardElections,
   useVoterStore,
-  basescanTxUrl,
-  formatWallet,
 } from '@/lib/voter-store'
 
 const logToneClassName = {
@@ -76,20 +72,38 @@ function useLiveCountdown(targetIso: string) {
   return countdown
 }
 
-function UpcomingHeroCard({ election }: { election: VoterElection }) {
+function FeaturedHeroCard({ election }: { election: VoterElection }) {
   const countdown = useLiveCountdown(election.deadlineIso)
+  const action = resolveElectionAction(election)
+  const viewState = getElectionViewState(election)
+  const isUpcoming = viewState.nextAction === 'wait'
+  const label = isUpcoming
+    ? 'Acara Pemilihan Mendatang'
+    : election.phase === 'reveal'
+      ? 'Fase Konfirmasi Suara'
+      : election.phase === 'ended'
+        ? 'Pemilihan Selesai'
+        : 'Pemilihan Sedang Berlangsung'
+  const countdownLabel = isUpcoming
+    ? 'Hitung mundur ke pembukaan suara:'
+    : election.phase === 'reveal'
+      ? 'Batas konfirmasi suara:'
+      : election.phase === 'ended'
+        ? 'Pemilihan telah selesai:'
+        : 'Sisa waktu memilih:'
+  const dateLabel = isUpcoming ? 'Waktu Mulai' : election.phase === 'ended' ? 'Selesai Pada' : 'Batas Waktu'
 
   return (
-    <article id={`pemilihan-${election.id}`} className="overflow-hidden rounded-xl border border-slate-700 bg-slate-800 p-6 text-white md:p-8">
+    <article id={`pemilihan-${election.id}`} className="overflow-hidden rounded-xl border border-slate-700 bg-slate-800 p-5 text-white md:p-6">
       <div className="flex min-h-[220px] flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-[16px] font-semibold uppercase tracking-[0.04em] text-white md:text-[18px]">Acara Pemilihan Mendatang</p>
+          <p className="text-[16px] font-semibold uppercase tracking-[0.04em] text-white md:text-[18px]">{label}</p>
           <h2 className="mt-3 text-[44px] font-semibold leading-none tracking-[-0.05em] text-white md:text-[60px]">{election.title}</h2>
           <p className="mt-3 max-w-2xl text-[15px] leading-7 text-slate-200">{election.summary}</p>
 
           <div className="mt-6 grid gap-2 text-[14px] leading-7 text-slate-100">
             <p>
-              Waktu Mulai: <span className="font-semibold text-white">{formatDashboardDateTime(election.deadlineIso)} WIB</span>
+              {dateLabel}: <span className="font-semibold text-white">{formatDashboardDateTime(election.deadlineIso)} WIB</span>
             </p>
             <p>
               Total Partisipan Terdaftar: <span className="font-semibold text-white">{formatNumber(election.totalParticipants)}</span>
@@ -98,16 +112,23 @@ function UpcomingHeroCard({ election }: { election: VoterElection }) {
         </div>
 
         <div className="w-full lg:max-w-[560px]">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-100">Hitung mundur ke pembukaan suara:</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-100">{countdownLabel}</p>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <CountdownTile label="Hari" value={countdown.days} />
             <CountdownTile label="Jam" value={countdown.hours} />
             <CountdownTile label="Menit" value={countdown.minutes} />
             <CountdownTile label="Detik" value={countdown.seconds} />
           </div>
-          <button type="button" disabled className="mt-5 inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-md border border-amber-300/60 bg-white/5 px-5 text-[13px] font-semibold text-amber-100">
-            Belum Dibuka
-          </button>
+          {isUpcoming ? (
+            <button type="button" disabled className="mt-5 inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-md border border-amber-300/60 bg-white/5 px-5 text-[13px] font-semibold text-amber-100">
+              Belum Dibuka
+            </button>
+          ) : (
+            <Link href={action.href} className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-white/20 bg-white px-5 text-[13px] font-semibold text-slate-900 hover:bg-slate-100">
+              {action.label}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          )}
         </div>
       </div>
     </article>
@@ -179,24 +200,16 @@ export default function VoterDashboardPage() {
   const upcomingElections = elections.filter((election) => election.phase === 'registration')
   const pastElections = elections.filter((election) => election.phase === 'ended')
   const onlyPastElections = pastElections.length === elections.length
-  const featuredElection = elections.find((election) => election.phase === 'commit' && !election.commitProof)
+  const featuredElection = upcomingElections[0]
+    ?? elections.find((election) => election.phase === 'commit' && !election.commitProof)
     ?? elections.find((election) => election.phase === 'reveal' && !election.revealProof)
-    ?? upcomingElections[0]
     ?? elections[0]
-  const secondaryElection = elections.find((election) => election.id !== featuredElection.id) ?? featuredElection
   const logs = getRecentLogs(store)
-  const secondaryAction = resolveElectionAction(secondaryElection)
-  const featuredViewState = getElectionViewState(featuredElection)
 
   const participated = store.elections.filter((election) => election.commitProof || election.revealProof).length
   const pendingReveal = store.elections.filter((election) => getElectionViewState(election).canReveal).length
   const completed = store.elections.filter((election) => election.phase === 'ended').length
   const participationRate = Math.round((participated / store.elections.length) * 100)
-  const featuredLabel = featuredElection.phase === 'registration'
-    ? 'Pemilihan mendatang'
-    : featuredElection.phase === 'ended'
-      ? 'Pemilihan terakhir'
-      : 'Pemilihan aktif'
 
   return (
     <VoterShell>
@@ -210,212 +223,9 @@ export default function VoterDashboardPage() {
       </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={100} duration={800}>
-        <section className={featuredElection.phase === 'registration' ? 'mt-6' : 'mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.72fr)]'}>
-        {featuredElection.phase === 'registration' ? (
-          <UpcomingHeroCard election={featuredElection} />
-        ) : (
-        <article id={`pemilihan-${featuredElection.id}`} className="rounded-xl border border-slate-200 bg-white p-5 transition-colors duration-300 hover:border-slate-300">
-
-          {(() => {
-            const isCommitPhase = featuredViewState.nextAction === 'commit'
-            const isRevealPhase = featuredViewState.nextAction === 'reveal'
-            const isEndedPhase = featuredViewState.nextAction === 'results'
-            const isWaitingPhase = featuredViewState.nextAction === 'wait'
-            const hasProof = Boolean(featuredElection.commitProof || featuredElection.revealProof)
-
-            return (
-              <>
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">{featuredLabel}</p>
-                    <h2 className="mt-3 text-[18px] font-semibold tracking-tight text-slate-900 md:text-[22px]">{featuredElection.title}</h2>
-                    <p className="mt-2 max-w-3xl text-[14px] leading-6 text-slate-600">{featuredElection.summary}</p>
-                    
-                    {isCommitPhase && (
-                      <p className="mt-4 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50/50 p-3 text-[13px] font-medium leading-relaxed text-slate-700">
-                        <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-blue-700" />
-                        <span><span className="font-semibold text-blue-900">Langkah pertama:</span> Pilih satu kandidat. Setelah itu, pilihanmu akan dikunci dulu supaya tetap rahasia.</span>
-                      </p>
-                    )}
-
-                    {isWaitingPhase && (
-                      <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-[13px] font-medium leading-relaxed text-slate-700">
-                        Pemilihan belum dibuka. Tombol memilih akan aktif sesuai jadwal yang ditentukan admin.
-                      </p>
-                    )}
-
-                    {isRevealPhase && (
-                      <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50/40 space-y-3">
-                        <p className="text-[13px] font-medium text-amber-900 flex items-center gap-2">
-                          <Fingerprint className="h-4.5 w-4.5 text-amber-600 shrink-0" />
-                          <span className="font-semibold">Pilihanmu sudah tersimpan aman.</span>
-                        </p>
-                        <div className="break-all rounded-lg border border-amber-100 bg-white p-2.5 font-mono text-[11px] leading-relaxed text-slate-800">
-                          <span className="font-semibold text-slate-400 select-none">KODE BUKTI:</span> {featuredElection.commitmentHash}
-                        </div>
-                        <p className="text-[12px] leading-relaxed text-slate-700">
-                          <span className="font-semibold text-amber-900">Langkah berikutnya:</span> Buka lagi dari browser dan perangkat yang sama, lalu tekan konfirmasi suara.
-                        </p>
-                      </div>
-                    )}
-
-                    {isEndedPhase && (
-                      <div className="mt-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-3">
-                        <p className="text-[13px] font-medium text-emerald-900 flex items-center gap-2">
-                          <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                          <span className="font-semibold">Konfirmasi suara selesai. Pilihan Anda sudah masuk ke hasil akhir.</span>
-                        </p>
-                        {featuredElection.revealProof && (
-                          <div className="flex flex-col gap-1.5 text-[12px] text-slate-600 bg-white/70 border border-emerald-100 rounded-lg p-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-400">Nomor Block:</span>
-                              <strong className="font-mono text-slate-900">#{featuredElection.revealProof.blockNumber}</strong>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-slate-400">Kode bukti:</span>
-                              <a 
-                                href={basescanTxUrl(featuredElection.revealProof.txHash)} 
-                                target="_blank" 
-                                rel="noreferrer" 
-                                className="text-blue-600 hover:text-blue-800 font-mono text-[11px] hover:underline inline-flex items-center gap-0.5"
-                                aria-label="Lihat transaksi reveal di Basescan"
-                              >
-                                {formatWallet(featuredElection.revealProof.txHash)}
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                        <p className="text-[12px] leading-relaxed text-slate-700">
-                          Terima kasih atas partisipasi Anda dalam menjaga proses voting kampus yang tertib dan transparan.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {isCommitPhase && (
-                    <span className="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700 border border-blue-100 shrink-0">
-                      Sedang Berlangsung
-                    </span>
-                  )}
-                    {isRevealPhase && (
-                      <span className="inline-flex w-fit rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700 border border-amber-200 shrink-0">
-                        Fase Konfirmasi
-                      </span>
-                    )}
-                  {isEndedPhase && (
-                    <span className="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700 border border-emerald-200 shrink-0">
-                      Selesai
-                    </span>
-                  )}
-                  {isWaitingPhase && (
-                    <span className="inline-flex w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600 shrink-0">
-                      Belum Dibuka
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-5 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Waktu tersisa</p>
-                    <p className="mt-2 text-[18px] font-semibold text-slate-900">
-                      {new Date(featuredElection.deadlineIso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} · {new Date(featuredElection.deadlineIso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total partisipan</p>
-                    <p className="mt-2 text-[18px] font-semibold text-slate-900">{formatNumber(featuredElection.totalParticipants)} pemilih terdaftar</p>
-                  </div>
-                </div>
-
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  {isCommitPhase && (
-                    <Link
-                      href={`/pemilih/pemilihan/${featuredElection.id}/pilih-kandidat`}
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#0F172A] px-6 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none sm:w-auto"
-                      aria-label="Mulai pilih kandidat"
-                    >
-                      Pilih Kandidat
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  )}
-                  {isRevealPhase && (
-                    <Link
-                      href={`/pemilih/pemilihan/${featuredElection.id}/reveal`}
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#0F172A] px-6 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none sm:w-auto"
-                      aria-label="Mulai konfirmasi suara Anda"
-                    >
-                      Konfirmasi Suara
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  )}
-                  {isEndedPhase && (
-                    <Link
-                      href={`/pemilih/pemilihan/${featuredElection.id}/hasil`}
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#0F172A] px-6 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none sm:w-auto"
-                      aria-label="Lihat hasil akhir pemilihan"
-                    >
-                      Lihat Hasil Akhir
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  )}
-                  {isWaitingPhase && (
-                    <button
-                      type="button"
-                      disabled
-                      className="inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-6 text-[13px] font-semibold text-slate-500 sm:w-auto"
-                      aria-label="Pemilihan belum dibuka"
-                    >
-                      Belum Dibuka
-                    </button>
-                  )}
-                  {hasProof && (
-                    <Link 
-                      href="/pemilih/bukti-saya" 
-                      className="inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-6 text-[13px] font-semibold text-slate-800 transition-colors hover:bg-slate-50 focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:outline-none sm:w-auto"
-                      aria-label="Lihat arsip bukti digital Anda"
-                    >
-                      Lihat Bukti Saya
-                    </Link>
-                  )}
-                </div>
-              </>
-            )
-          })()}
-        </article>
-        )}
-
-        {featuredElection.phase !== 'registration' ? <article className="rounded-xl border border-slate-200 bg-white p-5">
-          <div className="flex items-center justify-between gap-4">
-            <span className="rounded bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-800">
-              {getPhaseLabel(secondaryElection.phase)}
-            </span>
-            <span className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Ruang berikutnya</span>
-          </div>
-          <h3 className="mt-4 text-[16px] font-semibold leading-tight text-slate-900 md:text-[18px]">{secondaryElection.title}</h3>
-          <p className="mt-2 text-[14px] leading-6 text-slate-600">{secondaryElection.summary}</p>
-
-          <div className="mt-5">
-            <div className="flex items-center justify-between text-[12px] uppercase tracking-[0.06em] text-slate-400">
-              <span>Progress</span>
-              <span>{getElectionProgress(secondaryElection)}% partisipasi</span>
-            </div>
-            <div className="mt-3 h-2 rounded-full bg-slate-100">
-              <div className="h-2 rounded-full bg-[#0F172A]" style={{ width: `${getElectionProgress(secondaryElection)}%` }} />
-            </div>
-          </div>
-
-          {getElectionViewState(secondaryElection).nextAction === 'wait' ? (
-            <button type="button" disabled className="mt-4 inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-5 text-[13px] font-medium text-slate-500">
-              Belum Dibuka
-            </button>
-          ) : (
-            <Link href={secondaryAction.href} className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-5 text-[13px] font-medium text-slate-900 hover:bg-slate-50">
-              {secondaryAction.label}
-            </Link>
-          )}
-        </article> : null}
-      </section>
+        <section className="mt-6">
+          <FeaturedHeroCard election={featuredElection} />
+        </section>
       </ScrollReveal>
 
       {upcomingElections.length > 1 || onlyPastElections ? (
@@ -425,45 +235,36 @@ export default function VoterDashboardPage() {
       ) : null}
 
       <ScrollReveal variant="fade-up" delay={150} duration={800}>
-        <section className="mt-4 rounded-xl border border-slate-200 bg-white p-5">
+        <section className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-[16px] font-semibold text-slate-900">Aktivitas Voting Terkini</h2>
-              <p className="mt-1 text-[14px] leading-6 text-slate-600">Pantau komitmen suara, pembukaan fase konfirmasi, dan bukti transaksi yang sudah tersimpan.</p>
+              <p className="mt-1 text-[12px] leading-5 text-slate-500">Pantau komitmen suara, pembukaan fase konfirmasi, dan bukti transaksi yang sudah tersimpan.</p>
             </div>
-            <Link href="/pemilih/bukti-saya" className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:text-slate-900 sm:text-right">
-              Eksplorasi semua
+            <Link href="/pemilih/bukti-saya" className="text-[12px] font-semibold text-slate-700 hover:text-slate-900 sm:text-right">
+              Lihat Semua
             </Link>
           </div>
 
-        <div className="mt-4 space-y-2">
+          <div className="mt-3 grid gap-x-6 gap-y-2 md:grid-cols-2">
           {logs.map((log) => {
             const Icon = logToneIcon[log.tone]
 
             return (
-               <article key={log.id} className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${logToneClassName[log.tone]}`}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[16px] font-semibold text-slate-900 md:text-[18px]">{log.title}</p>
-                      <p className="mt-1 break-words text-[13px] text-slate-700">{log.detail}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 md:justify-end">
-                    <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${logToneClassName[log.tone]}`}>
-                      {log.tone === 'success' ? 'Selesai' : log.tone === 'info' ? 'Berlangsung' : 'Menunggu'}
-                    </span>
-                    <span className="text-[13px] text-slate-700">{log.timeLabel}</span>
-                  </div>
+               <article key={log.id} className="flex min-w-0 items-center justify-between gap-3 text-[12px] text-slate-700">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded ${logToneClassName[log.tone]}`}>
+                    <Icon className="h-3 w-3" />
+                  </span>
+                  <span className="truncate font-semibold text-slate-900">{log.title}</span>
+                  <span className="truncate text-slate-500">- {log.detail}</span>
                 </div>
+                <Link href="/pemilih/bukti-saya" className="shrink-0 text-slate-600 hover:text-slate-900">Lihat Semua</Link>
               </article>
             )
           })}
-        </div>
-      </section>
+          </div>
+        </section>
       </ScrollReveal>
 
       <StaggerContainer stagger={120} variant="fade-up" className="mt-6 grid gap-6 xl:grid-cols-2">
