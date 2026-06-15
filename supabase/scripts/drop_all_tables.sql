@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS app.tx_audit_log CASCADE;
 DROP TABLE IF EXISTS app.proof_exports CASCADE;
 DROP TABLE IF EXISTS app.ops_audit_log CASCADE;
 DROP TABLE IF EXISTS app.notification_jobs CASCADE;
+DROP TABLE IF EXISTS app.activation_tokens CASCADE;
 DROP TABLE IF EXISTS app.admin_registry CASCADE;
 DROP TABLE IF EXISTS app.risk_alerts CASCADE;
 DROP TABLE IF EXISTS app.blocked_entities CASCADE;
@@ -31,17 +32,17 @@ DROP FUNCTION IF EXISTS app.role_for_email(text) CASCADE;
 DROP FUNCTION IF EXISTS app.on_profile_activation_notify() CASCADE;
 
 -- Drop all custom types in schema 'app' and 'indexer'
-DROP TYPE IF EXISTS app.app_role;
-DROP TYPE IF EXISTS app.proposal_status;
-DROP TYPE IF EXISTS app.whitelist_source;
-DROP TYPE IF EXISTS app.validation_status;
-DROP TYPE IF EXISTS app.tx_action_type;
-DROP TYPE IF EXISTS app.proof_type;
-DROP TYPE IF EXISTS app.notification_channel;
-DROP TYPE IF EXISTS app.notification_status;
-DROP TYPE IF EXISTS app.risk_tone;
-DROP TYPE IF EXISTS app.risk_status;
-DROP TYPE IF EXISTS indexer.sync_health_status;
+DROP TYPE IF EXISTS app.app_role CASCADE;
+DROP TYPE IF EXISTS app.proposal_status CASCADE;
+DROP TYPE IF EXISTS app.whitelist_source CASCADE;
+DROP TYPE IF EXISTS app.validation_status CASCADE;
+DROP TYPE IF EXISTS app.tx_action_type CASCADE;
+DROP TYPE IF EXISTS app.proof_type CASCADE;
+DROP TYPE IF EXISTS app.notification_channel CASCADE;
+DROP TYPE IF EXISTS app.notification_status CASCADE;
+DROP TYPE IF EXISTS app.risk_tone CASCADE;
+DROP TYPE IF EXISTS app.risk_status CASCADE;
+DROP TYPE IF EXISTS indexer.sync_health_status CASCADE;
 
 -- Confirmation message
 SELECT 'Successfully dropped all specified tables, types, and functions.' as status;
