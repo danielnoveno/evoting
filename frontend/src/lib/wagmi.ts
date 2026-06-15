@@ -3,6 +3,8 @@ import { baseSepolia } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 import { baseAccountConnector } from '@/lib/base-account-connector'
 
+const BASE_SEPOLIA_RPC_URL = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL || process.env.NEXT_PUBLIC_PAYMASTER_URL || undefined
+
 export const wagmiConfig = createConfig({
   chains: [baseSepolia],
   connectors: [
@@ -19,7 +21,7 @@ export const wagmiConfig = createConfig({
   ],
   ssr: true,
   transports: {
-    [baseSepolia.id]: http(),
+    [baseSepolia.id]: http(BASE_SEPOLIA_RPC_URL),
   },
 })
 

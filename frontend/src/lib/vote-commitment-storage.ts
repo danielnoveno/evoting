@@ -16,6 +16,9 @@ function storageKey(electionId: string) {
 const STORAGE_PREFIX = 'votein-commitment:'
 
 export function generateSalt(): `0x${string}` {
+  if (typeof window === 'undefined') {
+    throw new Error('Salt hanya boleh dibuat di browser pemilih.')
+  }
   const randomBytes = crypto.getRandomValues(new Uint8Array(32))
   return `0x${Array.from(randomBytes)
     .map((byte) => byte.toString(16).padStart(2, '0'))
@@ -38,10 +41,12 @@ export function generateCommitment(
 }
 
 export function saveVoteCommitment(electionId: string, data: VoteCommitmentRecord) {
+  if (typeof window === 'undefined') return
   window.localStorage.setItem(storageKey(electionId), JSON.stringify(data))
 }
 
 export function loadVoteCommitment(electionId: string): VoteCommitmentRecord | null {
+  if (typeof window === 'undefined') return null
   const raw = window.localStorage.getItem(storageKey(electionId))
   if (!raw) return null
   try {
@@ -52,10 +57,12 @@ export function loadVoteCommitment(electionId: string): VoteCommitmentRecord | n
 }
 
 export function clearVoteCommitment(electionId: string) {
+  if (typeof window === 'undefined') return
   window.localStorage.removeItem(storageKey(electionId))
 }
 
 export function clearAllVoteCommitments() {
+  if (typeof window === 'undefined') return
   const keysToRemove: string[] = []
   for (let index = 0; index < window.localStorage.length; index += 1) {
     const key = window.localStorage.key(index)
