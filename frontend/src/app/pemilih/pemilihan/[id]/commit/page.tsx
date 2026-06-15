@@ -3,14 +3,19 @@
 import { CalendarDays, CheckCircle2, ExternalLink, Fingerprint, LockKeyhole, ShieldCheck, Loader2, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { useAccount } from 'wagmi'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
-import { basescanTxUrl, findElection, formatDateTime, formatNumber, useVoterStore } from '@/lib/voter-store'
-import { loadVoteCommitment, saveVoteCommitment } from '@/lib/vote-commitment-storage'
+import { basescanTxUrl, findElection, formatDateTime, formatNumber, formatWallet, useVoterStore } from '@/lib/voter-store'
+import { loadVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
+
+function sameWalletAddress(left: string | null | undefined, right: string | null | undefined) {
+  return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase())
+}
 
 function DetailRow({
   icon: Icon,
@@ -37,6 +42,7 @@ function DetailRow({
 export default function VoterCommitPage({ params }: { params: { id: string } }) {
   const { store, loading: storeLoading, actions } = useVoterStore()
   const { showToast } = useToast()
+  const { address: connectedWallet } = useAccount()
   
   const election = findElection(store, params.id)
   const contractAddress = election?.deployedSpaceAddress ?? undefined
@@ -153,11 +159,17 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
     ? Number(currentPhase)
     : null
+  const profileWallet = store.profile.wallet
+  const isConnectedWalletProfileWallet = sameWalletAddress(connectedWallet, profileWallet)
   const isCommitPhaseOnChain = currentPhaseNumber === 1
-  const isOnChainStatusReady = Boolean(contractAddress) && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
+  const isOnChainStatusReady = Boolean(contractAddress) && Boolean(connectedWallet) && isConnectedWalletProfileWallet && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
   const commitBlockedReason = !contractAddress
     ? 'Smart contract untuk pemilihan ini belum tersedia di Supabase.'
+    : !connectedWallet
+      ? 'Dompet belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum menyimpan pilihan.'
+    : profileWallet && !isConnectedWalletProfileWallet
+      ? `Dompet tersambung (${formatWallet(connectedWallet)}) berbeda dari dompet akun ini (${formatWallet(profileWallet)}). Sambungkan dompet yang sama agar pengecekan whitelist sesuai.`
     : onChainStatusError
       ? 'Jaringan Base Sepolia belum merespons. Coba periksa ulang sebelum menyimpan pilihan.'
     : !isOnChainStatusReady
@@ -328,9 +340,17 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
       {commitBlockedReason ? (
         <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-[13px] leading-7 text-amber-900">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <p>
-              {commitBlockedReason} Tombol dinonaktifkan agar dompet tidak membuka transaksi yang pasti gagal.
-            </p>
+            <div>
+              <p>
+                {commitBlockedReason} Tombol dinonaktifkan agar dompet tidak membuka transaksi yang pasti gagal.
+              </p>
+              {(connectedWallet || profileWallet) ? (
+                <p className="mt-2 text-[12px] text-amber-800/90">
+                  Dompet tersambung: <span className="font-mono font-semibold">{connectedWallet ? formatWallet(connectedWallet) : 'Belum tersambung'}</span>
+                  {' · '}Dompet akun: <span className="font-mono font-semibold">{profileWallet ? formatWallet(profileWallet) : 'Belum tertaut'}</span>
+                </p>
+              ) : null}
+            </div>
             {contractAddress && (!isOnChainStatusReady || onChainStatusError) ? (
               <button
                 type="button"

@@ -14,6 +14,10 @@ import { findElection, formatDateTime, useVoterStore } from '@/lib/voter-store'
 import { generateCommitment, generateSalt, saveVoteCommitment } from '@/lib/vote-commitment-storage'
 import { backendRuntimeConfig } from '@/lib/supabase/config'
 
+function sameWalletAddress(left: string | null | undefined, right: string | null | undefined) {
+  return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase())
+}
+
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { address } = useAccount()
@@ -89,6 +93,12 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       if (!address || !deployedSpaceAddress) {
         setConfirmOpen(false)
         window.alert('Sambungkan dompet dan pastikan ruang voting sudah memiliki alamat kontrak sebelum memilih kandidat.')
+        return
+      }
+
+      if (store.profile.wallet && !sameWalletAddress(address, store.profile.wallet)) {
+        setConfirmOpen(false)
+        window.alert('Dompet yang tersambung berbeda dari dompet yang tertaut ke akun ini. Sambungkan dompet yang sama sebelum memilih kandidat.')
         return
       }
 
