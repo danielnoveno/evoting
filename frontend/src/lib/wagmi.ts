@@ -3,12 +3,17 @@ import { baseSepolia } from 'wagmi/chains'
 import { injected } from 'wagmi/connectors'
 import { baseAccountConnector } from '@/lib/base-account-connector'
 
-const BASE_SEPOLIA_RPC_URL = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org'
+const BASE_SEPOLIA_RPC_URL = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL?.trim()
 const baseSepoliaRpcUrls = Array.from(new Set([
-  'https://sepolia.base.org',
-  'https://base-sepolia-rpc.publicnode.com',
   BASE_SEPOLIA_RPC_URL,
+  'https://base-sepolia-rpc.publicnode.com',
+  'https://sepolia.base.org',
 ].filter(Boolean)))
+
+const baseSepoliaTransports = baseSepoliaRpcUrls.map((url) => http(url, {
+  retryCount: 1,
+  timeout: 10_000,
+}))
 
 export const wagmiConfig = createConfig({
   chains: [baseSepolia],
@@ -26,7 +31,7 @@ export const wagmiConfig = createConfig({
   ],
   ssr: true,
   transports: {
-    [baseSepolia.id]: fallback(baseSepoliaRpcUrls.map((url) => http(url))),
+    [baseSepolia.id]: fallback(baseSepoliaTransports),
   },
 })
 
