@@ -1,13 +1,32 @@
 'use client'
 
 import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
+import { baseSepolia } from 'wagmi/chains'
 import { PAYMASTER_URL } from '@/lib/wagmi'
 import ElectionSpaceArtifact from '@/lib/abi/ElectionSpace.json'
 
 const electionSpaceAbi = ElectionSpaceArtifact.abi
 
-export function useElectionContract(address?: string) {
+type ElectionReadCheck = 'phase' | 'hasCommitted' | 'hasRevealed' | 'isWhitelisted'
+
+type UseElectionContractOptions = {
+  checks?: ElectionReadCheck[]
+}
+
+const DEFAULT_READ_QUERY_OPTIONS = {
+  retry: 1,
+  staleTime: 30_000,
+  gcTime: 5 * 60_000,
+  refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+  refetchInterval: false,
+} as const
+
+export function useElectionContract(address?: string, options: UseElectionContractOptions = {}) {
   const { address: userAddress } = useAccount()
+  const enabledChecks = new Set<ElectionReadCheck>(
+    options.checks ?? ['phase', 'hasCommitted', 'hasRevealed', 'isWhitelisted']
+  )
 
   const { 
     writeContract, 
@@ -26,42 +45,50 @@ export function useElectionContract(address?: string) {
   })
 
   // Read functions
-  const { data: currentPhase, refetch: refetchPhase } = useReadContract({
+  const { data: currentPhase, refetch: refetchPhase, error: phaseError } = useReadContract({
     address: address as `0x${string}`,
     abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
     functionName: 'currentPhase',
     query: {
-      enabled: !!address,
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address && enabledChecks.has('phase'),
     }
   })
 
-  const { data: hasCommittedOnChain, refetch: refetchHasCommitted } = useReadContract({
+  const { data: hasCommittedOnChain, refetch: refetchHasCommitted, error: hasCommittedError } = useReadContract({
     address: address as `0x${string}`,
     abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
     functionName: 'hasCommitted',
     args: userAddress ? [userAddress] : undefined,
     query: {
-      enabled: !!address && !!userAddress,
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address && !!userAddress && enabledChecks.has('hasCommitted'),
     }
   })
 
-  const { data: hasRevealedOnChain, refetch: refetchHasRevealed } = useReadContract({
+  const { data: hasRevealedOnChain, refetch: refetchHasRevealed, error: hasRevealedError } = useReadContract({
     address: address as `0x${string}`,
     abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
     functionName: 'hasRevealed',
     args: userAddress ? [userAddress] : undefined,
     query: {
-      enabled: !!address && !!userAddress,
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address && !!userAddress && enabledChecks.has('hasRevealed'),
     }
   })
 
-  const { data: isWhitelistedOnChain, refetch: refetchIsWhitelisted } = useReadContract({
+  const { data: isWhitelistedOnChain, refetch: refetchIsWhitelisted, error: whitelistError } = useReadContract({
     address: address as `0x${string}`,
     abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
     functionName: 'isWhitelisted',
     args: userAddress ? [userAddress] : undefined,
     query: {
-      enabled: !!address && !!userAddress,
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address && !!userAddress && enabledChecks.has('isWhitelisted'),
     }
   })
 
@@ -130,6 +157,10 @@ export function useElectionContract(address?: string) {
     hasCommittedOnChain,
     hasRevealedOnChain,
     isWhitelistedOnChain,
+    phaseError,
+    hasCommittedError,
+    hasRevealedError,
+    whitelistError,
     
     // Actions
     commitVote,

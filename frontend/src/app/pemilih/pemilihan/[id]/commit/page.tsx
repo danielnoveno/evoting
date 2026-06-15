@@ -51,10 +51,17 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     receipt,
     hasCommittedOnChain,
     isWhitelistedOnChain,
-    currentPhase
-  } = useElectionContract(contractAddress)
+    currentPhase,
+    phaseError,
+    hasCommittedError,
+    whitelistError,
+    refetchPhase,
+    refetchHasCommitted,
+    refetchIsWhitelisted
+  } = useElectionContract(contractAddress, { checks: ['phase', 'hasCommitted', 'isWhitelisted'] })
 
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [isRefreshingOnChainStatus, setIsRefreshingOnChainStatus] = useState(false)
 
   const savedCommitment = loadVoteCommitment(params.id)
   
@@ -148,10 +155,13 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     : null
   const isCommitPhaseOnChain = currentPhaseNumber === 1
   const isOnChainStatusReady = Boolean(contractAddress) && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
+  const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
   const commitBlockedReason = !contractAddress
     ? 'Smart contract untuk pemilihan ini belum tersedia di Supabase.'
+    : onChainStatusError
+      ? 'Jaringan Base Sepolia belum merespons. Coba periksa ulang sebelum menyimpan pilihan.'
     : !isOnChainStatusReady
-      ? 'Status on-chain sedang diperiksa. Tunggu sebentar sebelum menyimpan pilihan.'
+      ? 'Status on-chain sedang diperiksa. Tunggu sebentar atau periksa ulang sebelum menyimpan pilihan.'
       : !isWhitelistedOnChain
         ? 'Wallet ini belum terdaftar di whitelist smart contract untuk ruang voting ini.'
         : hasCommittedOnChain
@@ -159,6 +169,24 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           : !isCommitPhaseOnChain
             ? 'Fase smart contract belum berada di tahap menyimpan pilihan.'
             : ''
+
+  const handleRefreshOnChainStatus = async () => {
+    setIsRefreshingOnChainStatus(true)
+    try {
+      await Promise.allSettled([
+        refetchPhase(),
+        refetchHasCommitted(),
+        refetchIsWhitelisted(),
+      ])
+      showToast({
+        title: 'Status diperiksa ulang',
+        description: 'Jika jaringan Base Sepolia sudah merespons, tombol simpan akan aktif sesuai status smart contract.',
+        tone: 'info',
+      })
+    } finally {
+      setIsRefreshingOnChainStatus(false)
+    }
+  }
 
   const handleCommit = () => {
     if (!savedCommitment) return
@@ -299,7 +327,22 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
 
       {commitBlockedReason ? (
         <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-[13px] leading-7 text-amber-900">
-          {commitBlockedReason} Tombol dinonaktifkan agar dompet tidak membuka transaksi yang pasti gagal.
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <p>
+              {commitBlockedReason} Tombol dinonaktifkan agar dompet tidak membuka transaksi yang pasti gagal.
+            </p>
+            {contractAddress && (!isOnChainStatusReady || onChainStatusError) ? (
+              <button
+                type="button"
+                onClick={handleRefreshOnChainStatus}
+                disabled={isRefreshingOnChainStatus}
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-amber-300 bg-white px-4 text-[13px] font-semibold text-amber-950 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isRefreshingOnChainStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Periksa ulang status
+              </button>
+            ) : null}
+          </div>
         </section>
       ) : null}
 
