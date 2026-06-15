@@ -14,6 +14,22 @@ import { findElection, formatDateTime, useVoterStore } from '@/lib/voter-store'
 import { generateCommitment, generateSalt, saveVoteCommitment } from '@/lib/vote-commitment-storage'
 import { backendRuntimeConfig } from '@/lib/supabase/config'
 
+async function fetchLatestContractAddress(electionId: string): Promise<string | null> {
+  try {
+    const response = await fetch(`/api/public/elections/${electionId}`, { method: 'GET' })
+    const payload: unknown = await response.json().catch(() => ({}))
+    if (!response.ok || !payload || typeof payload !== 'object' || !('election' in payload)) return null
+
+    const liveElection = payload.election
+    if (!liveElection || typeof liveElection !== 'object' || !('deployedSpaceAddress' in liveElection)) return null
+    return typeof liveElection.deployedSpaceAddress === 'string' && liveElection.deployedSpaceAddress.trim()
+      ? liveElection.deployedSpaceAddress
+      : null
+  } catch {
+    return null
+  }
+}
+
 function sameWalletAddress(left: string | null | undefined, right: string | null | undefined) {
   return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase())
 }
@@ -88,15 +104,22 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     if (candidateToConfirm) {
       const candidate = election.candidates.find(c => c.id === candidateToConfirm)
       const candidateNumber = candidate ? parseInt(candidate.id.split('-').pop() || '0') : 0
-      const deployedSpaceAddress = election.deployedSpaceAddress
+      const deployedSpaceAddress = election.deployedSpaceAddress ?? await fetchLatestContractAddress(election.id)
+      const voterWallet = address ?? store.profile.wallet
 
-      if (!address || !deployedSpaceAddress) {
+      if (!voterWallet) {
         setConfirmOpen(false)
-        window.alert('Sambungkan dompet dan pastikan ruang voting sudah memiliki alamat kontrak sebelum memilih kandidat.')
+        window.alert('Dompet belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum memilih kandidat.')
         return
       }
 
-      if (store.profile.wallet && !sameWalletAddress(address, store.profile.wallet)) {
+      if (!deployedSpaceAddress) {
+        setConfirmOpen(false)
+        window.alert('Alamat smart contract untuk ruang voting ini belum terbaca. Muat ulang halaman atau periksa kembali data deployment di dashboard.')
+        return
+      }
+
+      if (address && store.profile.wallet && !sameWalletAddress(address, store.profile.wallet)) {
         setConfirmOpen(false)
         window.alert('Dompet yang tersambung berbeda dari dompet yang tertaut ke akun ini. Sambungkan dompet yang sama sebelum memilih kandidat.')
         return
@@ -108,7 +131,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       const commitment = generateCommitment(
         candidateNumber,
         salt,
-        address as Address,
+        voterWallet as Address,
         deployedSpaceAddress as Address,
         backendRuntimeConfig.chainId,
       )
