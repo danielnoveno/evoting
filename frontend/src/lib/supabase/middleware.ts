@@ -85,22 +85,38 @@ export async function updateSupabaseSession(request: NextRequest) {
     const requiredRole = getRequiredRole(request.nextUrl.pathname)
 
     if (requiredRole) {
-      const { data: profile } = await client
+      const { data: profile, error: profileError } = await client
         .schema('app')
         .from('app_profiles')
         .select('role,email')
         .eq('user_id', session.user.id)
         .maybeSingle()
 
-      const role = profile?.role
+      if (profileError) {
+        const authUrl = new URL('/hubungkan-dompet', request.url)
+        authUrl.searchParams.set('authError', 'profile_unavailable')
+        authUrl.searchParams.set('redirect', getPathWithSearch(request))
+        return NextResponse.redirect(authUrl, { headers: response.headers })
+      }
 
-      if (profile?.email) {
-        const { data: adminRegistry } = await client
+      const role = profile?.role
+      const sessionEmail = session.user.email?.trim().toLowerCase() ?? ''
+      const profileEmail = profile?.email?.trim().toLowerCase() ?? sessionEmail
+
+      if (profileEmail) {
+        const { data: adminRegistry, error: registryError } = await client
           .schema('app')
           .from('admin_registry')
           .select('assigned_role,status')
-          .eq('email', profile.email.toLowerCase())
+          .eq('email', profileEmail)
           .maybeSingle()
+
+        if (registryError) {
+          const authUrl = new URL('/hubungkan-dompet', request.url)
+          authUrl.searchParams.set('authError', 'registry_unavailable')
+          authUrl.searchParams.set('redirect', getPathWithSearch(request))
+          return NextResponse.redirect(authUrl, { headers: response.headers })
+        }
 
         const hasPendingAdminInvite = adminRegistry
           && (adminRegistry.assigned_role === 'admin' || adminRegistry.assigned_role === 'super_admin')
@@ -112,6 +128,11 @@ export async function updateSupabaseSession(request: NextRequest) {
           activationUrl.searchParams.set('redirect', adminRegistry.assigned_role === 'super_admin' ? '/portal-admin' : '/admin')
           return NextResponse.redirect(activationUrl, { headers: response.headers })
         }
+      }
+
+      if (requiredRole === 'voter' && (role === 'admin' || role === 'super_admin')) {
+        const adminUrl = new URL(role === 'super_admin' ? '/portal-admin' : '/admin', request.url)
+        return NextResponse.redirect(adminUrl, { headers: response.headers })
       }
 
       if (requiredRole === 'super_admin' && role !== 'super_admin') {

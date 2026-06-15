@@ -104,6 +104,31 @@ function PortalAdminContent() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!mounted) return
+    const authError = searchParams.get('authError')
+    if (!authError) return
+
+    if (authError === 'admin_pending') {
+      setFormError('Undangan admin organisasi masih pending. Minta super admin mengaktifkan undangan terlebih dahulu.')
+    } else if (authError === 'activation_required') {
+      setFormError('Akun ini belum memiliki undangan admin aktif. Gunakan email yang didaftarkan oleh super admin.')
+    } else if (authError === 'registry_unavailable') {
+      setFormError('Data aktivasi admin belum bisa diperiksa. Coba lagi beberapa saat atau hubungi super admin.')
+    } else if (authError === 'profile_unavailable') {
+      setFormError('Profil admin belum bisa dibaca. Jika database baru di-reset, keluar lalu masuk ulang atau aktivasi ulang.')
+    } else if (authError === 'oauth_exchange_failed') {
+      setFormError('Gagal verifikasi akun admin. Pastikan akun yang dipakai sesuai undangan.')
+    } else {
+      setFormError('Sesi admin tidak bisa divalidasi. Coba keluar, muat ulang halaman, lalu masuk kembali.')
+    }
+  }, [mounted, searchParams])
+
+  useEffect(() => {
+    if (!mounted || !currentProfileQuery.error) return
+    setFormError(getRepositoryErrorMessage(currentProfileQuery.error, 'Profil admin belum bisa dimuat. Coba masuk ulang atau hubungi super admin.'))
+  }, [mounted, currentProfileQuery.error])
+
   const authSession = authSessionQuery.data
   const currentProfile = currentProfileQuery.data
   const requestedRedirect = safeInternalPath(searchParams.get('redirect'), '/portal-admin')
@@ -200,7 +225,8 @@ function PortalAdminContent() {
       {
         walletAddress: address,
         email: authSession.user.email,
-        displayName: authSession.user.user_metadata?.full_name || authSession.user.user_metadata?.name || 'Administrator'
+        displayName: authSession.user.user_metadata?.full_name || authSession.user.user_metadata?.name || 'Administrator',
+        roleHint: 'admin-activation',
       },
       {
         onSuccess: () => {

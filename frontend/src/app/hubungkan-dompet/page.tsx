@@ -144,13 +144,21 @@ function ConnectWalletContent() {
     }
   }, [])
 
-  // Handle errors from URL parameters (e.g., after failed OAuth)
+  // Handle errors from URL parameters (e.g., after failed OAuth, stale session, or DB reset)
   useEffect(() => {
     if (!mounted) return
     const authError = searchParams.get('authError')
     if (authError) {
       if (authError === 'backend_not_configured') {
         setFormError('Sistem autentikasi belum siap. Hubungi admin.')
+      } else if (authError === 'profile_unavailable') {
+        setFormError('Profil akun belum bisa dibaca. Jika database baru di-reset, keluar lalu masuk ulang atau hubungi admin untuk aktivasi ulang.')
+      } else if (authError === 'registry_unavailable') {
+        setFormError('Data aktivasi admin belum bisa diperiksa. Coba lagi beberapa saat atau hubungi super admin.')
+      } else if (authError === 'activation_required') {
+        setFormError('Akun ini belum diaktivasi. Gunakan tautan aktivasi dari admin sebelum masuk dashboard.')
+      } else if (authError === 'admin_pending') {
+        setFormError('Undangan admin organisasi masih pending. Minta super admin mengaktifkan undangan terlebih dahulu.')
       } else if (authError === 'missing_code') {
         // Look in hash for more details if code is missing
         const hash = window.location.hash
@@ -166,9 +174,18 @@ function ConnectWalletContent() {
         setFormError('Gagal login Microsoft: Tidak ada kode verifikasi yang diterima.')
       } else if (authError === 'oauth_exchange_failed') {
         setFormError('Gagal verifikasi akun kampus. Pastikan kredensial @uajy.ac.id Anda benar.')
+      } else if (authError === 'internal_callback_error') {
+        setFormError('Terjadi masalah saat menyelesaikan login. Coba keluar, hapus sesi browser, lalu masuk ulang.')
+      } else {
+        setFormError('Sesi tidak bisa divalidasi. Coba keluar, muat ulang halaman, lalu masuk kembali.')
       }
     }
   }, [searchParams, mounted])
+
+  useEffect(() => {
+    if (!mounted || !currentProfileQuery.error) return
+    setFormError(getRepositoryErrorMessage(currentProfileQuery.error, 'Profil akun belum bisa dimuat. Coba masuk ulang atau hubungi admin.'))
+  }, [mounted, currentProfileQuery.error])
 
   const isWalletBound = sameWalletAddress(currentProfile?.walletAddress, address)
   const accountHasDifferentWallet = Boolean(address && currentProfile?.walletAddress && !isWalletBound)

@@ -60,12 +60,44 @@ export async function GET(request: NextRequest) {
       let resolvedPath = nextPath
 
       if (user) {
-        const { data: profile } = await supabase
+        if (isAuthAdmin && user.email) {
+          const { data: registry, error: registryError } = await supabase
+            .schema('app')
+            .from('admin_registry')
+            .select('assigned_role,status')
+            .eq('email', user.email.trim().toLowerCase())
+            .maybeSingle()
+
+          if (registryError) {
+            errorRedirectUrl.searchParams.set('authError', 'registry_unavailable')
+            return NextResponse.redirect(errorRedirectUrl)
+          }
+
+          if (!registry || !['admin', 'super_admin'].includes(registry.assigned_role)) {
+            errorRedirectUrl.searchParams.set('authError', 'activation_required')
+            return NextResponse.redirect(errorRedirectUrl)
+          }
+
+          if (registry.status !== 'active') {
+            const pendingUrl = new URL('/hubungkan-dompet', request.url)
+            pendingUrl.searchParams.set('activate', 'admin')
+            pendingUrl.searchParams.set('redirect', registry.assigned_role === 'super_admin' ? '/portal-admin' : '/admin')
+            pendingUrl.searchParams.set('authError', 'admin_pending')
+            return NextResponse.redirect(pendingUrl)
+          }
+        }
+
+        const { data: profile, error: profileError } = await supabase
           .schema('app')
           .from('app_profiles')
           .select('role')
           .eq('user_id', user.id)
           .maybeSingle()
+
+        if (profileError) {
+          errorRedirectUrl.searchParams.set('authError', 'profile_unavailable')
+          return NextResponse.redirect(errorRedirectUrl)
+        }
 
         if (profile?.role === 'super_admin') {
           if (!nextPath.startsWith('/superadmin') && !nextPath.startsWith('/portal-admin')) {
