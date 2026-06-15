@@ -14,5 +14,8 @@
     "validate:ai-boundary": "node .docs/opencode/workflows/full-automation-test-pass.mjs --ai-boundary-only",
     "validate:onchain-proof": "node .docs/opencode/workflows/full-automation-test-pass.mjs --onchain-proof-only",
     "validate:all": "node .docs/opencode/workflows/full-automation-test-pass.mjs --all"
+  },
+  "devDependencies": {
+    "supabase": "^2.106.0"
   }
 }
