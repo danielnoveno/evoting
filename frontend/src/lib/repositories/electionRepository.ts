@@ -618,7 +618,10 @@ export async function listLatestAuditLogs(proposalDraftId?: string, limit = 6, s
   }
 
   const { data, error } = await query
-  if (error) throw new RepositoryError('Gagal memuat jejak audit transaksi dari Supabase.')
+  if (error) {
+    console.warn('Latest audit log fetch error:', error.message)
+    return []
+  }
 
   return (data ?? []).map(mapTxAuditRow)
 }

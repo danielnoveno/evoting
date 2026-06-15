@@ -7,6 +7,8 @@ export function usePlatformSettings() {
   return useQuery({
     queryKey: ['platform-settings'],
     queryFn: getPlatformSettings,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
   })
 }
 
