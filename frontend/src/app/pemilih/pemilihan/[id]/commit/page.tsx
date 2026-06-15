@@ -49,7 +49,9 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     hash, 
     writeError,
     receipt,
-    hasCommittedOnChain
+    hasCommittedOnChain,
+    isWhitelistedOnChain,
+    currentPhase
   } = useElectionContract(contractAddress)
 
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -141,8 +143,33 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     )
   }
 
+  const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
+    ? Number(currentPhase)
+    : null
+  const isCommitPhaseOnChain = currentPhaseNumber === 1
+  const isOnChainStatusReady = Boolean(contractAddress) && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
+  const commitBlockedReason = !contractAddress
+    ? 'Smart contract untuk pemilihan ini belum tersedia di Supabase.'
+    : !isOnChainStatusReady
+      ? 'Status on-chain sedang diperiksa. Tunggu sebentar sebelum menyimpan pilihan.'
+      : !isWhitelistedOnChain
+        ? 'Wallet ini belum terdaftar di whitelist smart contract untuk ruang voting ini.'
+        : hasCommittedOnChain
+          ? 'Wallet ini sudah pernah menyimpan pilihan untuk ruang voting ini.'
+          : !isCommitPhaseOnChain
+            ? 'Fase smart contract belum berada di tahap menyimpan pilihan.'
+            : ''
+
   const handleCommit = () => {
     if (!savedCommitment) return
+    if (commitBlockedReason) {
+      showToast({
+        title: 'Belum bisa menyimpan pilihan',
+        description: commitBlockedReason,
+        tone: 'info',
+      })
+      return
+    }
     setConfirmOpen(false)
     commitVote(savedCommitment.commitment)
   }
@@ -264,15 +291,15 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
             <p className="mt-1 text-[13px] text-red-800 leading-relaxed">
               {writeError.message.includes('User rejected') 
                 ? 'Transaksi dibatalkan oleh pengguna.' 
-                : 'Terjadi kesalahan saat menyimpan suara. Pastikan dompet digitalmu siap dan memiliki saldo uji coba yang cukup.'}
+                : 'Transaksi tidak bisa diproses oleh smart contract. Pastikan fase sudah Tahap Memilih dan wallet ini sudah masuk whitelist on-chain.'}
             </p>
           </div>
         </section>
       )}
 
-      {!contractAddress ? (
+      {commitBlockedReason ? (
         <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-[13px] leading-7 text-amber-900">
-          Smart contract untuk pemilihan ini belum tersedia di Supabase. Tombol commit dinonaktifkan agar website tidak membuat bukti palsu.
+          {commitBlockedReason} Tombol dinonaktifkan agar dompet tidak membuka transaksi yang pasti gagal.
         </section>
       ) : null}
 
@@ -344,7 +371,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         </Link>
         <button
           type="button"
-          disabled={!contractAddress || isWritePending || isConfirming}
+          disabled={Boolean(commitBlockedReason) || isWritePending || isConfirming}
           onClick={() => setConfirmOpen(true)}
           className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F172A] px-6 text-[13px] font-semibold text-white hover:bg-[#1E293B] disabled:cursor-not-allowed disabled:opacity-40 min-w-[200px]"
         >

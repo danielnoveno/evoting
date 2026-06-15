@@ -55,6 +55,16 @@ export function useElectionContract(address?: string) {
     }
   })
 
+  const { data: isWhitelistedOnChain, refetch: refetchIsWhitelisted } = useReadContract({
+    address: address as `0x${string}`,
+    abi: electionSpaceAbi,
+    functionName: 'isWhitelisted',
+    args: userAddress ? [userAddress] : undefined,
+    query: {
+      enabled: !!address && !!userAddress,
+    }
+  })
+
   // Write functions
   const commitVote = (commitment: `0x${string}`) => {
     if (!address) return
@@ -119,6 +129,7 @@ export function useElectionContract(address?: string) {
     currentPhase,
     hasCommittedOnChain,
     hasRevealedOnChain,
+    isWhitelistedOnChain,
     
     // Actions
     commitVote,
@@ -138,6 +149,7 @@ export function useElectionContract(address?: string) {
     resetWrite,
     refetchPhase,
     refetchHasCommitted,
-    refetchHasRevealed
+    refetchHasRevealed,
+    refetchIsWhitelisted
   }
 }
