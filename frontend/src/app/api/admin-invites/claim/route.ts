@@ -10,6 +10,7 @@ type InviteRow = {
   email: string
   assigned_role: InviteRole
   organization_name: string | null
+  wallet_address: string | null
   status: 'pending' | 'active' | 'inactive'
 }
 
@@ -23,6 +24,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
+}
+
+function sameWalletAddress(left: string | null | undefined, right: string | null | undefined): boolean {
+  return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase())
 }
 
 export async function POST(request: NextRequest) {
@@ -39,7 +44,9 @@ export async function POST(request: NextRequest) {
   if (!isRecord(payload)) return jsonError('Data klaim tidak valid.', 400)
 
   const token = typeof payload.token === 'string' ? payload.token.trim() : ''
+  const walletAddress = typeof payload.walletAddress === 'string' ? payload.walletAddress.trim() : ''
   if (!token) return jsonError('Token undangan tidak ditemukan.', 400)
+  if (walletAddress && !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) return jsonError('Wallet aktivasi admin tidak valid.', 400)
 
   // Get current session user to verify email
   const authorization = request.headers.get('authorization')
@@ -58,7 +65,7 @@ export async function POST(request: NextRequest) {
   const tokenHash = hashToken(token)
   const { data, error } = await client
     .from('admin_registry')
-    .select('email,assigned_role,organization_name,status')
+    .select('email,assigned_role,organization_name,wallet_address,status')
     .eq('activation_token_hash', tokenHash)
     .maybeSingle()
 
@@ -73,36 +80,53 @@ export async function POST(request: NextRequest) {
     return jsonError(`Email login (${userEmail}) tidak sesuai dengan email yang diundang (${invite.email}). Gunakan akun kampus yang sesuai.`, 403)
   }
 
+  if (walletAddress && invite.wallet_address && !sameWalletAddress(invite.wallet_address, walletAddress)) {
+    return jsonError('Wallet tersambung tidak sesuai dengan wallet yang didaftarkan pada undangan admin.', 403)
+  }
+
   // Claim invite
+  const registryUpdate: Record<string, unknown> = {
+    status: 'active',
+    activation_accepted_at: new Date().toISOString(),
+    activation_token_hash: null,
+  }
+
+  if (walletAddress) registryUpdate.wallet_address = walletAddress
+
   const { error: updateError } = await client
     .from('admin_registry')
-    .update({
-      status: 'active',
-      activation_accepted_at: new Date().toISOString(),
-      activation_token_hash: null,
-    })
+    .update(registryUpdate)
     .eq('email', invite.email)
 
   if (updateError) return jsonError(`Gagal mengaktifkan undangan: ${updateError.message}`, 500)
 
   // Update profile role
+  const profilePayload: Record<string, unknown> = {
+    user_id: userData.user.id,
+    email: invite.email,
+    role: invite.assigned_role,
+    display_name: invite.organization_name || null,
+  }
+
+  if (walletAddress) {
+    profilePayload.wallet_address = walletAddress
+    profilePayload.role_hint = 'admin-activation'
+  }
+
   const { error: profileError } = await client
     .from('app_profiles')
-    .update({ 
-      role: invite.assigned_role,
-      display_name: invite.organization_name || undefined
-    })
-    .eq('user_id', userData.user.id)
+    .upsert(profilePayload, { onConflict: 'user_id' })
 
   if (profileError) {
     console.error('[Admin Claim] Failed to update profile role:', profileError)
-    // Non-fatal error for the user, as the registry is updated
+    return jsonError(`Undangan aktif, tetapi profil admin belum tersimpan: ${profileError.message}. Hubungi superadmin.`, 500)
   }
 
   return NextResponse.json({
     success: true,
     email: invite.email,
     role: invite.assigned_role,
-    organizationName: invite.organization_name
+    organizationName: invite.organization_name,
+    walletAddress: walletAddress || invite.wallet_address,
   })
 }

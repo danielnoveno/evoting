@@ -164,6 +164,37 @@ async function claimActivationToken(input: ProfileUpsertInput, role: 'voter' | '
   }
 }
 
+async function claimAdminInviteWithWallet(input: ProfileUpsertInput) {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const activationToken = input.activationToken?.trim()
+  if (!activationToken) throw new RepositoryError('Token aktivasi admin tidak ditemukan. Gunakan link undangan terbaru dari superadmin.')
+
+  const { data, error } = await client.auth.getSession()
+  if (error || !data.session?.access_token) throw new RepositoryError('Sesi login admin belum aktif. Silakan masuk ulang dari link aktivasi.')
+
+  const response = await fetch('/api/admin-invites/claim', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${data.session.access_token}`,
+    },
+    body: JSON.stringify({
+      token: activationToken,
+      walletAddress: input.walletAddress,
+    }),
+  })
+
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null)
+    const message = isObjectRecord(payload) && typeof payload.error === 'string'
+      ? payload.error
+      : 'Aktivasi admin tidak valid atau sudah kedaluwarsa.'
+    throw new RepositoryError(message)
+  }
+}
+
 async function requireUser(): Promise<User> {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
@@ -319,6 +350,11 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
   }
 
   const profileEmail = getVerifiedProfileEmail(user, currentProfile, input.email)
+  const isAdminActivation = input.roleHint === 'admin-activation'
+  if (isAdminActivation) {
+    await claimAdminInviteWithWallet({ ...input, walletAddress: normalizedWallet })
+  }
+
   const registeredAccess = await getRegisteredAdminAccessForEmail(profileEmail)
   if (!currentProfile && !registeredAccess && input.roleHint === 'voter-activation') {
     await claimActivationToken(input, 'voter')

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast-provider'
 import { useAuthSession, useMicrosoftCampusLogin, useGoogleLogin } from '@/hooks/use-auth-session'
-import { useAdminInvitePreview, useClaimAdminInvite } from '@/hooks/use-admin-invite'
+import { useAdminInvitePreview } from '@/hooks/use-admin-invite'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
 import Link from 'next/link'
@@ -47,10 +47,8 @@ function ActivationContent() {
   
   const inviteToken = searchParams.get('invite')?.trim() ?? ''
   const invitePreviewQuery = useAdminInvitePreview(inviteToken)
-  const claimInviteMutation = useClaimAdminInvite()
 
   const [mounted, setMounted] = useState(false)
-  const [claimStarted, setClaimStarted] = useState(false)
   const [redirectModal, setRedirectModal] = useState<ReturnType<typeof getActivationRedirectModalContent> | null>(null)
   const redirectTimerRef = useRef<number | null>(null)
 
@@ -65,38 +63,29 @@ function ActivationContent() {
   const authSession = authSessionQuery.data
   const invitePreview = invitePreviewQuery.data
   const isSuperAdmin = invitePreview?.role === 'super_admin'
-  const isAdmin = invitePreview?.role === 'admin'
   const isCorrectAccount = invitePreview && authSession?.user?.email?.toLowerCase() === invitePreview.email.toLowerCase()
 
-  const handleClaim = useCallback(() => {
-    if (claimStarted || !inviteToken) return
-    setClaimStarted(true)
-    
-    claimInviteMutation.mutate(inviteToken, {
-      onSuccess: () => {
-        showToast({ 
-          tone: 'success', 
-          title: 'Akun Diaktifkan', 
-          description: `Selamat datang, ${invitePreview?.displayName || 'Admin'}. Akun Anda telah aktif.` 
-        })
-        setRedirectModal(getActivationRedirectModalContent(isSuperAdmin))
-        redirectTimerRef.current = window.setTimeout(() => { 
-          router.replace(isSuperAdmin ? '/portal-admin' : '/hubungkan-dompet?activate=admin&redirect=%2Fadmin') 
-        }, 2200)
-      },
-      onError: (err) => {
-        setClaimStarted(false)
-        console.error('Activation failed:', err)
-      }
+  const handleContinueToWallet = useCallback(() => {
+    if (!inviteToken) return
+    showToast({
+      tone: 'success',
+      title: 'Identitas Terverifikasi',
+      description: 'Lanjutkan dengan menghubungkan Smart Wallet admin organisasi.',
     })
-  }, [claimStarted, inviteToken, claimInviteMutation, invitePreview, isSuperAdmin, router, showToast])
+    setRedirectModal(getActivationRedirectModalContent(isSuperAdmin))
+    const redirect = isSuperAdmin ? '/portal-admin' : '/admin'
+    const nextParams = new URLSearchParams({ activate: 'admin', token: inviteToken, redirect })
+    redirectTimerRef.current = window.setTimeout(() => {
+      router.replace(`/hubungkan-dompet?${nextParams.toString()}`)
+    }, 1200)
+  }, [inviteToken, isSuperAdmin, router, showToast])
 
-  // Auto-claim trigger — for all admin roles using SSO flow
+  // Auto-continue trigger — SSO verifies identity; wallet binding performs final activation.
   useEffect(() => {
-    if (mounted && inviteToken && authSession && isCorrectAccount && !claimStarted && invitePreview?.status !== 'active') {
-      handleClaim()
+    if (mounted && inviteToken && authSession && isCorrectAccount && invitePreview?.status !== 'active' && !redirectModal) {
+      handleContinueToWallet()
     }
-  }, [mounted, inviteToken, authSession, isCorrectAccount, claimStarted, invitePreview, handleClaim])
+  }, [mounted, inviteToken, authSession, isCorrectAccount, invitePreview, redirectModal, handleContinueToWallet])
 
   const handleSSOLogin = useCallback((provider: 'microsoft' | 'google') => {
     const mutation = provider === 'microsoft' ? microsoftLoginMutation : googleLoginMutation
@@ -107,9 +96,8 @@ function ActivationContent() {
 
   const pageTitle = isSuperAdmin ? 'Aktivasi Akun Superadmin' : 'Aktivasi Akun Admin Organisasi'
   const pageSubtitle = 'Gunakan akun kampus (SSO) untuk memverifikasi identitas dan mengaktifkan akses Anda ke portal admin Votein.'
-  const isActivating = claimInviteMutation.isPending
-  const isActivationSuccess = claimInviteMutation.isSuccess
-  const activationError = claimInviteMutation.error
+  const isActivating = Boolean(redirectModal)
+  const isActivationSuccess = false
 
   return (
     <main className="flex min-h-screen flex-col bg-slate-50">
@@ -126,7 +114,7 @@ function ActivationContent() {
                   <div className="h-20 animate-pulse rounded-lg border border-slate-100 bg-slate-50" />
                   <div className="h-11 animate-pulse rounded-md bg-slate-50" />
                 </div>
-              ) : invitePreviewQuery.error && !isActivationSuccess ? (
+              ) : invitePreviewQuery.error ? (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-center">
                   <AlertTriangle className="mx-auto h-7 w-7 text-red-600" />
                   <h3 className="mt-3 font-semibold text-red-900">Link Aktivasi Tidak Valid</h3>
@@ -216,10 +204,10 @@ function ActivationContent() {
                             </p>
                           </div>
                           <button
-                            onClick={handleClaim}
+                            onClick={handleContinueToWallet}
                             className="inline-flex h-10 w-full items-center justify-center rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B]"
                           >
-                            Konfirmasi Aktivasi Akun
+                            Lanjut Hubungkan Dompet Admin
                           </button>
                         </div>
                       ) : (
@@ -241,13 +229,6 @@ function ActivationContent() {
                   )}
 
                   {/* ── Activation error ── */}
-                  {activationError && (
-                    <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-                      <p className="text-center text-[13px] font-medium text-red-700">
-                        {getRepositoryErrorMessage(activationError, 'Gagal mengaktifkan akun. Silakan coba lagi.')}
-                      </p>
-                    </div>
-                  )}
                 </>
               ) : null}
             </div>

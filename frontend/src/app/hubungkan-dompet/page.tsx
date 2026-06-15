@@ -126,6 +126,7 @@ function ConnectWalletContent() {
 
   const activationMode = activateParam === '1' || activateParam === 'admin' || (Boolean(authSession) && activationContext === 'admin')
   const voterActivationMissingToken = activationMode && activationContext === 'voter' && !activationToken
+  const adminActivationMissingToken = activateParam === 'admin' && activationContext === 'admin' && !activationToken && !currentProfile
   const redirectTarget = useMemo(() => resolveRedirectTarget(redirectParam, activationContext), [redirectParam, activationContext])
 
   const [mounted, setMounted] = useState(false)
@@ -197,7 +198,7 @@ function ConnectWalletContent() {
     connectedWalletProfile.userId !== authSession.user.id,
   )
   const firstTimeBindingRequiresActivation = Boolean(authSession && !currentProfile && !activationMode)
-  const bindingBlocked = accountHasDifferentWallet || connectedWalletOwnedByOther || firstTimeBindingRequiresActivation || voterActivationMissingToken
+  const bindingBlocked = accountHasDifferentWallet || connectedWalletOwnedByOther || firstTimeBindingRequiresActivation || voterActivationMissingToken || adminActivationMissingToken
   const bindingBlockMessage = accountHasDifferentWallet
     ? `Akun ${authSession?.user?.email ?? 'ini'} sudah tertaut ke wallet lain. Putuskan dompet tersambung, lalu sambungkan wallet yang sesuai untuk melanjutkan.`
     : connectedWalletOwnedByOther
@@ -206,6 +207,8 @@ function ConnectWalletContent() {
         ? 'Akun ini belum diaktivasi. Gunakan tautan aktivasi dari admin sebelum menghubungkan wallet dan masuk dashboard.'
       : voterActivationMissingToken
         ? 'Link aktivasi tidak membawa token undangan. Minta admin mengirim ulang link aktivasi terbaru.'
+      : adminActivationMissingToken
+        ? 'Link aktivasi admin tidak membawa token undangan. Minta superadmin mengirim ulang link aktivasi terbaru.'
       : ''
   const isAdminActivationFlow = activationMode && activationContext === 'admin'
   const completedSteps = isAdminActivationFlow
