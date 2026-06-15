@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, ArrowRight, CalendarDays, CircleCheck, ExternalLink, Hourglass, Fingerprint, CheckCircle2 } from 'lucide-react'
+import { Archive, ArrowRight, CalendarDays, CircleCheck, ExternalLink, Hourglass, Fingerprint, CheckCircle2, Lightbulb } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { VoterPageSkeleton, VoterShell } from '@/components/voter/voter-shell'
@@ -202,19 +202,19 @@ export default function VoterDashboardPage() {
     <VoterShell>
       <ScrollReveal variant="fade-up" duration={800}>
         <section>
-          <h1 id="tour-voter-home-title" className="mt-3 text-[28px] font-semibold text-slate-900 sm:text-[34px] md:text-[40px]">Ruang Voting Saya</h1>
-          <p className="mt-3 max-w-3xl text-[14px] leading-7 text-slate-800 md:text-[16px] md:leading-8">
+          <h1 id="tour-voter-home-title" className="text-[22px] font-semibold text-slate-900 md:text-[24px]">Ruang Voting Saya</h1>
+          <p className="mt-2 max-w-3xl text-[14px] leading-6 text-slate-600">
             Pantau ruang voting yang sedang aktif, pilihan yang sudah disimpan, dan langkah berikutnya sampai suaramu selesai dihitung.
           </p>
         </section>
       </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={100} duration={800}>
-        <section className={featuredElection.phase === 'registration' ? 'mt-10' : 'mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.72fr)]'}>
+        <section className={featuredElection.phase === 'registration' ? 'mt-6' : 'mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.72fr)]'}>
         {featuredElection.phase === 'registration' ? (
           <UpcomingHeroCard election={featuredElection} />
         ) : (
-        <article id={`pemilihan-${featuredElection.id}`} className="rounded-xl border border-slate-200 bg-white p-6 transition-colors duration-300 hover:border-slate-300">
+        <article id={`pemilihan-${featuredElection.id}`} className="rounded-xl border border-slate-200 bg-white p-5 transition-colors duration-300 hover:border-slate-300">
 
           {(() => {
             const isCommitPhase = featuredViewState.nextAction === 'commit'
@@ -228,12 +228,13 @@ export default function VoterDashboardPage() {
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div className="min-w-0 flex-1">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">{featuredLabel}</p>
-                    <h2 className="mt-4 text-[22px] font-semibold text-slate-900 md:text-[28px] tracking-tight">{featuredElection.title}</h2>
-                    <p className="mt-3 max-w-3xl text-[14px] leading-7 text-slate-700">{featuredElection.summary}</p>
+                    <h2 className="mt-3 text-[18px] font-semibold tracking-tight text-slate-900 md:text-[22px]">{featuredElection.title}</h2>
+                    <p className="mt-2 max-w-3xl text-[14px] leading-6 text-slate-600">{featuredElection.summary}</p>
                     
                     {isCommitPhase && (
-                      <p className="mt-4 text-[13px] font-medium text-slate-800 bg-blue-50/50 border border-blue-100 rounded-lg p-3 leading-relaxed">
-                        💡 <span className="font-semibold text-blue-900">Langkah pertama:</span> Pilih satu kandidat. Setelah itu, pilihanmu akan dikunci dulu supaya tetap rahasia.
+                      <p className="mt-4 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50/50 p-3 text-[13px] font-medium leading-relaxed text-slate-700">
+                        <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-blue-700" />
+                        <span><span className="font-semibold text-blue-900">Langkah pertama:</span> Pilih satu kandidat. Setelah itu, pilihanmu akan dikunci dulu supaya tetap rahasia.</span>
                       </p>
                     )}
 
@@ -249,11 +250,11 @@ export default function VoterDashboardPage() {
                           <Fingerprint className="h-4.5 w-4.5 text-amber-600 shrink-0" />
                           <span className="font-semibold">Pilihanmu sudah tersimpan aman.</span>
                         </p>
-                        <div className="font-mono text-[11px] text-slate-800 bg-white border border-amber-100 rounded-lg p-2.5 break-all leading-relaxed shadow-inner">
+                        <div className="break-all rounded-lg border border-amber-100 bg-white p-2.5 font-mono text-[11px] leading-relaxed text-slate-800">
                           <span className="font-semibold text-slate-400 select-none">KODE BUKTI:</span> {featuredElection.commitmentHash}
                         </div>
                         <p className="text-[12px] leading-relaxed text-slate-700">
-                          💡 <span className="font-semibold text-amber-900">Langkah berikutnya:</span> Buka lagi dari browser dan perangkat yang sama, lalu tekan konfirmasi suara.
+                          <span className="font-semibold text-amber-900">Langkah berikutnya:</span> Buka lagi dari browser dan perangkat yang sama, lalu tekan konfirmasi suara.
                         </p>
                       </div>
                     )}
@@ -286,7 +287,7 @@ export default function VoterDashboardPage() {
                           </div>
                         )}
                         <p className="text-[12px] leading-relaxed text-slate-700">
-                          🎉 Terima kasih atas partisipasi Anda dalam menjaga proses voting kampus yang tertib dan transparan.
+                          Terima kasih atas partisipasi Anda dalam menjaga proses voting kampus yang tertib dan transparan.
                         </p>
                       </div>
                     )}
@@ -314,7 +315,7 @@ export default function VoterDashboardPage() {
                   )}
                 </div>
 
-                <div className="mt-8 grid gap-4 sm:grid-cols-2 border-t border-slate-100 pt-6">
+                <div className="mt-5 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Waktu tersisa</p>
                     <p className="mt-2 text-[18px] font-semibold text-slate-900">
@@ -327,7 +328,7 @@ export default function VoterDashboardPage() {
                   </div>
                 </div>
 
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   {isCommitPhase && (
                     <Link
                       href={`/pemilih/pemilihan/${featuredElection.id}/pilih-kandidat`}
@@ -341,7 +342,7 @@ export default function VoterDashboardPage() {
                   {isRevealPhase && (
                     <Link
                       href={`/pemilih/pemilihan/${featuredElection.id}/reveal`}
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-amber-600 px-6 text-[13px] font-semibold text-white transition-colors hover:bg-amber-700 focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:outline-none sm:w-auto"
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#0F172A] px-6 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none sm:w-auto"
                       aria-label="Mulai konfirmasi suara Anda"
                     >
                       Konfirmasi Suara
@@ -351,7 +352,7 @@ export default function VoterDashboardPage() {
                   {isEndedPhase && (
                     <Link
                       href={`/pemilih/pemilihan/${featuredElection.id}/hasil`}
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-6 text-[13px] font-semibold text-white transition-colors hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:outline-none sm:w-auto"
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#0F172A] px-6 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none sm:w-auto"
                       aria-label="Lihat hasil akhir pemilihan"
                     >
                       Lihat Hasil Akhir
@@ -384,17 +385,17 @@ export default function VoterDashboardPage() {
         </article>
         )}
 
-        {featuredElection.phase !== 'registration' ? <article className="rounded-xl border border-slate-200 bg-white p-6">
+        {featuredElection.phase !== 'registration' ? <article className="rounded-xl border border-slate-200 bg-white p-5">
           <div className="flex items-center justify-between gap-4">
             <span className="rounded bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-800">
               {getPhaseLabel(secondaryElection.phase)}
             </span>
             <span className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Ruang berikutnya</span>
           </div>
-          <h3 className="mt-5 text-[20px] font-semibold leading-tight text-slate-900 md:text-[24px]">{secondaryElection.title}</h3>
-          <p className="mt-3 text-[14px] leading-7 text-slate-800">{secondaryElection.summary}</p>
+          <h3 className="mt-4 text-[16px] font-semibold leading-tight text-slate-900 md:text-[18px]">{secondaryElection.title}</h3>
+          <p className="mt-2 text-[14px] leading-6 text-slate-600">{secondaryElection.summary}</p>
 
-          <div className="mt-8">
+          <div className="mt-5">
             <div className="flex items-center justify-between text-[12px] uppercase tracking-[0.06em] text-slate-400">
               <span>Progress</span>
               <span>{getElectionProgress(secondaryElection)}% partisipasi</span>
@@ -405,11 +406,11 @@ export default function VoterDashboardPage() {
           </div>
 
           {getElectionViewState(secondaryElection).nextAction === 'wait' ? (
-            <button type="button" disabled className="mt-6 inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-5 text-[13px] font-medium text-slate-500">
+            <button type="button" disabled className="mt-4 inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-5 text-[13px] font-medium text-slate-500">
               Belum Dibuka
             </button>
           ) : (
-            <Link href={secondaryAction.href} className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-5 text-[13px] font-medium text-slate-900 hover:bg-slate-50">
+            <Link href={secondaryAction.href} className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-md border border-slate-200 bg-white px-5 text-[13px] font-medium text-slate-900 hover:bg-slate-50">
               {secondaryAction.label}
             </Link>
           )}
@@ -424,26 +425,26 @@ export default function VoterDashboardPage() {
       ) : null}
 
       <ScrollReveal variant="fade-up" delay={150} duration={800}>
-        <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
+        <section className="mt-4 rounded-xl border border-slate-200 bg-white p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-[20px] font-semibold text-slate-900">Aktivitas Voting Terkini</h2>
-              <p className="mt-2 text-[14px] leading-7 text-slate-800">Pantau komitmen suara, pembukaan fase konfirmasi, dan bukti transaksi yang sudah tersimpan.</p>
+              <h2 className="text-[16px] font-semibold text-slate-900">Aktivitas Voting Terkini</h2>
+              <p className="mt-1 text-[14px] leading-6 text-slate-600">Pantau komitmen suara, pembukaan fase konfirmasi, dan bukti transaksi yang sudah tersimpan.</p>
             </div>
             <Link href="/pemilih/bukti-saya" className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:text-slate-900 sm:text-right">
               Eksplorasi semua
             </Link>
           </div>
 
-        <div className="mt-8 space-y-4">
+        <div className="mt-4 space-y-2">
           {logs.map((log) => {
             const Icon = logToneIcon[log.tone]
 
             return (
-               <article key={log.id} className="rounded-lg border border-slate-100 bg-slate-50 px-5 py-4">
+               <article key={log.id} className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div className="flex items-start gap-4">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${logToneClassName[log.tone]}`}>
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${logToneClassName[log.tone]}`}>
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
@@ -469,11 +470,10 @@ export default function VoterDashboardPage() {
         <article id="tour-voter-participation-stats" className="rounded-xl border border-slate-100 bg-slate-50 p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">Partisipasi Anda</p>
 
-          <div className="mt-6 flex items-end gap-3">
-            <p className="text-[52px] font-semibold leading-none tracking-[-0.05em] text-slate-900 sm:text-[64px]">{participationRate}%</p>
-            <p className="pb-2 text-[16px] font-semibold text-emerald-600 sm:text-[18px]">+12%</p>
+          <div className="mt-5 flex items-end gap-3">
+            <p className="text-[40px] font-semibold leading-none tracking-[-0.04em] text-slate-900 sm:text-[48px]">{participationRate}%</p>
           </div>
-          <p className="mt-4 max-w-[24ch] text-[15px] leading-7 text-slate-800">Dari total ruang voting yang Anda ikuti tahun ini.</p>
+          <p className="mt-3 max-w-[24ch] text-[14px] leading-6 text-slate-600">Dari total ruang voting yang Anda ikuti tahun ini.</p>
           <div className="mt-8 flex items-center gap-3">
             <div className="flex -space-x-2">
               {store.elections.slice(0, 3).map((election, index) => (
