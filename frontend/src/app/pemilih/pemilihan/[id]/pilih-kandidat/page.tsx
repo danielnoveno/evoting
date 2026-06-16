@@ -89,9 +89,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   }
 
   const stepState = [
-    { label: 'Pilih kandidat', description: 'Pilih satu nama', active: true },
-    { label: 'Simpan pilihan', description: 'Kunci pilihanmu' },
-    { label: 'Konfirmasi suara', description: 'Datang lagi nanti' },
+    { label: 'Coblos kandidat', description: 'Pilih satu nama', active: true },
+    { label: 'Kunci pilihan', description: 'Tercatat di blockchain' },
+    { label: 'Pengesahan suara', description: 'Otomatis oleh sistem' },
     { label: 'Lihat hasil', description: 'Cek hasil akhir' },
   ]
 
@@ -109,7 +109,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
       if (!voterWallet) {
         setConfirmOpen(false)
-        window.alert('Dompet belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum memilih kandidat.')
+        window.alert('Dompet digital belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum mencoblos.')
         router.push(`/hubungkan-dompet?redirect=${encodeURIComponent(`/pemilih/pemilihan/${election.id}/pilih-kandidat`)}`)
         return
       }
@@ -138,6 +138,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       )
       saveVoteCommitment(election.id, {
         candidateId: candidateToConfirm,
+        candidateNumber,
         salt,
         commitment,
         timestamp: new Date().toISOString()
@@ -160,9 +161,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             <span className="inline-flex rounded bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-blue-400">
               STATUS SAAT INI
             </span>
-            <h1 className="mt-3 text-[26px] font-bold tracking-tight text-white md:text-[32px]">Saatnya Memilih</h1>
+            <h1 className="mt-3 text-[26px] font-bold tracking-tight text-white md:text-[32px]">Saatnya Mencoblos</h1>
             <p className="mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-slate-300">
-              Pilih satu kandidat dulu. Setelah itu, sistem akan mengunci pilihanmu supaya belum terlihat oleh siapa pun sampai waktu penghitungan dibuka.
+              Pilih satu kandidat. Setelah dicoblos, sistem akan mengunci pilihanmu di blockchain supaya belum terlihat oleh siapa pun sampai waktu penghitungan dibuka.
             </p>
           </div>
 
@@ -280,7 +281,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                   className="mt-4 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#0F172A] px-4 text-[13px] font-bold text-white transition-all hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none active:scale-[0.98] shadow-sm"
                   aria-label={`Pilih kandidat ${candidate.name}`}
                 >
-                  Pilih Kandidat
+                  Coblos Kandidat Ini
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
@@ -305,7 +306,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         open={confirmOpen}
         title="Pilih kandidat ini?"
         description="Pastikan namanya sudah benar. Setelah ini, pilihanmu akan disiapkan untuk disimpan dengan aman."
-        confirmLabel="Ya, Pilih Kandidat"
+        confirmLabel="Ya, Coblos Kandidat"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleConfirm}
       />

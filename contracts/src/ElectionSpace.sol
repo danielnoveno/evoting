@@ -28,6 +28,10 @@ contract ElectionSpace {
     string public metadataURI;
     Phase public currentPhase;
     ElectionStatus public status;
+    uint256 public commitStartsAt;
+    uint256 public commitEndsAt;
+    uint256 public revealStartsAt;
+    uint256 public revealEndsAt;
 
     mapping(address => bool) public isWhitelisted;
     mapping(address => bool) public hasCommitted;
@@ -48,6 +52,12 @@ contract ElectionSpace {
         uint256 indexed candidateId,
         uint256 newVoteCount
     );
+    event RevealRelayed(
+        uint256 indexed spaceId,
+        address indexed voter,
+        address indexed relayer,
+        uint256 candidateId
+    );
     event ElectionStatusChanged(
         uint256 indexed spaceId,
         ElectionStatus indexed status,
@@ -56,6 +66,14 @@ contract ElectionSpace {
     );
     event ElectionMetadataUpdated(
         uint256 indexed spaceId, string title, string metadataURI, address actor
+    );
+    event PhaseScheduleUpdated(
+        uint256 indexed spaceId,
+        uint256 commitStartsAt,
+        uint256 commitEndsAt,
+        uint256 revealStartsAt,
+        uint256 revealEndsAt,
+        address actor
     );
 
     error NotAuthorized();
@@ -73,6 +91,7 @@ contract ElectionSpace {
     error InvalidCommitment();
     error ElectionSuspended();
     error ElectionTerminated();
+    error InvalidPhaseSchedule();
 
     constructor(
         address _registry,
@@ -116,7 +135,8 @@ contract ElectionSpace {
     }
 
     modifier onlyPhase(Phase expected) {
-        if (currentPhase != expected) revert WrongPhase(expected, currentPhase);
+        Phase actual = phase();
+        if (actual != expected) revert WrongPhase(expected, actual);
         _;
     }
 
@@ -135,6 +155,36 @@ contract ElectionSpace {
         currentPhase = Phase(uint8(currentPhase) + 1);
 
         emit PhaseChanged(spaceId, previous, currentPhase, msg.sender);
+    }
+
+    function setPhaseSchedule(
+        uint256 _commitStartsAt,
+        uint256 _commitEndsAt,
+        uint256 _revealStartsAt,
+        uint256 _revealEndsAt
+    ) external onlySpaceAdminOrSuperAdmin onlyActive onlyPhase(Phase.Registration) {
+        if (
+            _commitStartsAt == 0 || _commitEndsAt <= _commitStartsAt
+                || _revealStartsAt < _commitEndsAt || _revealEndsAt <= _revealStartsAt
+        ) revert InvalidPhaseSchedule();
+
+        commitStartsAt = _commitStartsAt;
+        commitEndsAt = _commitEndsAt;
+        revealStartsAt = _revealStartsAt;
+        revealEndsAt = _revealEndsAt;
+
+        emit PhaseScheduleUpdated(
+            spaceId, _commitStartsAt, _commitEndsAt, _revealStartsAt, _revealEndsAt, msg.sender
+        );
+    }
+
+    function phase() public view returns (Phase) {
+        if (commitStartsAt == 0) return currentPhase;
+        if (block.timestamp < commitStartsAt) return Phase.Registration;
+        if (block.timestamp < commitEndsAt) return Phase.Commit;
+        if (block.timestamp < revealEndsAt && block.timestamp >= revealStartsAt) return Phase.Reveal;
+        if (block.timestamp < revealStartsAt) return Phase.Registration;
+        return Phase.Ended;
     }
 
     function registerVoter(address voter)
@@ -197,18 +247,33 @@ contract ElectionSpace {
         onlyActive
         onlyPhase(Phase.Reveal)
     {
-        if (!hasCommitted[msg.sender]) revert NotCommittedYet();
-        if (hasRevealed[msg.sender]) revert AlreadyRevealed();
+        _reveal(msg.sender, candidateId, salt);
+    }
+
+    function revealFor(address voter, uint256 candidateId, bytes32 salt)
+        external
+        onlyActive
+        onlyPhase(Phase.Reveal)
+    {
+        _reveal(voter, candidateId, salt);
+        emit RevealRelayed(spaceId, voter, msg.sender, candidateId);
+    }
+
+    function _reveal(address voter, uint256 candidateId, bytes32 salt) internal {
+        if (voter == address(0)) revert InvalidVoter();
+        if (!isWhitelisted[voter]) revert NotRegistered();
+        if (!hasCommitted[voter]) revert NotCommittedYet();
+        if (hasRevealed[voter]) revert AlreadyRevealed();
         if (candidateId == 0 || candidateId > candidateCount) revert InvalidCandidate();
 
         bytes32 recomputed =
-            keccak256(abi.encode(candidateId, salt, msg.sender, address(this), block.chainid));
-        if (recomputed != commitmentOf[msg.sender]) revert CommitmentMismatch();
+            keccak256(abi.encode(candidateId, salt, voter, address(this), block.chainid));
+        if (recomputed != commitmentOf[voter]) revert CommitmentMismatch();
 
-        hasRevealed[msg.sender] = true;
+        hasRevealed[voter] = true;
         voteCount[candidateId] += 1;
 
-        emit Revealed(spaceId, msg.sender, candidateId, voteCount[candidateId]);
+        emit Revealed(spaceId, voter, candidateId, voteCount[candidateId]);
     }
 
     function getResult(uint256 candidateId) external view onlyPhase(Phase.Ended) returns (uint256) {
@@ -235,8 +300,9 @@ contract ElectionSpace {
         external
         onlyRegistry
     {
-        if (currentPhase != Phase.Registration) {
-            revert WrongPhase(Phase.Registration, currentPhase);
+        Phase actual = phase();
+        if (actual != Phase.Registration) {
+            revert WrongPhase(Phase.Registration, actual);
         }
         title = _title;
         metadataURI = _metadataURI;

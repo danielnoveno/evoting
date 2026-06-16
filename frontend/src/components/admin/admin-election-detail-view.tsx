@@ -319,33 +319,33 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         tone: 'blue' as const,
         title: syncMode === 'auto' ? 'Sinkronisasi otomatis berjalan' : 'Sinkronisasi manual berjalan',
         description: isWritePending
-          ? 'Menunggu konfirmasi wallet admin untuk transaksi whitelist.'
+          ? 'Menunggu konfirmasi dompet admin untuk mendaftarkan DPT pemilih.'
           : isConfirming
             ? 'Transaksi sudah dikirim dan sedang menunggu konfirmasi Base Sepolia.'
-            : 'Menyiapkan transaksi sinkronisasi whitelist on-chain.',
+            : 'Menyiapkan transaksi pendaftaran DPT pemilih ke kontrak.',
       }
     : unsyncedValidAddresses.length === 0
       ? {
           tone: 'emerald' as const,
-          title: 'Whitelist on-chain sudah sinkron',
-          description: 'Semua wallet valid di database sudah ditandai tersinkron ke smart contract.',
+          title: 'DPT pemilih sudah terdaftar',
+          description: 'Semua dompet valid di database sudah ditandai terdaftar di kontrak.',
         }
       : !isAddressValid
         ? {
             tone: 'amber' as const,
             title: 'Belum bisa sinkron otomatis',
-            description: 'Alamat smart contract belum valid. Deploy pemilihan terlebih dahulu, lalu sinkronkan whitelist.',
+            description: 'Alamat kontrak belum valid. Finalisasi pemilihan terlebih dahulu, lalu daftarkan DPT.',
           }
         : !isRegistrationPhaseOnChain
           ? {
               tone: 'amber' as const,
               title: 'Sinkronisasi otomatis ditahan',
-              description: 'Whitelist on-chain hanya bisa didaftarkan saat fase smart contract masih Registration.',
+              description: 'DPT pemilih (whitelist) hanya bisa didaftarkan saat tahap Persiapan Pemilihan (Registration).',
             }
           : {
               tone: 'amber' as const,
-              title: 'Ada whitelist belum on-chain',
-              description: `${unsyncedValidAddresses.length} wallet valid siap disinkronkan. Sistem akan mencoba otomatis setelah penambahan data, tombol manual tetap tersedia.`,
+              title: 'Ada DPT belum terdaftar di kontrak',
+              description: `${unsyncedValidAddresses.length} dompet valid siap didaftarkan. Sistem akan mencoba otomatis setelah penambahan data, tombol manual tetap tersedia.`,
             }
 
   const handleDeleteCandidate = () => {
@@ -690,8 +690,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         <article className="overflow-hidden rounded-[30px] border border-slate-200 bg-white">
           <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-6 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-[20px] font-semibold text-slate-900">Daftar Whitelist Terbaru</h2>
-              <p className="mt-2 text-[13px] text-slate-500">Status database dan on-chain dipantau terpisah agar admin tahu wallet mana yang masih perlu transaksi.</p>
+              <h2 className="text-[20px] font-semibold text-slate-900">Daftar Pemilih Tetap (Whitelist)</h2>
+              <p className="mt-2 text-[13px] text-slate-500">Status database dan kontrak dipantau terpisah agar admin tahu dompet mana yang masih perlu didaftarkan.</p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <button
@@ -701,7 +701,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 text-[13px] font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {(isWritePending || isConfirming || isSyncing) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
-                Sinkron Manual
+                Daftarkan DPT
               </button>
               <div className="inline-flex h-11 items-center gap-3 rounded-2xl bg-slate-100 px-4 text-slate-400 md:w-[260px]">
                 <Link2 className="h-4 w-4" />
@@ -722,7 +722,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 <p className="mt-1 leading-6">{whitelistSyncStatus.description}</p>
               </div>
               <span className="inline-flex w-fit rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em]">
-                {unsyncedValidAddresses.length} belum on-chain
+                {unsyncedValidAddresses.length} belum terdaftar di kontrak
               </span>
             </div>
           </div>
@@ -733,7 +733,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           ) : null}
           {!whitelistQuery.isLoading && whitelistRecords.length === 0 ? (
             <div className="border-b border-slate-100 bg-slate-50 px-6 py-3 text-[13px] text-slate-600">
-              Belum ada whitelist di Supabase untuk proposal ini. Tambahkan manual atau unggah CSV.
+              Belum ada DPT pemilih di Supabase untuk proposal ini. Tambahkan manual atau unggah CSV.
             </div>
           ) : null}
           <div className="overflow-x-auto rounded-[24px] border border-slate-100 bg-white">
@@ -1363,9 +1363,9 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
       <ConfirmDialog
         open={syncOnchainConfirmOpen}
-        title="Sinkronisasi ke Blockchain?"
-        description={`Sebanyak ${unsyncedValidAddresses.length} wallet valid akan didaftarkan ke whitelist smart contract. Proses ini membutuhkan konfirmasi wallet admin dan hanya bisa dilakukan saat fase Registration.`}
-        confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Sinkronisasikan"}
+        title="Daftarkan DPT ke Kontrak?"
+        description={`Sebanyak ${unsyncedValidAddresses.length} dompet valid akan didaftarkan sebagai DPT pemilih (whitelist) di kontrak. Proses ini membutuhkan konfirmasi dompet admin dan hanya bisa dilakukan saat tahap Persiapan Pemilihan (Registration).`}
+        confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Daftarkan DPT"}
         onCancel={() => {
           if (!isWritePending && !isConfirming) {
             setSyncOnchainConfirmOpen(false)
@@ -1378,8 +1378,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
       <ConfirmDialog
         open={nextPhaseConfirmOpen}
-        title="Buka Fase Berikutnya?"
-        description="Aksi ini akan mengubah fase pemilihan di blockchain. Pastikan seluruh persiapan fase saat ini sudah selesai karena fase tidak dapat dikembalikan ke sebelumnya."
+        title="Buka Tahap Berikutnya?"
+        description="Aksi ini akan mengubah tahap pemilihan di blockchain. Gunakan hanya jika jadwal otomatis belum dipakai dan seluruh persiapan tahap saat ini sudah selesai."
         confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Lanjutkan"}
         onCancel={() => {
           if (!isWritePending && !isConfirming) {

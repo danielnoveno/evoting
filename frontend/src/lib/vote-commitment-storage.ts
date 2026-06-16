@@ -4,9 +4,15 @@ import { encodeAbiParameters, keccak256, parseAbiParameters, type Address } from
 
 export interface VoteCommitmentRecord {
   candidateId: string
+  candidateNumber?: number
   salt: `0x${string}`
   commitment: `0x${string}`
   timestamp: string
+  automaticReveal?: {
+    status: 'prepared' | 'submitted' | 'failed'
+    savedAt?: string
+    errorMessage?: string
+  }
 }
 
 function storageKey(electionId: string) {
@@ -43,6 +49,14 @@ export function generateCommitment(
 export function saveVoteCommitment(electionId: string, data: VoteCommitmentRecord) {
   if (typeof window === 'undefined') return
   window.localStorage.setItem(storageKey(electionId), JSON.stringify(data))
+}
+
+export function updateVoteCommitment(electionId: string, updater: (current: VoteCommitmentRecord) => VoteCommitmentRecord) {
+  const current = loadVoteCommitment(electionId)
+  if (!current) return null
+  const next = updater(current)
+  saveVoteCommitment(electionId, next)
+  return next
 }
 
 export function loadVoteCommitment(electionId: string): VoteCommitmentRecord | null {

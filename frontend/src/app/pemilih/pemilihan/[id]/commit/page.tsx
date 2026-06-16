@@ -2,16 +2,18 @@
 
 import { CalendarDays, CheckCircle2, ExternalLink, Fingerprint, LockKeyhole, ShieldCheck, Loader2, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAccount } from 'wagmi'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { basescanTxUrl, findElection, formatDateTime, formatNumber, formatWallet, useVoterStore } from '@/lib/voter-store'
-import { loadVoteCommitment } from '@/lib/vote-commitment-storage'
+import { loadVoteCommitment, updateVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
+import { backendRuntimeConfig } from '@/lib/supabase/config'
 
 function sameWalletAddress(left: string | null | undefined, right: string | null | undefined) {
   return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase())
@@ -68,6 +70,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
 
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [isRefreshingOnChainStatus, setIsRefreshingOnChainStatus] = useState(false)
+  const revealAuthorizationSavedForHash = useRef<string | null>(null)
 
   const savedCommitment = loadVoteCommitment(params.id)
   
@@ -87,6 +90,65 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
       })
     }
   }, [isConfirmed, hash, receipt, params.id, actions, showToast, savedCommitment?.commitment])
+
+  useEffect(() => {
+    if (!isConfirmed || !hash || !receipt || !savedCommitment || !contractAddress || !connectedWallet) return
+    if (revealAuthorizationSavedForHash.current === hash) return
+    revealAuthorizationSavedForHash.current = hash
+    const commitmentRecord = savedCommitment
+
+    async function saveAutomaticRevealQueue() {
+      const candidateNumber = commitmentRecord.candidateNumber
+        ?? (selectedCandidate ? Number.parseInt(selectedCandidate.id.split('-').pop() || '0', 10) : 0)
+      if (!candidateNumber) return
+
+      const supabase = getSupabaseBrowserClient()
+      const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } }
+      const accessToken = data.session?.access_token
+      if (!accessToken) return
+
+      const response = await fetch('/api/voter/reveal-authorizations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          proposalDraftId: params.id,
+          voterWallet: connectedWallet,
+          contractAddress,
+          chainId: backendRuntimeConfig.chainId,
+          candidateId: commitmentRecord.candidateId,
+          candidateNumber,
+          salt: commitmentRecord.salt,
+          commitment: commitmentRecord.commitment,
+          commitTxHash: hash,
+        }),
+      })
+
+      if (!response.ok) {
+        updateVoteCommitment(params.id, (current) => ({
+          ...current,
+          automaticReveal: {
+            status: 'failed',
+            savedAt: new Date().toISOString(),
+            errorMessage: 'Pengesahan otomatis belum tersimpan. Pemilih masih bisa memakai pengesahan manual jika diperlukan.',
+          },
+        }))
+        return
+      }
+
+      updateVoteCommitment(params.id, (current) => ({
+        ...current,
+        automaticReveal: {
+          status: 'prepared',
+          savedAt: new Date().toISOString(),
+        },
+      }))
+    }
+
+    void saveAutomaticRevealQueue()
+  }, [isConfirmed, hash, receipt, savedCommitment, contractAddress, connectedWallet, params.id])
 
   if (storeLoading || !store) {
     return (
@@ -124,15 +186,15 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
 
   const stepState = commitProof
     ? [
-        { label: 'Pilih kandidat', description: 'Pilih satu nama', done: true },
-        { label: 'Simpan pilihan', description: 'Kunci pilihanmu', done: true },
-        { label: 'Konfirmasi suara', description: 'Datang lagi nanti' },
+        { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
+        { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
+        { label: 'Pengesahan suara', description: 'Otomatis oleh sistem' },
         { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
     : [
-        { label: 'Pilih kandidat', description: 'Pilih satu nama', done: true },
-        { label: 'Simpan pilihan', description: 'Kunci pilihanmu', active: true },
-        { label: 'Konfirmasi suara', description: 'Datang lagi nanti' },
+        { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
+        { label: 'Kunci pilihan', description: 'Tercatat di blockchain', active: true },
+        { label: 'Pengesahan suara', description: 'Otomatis oleh sistem' },
         { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
 
@@ -178,17 +240,17 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const commitBlockedReason = !contractAddress
     ? 'Smart contract untuk pemilihan ini belum tersedia di Supabase.'
     : !connectedWallet
-      ? 'Dompet belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum menyimpan pilihan.'
+      ? 'Dompet digital belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum mencoblos.'
     : profileWallet && !isConnectedWalletProfileWallet
       ? `Dompet tersambung (${formatWallet(connectedWallet)}) berbeda dari dompet akun ini (${formatWallet(profileWallet)}). Sambungkan dompet yang sama agar pengecekan whitelist sesuai.`
     : onChainStatusError
-      ? 'Jaringan Base Sepolia belum merespons. Coba periksa ulang sebelum menyimpan pilihan.'
+      ? 'Jaringan blockchain belum merespons. Coba periksa ulang sebelum mencoblos.'
     : !isOnChainStatusReady
-      ? 'Status on-chain sedang diperiksa. Tunggu sebentar atau periksa ulang sebelum menyimpan pilihan.'
+      ? 'Status blockchain sedang diperiksa. Tunggu sebentar atau periksa ulang sebelum mencoblos.'
       : !isCommitPhaseOnChain
-        ? `Fase smart contract masih ${onChainPhaseLabel}, belum berada di tahap Memilih. Minta admin menyelaraskan fase on-chain sebelum pemilih menyimpan suara.`
+        ? `Tahap pemilihan masih ${onChainPhaseLabel}, belum berada di Masa Pencoblosan (Commit). Tunggu panitia membuka jadwal pencoblosan sebelum mengunci pilihan.`
       : !isWhitelistedOnChain
-        ? 'Wallet ini belum terdaftar di whitelist smart contract untuk ruang voting ini.'
+        ? 'Dompet digital ini belum terdaftar di Daftar Pemilih Tetap (whitelist) untuk pemilihan ini.'
         : hasCommittedOnChain
           ? 'Wallet ini sudah pernah menyimpan pilihan untuk ruang voting ini.'
           : ''
@@ -326,9 +388,9 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
       <section className="mt-6">
         <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">
           <LockKeyhole className="h-3.5 w-3.5" />
-          Konfirmasi pilihan
+          Coblos dan kunci pilihan
         </span>
-        <h1 className="mt-5 text-[28px] font-semibold tracking-tight text-slate-900 md:text-[40px]">Tinjau Suara Anda</h1>
+        <h1 className="mt-5 text-[28px] font-semibold tracking-tight text-slate-900 md:text-[40px]">Tinjau Pilihan Anda</h1>
         <p className="mt-4 max-w-3xl text-[16px] leading-8 text-slate-700">
           Pastikan pilihanmu sudah benar. Setelah dikirim, pilihan akan dikunci sebagai bukti suara dan belum akan terlihat oleh orang lain.
         </p>
@@ -423,7 +485,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         <div className="flex gap-3">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-slate-800" />
           <div>
-            <h2 className="text-[18px] font-semibold text-slate-900">Pernyataan privasi</h2>
+            <h2 className="text-[18px] font-semibold text-slate-900">Privasi pilihan</h2>
             <p className="mt-2 text-[14px] leading-7 text-slate-700">
               Setelah pilihan disimpan, suara baru dihitung saat kamu mengesahkannya pada tahap berikutnya dengan browser yang sama.
             </p>
@@ -467,14 +529,14 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
               Menyimpan suara...
             </>
           ) : (
-            'Simpan Pilihan Saya'
+            'Coblos dan Kunci Pilihan'
           )}
         </button>
       </section>
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Simpan pilihan sekarang?"
+        title="Coblos dan kunci pilihan sekarang?"
         description="Setelah disimpan, kamu perlu kembali saat tahap konfirmasi dibuka. Gunakan browser yang sama agar kode rahasianya tetap terbaca."
         confirmLabel="Ya, Simpan Pilihan"
         onCancel={() => setConfirmOpen(false)}

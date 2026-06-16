@@ -59,7 +59,22 @@ contract VoterClient {
     }
 }
 
+contract RelayerClient {
+    function revealFor(ElectionSpace space, address voter, uint256 candidateId, bytes32 salt)
+        external
+    {
+        space.revealFor(voter, candidateId, salt);
+    }
+}
+
 contract VoteChainMVPTest {
+    address constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
+
+    function _warp(uint256 timestamp) internal {
+        (bool ok,) = VM_ADDRESS.call(abi.encodeWithSignature("warp(uint256)", timestamp));
+        require(ok, "vm.warp failed");
+    }
+
     function _commitment(ElectionSpace space, address voter, uint256 candidateId, bytes32 salt)
         internal
         view
@@ -327,6 +342,69 @@ contract VoteChainMVPTest {
         try voter1.reveal(space, 1, wrongSalt) {
             revert("expected commitment mismatch revert");
         } catch { }
+    }
+
+    function test_relayer_can_reveal_for_committed_voter() external {
+        (, AdminClient admin, VoterClient voter1,,, ElectionSpace space) =
+            _createApprovedElection(2);
+        RelayerClient relayer = new RelayerClient();
+
+        admin.registerVoter(space, address(voter1));
+        admin.transitionToNextPhase(space);
+
+        bytes32 salt = bytes32(uint256(2026));
+        bytes32 commitment = _commitment(space, address(voter1), 2, salt);
+
+        voter1.commit(space, commitment);
+        admin.transitionToNextPhase(space);
+
+        relayer.revealFor(space, address(voter1), 2, salt);
+
+        require(space.hasRevealed(address(voter1)), "relayed reveal should mark voter");
+        require(space.voteCount(2) == 1, "relayed reveal should count vote");
+    }
+
+    function test_relayer_reveal_with_wrong_candidate_rejected() external {
+        (, AdminClient admin, VoterClient voter1,,, ElectionSpace space) =
+            _createApprovedElection(2);
+        RelayerClient relayer = new RelayerClient();
+
+        admin.registerVoter(space, address(voter1));
+        admin.transitionToNextPhase(space);
+
+        bytes32 salt = bytes32(uint256(2027));
+        bytes32 commitment = _commitment(space, address(voter1), 1, salt);
+
+        voter1.commit(space, commitment);
+        admin.transitionToNextPhase(space);
+
+        try relayer.revealFor(space, address(voter1), 2, salt) {
+            revert("expected relayed reveal mismatch");
+        } catch { }
+    }
+
+    function test_time_based_phase_schedule_supports_coblos_and_pengesahan() external {
+        (, AdminClient admin, VoterClient voter1,,, ElectionSpace space) =
+            _createApprovedElection(2);
+
+        admin.registerVoter(space, address(voter1));
+        space.setPhaseSchedule(1_000, 2_000, 2_000, 3_000);
+
+        require(uint8(space.phase()) == uint8(ElectionSpace.Phase.Registration), "starts setup");
+
+        _warp(1_100);
+        require(uint8(space.phase()) == uint8(ElectionSpace.Phase.Commit), "commit by time");
+
+        bytes32 salt = bytes32(uint256(8080));
+        voter1.commit(space, _commitment(space, address(voter1), 1, salt));
+
+        _warp(2_100);
+        require(uint8(space.phase()) == uint8(ElectionSpace.Phase.Reveal), "reveal by time");
+        space.revealFor(address(voter1), 1, salt);
+
+        _warp(3_100);
+        require(uint8(space.phase()) == uint8(ElectionSpace.Phase.Ended), "ended by time");
+        require(space.getResult(1) == 1, "scheduled result mismatch");
     }
 
     function test_copycat_commit_cannot_reveal_after_original_reveals() external {

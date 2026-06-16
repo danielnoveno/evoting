@@ -94,9 +94,9 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
       <VoterShell>
         <VoterStepper
           steps={[
-            { label: 'Pilih kandidat', description: 'Pilih satu nama', done: true },
-            { label: 'Simpan pilihan', description: 'Kunci pilihanmu', done: true },
-            { label: 'Konfirmasi suara', description: 'Sahkan pilihanmu', active: true },
+            { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
+            { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
+            { label: 'Pengesahan suara', description: 'Sahkan pilihanmu', active: true },
             { label: 'Lihat hasil', description: 'Cek hasil akhir' },
           ]}
         />
@@ -149,11 +149,11 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
     : !isOnChainStatusReady
       ? 'Status on-chain sedang diperiksa. Tunggu sebentar sebelum mengesahkan suara.'
     : !isWhitelistedOnChain
-      ? 'Wallet ini belum terdaftar di whitelist smart contract untuk ruang voting ini.'
+      ? 'Dompet digital ini belum terdaftar di Daftar Pemilih Tetap (whitelist) untuk pemilihan ini.'
     : !hasCommittedOnChain
       ? 'Wallet ini belum menyimpan pilihan di smart contract, jadi belum bisa mengesahkan suara.'
     : !isRevealPhaseOnChain
-      ? `Fase smart contract masih ${onChainPhaseLabel}, belum berada di tahap Konfirmasi suara. Minta admin membuka fase berikutnya setelah tahap memilih selesai.`
+      ? `Tahap pemilihan masih ${onChainPhaseLabel}, belum berada di Pengesahan Suara (Reveal). Sistem otomatis baru bisa mengesahkan suara saat jadwal penghitungan dibuka.`
     : hasRevealedOnChain
       ? 'Wallet ini sudah pernah mengesahkan suara untuk ruang voting ini.'
       : ''
@@ -177,15 +177,15 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
 
   const stepState = election.revealProof || hasRevealedOnChain
     ? [
-        { label: 'Pilih kandidat', description: 'Pilih satu nama', done: true },
-        { label: 'Simpan pilihan', description: 'Kunci pilihanmu', done: true },
-        { label: 'Konfirmasi suara', description: 'Sahkan pilihanmu', done: true },
+        { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
+        { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
+        { label: 'Pengesahan suara', description: 'Sahkan pilihanmu', done: true },
         { label: 'Lihat hasil', description: 'Cek hasil akhir', active: true },
       ]
     : [
-        { label: 'Pilih kandidat', description: 'Pilih satu nama', done: true },
-        { label: 'Simpan pilihan', description: 'Kunci pilihanmu', done: true },
-        { label: 'Konfirmasi suara', description: 'Sahkan pilihanmu', active: true },
+        { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
+        { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
+        { label: 'Pengesahan suara', description: 'Sahkan pilihanmu', active: true },
         { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
 
@@ -197,15 +197,15 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 mb-6">
           <LockKeyhole className="h-3.5 w-3.5 text-slate-700" />
           <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700">
-            Konfirmasi Suara
+            Pengesahan Suara (Reveal)
           </span>
         </div>
 
         <h1 className="text-[28px] md:text-[36px] font-bold tracking-tight text-slate-900">
-          Konfirmasi Suara Anda
+          Sahkan Suara Manual
         </h1>
         <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-slate-600">
-          Sistem akan memakai kode rahasia yang tersimpan di browser ini untuk memastikan suara yang dihitung adalah suara yang sama dengan pilihanmu tadi.
+          Halaman ini adalah cadangan jika pengesahan otomatis belum berhasil. Sistem memakai kode rahasia di browser ini untuk memastikan suara yang dihitung sama dengan pilihanmu tadi.
         </p>
 
         {writeError && (
@@ -215,7 +215,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
               <h2 className="text-[15px] font-semibold text-red-900">Gagal konfirmasi suara</h2>
               <p className="mt-1 text-[13px] text-red-800 leading-relaxed">
                 {writeError.message.includes('CommitmentMismatch') 
-                  ? 'Kode rahasia tidak cocok dengan pilihan yang sebelumnya disimpan.' 
+                  ? 'Kode rahasia tidak cocok dengan bukti pilihan yang sebelumnya dikunci.' 
                   : 'Terjadi kesalahan saat mengesahkan suara. Pastikan dompet digitalmu siap dan memiliki saldo uji coba yang cukup.'}
               </p>
             </div>
@@ -285,7 +285,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
                 Mengesahkan suara...
               </>
             ) : (
-              revealBlockedReason ? 'Konfirmasi Belum Dibuka' : 'Konfirmasi Suara Sekarang'
+              revealBlockedReason ? 'Pengesahan Belum Dibuka' : 'Sahkan Suara Manual'
             )}
           </button>
           <Link

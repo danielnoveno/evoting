@@ -130,9 +130,9 @@ export const adminElectionFilters: Array<{ key: 'semua' | AdminElectionStatus; l
 
 export const adminElectionDetailTabs = [
   { id: 'kandidat', label: 'Kandidat' },
-  { id: 'whitelist', label: 'Pemilih Whitelist' },
-  { id: 'parameter', label: 'Parameter Voting' },
-  { id: 'realtime', label: 'Real-time hasil' },
+  { id: 'whitelist', label: 'DPT Pemilih' },
+  { id: 'parameter', label: 'Jadwal & Fase' },
+  { id: 'realtime', label: 'Hasil & Audit' },
 ] as const
 
 export type AdminElectionDetailTabId = (typeof adminElectionDetailTabs)[number]['id']
