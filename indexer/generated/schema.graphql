@@ -23,6 +23,8 @@ type Query {
   chainEvents(where: chainEventFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int): chainEventPage!
   election(id: String!): election
   elections(where: electionFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int): electionPage!
+  changeProposal(id: BigInt!): changeProposal
+  changeProposals(where: changeProposalFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int): changeProposalPage!
   voteCommit(id: String!): voteCommit
   voteCommits(where: voteCommitFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int): voteCommitPage!
   voteReveal(id: String!): voteReveal
@@ -264,6 +266,8 @@ type election {
   proposalId: BigInt!
   owner: String!
   candidateCount: Int!
+  title: String!
+  metadataURI: String!
   phase: Int!
   status: Int!
   whitelistedCount: Int!
@@ -330,6 +334,26 @@ input electionFilter {
   candidateCount_lt: Int
   candidateCount_gte: Int
   candidateCount_lte: Int
+  title: String
+  title_not: String
+  title_in: [String]
+  title_not_in: [String]
+  title_contains: String
+  title_not_contains: String
+  title_starts_with: String
+  title_ends_with: String
+  title_not_starts_with: String
+  title_not_ends_with: String
+  metadataURI: String
+  metadataURI_not: String
+  metadataURI_in: [String]
+  metadataURI_not_in: [String]
+  metadataURI_contains: String
+  metadataURI_not_contains: String
+  metadataURI_starts_with: String
+  metadataURI_ends_with: String
+  metadataURI_not_starts_with: String
+  metadataURI_not_ends_with: String
   phase: Int
   phase_not: Int
   phase_in: [Int]
@@ -422,6 +446,120 @@ input electionFilter {
   lastUpdatedTx_ends_with: String
   lastUpdatedTx_not_starts_with: String
   lastUpdatedTx_not_ends_with: String
+}
+
+type changeProposal {
+  id: BigInt!
+  spaceId: BigInt!
+  spaceAddress: String!
+  title: String!
+  metadataURI: String!
+  status: Int!
+  proposer: String!
+  submittedAt: BigInt!
+  updatedAtBlock: BigInt!
+  updatedAtTx: String!
+}
+
+type changeProposalPage {
+  items: [changeProposal!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input changeProposalFilter {
+  AND: [changeProposalFilter]
+  OR: [changeProposalFilter]
+  id: BigInt
+  id_not: BigInt
+  id_in: [BigInt]
+  id_not_in: [BigInt]
+  id_gt: BigInt
+  id_lt: BigInt
+  id_gte: BigInt
+  id_lte: BigInt
+  spaceId: BigInt
+  spaceId_not: BigInt
+  spaceId_in: [BigInt]
+  spaceId_not_in: [BigInt]
+  spaceId_gt: BigInt
+  spaceId_lt: BigInt
+  spaceId_gte: BigInt
+  spaceId_lte: BigInt
+  spaceAddress: String
+  spaceAddress_not: String
+  spaceAddress_in: [String]
+  spaceAddress_not_in: [String]
+  spaceAddress_contains: String
+  spaceAddress_not_contains: String
+  spaceAddress_starts_with: String
+  spaceAddress_ends_with: String
+  spaceAddress_not_starts_with: String
+  spaceAddress_not_ends_with: String
+  title: String
+  title_not: String
+  title_in: [String]
+  title_not_in: [String]
+  title_contains: String
+  title_not_contains: String
+  title_starts_with: String
+  title_ends_with: String
+  title_not_starts_with: String
+  title_not_ends_with: String
+  metadataURI: String
+  metadataURI_not: String
+  metadataURI_in: [String]
+  metadataURI_not_in: [String]
+  metadataURI_contains: String
+  metadataURI_not_contains: String
+  metadataURI_starts_with: String
+  metadataURI_ends_with: String
+  metadataURI_not_starts_with: String
+  metadataURI_not_ends_with: String
+  status: Int
+  status_not: Int
+  status_in: [Int]
+  status_not_in: [Int]
+  status_gt: Int
+  status_lt: Int
+  status_gte: Int
+  status_lte: Int
+  proposer: String
+  proposer_not: String
+  proposer_in: [String]
+  proposer_not_in: [String]
+  proposer_contains: String
+  proposer_not_contains: String
+  proposer_starts_with: String
+  proposer_ends_with: String
+  proposer_not_starts_with: String
+  proposer_not_ends_with: String
+  submittedAt: BigInt
+  submittedAt_not: BigInt
+  submittedAt_in: [BigInt]
+  submittedAt_not_in: [BigInt]
+  submittedAt_gt: BigInt
+  submittedAt_lt: BigInt
+  submittedAt_gte: BigInt
+  submittedAt_lte: BigInt
+  updatedAtBlock: BigInt
+  updatedAtBlock_not: BigInt
+  updatedAtBlock_in: [BigInt]
+  updatedAtBlock_not_in: [BigInt]
+  updatedAtBlock_gt: BigInt
+  updatedAtBlock_lt: BigInt
+  updatedAtBlock_gte: BigInt
+  updatedAtBlock_lte: BigInt
+  updatedAtTx: String
+  updatedAtTx_not: String
+  updatedAtTx_in: [String]
+  updatedAtTx_not_in: [String]
+  updatedAtTx_contains: String
+  updatedAtTx_not_contains: String
+  updatedAtTx_starts_with: String
+  updatedAtTx_ends_with: String
+  updatedAtTx_not_starts_with: String
+  updatedAtTx_not_ends_with: String
 }
 
 type voteCommit {

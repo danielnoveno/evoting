@@ -19,12 +19,11 @@ import { VoteChainRegistry } from "../src/VoteChainRegistry.sol";
  *   test_fullFlow_security   → edge cases keamanan
  */
 contract FullFlowTest is Test {
-    function _commitment(
-        ElectionSpace space,
-        address voter,
-        uint256 candidateId,
-        bytes32 salt
-    ) internal view returns (bytes32) {
+    function _commitment(ElectionSpace space, address voter, uint256 candidateId, bytes32 salt)
+        internal
+        view
+        returns (bytes32)
+    {
         return keccak256(abi.encode(candidateId, salt, voter, address(space), block.chainid));
     }
 
@@ -247,9 +246,9 @@ contract FullFlowTest is Test {
         //   Commit: 60 detik → 360 detik
         //   Reveal: 360 detik → 660 detik
         uint256 commitStart = now_ + 60;
-        uint256 commitEnd   = now_ + 360;
+        uint256 commitEnd = now_ + 360;
         uint256 revealStart = now_ + 360;
-        uint256 revealEnd   = now_ + 660;
+        uint256 revealEnd = now_ + 660;
 
         vm.prank(spaceAdmin);
         space.setPhaseSchedule(commitStart, commitEnd, revealStart, revealEnd);

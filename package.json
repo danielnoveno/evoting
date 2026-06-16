@@ -13,9 +13,15 @@
     "validate:indexer": "node .docs/opencode/workflows/full-automation-test-pass.mjs --indexer-only",
     "validate:ai-boundary": "node .docs/opencode/workflows/full-automation-test-pass.mjs --ai-boundary-only",
     "validate:onchain-proof": "node .docs/opencode/workflows/full-automation-test-pass.mjs --onchain-proof-only",
-    "validate:all": "node .docs/opencode/workflows/full-automation-test-pass.mjs --all"
+    "validate:all": "node .docs/opencode/workflows/full-automation-test-pass.mjs --all",
+    "test:e2e": "npx playwright test",
+    "test:e2e:chromium": "npx playwright test --project=chromium",
+    "test:e2e:ui": "npx playwright test --ui",
+    "test:e2e:report": "npx playwright show-report",
+    "test:e2e:bb": "node .docs/opencode/workflows/blackbox-testing.mjs --scope=frontend"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "supabase": "^2.106.0"
   }
 }

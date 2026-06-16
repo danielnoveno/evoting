@@ -53,10 +53,7 @@ contract ElectionSpace {
         uint256 newVoteCount
     );
     event RevealRelayed(
-        uint256 indexed spaceId,
-        address indexed voter,
-        address indexed relayer,
-        uint256 candidateId
+        uint256 indexed spaceId, address indexed voter, address indexed relayer, uint256 candidateId
     );
     event ElectionStatusChanged(
         uint256 indexed spaceId,
@@ -182,7 +179,9 @@ contract ElectionSpace {
         if (commitStartsAt == 0) return currentPhase;
         if (block.timestamp < commitStartsAt) return Phase.Registration;
         if (block.timestamp < commitEndsAt) return Phase.Commit;
-        if (block.timestamp < revealEndsAt && block.timestamp >= revealStartsAt) return Phase.Reveal;
+        if (block.timestamp < revealEndsAt && block.timestamp >= revealStartsAt) {
+            return Phase.Reveal;
+        }
         if (block.timestamp < revealStartsAt) return Phase.Registration;
         return Phase.Ended;
     }
