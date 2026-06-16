@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, CalendarDays, CirclePlus, Download, FileText, Link2, ListChecks, Pencil, RefreshCw, Share2, ShieldCheck, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CirclePlus, Download, FileText, Link2, ListChecks, Loader2, Pencil, RefreshCw, Share2, ShieldCheck, Trash2, Upload } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
@@ -98,6 +98,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const [syncOnchainConfirmOpen, setSyncOnchainConfirmOpen] = useState(false)
   const [nextPhaseConfirmOpen, setNextPhaseConfirmOpen] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [syncMode, setSyncMode] = useState<'manual' | 'auto' | null>(null)
   const [whitelistSearch, setWhitelistSearch] = useState('')
   const whitelistQuery = useWhitelistEntries(election.id)
   const createWhitelistEntry = useCreateWhitelistEntry()
@@ -109,13 +110,100 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const candidatesQuery = useProposalCandidates(election.id)
 
   const lastProcessedSyncHash = useRef<string | null>(null)
+  const pendingSyncAddressesRef = useRef<string[]>([])
+  const syncInFlightKeyRef = useRef<string | null>(null)
+  const lastAutoSyncKeyRef = useRef<string | null>(null)
+
+  const normalizeWhitelistAddresses = (addresses: string[]) => {
+    return Array.from(new Set(
+      addresses
+        .map((address) => address.trim().toLowerCase())
+        .filter((address) => /^0x[a-f0-9]{40}$/.test(address))
+    )).sort()
+  }
+
+  const onChainPhaseNumber = typeof onChainPhase === 'number' || typeof onChainPhase === 'bigint'
+    ? Number(onChainPhase)
+    : null
+  const isRegistrationPhaseOnChain = onChainPhaseNumber === 0
+  const getUnsyncedValidAddresses = (extraAddresses: string[] = []) => normalizeWhitelistAddresses([
+    ...(whitelistQuery.data ?? [])
+      .filter((record) => record.syncStatus !== 'synced' && record.validationStatus === 'valid')
+      .map((record) => record.walletAddress),
+    ...extraAddresses,
+  ])
+
+  const startWhitelistSync = (addresses: string[], mode: 'manual' | 'auto') => {
+    const normalizedAddresses = normalizeWhitelistAddresses(addresses)
+    const batchKey = normalizedAddresses.join('|')
+
+    if (normalizedAddresses.length === 0) {
+      if (mode === 'manual') {
+        showToast({
+          tone: 'info',
+          title: 'Sudah Sinkron',
+          description: 'Seluruh daftar pemilih valid sudah terdaftar on-chain.',
+        })
+        setSyncOnchainConfirmOpen(false)
+      }
+      return
+    }
+
+    if (!isAddressValid) {
+      showToast({
+        tone: 'error',
+        title: 'Alamat Kontrak Tidak Valid',
+        description: 'Pemilihan ini belum dideploy ke blockchain.',
+      })
+      setSyncOnchainConfirmOpen(false)
+      return
+    }
+
+    if (!isRegistrationPhaseOnChain) {
+      showToast({
+        tone: mode === 'manual' ? 'error' : 'info',
+        title: 'Sinkronisasi Ditunda',
+        description: 'Whitelist on-chain hanya bisa didaftarkan saat fase smart contract masih Registration.',
+      })
+      setSyncOnchainConfirmOpen(false)
+      return
+    }
+
+    if (isWritePending || isConfirming || isSyncing || updateWhitelistSyncStatus.isPending) {
+      if (mode === 'manual') {
+        showToast({
+          tone: 'info',
+          title: 'Transaksi Masih Diproses',
+          description: 'Tunggu transaksi sinkronisasi sebelumnya selesai sebelum mencoba lagi.',
+        })
+      }
+      return
+    }
+
+    if (syncInFlightKeyRef.current === batchKey || (mode === 'auto' && lastAutoSyncKeyRef.current === batchKey)) {
+      return
+    }
+
+    pendingSyncAddressesRef.current = normalizedAddresses
+    syncInFlightKeyRef.current = batchKey
+    if (mode === 'auto') lastAutoSyncKeyRef.current = batchKey
+    setSyncMode(mode)
+    setIsSyncing(true)
+    registerVoters(normalizedAddresses)
+
+    if (mode === 'auto') {
+      showToast({
+        tone: 'info',
+        title: 'Sinkronisasi On-Chain Dimulai',
+        description: 'Konfirmasi transaksi di wallet admin untuk mendaftarkan pemilih ke smart contract.',
+      })
+    }
+  }
 
   // Track transaction success for whitelist sync
   useEffect(() => {
     if (isConfirmed && txHash && isSyncing && lastProcessedSyncHash.current !== txHash) {
-      const unsyncedAddresses = (whitelistQuery.data ?? [])
-        .filter(r => r.syncStatus !== 'synced')
-        .map(r => r.walletAddress)
+      const unsyncedAddresses = pendingSyncAddressesRef.current
 
       if (unsyncedAddresses.length > 0) {
         lastProcessedSyncHash.current = txHash
@@ -126,7 +214,10 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         }, {
           onSuccess: () => {
             setIsSyncing(false)
+            setSyncMode(null)
             setSyncOnchainConfirmOpen(false)
+            pendingSyncAddressesRef.current = []
+            syncInFlightKeyRef.current = null
             resetWrite()
             showToast({
               tone: 'success',
@@ -136,11 +227,21 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           },
           onError: () => {
             lastProcessedSyncHash.current = null // Allow retry
+            setIsSyncing(false)
+            setSyncMode(null)
+            syncInFlightKeyRef.current = null
+            showToast({
+              tone: 'error',
+              title: 'Status Sinkronisasi Gagal Disimpan',
+              description: 'Transaksi sudah selesai, tetapi status database belum berhasil diperbarui. Coba sinkron manual atau periksa koneksi admin.',
+            })
           }
         })
       } else {
         setIsSyncing(false)
+        setSyncMode(null)
         setSyncOnchainConfirmOpen(false)
+        syncInFlightKeyRef.current = null
       }
     }
   }, [isConfirmed, txHash, isSyncing, election.id, whitelistQuery.data, updateWhitelistSyncStatus, showToast, resetWrite])
@@ -162,6 +263,9 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   useEffect(() => {
     if (writeError) {
       setIsSyncing(false)
+      setSyncMode(null)
+      pendingSyncAddressesRef.current = []
+      syncInFlightKeyRef.current = null
       showToast({
         tone: 'error',
         title: 'Transaksi Gagal',
@@ -209,6 +313,41 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     })
   }, [whitelistRecords, whitelistSearch])
 
+  const unsyncedValidAddresses = getUnsyncedValidAddresses()
+  const whitelistSyncStatus = isSyncing || isWritePending || isConfirming
+    ? {
+        tone: 'blue' as const,
+        title: syncMode === 'auto' ? 'Sinkronisasi otomatis berjalan' : 'Sinkronisasi manual berjalan',
+        description: isWritePending
+          ? 'Menunggu konfirmasi wallet admin untuk transaksi whitelist.'
+          : isConfirming
+            ? 'Transaksi sudah dikirim dan sedang menunggu konfirmasi Base Sepolia.'
+            : 'Menyiapkan transaksi sinkronisasi whitelist on-chain.',
+      }
+    : unsyncedValidAddresses.length === 0
+      ? {
+          tone: 'emerald' as const,
+          title: 'Whitelist on-chain sudah sinkron',
+          description: 'Semua wallet valid di database sudah ditandai tersinkron ke smart contract.',
+        }
+      : !isAddressValid
+        ? {
+            tone: 'amber' as const,
+            title: 'Belum bisa sinkron otomatis',
+            description: 'Alamat smart contract belum valid. Deploy pemilihan terlebih dahulu, lalu sinkronkan whitelist.',
+          }
+        : !isRegistrationPhaseOnChain
+          ? {
+              tone: 'amber' as const,
+              title: 'Sinkronisasi otomatis ditahan',
+              description: 'Whitelist on-chain hanya bisa didaftarkan saat fase smart contract masih Registration.',
+            }
+          : {
+              tone: 'amber' as const,
+              title: 'Ada whitelist belum on-chain',
+              description: `${unsyncedValidAddresses.length} wallet valid siap disinkronkan. Sistem akan mencoba otomatis setelah penambahan data, tombol manual tetap tersedia.`,
+            }
+
   const handleDeleteCandidate = () => {
     if (!candidateToDelete) return
     setCandidates((items) => items.filter((candidate) => candidate.id !== candidateToDelete.id))
@@ -254,14 +393,16 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       },
       {
         onSuccess: () => {
+          const addedWallet = manualWallet.trim().toLowerCase()
           setManualWhitelistOpen(false)
           showToast({
             tone: 'success',
             title: 'Pemilih berhasil ditambahkan',
-            description: `Wallet ${manualWallet.trim().toLowerCase()} telah ditambahkan ke whitelist database. Jalankan sinkronisasi untuk mendaftarkan on-chain.`,
+            description: `Wallet ${addedWallet} telah ditambahkan ke whitelist database. Sistem akan mencoba sinkronisasi on-chain otomatis.`,
           })
           setManualWallet('')
           setManualName('')
+          startWhitelistSync(getUnsyncedValidAddresses([addedWallet]), 'auto')
         },
         onError: (error) => {
           showToast({
@@ -347,15 +488,16 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         invalidCount,
       },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
           setUploadConfirmOpen(false)
           setUploadModalOpen(false)
           setUploadCsvContent('')
           showToast({
             tone: 'success',
             title: 'File whitelist diunggah',
-            description: `File ${uploadFileName} berhasil diproses. ${entries.length} wallet valid ditambahkan${invalidCount > 0 ? `, ${invalidCount} baris diabaikan.` : '.'}`,
+              description: `File ${uploadFileName} berhasil diproses. ${entries.length} wallet valid ditambahkan${invalidCount > 0 ? `, ${invalidCount} baris diabaikan.` : '.'}`,
           })
+          startWhitelistSync(getUnsyncedValidAddresses(result.entries.map((entry) => entry.walletAddress)), 'auto')
         },
         onError: (error) => {
           setUploadConfirmOpen(false)
@@ -378,32 +520,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   }
 
   const handleConfirmSyncOnchain = () => {
-    if (!isAddressValid) {
-      showToast({
-        tone: 'error',
-        title: 'Alamat Kontrak Tidak Valid',
-        description: 'Pemilihan ini belum dideploy ke blockchain.',
-      })
-      setSyncOnchainConfirmOpen(false)
-      return
-    }
-
-    const unsyncedAddresses = (whitelistQuery.data ?? [])
-      .filter(r => r.syncStatus !== 'synced')
-      .map(r => r.walletAddress)
-
-    if (unsyncedAddresses.length === 0) {
-      showToast({
-        tone: 'info',
-        title: 'Sudah Sinkron',
-        description: 'Seluruh daftar pemilih sudah terdaftar on-chain.',
-      })
-      setSyncOnchainConfirmOpen(false)
-      return
-    }
-
-    setIsSyncing(true)
-    registerVoters(unsyncedAddresses)
+    startWhitelistSync(getUnsyncedValidAddresses(), 'manual')
   }
 
   const handleConfirmNextPhase = () => {
@@ -572,16 +689,41 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.45fr)_420px]">
         <article className="overflow-hidden rounded-[30px] border border-slate-200 bg-white">
           <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-6 md:flex-row md:items-center md:justify-between">
-            <h2 className="text-[20px] font-semibold text-slate-900">Daftar Whitelist Terbaru</h2>
-            <div className="inline-flex h-11 items-center gap-3 rounded-2xl bg-slate-100 px-4 text-slate-400 md:w-[260px]">
-              <Link2 className="h-4 w-4" />
-              <input
-                type="text"
-                value={whitelistSearch}
-                onChange={(event) => setWhitelistSearch(event.target.value)}
-                placeholder="Cari alamat atau nama..."
-                className="w-full bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-slate-400"
-              />
+            <div>
+              <h2 className="text-[20px] font-semibold text-slate-900">Daftar Whitelist Terbaru</h2>
+              <p className="mt-2 text-[13px] text-slate-500">Status database dan on-chain dipantau terpisah agar admin tahu wallet mana yang masih perlu transaksi.</p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={() => setSyncOnchainConfirmOpen(true)}
+                disabled={isWritePending || isConfirming || isSyncing || updateWhitelistSyncStatus.isPending || unsyncedValidAddresses.length === 0}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 text-[13px] font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {(isWritePending || isConfirming || isSyncing) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                Sinkron Manual
+              </button>
+              <div className="inline-flex h-11 items-center gap-3 rounded-2xl bg-slate-100 px-4 text-slate-400 md:w-[260px]">
+                <Link2 className="h-4 w-4" />
+                <input
+                  type="text"
+                  value={whitelistSearch}
+                  onChange={(event) => setWhitelistSearch(event.target.value)}
+                  placeholder="Cari alamat atau nama..."
+                  className="w-full bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-slate-400"
+                />
+              </div>
+            </div>
+          </div>
+          <div className={`border-b px-6 py-4 text-[13px] ${whitelistSyncStatus.tone === 'emerald' ? 'border-emerald-100 bg-emerald-50 text-emerald-800' : whitelistSyncStatus.tone === 'blue' ? 'border-blue-100 bg-blue-50 text-blue-800' : 'border-amber-100 bg-amber-50 text-amber-900'}`} role="status">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="font-semibold">{whitelistSyncStatus.title}</p>
+                <p className="mt-1 leading-6">{whitelistSyncStatus.description}</p>
+              </div>
+              <span className="inline-flex w-fit rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em]">
+                {unsyncedValidAddresses.length} belum on-chain
+              </span>
             </div>
           </div>
           {whitelistQuery.error ? (
@@ -1222,12 +1364,13 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <ConfirmDialog
         open={syncOnchainConfirmOpen}
         title="Sinkronisasi ke Blockchain?"
-        description="Data proposal (kandidat, parameter, dan whitelist) akan disinkronisasikan ke blockchain. Proses ini akan memakan biaya gas dan data tidak dapat diubah lagi."
+        description={`Sebanyak ${unsyncedValidAddresses.length} wallet valid akan didaftarkan ke whitelist smart contract. Proses ini membutuhkan konfirmasi wallet admin dan hanya bisa dilakukan saat fase Registration.`}
         confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Sinkronisasikan"}
         onCancel={() => {
           if (!isWritePending && !isConfirming) {
             setSyncOnchainConfirmOpen(false)
             setIsSyncing(false)
+            setSyncMode(null)
           }
         }}
         onConfirm={handleConfirmSyncOnchain}

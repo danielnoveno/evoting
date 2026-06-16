@@ -106,6 +106,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
     writeContract({
       address: address as `0x${string}`,
       abi: electionSpaceAbi,
+      chainId: baseSepolia.id,
       functionName: 'commitVote',
       args: [commitment],
       // @ts-ignore - capabilities adalah fitur baru wagmi/viem untuk EIP-5792
@@ -125,6 +126,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
     writeContract({
       address: address as `0x${string}`,
       abi: electionSpaceAbi,
+      chainId: baseSepolia.id,
       functionName: 'revealVote',
       args: [BigInt(candidateId), salt],
       // @ts-ignore
@@ -137,6 +139,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
     writeContract({
       address: address as `0x${string}`,
       abi: electionSpaceAbi,
+      chainId: baseSepolia.id,
       functionName: 'registerVoters',
       args: [voters],
     })
@@ -147,6 +150,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
     writeContract({
       address: address as `0x${string}`,
       abi: electionSpaceAbi,
+      chainId: baseSepolia.id,
       functionName: 'transitionToNextPhase',
     })
   }
