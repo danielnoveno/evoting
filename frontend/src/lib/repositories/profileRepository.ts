@@ -351,7 +351,8 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
 
   const profileEmail = getVerifiedProfileEmail(user, currentProfile, input.email)
   const isAdminActivation = input.roleHint === 'admin-activation'
-  if (isAdminActivation) {
+  const activationToken = input.activationToken?.trim()
+  if (isAdminActivation && activationToken) {
     await claimAdminInviteWithWallet({ ...input, walletAddress: normalizedWallet })
   }
 
