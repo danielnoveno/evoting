@@ -31,28 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                if (typeof window !== 'undefined' && window.ethereum) {
-                  const descriptor = Object.getOwnPropertyDescriptor(window, 'ethereum');
-                  if (descriptor && !descriptor.writable) {
-                    Object.defineProperty(window, 'ethereum', {
-                      value: window.ethereum,
-                      writable: true,
-                      configurable: true
-                    });
-                  }
-                }
-              } catch (e) {
-                console.warn('Could not make window.ethereum writable:', e);
-              }
-            `,
-          }}
-        />
-      </head>
+      <head />
       <body className={`${inter.variable} ${jetBrainsMono.variable} font-sans`}>
         <BackendStatusBanner />
         <AppProviders>{children}</AppProviders>

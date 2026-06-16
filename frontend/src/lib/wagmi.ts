@@ -5,9 +5,9 @@ import { baseAccountConnector } from '@/lib/base-account-connector'
 
 const BASE_SEPOLIA_RPC_URL = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL?.trim()
 const baseSepoliaRpcUrls = Array.from(new Set([
-  // Utamakan RPC publik yang aman dipanggil dari browser. RPC ber-key seperti
-  // Alchemy tetap menjadi fallback agar tidak langsung terkena CORS/rate-limit
-  // ketika halaman deploy proposal melakukan beberapa read sekaligus.
+  // Utamakan proxy same-origin agar browser tidak langsung terkena CORS,
+  // rate-limit, atau ERR_EMPTY_RESPONSE dari endpoint publik Base Sepolia.
+  '/api/rpc/base-sepolia',
   'https://base-sepolia-rpc.publicnode.com',
   'https://sepolia.base.org',
   BASE_SEPOLIA_RPC_URL,
