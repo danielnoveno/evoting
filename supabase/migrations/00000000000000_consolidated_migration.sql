@@ -247,38 +247,6 @@ create table if not exists app.tx_audit_log (
   constraint tx_audit_hash_hex check (tx_hash ~ '^0x[a-fA-F0-9]{64}$')
 );
 
-create table if not exists app.reveal_authorizations (
-  id uuid primary key default gen_random_uuid(),
-  proposal_draft_id uuid not null references app.proposal_drafts(id) on delete cascade,
-  voter_profile_id uuid references app.app_profiles(id) on delete set null,
-  voter_wallet text not null,
-  contract_address text not null,
-  chain_id bigint not null default 84532,
-  candidate_id text not null,
-  candidate_number bigint not null,
-  salt text not null,
-  commitment text not null,
-  commit_tx_hash text,
-  reveal_tx_hash text,
-  status text not null default 'queued',
-  error_message text,
-  created_at timestamptz not null default timezone('utc', now()),
-  updated_at timestamptz not null default timezone('utc', now()),
-  unique (proposal_draft_id, voter_wallet),
-  constraint reveal_auth_wallet_hex check (voter_wallet ~ '^0x[a-fA-F0-9]{40}$'),
-  constraint reveal_auth_contract_hex check (contract_address ~ '^0x[a-fA-F0-9]{40}$'),
-  constraint reveal_auth_salt_hex check (salt ~ '^0x[a-fA-F0-9]{64}$'),
-  constraint reveal_auth_commitment_hex check (commitment ~ '^0x[a-fA-F0-9]{64}$'),
-  constraint reveal_auth_commit_tx_hex check (commit_tx_hash is null or commit_tx_hash ~ '^0x[a-fA-F0-9]{64}$'),
-  constraint reveal_auth_reveal_tx_hex check (reveal_tx_hash is null or reveal_tx_hash ~ '^0x[a-fA-F0-9]{64}$')
-);
-
-create index if not exists idx_reveal_authorizations_status
-on app.reveal_authorizations(status, created_at);
-
-create index if not exists idx_reveal_authorizations_proposal
-on app.reveal_authorizations(proposal_draft_id, status);
-
 create table if not exists app.proof_exports (
   id uuid primary key default gen_random_uuid(),
   space_id bigint,
@@ -440,7 +408,6 @@ alter table app.tx_audit_log enable row level security;
 alter table app.proof_exports enable row level security;
 alter table app.ops_audit_log enable row level security;
 alter table app.notification_jobs enable row level security;
-alter table app.reveal_authorizations enable row level security;
 alter table indexer.indexer_sync_status enable row level security;
 
 create policy "profiles_select_self_or_admin"
@@ -1433,14 +1400,5 @@ with check (
   wallet_address in (
     select wallet_address from app.app_profiles where user_id = auth.uid()
   )
-  or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
-);
-
-drop policy if exists "reveal_authorizations_select_owner_or_admin" on app.reveal_authorizations;
-create policy "reveal_authorizations_select_owner_or_admin"
-on app.reveal_authorizations
-for select
-using (
-  voter_profile_id = app.current_profile_id()
   or app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );

@@ -134,18 +134,6 @@ export function useElectionContract(address?: string, options: UseElectionContra
     })
   }
 
-  const revealVoteFor = (voter: `0x${string}`, candidateId: number, salt: `0x${string}`) => {
-    if (!address) return
-
-    writeContract({
-      address: address as `0x${string}`,
-      abi: electionSpaceAbi,
-      chainId: baseSepolia.id,
-      functionName: 'revealFor',
-      args: [voter, BigInt(candidateId), salt],
-    })
-  }
-
   const registerVoters = (voters: string[]) => {
     if (!address) return
     writeContract({
@@ -181,7 +169,6 @@ export function useElectionContract(address?: string, options: UseElectionContra
     // Actions
     commitVote,
     revealVote,
-    revealVoteFor,
     registerVoters,
     transitionToNextPhase,
     

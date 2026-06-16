@@ -2,18 +2,16 @@
 
 import { CalendarDays, CheckCircle2, ExternalLink, Fingerprint, LockKeyhole, ShieldCheck, Loader2, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { basescanTxUrl, findElection, formatDateTime, formatNumber, formatWallet, useVoterStore } from '@/lib/voter-store'
-import { loadVoteCommitment, updateVoteCommitment } from '@/lib/vote-commitment-storage'
+import { loadVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
-import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
-import { backendRuntimeConfig } from '@/lib/supabase/config'
 
 function sameWalletAddress(left: string | null | undefined, right: string | null | undefined) {
   return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase())
@@ -70,7 +68,6 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
 
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [isRefreshingOnChainStatus, setIsRefreshingOnChainStatus] = useState(false)
-  const revealAuthorizationSavedForHash = useRef<string | null>(null)
 
   const savedCommitment = loadVoteCommitment(params.id)
   
@@ -90,65 +87,6 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
       })
     }
   }, [isConfirmed, hash, receipt, params.id, actions, showToast, savedCommitment?.commitment])
-
-  useEffect(() => {
-    if (!isConfirmed || !hash || !receipt || !savedCommitment || !contractAddress || !connectedWallet) return
-    if (revealAuthorizationSavedForHash.current === hash) return
-    revealAuthorizationSavedForHash.current = hash
-    const commitmentRecord = savedCommitment
-
-    async function saveAutomaticRevealQueue() {
-      const candidateNumber = commitmentRecord.candidateNumber
-        ?? (selectedCandidate ? Number.parseInt(selectedCandidate.id.split('-').pop() || '0', 10) : 0)
-      if (!candidateNumber) return
-
-      const supabase = getSupabaseBrowserClient()
-      const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } }
-      const accessToken = data.session?.access_token
-      if (!accessToken) return
-
-      const response = await fetch('/api/voter/reveal-authorizations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          proposalDraftId: params.id,
-          voterWallet: connectedWallet,
-          contractAddress,
-          chainId: backendRuntimeConfig.chainId,
-          candidateId: commitmentRecord.candidateId,
-          candidateNumber,
-          salt: commitmentRecord.salt,
-          commitment: commitmentRecord.commitment,
-          commitTxHash: hash,
-        }),
-      })
-
-      if (!response.ok) {
-        updateVoteCommitment(params.id, (current) => ({
-          ...current,
-          automaticReveal: {
-            status: 'failed',
-            savedAt: new Date().toISOString(),
-            errorMessage: 'Pengesahan otomatis belum tersimpan. Pemilih masih bisa memakai pengesahan manual jika diperlukan.',
-          },
-        }))
-        return
-      }
-
-      updateVoteCommitment(params.id, (current) => ({
-        ...current,
-        automaticReveal: {
-          status: 'prepared',
-          savedAt: new Date().toISOString(),
-        },
-      }))
-    }
-
-    void saveAutomaticRevealQueue()
-  }, [isConfirmed, hash, receipt, savedCommitment, contractAddress, connectedWallet, params.id])
 
   if (storeLoading || !store) {
     return (
@@ -188,13 +126,13 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     ? [
         { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
         { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
-        { label: 'Pengesahan suara', description: 'Otomatis oleh sistem' },
+        { label: 'Pengesahan suara', description: 'Konfirmasi manual' },
         { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
     : [
         { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
         { label: 'Kunci pilihan', description: 'Tercatat di blockchain', active: true },
-        { label: 'Pengesahan suara', description: 'Otomatis oleh sistem' },
+        { label: 'Pengesahan suara', description: 'Konfirmasi manual' },
         { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
 

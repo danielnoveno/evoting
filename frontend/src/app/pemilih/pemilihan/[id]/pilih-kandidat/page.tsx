@@ -138,7 +138,6 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       )
       saveVoteCommitment(election.id, {
         candidateId: candidateToConfirm,
-        candidateNumber,
         salt,
         commitment,
         timestamp: new Date().toISOString()
