@@ -160,6 +160,8 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     ? Number(currentPhase)
     : null
   const profileWallet = store.profile.wallet
+  const commitRoute = `/pemilih/pemilihan/${params.id}/commit`
+  const connectWalletRoute = `/hubungkan-dompet?redirect=${encodeURIComponent(commitRoute)}`
   const isConnectedWalletProfileWallet = sameWalletAddress(connectedWallet, profileWallet)
   const isCommitPhaseOnChain = currentPhaseNumber === 1
   const isOnChainStatusReady = Boolean(contractAddress) && Boolean(connectedWallet) && isConnectedWalletProfileWallet && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
@@ -351,7 +353,14 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
                 </p>
               ) : null}
             </div>
-            {contractAddress && (!isOnChainStatusReady || onChainStatusError) ? (
+            {!connectedWallet ? (
+              <Link
+                href={connectWalletRoute}
+                className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-amber-300 bg-white px-4 text-[13px] font-semibold text-amber-950 hover:bg-amber-100"
+              >
+                Sambungkan Dompet
+              </Link>
+            ) : contractAddress && (!isOnChainStatusReady || onChainStatusError) ? (
               <button
                 type="button"
                 onClick={handleRefreshOnChainStatus}

@@ -94,33 +94,40 @@ export function PemilihanSections() {
                 delay={index * 180}
                 duration={750}
               >
-                <article className="public-card flex h-full flex-col overflow-hidden p-7 transition-all duration-200 hover:-translate-y-1 hover:border-slate-300">
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">{item.phaseLabel}</span>
-                    <span className="text-[11px] uppercase tracking-[0.06em] text-slate-500">{item.deadlineLabel}</span>
-                  </div>
-                  <h3 className="mt-8 max-w-[560px] text-[24px] font-semibold leading-tight text-slate-900">{item.title}</h3>
-                  <p className="mt-4 max-w-[560px] text-[16px] leading-8 text-slate-800"><ElectionDescription election={item} /></p>
-
-                  <div className="mt-8 grid gap-4 md:grid-cols-2">
-                    <div className="rounded-xl bg-slate-100 px-4 py-4">
-                      <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Partisipasi</p>
-                      <p className="mt-2 text-[18px] font-semibold text-slate-900">{item.participantCount} Pemilih</p>
+                <article className="public-card flex h-full flex-col overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:border-slate-300">
+                  {item.bannerImagePath && (
+                    <div className="h-48 w-full overflow-hidden border-b border-slate-100">
+                      <img src={item.bannerImagePath} alt="" className="h-full w-full object-cover" />
                     </div>
-                    <div className="rounded-xl bg-slate-100 px-4 py-4">
-                      <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Smart Contract</p>
-                      <p className="mt-2 font-mono text-[13px] text-slate-700">{shortenHash(item.deployedSpaceAddress ?? item.deploymentTxHash)}</p>
+                  )}
+                  <div className="flex flex-col flex-1 p-7">
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">{item.phaseLabel}</span>
+                      <span className="text-[11px] uppercase tracking-[0.06em] text-slate-500">{item.deadlineLabel}</span>
                     </div>
-                  </div>
+                    <h3 className="mt-8 max-w-[560px] text-[24px] font-semibold leading-tight text-slate-900">{item.title}</h3>
+                    <p className="mt-4 max-w-[560px] text-[16px] leading-8 text-slate-800"><ElectionDescription election={item} /></p>
 
-                  <div className="mt-auto flex gap-3 pt-8">
-                    <Link href={`/pemilih/pemilihan/${item.id}/pilih-kandidat`} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-5 text-[14px] font-medium text-white hover:bg-[#1E293B]">
-                      {item.phase === 'commit' ? 'Mulai Memilih' : 'Lihat Tahap Reveal'}
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                    <Link href={`/pemilihan/${item.id}/hasil`} className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
-                      Detail
-                    </Link>
+                    <div className="mt-8 grid gap-4 md:grid-cols-2">
+                      <div className="rounded-xl bg-slate-100 px-4 py-4">
+                        <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Partisipasi</p>
+                        <p className="mt-2 text-[18px] font-semibold text-slate-900">{item.participantCount} Pemilih</p>
+                      </div>
+                      <div className="rounded-xl bg-slate-100 px-4 py-4">
+                        <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Smart Contract</p>
+                        <p className="mt-2 font-mono text-[13px] text-slate-700">{shortenHash(item.deployedSpaceAddress ?? item.deploymentTxHash)}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-auto flex gap-3 pt-8">
+                      <Link href={`/pemilih/pemilihan/${item.id}/pilih-kandidat`} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-5 text-[14px] font-medium text-white hover:bg-[#1E293B]">
+                        {item.phase === 'commit' ? 'Mulai Memilih' : 'Lihat Tahap Reveal'}
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                      <Link href={`/pemilihan/${item.id}/hasil`} className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
+                        Detail
+                      </Link>
+                    </div>
                   </div>
                 </article>
               </ScrollReveal>
@@ -148,15 +155,22 @@ export function PemilihanSections() {
                 delay={index * 150}
                 duration={700}
               >
-                <article className="public-card flex h-full flex-col p-7">
-                  <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-amber-700 self-start">Menunggu</span>
-                  <h3 className="mt-8 max-w-[20ch] text-[24px] font-semibold leading-tight text-slate-900">{item.title}</h3>
-                  <p className="mt-4 text-[16px] text-slate-500">{item.deadlineLabel}</p>
-                  <div className="mt-auto pt-8">
-                    <Link href={`/pemilihan/${item.id}/hasil`} className="inline-flex items-center gap-2 text-[14px] font-semibold text-slate-900">
-                      Lihat Detail
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
+                <article className="public-card flex h-full flex-col overflow-hidden">
+                  {item.bannerImagePath && (
+                    <div className="h-40 w-full overflow-hidden border-b border-slate-100">
+                      <img src={item.bannerImagePath} alt="" className="h-full w-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex flex-col flex-1 p-7">
+                    <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-amber-700 self-start">Menunggu</span>
+                    <h3 className="mt-8 max-w-[20ch] text-[24px] font-semibold leading-tight text-slate-900">{item.title}</h3>
+                    <p className="mt-4 text-[16px] text-slate-500">{item.deadlineLabel}</p>
+                    <div className="mt-auto pt-8">
+                      <Link href={`/pemilihan/${item.id}/hasil`} className="inline-flex items-center gap-2 text-[14px] font-semibold text-slate-900">
+                        Lihat Detail
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </div>
                   </div>
                 </article>
               </ScrollReveal>
@@ -185,12 +199,19 @@ export function PemilihanSections() {
                 duration={700}
               >
                 <article className="public-flat-card flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-emerald-700">Selesai</span>
-                      <span className="text-[11px] uppercase tracking-[0.06em] text-slate-400">{formatFinishedDate(item.endedAt)}</span>
+                  <div className="flex items-center gap-4">
+                    {item.bannerImagePath && (
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-100">
+                        <img src={item.bannerImagePath} alt="" className="h-full w-full object-cover" />
+                      </div>
+                    )}
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-emerald-700">Selesai</span>
+                        <span className="text-[11px] uppercase tracking-[0.06em] text-slate-400">{formatFinishedDate(item.endedAt)}</span>
+                      </div>
+                      <h3 className="mt-2 text-[20px] font-semibold text-slate-900">{item.title}</h3>
                     </div>
-                    <h3 className="mt-5 text-[24px] font-semibold text-slate-900">{item.title}</h3>
                   </div>
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
                     <div>

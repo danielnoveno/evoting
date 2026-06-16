@@ -105,11 +105,12 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       const candidate = election.candidates.find(c => c.id === candidateToConfirm)
       const candidateNumber = candidate ? parseInt(candidate.id.split('-').pop() || '0') : 0
       const deployedSpaceAddress = election.deployedSpaceAddress ?? await fetchLatestContractAddress(election.id)
-      const voterWallet = address ?? store.profile.wallet
+      const voterWallet = address
 
       if (!voterWallet) {
         setConfirmOpen(false)
         window.alert('Dompet belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum memilih kandidat.')
+        router.push(`/hubungkan-dompet?redirect=${encodeURIComponent(`/pemilih/pemilihan/${election.id}/pilih-kandidat`)}`)
         return
       }
 
@@ -224,7 +225,19 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
               <div>
                 <div className="relative overflow-hidden bg-slate-50 border-b border-slate-100">
                   <div className="flex h-[250px] w-full items-center justify-center bg-slate-200 text-[36px] font-semibold text-slate-600 transition-transform duration-500 group-hover:scale-105">
-                    {candidate.name.slice(0, 2).toUpperCase()}
+                    {candidate.avatarPath ? (
+                      <img
+                        src={candidate.avatarPath}
+                        alt={candidate.name}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          ;(e.target as HTMLImageElement).style.display = 'none'
+                          ;(e.target as HTMLImageElement).parentElement!.innerHTML = candidate.name.slice(0, 2).toUpperCase()
+                        }}
+                      />
+                    ) : (
+                      candidate.name.slice(0, 2).toUpperCase()
+                    )}
                   </div>
                    <div className="absolute top-3 left-3 rounded border border-white/10 bg-black/85 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white">
                     K0{index + 1}

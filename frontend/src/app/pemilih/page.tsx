@@ -94,8 +94,19 @@ function FeaturedHeroCard({ election }: { election: VoterElection }) {
   const dateLabel = isUpcoming ? 'Waktu Mulai' : election.phase === 'ended' ? 'Selesai Pada' : 'Batas Waktu'
 
   return (
-    <article id={`pemilihan-${election.id}`} className="overflow-hidden rounded-xl border border-slate-700 bg-slate-800 p-5 text-white md:p-6">
-      <div className="flex min-h-[220px] flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+    <article id={`pemilihan-${election.id}`} className="relative overflow-hidden rounded-xl border border-slate-700 bg-slate-800 p-5 text-white md:p-6">
+      {election.bannerPath && (
+        <div className="absolute inset-0 z-0">
+          <img
+            src={election.bannerPath}
+            alt=""
+            className="h-full w-full object-cover opacity-30"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/80 to-transparent" />
+        </div>
+      )}
+      
+      <div className="relative z-10 flex min-h-[220px] flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
           <p className="text-[16px] font-semibold uppercase tracking-[0.04em] text-white md:text-[18px]">{label}</p>
           <h2 className="mt-3 text-[44px] font-semibold leading-none tracking-[-0.05em] text-white md:text-[60px]">{election.title}</h2>
@@ -142,8 +153,17 @@ function OtherElectionCard({ election }: { election: VoterElection }) {
   const statusLabel = isUpcoming ? 'Mendatang' : election.phase === 'ended' ? 'Selesai' : 'Aktif'
   
   return (
-    <article className="group flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 transition hover:border-slate-300 hover:shadow-md">
-      <div>
+    <article className="group flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-md">
+      {election.bannerPath && (
+        <div className="h-32 w-full overflow-hidden border-b border-slate-100">
+          <img
+            src={election.bannerPath}
+            alt=""
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          />
+        </div>
+      )}
+      <div className="p-5">
         <div className="flex items-center justify-between gap-3">
           <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] ${isUpcoming ? 'bg-amber-50 text-amber-700' : election.phase === 'ended' ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700'}`}>
             {statusLabel}
@@ -165,17 +185,19 @@ function OtherElectionCard({ election }: { election: VoterElection }) {
         </div>
       </div>
 
-      <div className="mt-6 border-t border-slate-100 pt-4">
-        {isUpcoming ? (
-          <button type="button" disabled className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-lg bg-slate-50 py-2 text-[12px] font-semibold text-slate-400">
-            Belum Dibuka
-          </button>
-        ) : (
-          <Link href={action.href} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-2 text-[12px] font-semibold text-white transition hover:bg-slate-800">
-            {action.label}
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        )}
+      <div className="px-5 pb-5">
+        <div className="border-t border-slate-100 pt-4">
+          {isUpcoming ? (
+            <button type="button" disabled className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-lg bg-slate-50 py-2 text-[12px] font-semibold text-slate-400">
+              Belum Dibuka
+            </button>
+          ) : (
+            <Link href={action.href} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-2 text-[12px] font-semibold text-white transition hover:bg-slate-800">
+              {action.label}
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          )}
+        </div>
       </div>
     </article>
   )

@@ -82,12 +82,13 @@ export function HasilSections({ id }: { id: string }) {
         name: string
         voteCount: number
         percentage: number
+        avatarPath: string | null
       } | null>((currentWinner, candidate, index) => {
         const candidateId = resolveCandidateId(candidate.candidateLocalId, index)
         const voteCount = candidateResults.get(candidateId)?.voteCount ?? 0
         const percentage = totalRevealed > 0 ? (voteCount / totalRevealed) * 100 : 0
         if (!currentWinner || voteCount > currentWinner.voteCount) {
-          return { name: candidate.fullName, voteCount, percentage }
+          return { name: candidate.fullName, voteCount, percentage, avatarPath: candidate.avatarPath }
         }
         return currentWinner
       }, null)
@@ -138,7 +139,13 @@ export function HasilSections({ id }: { id: string }) {
           <ScrollReveal variant="fade-right" delay={150} duration={800}>
             <article className="public-card h-full p-6 md:p-8">
               <div className="grid gap-8 md:grid-cols-[180px_minmax(0,1fr)] md:items-center">
-                <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-full bg-slate-100 text-[48px] font-semibold text-slate-400">?</div>
+                <div className="mx-auto flex h-44 w-44 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-[48px] font-semibold text-slate-400">
+                  {winner?.avatarPath ? (
+                    <img src={winner.avatarPath} alt={winner.name} className="h-full w-full object-cover" />
+                  ) : (
+                    '?'
+                  )}
+                </div>
                 <div>
                   <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] uppercase tracking-[0.06em] text-slate-500">Hasil akhir</span>
                   <h2 className="mt-5 text-[28px] font-semibold leading-tight text-slate-900 md:text-[36px]">
@@ -193,7 +200,12 @@ export function HasilSections({ id }: { id: string }) {
                     return (
                     <div key={candidate.id}>
                       <div className="flex items-center justify-between">
-                        <span>{candidate.fullName}</span>
+                        <div className="flex items-center gap-2">
+                           {candidate.avatarPath && (
+                            <img src={candidate.avatarPath} alt="" className="h-6 w-6 rounded-full object-cover" />
+                           )}
+                           <span>{candidate.fullName}</span>
+                        </div>
                         <span>{hasIndexerResult ? `${voteCount} suara · ${formatPercentage(percentage)}` : 'Menunggu indexer'}</span>
                       </div>
                       <div className="mt-2 h-3 rounded-full bg-slate-200">

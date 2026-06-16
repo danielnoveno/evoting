@@ -39,6 +39,7 @@ export interface VoterElection {
   title: string
   organization: string
   summary: string
+  bannerPath?: string | null
   phase: VoterElectionPhase
   deadlineIso: string
   totalParticipants: number
@@ -152,6 +153,7 @@ function mapElectionFromSupabase(election: PublicElectionRecord): VoterElection 
     title: election.title,
     organization: election.organizationName ?? 'Organisasi',
     summary: election.description ?? 'Data pemilihan dimuat dari Supabase.',
+    bannerPath: election.bannerImagePath,
     phase: election.phase,
     deadlineIso: deadlineFor(election) ?? new Date().toISOString(),
     totalParticipants: election.participantCount,
