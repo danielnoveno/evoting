@@ -6,14 +6,20 @@ import { useState, useEffect } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
-import { findElection, useVoterStore } from '@/lib/voter-store'
+import { findElection, formatWallet, useVoterStore } from '@/lib/voter-store'
 import { clearVoteCommitment, loadVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
+import { useAccount } from 'wagmi'
+
+function sameWalletAddress(left: string | null | undefined, right: string | null | undefined) {
+  return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase())
+}
 
 export default function VoterRevealPage({ params }: { params: { id: string } }) {
   const { store, loading: storeLoading, actions } = useVoterStore()
   const { showToast } = useToast()
+  const { address: connectedWallet } = useAccount()
 
   const election = findElection(store, params.id)
   
@@ -27,7 +33,14 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
     hash, 
     writeError,
     receipt,
-    hasRevealedOnChain
+    currentPhase,
+    hasCommittedOnChain,
+    hasRevealedOnChain,
+    isWhitelistedOnChain,
+    phaseError,
+    hasCommittedError,
+    hasRevealedError,
+    whitelistError
   } = useElectionContract(contractAddress)
 
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -102,8 +115,59 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
     )
   }
 
+  const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
+    ? Number(currentPhase)
+    : null
+  const profileWallet = store.profile.wallet
+  const isConnectedWalletProfileWallet = sameWalletAddress(connectedWallet, profileWallet)
+  const isRevealPhaseOnChain = currentPhaseNumber === 2
+  const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? hasRevealedError ?? null
+  const onChainPhaseLabel = currentPhaseNumber === 0
+    ? 'Registrasi'
+    : currentPhaseNumber === 1
+      ? 'Memilih'
+      : currentPhaseNumber === 2
+        ? 'Konfirmasi suara'
+        : currentPhaseNumber === 3
+          ? 'Selesai'
+          : 'Belum terbaca'
+  const isOnChainStatusReady = Boolean(contractAddress)
+    && Boolean(connectedWallet)
+    && isConnectedWalletProfileWallet
+    && currentPhaseNumber !== null
+    && typeof isWhitelistedOnChain === 'boolean'
+    && typeof hasCommittedOnChain === 'boolean'
+
+  const revealBlockedReason = !contractAddress
+    ? 'Smart contract untuk pemilihan ini belum tersedia.'
+    : !connectedWallet
+      ? 'Dompet belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum mengesahkan suara.'
+    : profileWallet && !isConnectedWalletProfileWallet
+      ? `Dompet tersambung (${formatWallet(connectedWallet)}) berbeda dari dompet akun ini (${formatWallet(profileWallet)}). Sambungkan dompet yang sama agar konfirmasi suara sesuai.`
+    : onChainStatusError
+      ? 'Jaringan Base Sepolia belum merespons. Coba muat ulang status sebelum mengesahkan suara.'
+    : !isOnChainStatusReady
+      ? 'Status on-chain sedang diperiksa. Tunggu sebentar sebelum mengesahkan suara.'
+    : !isWhitelistedOnChain
+      ? 'Wallet ini belum terdaftar di whitelist smart contract untuk ruang voting ini.'
+    : !hasCommittedOnChain
+      ? 'Wallet ini belum menyimpan pilihan di smart contract, jadi belum bisa mengesahkan suara.'
+    : !isRevealPhaseOnChain
+      ? `Fase smart contract masih ${onChainPhaseLabel}, belum berada di tahap Konfirmasi suara. Minta admin membuka fase berikutnya setelah tahap memilih selesai.`
+    : hasRevealedOnChain
+      ? 'Wallet ini sudah pernah mengesahkan suara untuk ruang voting ini.'
+      : ''
+
   const handleReveal = () => {
     if (!savedCommitment || !committedCandidate) return
+    if (revealBlockedReason) {
+      showToast({
+        title: 'Belum bisa konfirmasi suara',
+        description: revealBlockedReason,
+        tone: 'info',
+      })
+      return
+    }
     setConfirmOpen(false)
     
     // Map candidate ID to index (1-based)
@@ -164,6 +228,23 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
           </section>
         ) : null}
 
+        {revealBlockedReason ? (
+          <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-[13px] leading-7 text-amber-900">
+            <div className="flex gap-3">
+              <AlertCircle className="mt-1 h-5 w-5 shrink-0 text-amber-600" />
+              <div>
+                <p className="font-semibold">Konfirmasi suara belum bisa dilakukan</p>
+                <p className="mt-1">{revealBlockedReason}</p>
+                {connectedWallet ? (
+                  <p className="mt-2 text-[12px] text-amber-800">
+                    Dompet tersambung: {formatWallet(connectedWallet)} · Dompet akun: {formatWallet(profileWallet)}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         <div className="mt-10">
           <label className="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-500 mb-2">
             Kode Rahasia di Browser Ini
@@ -189,7 +270,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
           <button
             type="button"
-            disabled={!contractAddress || !savedCommitment || isWritePending || isConfirming || !!election.revealProof || !!(hasRevealedOnChain as boolean | undefined)}
+            disabled={Boolean(revealBlockedReason) || !savedCommitment || isWritePending || isConfirming || !!election.revealProof || !!(hasRevealedOnChain as boolean | undefined)}
             onClick={() => setConfirmOpen(true)}
             className="inline-flex h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-[#0F172A] px-6 text-[13px] font-bold text-white transition-all hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-w-[220px]"
           >
@@ -204,7 +285,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
                 Mengesahkan suara...
               </>
             ) : (
-              'Konfirmasi Suara Sekarang'
+              revealBlockedReason ? 'Konfirmasi Belum Dibuka' : 'Konfirmasi Suara Sekarang'
             )}
           </button>
           <Link
