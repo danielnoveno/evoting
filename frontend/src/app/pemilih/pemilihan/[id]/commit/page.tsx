@@ -166,6 +166,15 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const isCommitPhaseOnChain = currentPhaseNumber === 1
   const isOnChainStatusReady = Boolean(contractAddress) && Boolean(connectedWallet) && isConnectedWalletProfileWallet && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
+  const onChainPhaseLabel = currentPhaseNumber === 0
+    ? 'Registrasi'
+    : currentPhaseNumber === 1
+      ? 'Memilih'
+      : currentPhaseNumber === 2
+        ? 'Konfirmasi suara'
+        : currentPhaseNumber === 3
+          ? 'Selesai'
+          : 'Belum terbaca'
   const commitBlockedReason = !contractAddress
     ? 'Smart contract untuk pemilihan ini belum tersedia di Supabase.'
     : !connectedWallet
@@ -176,13 +185,13 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
       ? 'Jaringan Base Sepolia belum merespons. Coba periksa ulang sebelum menyimpan pilihan.'
     : !isOnChainStatusReady
       ? 'Status on-chain sedang diperiksa. Tunggu sebentar atau periksa ulang sebelum menyimpan pilihan.'
+      : !isCommitPhaseOnChain
+        ? `Fase smart contract masih ${onChainPhaseLabel}, belum berada di tahap Memilih. Minta admin menyelaraskan fase on-chain sebelum pemilih menyimpan suara.`
       : !isWhitelistedOnChain
         ? 'Wallet ini belum terdaftar di whitelist smart contract untuk ruang voting ini.'
         : hasCommittedOnChain
           ? 'Wallet ini sudah pernah menyimpan pilihan untuk ruang voting ini.'
-          : !isCommitPhaseOnChain
-            ? 'Fase smart contract belum berada di tahap menyimpan pilihan.'
-            : ''
+          : ''
 
   const handleRefreshOnChainStatus = async () => {
     setIsRefreshingOnChainStatus(true)
