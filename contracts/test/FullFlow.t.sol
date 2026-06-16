@@ -418,7 +418,8 @@ contract FullFlowTest is Test {
         (
             VoteChainRegistry registry,
             address spaceAdmin,
-            address voter1,,
+            address voter1,
+            address voter2,
             ElectionSpace space,
             uint256 spaceId
         ) = _deployClean();
@@ -452,8 +453,9 @@ contract FullFlowTest is Test {
     function test_fullFlow_batch_whitelist() external {
         (
             VoteChainRegistry registry,
-            address spaceAdmin,,
-            ,
+            address spaceAdmin,
+            address voter1,
+            address voter2,
             ElectionSpace space,
             uint256 spaceId
         ) = _deployClean();
@@ -494,7 +496,8 @@ contract FullFlowTest is Test {
         (
             VoteChainRegistry registry,
             address spaceAdmin,
-            address voter1,,
+            address voter1,
+            address voter2,
             ElectionSpace space,
             uint256 spaceId
         ) = _deployClean();
