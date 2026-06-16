@@ -880,7 +880,7 @@ export function ProposalForm({
                     </label>
                     <label className="block">
                       <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">NPM/NIM <RequiredAsterisk /></span>
-                      <input data-validation-field={`candidate-${i}-studentId`} value={c.studentId || ''} onChange={e => handleCandidateChange(i, 'studentId', e.target.value)} disabled={isReadOnly} placeholder="Contoh: 220711663" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                      <input data-validation-field={`candidate-${i}-studentId`} value={c.studentId || ''} onChange={e => handleCandidateChange(i, 'studentId', e.target.value.replace(/[^0-9]/g, ''))} disabled={isReadOnly} placeholder="Contoh: 220711663" inputMode="numeric" pattern="[0-9]*" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                     </label>
                     <label className="block">
                       <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Fakultas/Prodi <span className="font-normal text-slate-400">(opsional)</span></span>

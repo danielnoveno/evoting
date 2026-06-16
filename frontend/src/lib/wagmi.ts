@@ -28,7 +28,7 @@ export const wagmiConfig = createConfig({
         options: 'smartWalletOnly',
       },
     }),
-    // Injected connector (MetaMask, Rabby, dll.) — diperlukan untuk
+    // Injected connector (EOA wallets) — diperlukan untuk
     // superadmin yang wallet EOA-nya terdaftar di on-chain registry.
     injected({ shimDisconnect: true }),
   ],

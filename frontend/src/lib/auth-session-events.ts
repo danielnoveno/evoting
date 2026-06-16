@@ -1,6 +1,6 @@
-export const MANUAL_LOGOUT_EVENT = 'votechain:manual-logout'
+export const MANUAL_LOGOUT_EVENT = 'votein:manual-logout'
 
-const MANUAL_LOGOUT_STORAGE_KEY = 'votechain:manual-logout-at'
+const MANUAL_LOGOUT_STORAGE_KEY = 'votein:manual-logout-at'
 const MANUAL_LOGOUT_GRACE_MS = 10_000
 
 function getStorage() {

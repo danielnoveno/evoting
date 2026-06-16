@@ -166,7 +166,7 @@ export default function VoterProfilePage() {
               <ShieldCheck className="h-5 w-5" />
             </div>
             <h2 className="mt-6 text-[28px] font-semibold text-white">Identitas Terverifikasi</h2>
-            <p className="mt-4 text-[15px] leading-8 text-slate-300">Profil Anda terhubung dengan identitas kampus dan dijaga oleh proses verifikasi wallet VoteChain.</p>
+            <p className="mt-4 text-[15px] leading-8 text-slate-300">Profil Anda terhubung dengan identitas kampus dan dijaga oleh proses verifikasi wallet Votein.</p>
           </article>
         </div>
 

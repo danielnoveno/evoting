@@ -44,6 +44,8 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
   const seedRecord = useMemo(() => directoryRecord ? mapDirectoryAdmin(directoryRecord) : null, [directoryRecord])
   const { showToast } = useToast()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [addConfirmOpen, setAddConfirmOpen] = useState(false)
+  const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false)
   const [onchainAction, setOnchainAction] = useState<'add' | 'remove' | null>(null)
   const enabled = seedRecord?.status !== 'Nonaktif'
   const isActive = directoryRecord?.profile || directoryRecord?.registryStatus === 'active'
@@ -278,7 +280,7 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
                   <button
                     type="button"
                     disabled={isWritePending || onchainAction !== null || !hasValidCandidateWallet}
-                    onClick={() => void handleOnchainSuperadminAction('add')}
+                    onClick={() => setAddConfirmOpen(true)}
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 text-[13px] font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
                   >
                     {onchainAction === 'add' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
@@ -287,7 +289,7 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
                   <button
                     type="button"
                     disabled={isWritePending || onchainAction !== null || !hasValidCandidateWallet}
-                    onClick={() => void handleOnchainSuperadminAction('remove')}
+                    onClick={() => setRemoveConfirmOpen(true)}
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 text-[13px] font-semibold text-red-700 ring-1 ring-red-200 hover:bg-red-50 disabled:opacity-50"
                   >
                     {onchainAction === 'remove' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
@@ -336,6 +338,32 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
           </SuperadminSectionCard>
         </div>
       </StaggerContainer>
+
+      <ConfirmDialog
+        open={addConfirmOpen}
+        title="Daftarkan Superadmin On-Chain?"
+        description={`Wallet ${seedRecord.blockchainIdentity?.slice(0, 10)}...${seedRecord.blockchainIdentity?.slice(-8)} akan didaftarkan sebagai superadmin di smart contract. Transaksi ini akan menulis ke blockchain dan membutuhkan konfirmasi wallet.`}
+        confirmLabel="Ya, Daftarkan On-Chain"
+        tone="default"
+        onCancel={() => setAddConfirmOpen(false)}
+        onConfirm={() => {
+          setAddConfirmOpen(false)
+          void handleOnchainSuperadminAction('add')
+        }}
+      />
+
+      <ConfirmDialog
+        open={removeConfirmOpen}
+        title="Cabut Superadmin On-Chain?"
+        description={`Wallet ${seedRecord.blockchainIdentity?.slice(0, 10)}...${seedRecord.blockchainIdentity?.slice(-8)} akan dicabut hak akses superadmin-nya dari smart contract. Transaksi ini akan menulis ke blockchain dan membutuhkan konfirmasi wallet.`}
+        confirmLabel="Ya, Cabut On-Chain"
+        tone="danger"
+        onCancel={() => setRemoveConfirmOpen(false)}
+        onConfirm={() => {
+          setRemoveConfirmOpen(false)
+          void handleOnchainSuperadminAction('remove')
+        }}
+      />
 
       <ConfirmDialog
         open={deleteDialogOpen}

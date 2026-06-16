@@ -12,8 +12,8 @@ import { LogOut, Clock } from 'lucide-react'
 const ADMIN_IDLE_TIMEOUT_MS = 15 * 60 * 1000 // 15 menit untuk admin/superadmin
 const VOTER_IDLE_TIMEOUT_MS = 30 * 60 * 1000 // 30 menit untuk pemilih
 const WARNING_BEFORE_MS = 60 * 1000 // peringatan 1 menit sebelum timeout
-const LAST_ACTIVITY_STORAGE_KEY = 'votechain:last-activity-at'
-const SESSION_DEBUG_STORAGE_KEY = 'votechain:session-debug'
+const LAST_ACTIVITY_STORAGE_KEY = 'votein:last-activity-at'
+const SESSION_DEBUG_STORAGE_KEY = 'votein:session-debug'
 // Hindari `mousemove` dan `visibilitychange` supaya testing idle timeout tidak
 // terus-terusan reset hanya karena cursor bergerak kecil atau tab berubah fokus.
 // Timer hanya diperpanjang lewat aktivitas yang lebih disengaja.

@@ -1,7 +1,7 @@
 export const adminHelpData = {
   header: {
     title: 'Pusat Bantuan Admin',
-    description: 'Panduan operasional dan dukungan teknis blockchain untuk ekosistem VoteChain.',
+    description: 'Panduan operasional dan dukungan teknis blockchain untuk ekosistem Votein.',
   },
   categories: [
     { id: 'manajemen-proposal', title: 'Manajemen Proposal', description: 'Panduan pembuatan, pengeditan, dan verifikasi draf proposal sebelum fase voting.', iconKey: 'file-text' },

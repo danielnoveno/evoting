@@ -23,16 +23,16 @@ import { AuthCard, AuthHeader, AuthTitle } from '@/components/auth/auth-shell'
 function getActivationRedirectModalContent(isSuperAdmin: boolean) {
   if (isSuperAdmin) {
     return {
-      title: 'Akses Superadmin Aktif',
-      description: 'Akun Superadmin berhasil diaktifkan. Anda akan diarahkan ke halaman validasi portal admin.',
+      title: 'Identitas Terverifikasi',
+      description: 'Verifikasi akun kampus berhasil. Anda akan diarahkan ke halaman validasi portal admin.',
       targetLabel: 'Portal Admin',
     }
   }
 
   return {
-    title: 'Akses Admin Aktif',
-    description: 'Akun admin organisasi berhasil diaktifkan. Anda akan diarahkan untuk menghubungkan Smart Wallet admin.',
-    targetLabel: 'Aktivasi Wallet Admin',
+    title: 'Identitas Terverifikasi',
+    description: 'Verifikasi akun kampus berhasil. Anda akan diarahkan ke halaman hubungkan dompet untuk menyelesaikan aktivasi.',
+    targetLabel: 'Hubungkan Dompet',
   }
 }
 

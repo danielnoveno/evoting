@@ -78,7 +78,7 @@ function HelpChatCard() {
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Halo! Saya Asisten Bantuan Otomatis VoteChain. Tanyakan kendala seputar login, memilih kandidat, konfirmasi suara, atau bukti transaksi.',
+      content: 'Halo! Saya Asisten Bantuan Otomatis Votein. Tanyakan kendala seputar login, memilih kandidat, konfirmasi suara, atau bukti transaksi.',
     },
   ])
   const [input, setInput] = useState('')

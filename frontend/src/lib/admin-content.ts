@@ -176,7 +176,7 @@ export const adminDashboardContent: AdminDashboardContent = {
     badge: 'Sistem e-voting aman',
     title: 'Kelola Pemilihan dengan Transparansi Blockchain',
     description:
-      'Panel admin VoteChain untuk memantau fase Registration → Commit → Reveal → Ended, mengelola whitelist pemilih, dan menyiapkan bukti audit Basescan.',
+      'Panel admin Votein untuk memantau fase Registration → Commit → Reveal → Ended, mengelola whitelist pemilih, dan menyiapkan bukti audit Basescan.',
     primaryCta: 'Buka Ruang Aktif',
     secondaryCta: 'Unduh Ringkasan',
   },
