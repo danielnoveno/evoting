@@ -34,7 +34,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       fallbackDescription={locale === 'Bahasa Indonesia' 
         ? 'Sesi Anda telah berakhir atau akses tidak valid demi keamanan. Silakan masuk kembali untuk melanjutkan pengelolaan organisasi.'
         : 'Your session has ended or access is invalid for your protection. Please log in again to continue managing your organization.'}
-      loginHref="/portal-admin"
+      loginHref="/hubungkan-dompet"
     >
       <ConsoleShell
         role="admin"

@@ -21,8 +21,11 @@ export async function GET(request: NextRequest) {
   const next = searchParams.get('next')
   const nextPath = safeInternalPath(next)
 
-  const isAuthAdmin = nextPath.startsWith('/portal-admin') || nextPath.startsWith('/superadmin') || nextPath.startsWith('/admin')
-  const errorRedirectUrl = new URL(isAuthAdmin ? '/portal-admin' : '/hubungkan-dompet', request.url)
+  const isSuperAdmin = nextPath.startsWith('/portal-admin') || nextPath.startsWith('/superadmin')
+  const isAdmin = nextPath.startsWith('/admin')
+  const isAuthAdmin = isSuperAdmin || isAdmin
+  // super_admin error → portal-admin; admin/voter error → hubungkan-dompet
+  const errorRedirectUrl = new URL(isSuperAdmin ? '/portal-admin' : '/hubungkan-dompet', request.url)
   errorRedirectUrl.searchParams.set('redirect', nextPath)
 
   if (!isSupabaseConfigured()) {
@@ -104,8 +107,8 @@ export async function GET(request: NextRequest) {
             resolvedPath = '/portal-admin'
           }
         } else if (profile?.role === 'admin') {
-          if (!nextPath.startsWith('/admin') && !nextPath.startsWith('/portal-admin')) {
-            resolvedPath = '/portal-admin'
+          if (!nextPath.startsWith('/admin')) {
+            resolvedPath = '/admin'
           }
         }
       }

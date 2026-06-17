@@ -1,29 +1,35 @@
-# Project Ignores
-.opencode
-.docs
+# Ignore build artifacts
+build/
+dist/
+node_modules/
 .env
-contracts/.env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.gemini
-GEMINI.md
-.geminiignore
-
-# Dependencies
-node_modules
-frontend/node_modules
-
-# Build & Cache
-frontend/.next
-frontend/out
-frontend/tsconfig.tsbuildinfo
-contracts/out
-contracts/cache
-contracts/broadcast
-
-# System
-.DS_Store
-Thumbs.db
+.vscode/
+.idea/
+*.log
+*.tmp
+*.swp
+*.bak
+.history
+.tmp
+# Ignore docs folder
+.docs
+# Ignore low-fi prototype folder
+lowfi-html/
+# Foundry / Contracts
+contracts/broadcast/
+contracts/cache/
+contracts/out/
+# Frontend build
+frontend/.next/
+# AI / Agent tool configs (local dev only)
+.opencode/
 opencode.json
+.gemini
+.cursor/
+.cursorrules
+.copilot/
+.github/copilot-instructions.md
+.claude/
+.windsurfrules
+.aider*

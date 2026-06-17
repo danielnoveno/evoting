@@ -54,19 +54,9 @@ function safeInternalPath(value: string | null, fallback: string) {
   }
 }
 
-function resolveAdminRedirectTarget(redirectParam: string | null, role: string | null | undefined) {
-  const fallback = role === 'super_admin' ? '/superadmin' : '/admin'
-  const safeRedirect = safeInternalPath(redirectParam, fallback)
-
-  if (role === 'super_admin') {
-    return safeRedirect.startsWith('/superadmin') ? safeRedirect : '/superadmin'
-  }
-
-  if (role === 'admin') {
-    return safeRedirect.startsWith('/admin') ? safeRedirect : '/admin'
-  }
-
-  return safeRedirect.startsWith('/superadmin') || safeRedirect.startsWith('/admin') ? safeRedirect : '/portal-admin'
+function resolveSuperadminRedirectTarget(redirectParam: string | null) {
+  const safeRedirect = safeInternalPath(redirectParam, '/superadmin')
+  return safeRedirect.startsWith('/superadmin') ? safeRedirect : '/superadmin'
 }
 
 function PortalAdminContent() {
@@ -104,34 +94,45 @@ function PortalAdminContent() {
     }
   }, [])
 
+  // Portal-admin is superadmin/TU only. Redirect admin organisasi away.
+  useEffect(() => {
+    if (!mounted || !currentProfileQuery.data) return
+    const role = currentProfileQuery.data.role
+    if (role === 'admin') {
+      router.replace('/hubungkan-dompet?activate=admin')
+    } else if (role === 'voter') {
+      router.replace('/hubungkan-dompet')
+    }
+  }, [mounted, currentProfileQuery.data, router])
+
   useEffect(() => {
     if (!mounted) return
     const authError = searchParams.get('authError')
     if (!authError) return
 
     if (authError === 'admin_pending') {
-      setFormError('Undangan admin organisasi masih pending. Minta super admin mengaktifkan undangan terlebih dahulu.')
+      setFormError('Undangan masih pending. Minta pengelola platform mengaktifkan undangan terlebih dahulu.')
     } else if (authError === 'activation_required') {
-      setFormError('Akun ini belum memiliki undangan admin aktif. Gunakan email yang didaftarkan oleh super admin.')
+      setFormError('Akun ini belum memiliki undangan aktif. Gunakan email yang didaftarkan oleh pengelola platform.')
     } else if (authError === 'registry_unavailable') {
-      setFormError('Data aktivasi admin belum bisa diperiksa. Coba lagi beberapa saat atau hubungi super admin.')
+      setFormError('Data aktivasi belum bisa diperiksa. Coba lagi beberapa saat atau hubungi pengelola platform.')
     } else if (authError === 'profile_unavailable') {
-      setFormError('Profil admin belum bisa dibaca. Jika database baru di-reset, keluar lalu masuk ulang atau aktivasi ulang.')
+      setFormError('Profil belum bisa dibaca. Jika database baru di-reset, keluar lalu masuk ulang atau aktivasi ulang.')
     } else if (authError === 'oauth_exchange_failed') {
-      setFormError('Gagal verifikasi akun admin. Pastikan akun yang dipakai sesuai undangan.')
+      setFormError('Gagal verifikasi akun. Pastikan akun yang dipakai sesuai undangan.')
     } else {
-      setFormError('Sesi admin tidak bisa divalidasi. Coba keluar, muat ulang halaman, lalu masuk kembali.')
+      setFormError('Sesi tidak bisa divalidasi. Coba keluar, muat ulang halaman, lalu masuk kembali.')
     }
   }, [mounted, searchParams])
 
   useEffect(() => {
     if (!mounted || !currentProfileQuery.error) return
-    setFormError(getRepositoryErrorMessage(currentProfileQuery.error, 'Profil admin belum bisa dimuat. Coba masuk ulang atau hubungi super admin.'))
+    setFormError(getRepositoryErrorMessage(currentProfileQuery.error, 'Profil belum bisa dimuat. Coba masuk ulang atau hubungi pengelola platform.'))
   }, [mounted, currentProfileQuery.error])
 
   const authSession = authSessionQuery.data
   const currentProfile = currentProfileQuery.data
-  const requestedRedirect = safeInternalPath(searchParams.get('redirect'), '/portal-admin')
+  const requestedRedirect = safeInternalPath(searchParams.get('redirect'), '/superadmin')
   const connectedWalletProfile = connectedWalletProfileQuery.data
   const isWalletBound = sameWalletAddress(currentProfile?.walletAddress, address)
   const accountHasDifferentWallet = Boolean(address && currentProfile?.walletAddress && !isWalletBound)
@@ -157,31 +158,19 @@ function PortalAdminContent() {
     }
   }, [mounted, isConnected, authSession, isWalletBound, bindWalletMutation.isPending, bindWalletMutation.isSuccess, bindError, bindingBlocked])
 
+  // Redirect after successful bind (superadmin only)
   useEffect(() => {
     if (mounted && isConnected && authSession && isWalletBound) {
       if (currentProfile?.role === 'super_admin') {
         if (redirectStartedRef.current) return
         redirectStartedRef.current = true
-        const redirectTarget = resolveAdminRedirectTarget(searchParams.get('redirect'), currentProfile.role)
+        const redirectTarget = resolveSuperadminRedirectTarget(searchParams.get('redirect'))
         setRedirectState({
           target: redirectTarget,
           label: 'Dashboard Superadmin',
           description: 'Akses Superadmin berhasil divalidasi. Anda akan diarahkan ke dashboard pengelolaan platform.',
         })
-        showToast({ tone: 'success', title: 'Akses Diterima', description: 'Selamat datang di Portal Utama Admin.' })
-        redirectTimerRef.current = window.setTimeout(() => {
-          router.replace(redirectTarget)
-        }, 2200)
-      } else if (currentProfile?.role === 'admin') {
-        if (redirectStartedRef.current) return
-        redirectStartedRef.current = true
-        const redirectTarget = resolveAdminRedirectTarget(searchParams.get('redirect'), currentProfile.role)
-        setRedirectState({
-          target: redirectTarget,
-          label: 'Dashboard Admin Organisasi',
-          description: 'Akun dan dompet admin berhasil divalidasi. Anda akan diarahkan ke dashboard organisasi.',
-        })
-        showToast({ tone: 'success', title: 'Akses Diterima', description: 'Selamat datang di Dashboard Admin.' })
+        showToast({ tone: 'success', title: 'Akses Diterima', description: 'Selamat datang di Portal Tata Usaha.' })
         redirectTimerRef.current = window.setTimeout(() => {
           router.replace(redirectTarget)
         }, 2200)
@@ -259,9 +248,9 @@ function PortalAdminContent() {
                       <ArrowLeft className="h-3.5 w-3.5" />
                       Kembali ke Beranda
                     </Link>
-                    <h1 className="text-[24px] font-semibold leading-tight text-slate-900">Portal Admin</h1>
+                    <h1 className="text-[24px] font-semibold leading-tight text-slate-900">Portal Tata Usaha</h1>
                     <p className="mt-1 text-[13px] leading-6 text-slate-400">
-                      Akses admin organisasi dan pengelola platform.
+                      Akses pengelola platform dan superadmin.
                     </p>
                   </div>
 
@@ -293,10 +282,10 @@ function PortalAdminContent() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <h2 className="text-[14px] font-semibold text-slate-900">
-                        Verifikasi Admin
+                        Verifikasi Akun
                       </h2>
                       <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                        {authSession ? 'Akun institusi sudah masuk.' : 'Masuk dengan akun institusi untuk memeriksa otoritas admin.'}
+                        {authSession ? 'Akun institusi sudah masuk.' : 'Masuk dengan akun institusi untuk verifikasi.'}
                       </p>
                     </div>
                     {!authSession && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -309,7 +298,7 @@ function PortalAdminContent() {
                     <div className="min-w-0 flex-1">
                       <h2 className={authSession ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Sambungkan dompet digital</h2>
                       <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                        {isAdminAccessValidated ? 'Akses admin sudah tervalidasi.' : authSession ? 'Cocokkan dompet yang terdaftar untuk membuka akses.' : 'Dompet dicek setelah akun admin masuk.'}
+                        {isAdminAccessValidated ? 'Akses sudah tervalidasi.' : authSession ? 'Cocokkan dompet yang terdaftar.' : 'Dompet dicek setelah akun masuk.'}
                       </p>
                     </div>
                     {authSession && !isAdminAccessValidated && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -324,7 +313,7 @@ function PortalAdminContent() {
                       <ShieldCheck className="h-4 w-4 text-emerald-400" />
                     </div>
                     <div>
-                      <h3 className="text-[13px] font-semibold">Gerbang Admin</h3>
+                      <h3 className="text-[13px] font-semibold">Gerbang Superadmin</h3>
                       <p className="text-[11px] text-slate-400">Verifikasi SSO dan wallet</p>
                     </div>
                   </div>
@@ -338,9 +327,9 @@ function PortalAdminContent() {
 
                 {!authSession && (
                   <div className="mt-8 w-full">
-                    <h2 className="text-[20px] font-semibold text-slate-900">Verifikasi Admin</h2>
+                    <h2 className="text-[20px] font-semibold text-slate-900">Verifikasi Akun Institusi</h2>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Masuk dengan akun kampus untuk memeriksa apakah akun memiliki otoritas admin organisasi atau pengelola platform.
+                      Masuk dengan akun institusi untuk memverifikasi otoritas sebagai pengelola platform (Superadmin).
                     </p>
 
                     {isConnected && <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50 p-4">
@@ -407,13 +396,13 @@ function PortalAdminContent() {
                           <Building2 className="h-3 w-3" />
                         </div>
                         <div className="space-y-3">
-                          <h3 className="text-[13px] font-bold text-blue-900">Penting untuk Admin</h3>
+                          <h3 className="text-[13px] font-bold text-blue-900">Penting untuk Superadmin</h3>
                           <p className="text-[12px] leading-5 text-blue-800/80">
-                            Akses portal admin memerlukan penautan antara akun institusi <span className="font-bold">@uajy.ac.id</span> dan alamat dompet digital yang sudah didaftarkan oleh Superadmin.
+                            Akses portal ini memerlukan penautan antara akun institusi <span className="font-bold">@uajy.ac.id</span> dan alamat dompet digital yang sudah didaftarkan oleh pengelola platform.
                           </p>
                           <div className="rounded-lg bg-white/60 p-3 text-[11px] leading-relaxed text-blue-900/70 border border-blue-100/50">
                             <span className="font-bold text-blue-900 block mb-1">Catatan:</span>
-                            Kami telah menonaktifkan login manual untuk menjaga integritas kredensial. Gunakan OAuth Microsoft/Google yang terhubung dengan akun kampus Anda.
+                            Portal ini khusus untuk pengelola platform (Superadmin / Tata Usaha Fakultas). Admin organisasi silakan masuk melalui halaman Hubungkan Dompet.
                           </div>
                         </div>
                       </div>
@@ -431,7 +420,7 @@ function PortalAdminContent() {
                   <div className="mt-8 w-full">
                     <h2 className="text-[20px] font-semibold text-slate-900">Sambungkan Dompet Digital</h2>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      Langkah kedua adalah menyambungkan dompet digital yang akan digunakan sebagai identitas administratif Anda. Dompet ini berfungsi untuk menandatangani aksi dan memvalidasi akses ke dashboard admin.
+                      Langkah kedua adalah menyambungkan dompet digital yang akan digunakan sebagai identitas administratif Anda. Dompet ini berfungsi untuk menandatangani aksi dan memvalidasi akses ke dashboard superadmin.
                     </p>
 
                     <div className="mt-8 rounded-xl border border-blue-100 bg-blue-50/50 p-5">
@@ -446,7 +435,7 @@ function PortalAdminContent() {
                           </p>
                           <div className="rounded-lg bg-white/60 p-3 text-[11px] leading-relaxed text-blue-900/70 border border-blue-100/50">
                             <span className="font-bold text-blue-900 block mb-1">Penting:</span>
-                            Pastikan Anda menggunakan dompet yang sama setiap kali masuk ke portal admin untuk menjaga konsistensi data audit.
+                            Pastikan Anda menggunakan dompet yang sama setiap kali masuk untuk menjaga konsistensi data audit.
                           </div>
                         </div>
                       </div>
@@ -531,7 +520,7 @@ function PortalAdminContent() {
                     </div>
                     <h2 className="mt-6 text-[20px] font-semibold text-slate-900">Akses Berhasil Divalidasi</h2>
                     <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                      {redirectState ? `Mengarahkan Anda ke ${redirectState.label.toLowerCase()}...` : 'Menyiapkan akses admin...'}
+                      {redirectState ? `Mengarahkan Anda ke ${redirectState.label.toLowerCase()}...` : 'Menyiapkan akses...'}
                     </p>
                   </div>
                 )}
@@ -555,7 +544,7 @@ function PortalAdminContent() {
                     className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
                   >
                     {isConnectPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                    Sambungkan Dompet Admin
+                    Sambungkan Dompet Superadmin
                     {!isConnectPending ? <ChevronRight className="h-4 w-4" /> : null}
                   </button>
                 )}
@@ -571,7 +560,7 @@ function PortalAdminContent() {
                     className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
                   >
                     {bindWalletMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
-                    Masuk Dashboard Admin
+                    Masuk Dashboard Superadmin
                   </button>
                 )}
 
