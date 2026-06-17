@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
+import { ReactNode, useEffect } from 'react'
 import { Clock, ArrowLeft } from 'lucide-react'
 import type { AppRole } from '@/lib/repositories/types'
 import { useCurrentProfile } from '@/hooks/use-profile'
@@ -22,10 +23,34 @@ export function RoleGate({
 }) {
   const { data: currentProfile, isLoading } = useCurrentProfile()
   const { locale } = useLanguage()
+  const router = useRouter()
 
+  // No profile and not loading → redirect to login page
+  useEffect(() => {
+    if (!isLoading && !currentProfile) {
+      router.replace(loginHref)
+    }
+  }, [isLoading, currentProfile, loginHref, router])
+
+  // Loading state
   if (isLoading) return null
 
-  if (!currentProfile || !allowedRoles.includes(currentProfile.role)) {
+  // No profile → show redirect spinner while navigating
+  if (!currentProfile) {
+    return (
+      <div className="flex min-h-[60vh] w-full items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
+          <p className="text-[13px] text-slate-400">
+            {locale === 'Bahasa Indonesia' ? 'Mengarahkan ke halaman masuk...' : 'Redirecting to login...'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Has profile but wrong role → show fallback page
+  if (!allowedRoles.includes(currentProfile.role)) {
     return (
       <div className="flex min-h-[80vh] w-full items-center justify-center p-6">
         <div className="w-full max-w-[480px] overflow-hidden rounded-[32px] border border-slate-200 bg-white p-8 text-center shadow-xl md:p-12">
