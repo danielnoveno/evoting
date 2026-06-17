@@ -1,6 +1,5 @@
 // @ts-nocheck
 import { ChainNotConfiguredError, createConnector } from '@wagmi/core'
-import { createBaseAccountSDK } from '@base-org/account'
 import { getAddress, numberToHex, SwitchChainError, UserRejectedRequestError } from 'viem'
 
 type BaseAccountParameters = {
@@ -145,6 +144,22 @@ export function baseAccountConnector(parameters: BaseAccountParameters) {
 
     async getProvider() {
       if (!walletProvider) {
+        // Guard: wallet extensions (MetaMask/Rabby) define window.ethereum as
+        // a read-only getter. Base Account SDK's requestProvider tries to SET
+        // it, which throws TypeError. Make it writable before SDK loads.
+        if (typeof window !== 'undefined' && window.ethereum) {
+          try {
+            Object.defineProperty(window, 'ethereum', {
+              value: window.ethereum,
+              writable: true,
+              configurable: true,
+            })
+          } catch {
+            // Already configurable or non-redefinable — proceed anyway
+          }
+        }
+
+        const { createBaseAccountSDK } = await import('@base-org/account')
         const sdk = createBaseAccountSDK({
           ...parameters,
           appChainIds: config.chains.map((chain) => chain.id),
