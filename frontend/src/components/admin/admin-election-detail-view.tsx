@@ -129,14 +129,14 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     ? Number(onChainPhase)
     : null
   const isRegistrationPhaseOnChain = onChainPhaseNumber === 0
-  const phaseLabels = ['Registration', 'Commit', 'Reveal', 'Ended'] as const
+  const phaseLabels = ['Persiapan', 'Pencoblosan', 'Konfirmasi Suara', 'Selesai'] as const
   const phaseDescriptions = [
-    'Persiapan pemilihan: daftar pemilih masih dapat disinkronkan ke kontrak.',
-    'Masa pencoblosan: pemilih dapat mengunci pilihan melalui transaksi commit.',
-    'Masa konfirmasi: pemilih membuka pilihan dengan salt yang tersimpan.',
-    'Pemilihan selesai: hasil dapat diaudit setelah seluruh reveal selesai.',
+    'Tahap internal sebelum pemilih mencoblos. Gunakan tahap ini untuk memastikan daftar pemilih sudah tersinkron ke kontrak.',
+    'Pemilih sudah bisa mencoblos dan mengunci suara. Di kontrak, tahap ini tetap disebut Commit untuk menjaga keamanan commit-reveal.',
+    'Pemilih mengesahkan suara yang sudah dikunci. Di kontrak, tahap ini tetap disebut Reveal.',
+    'Pemilihan selesai. Hasil dapat diaudit setelah suara yang sah dikonfirmasi.',
   ] as const
-  const phaseActionLabels = ['Buka Masa Commit', 'Buka Masa Reveal', 'Akhiri Pemilihan'] as const
+  const phaseActionLabels = ['Buka Pencoblosan', 'Buka Konfirmasi Suara', 'Akhiri Pemilihan'] as const
   const onChainPhaseLabel = onChainPhaseNumber !== null && phaseLabels[onChainPhaseNumber]
     ? phaseLabels[onChainPhaseNumber]
     : 'Belum terbaca'
@@ -184,7 +184,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       showToast({
         tone: mode === 'manual' ? 'error' : 'info',
         title: 'Sinkronisasi Ditunda',
-        description: 'Whitelist on-chain hanya bisa didaftarkan saat fase smart contract masih Registration.',
+        description: 'Daftar pemilih on-chain hanya bisa didaftarkan saat tahap persiapan, sebelum pencoblosan dibuka.',
       })
       setSyncOnchainConfirmOpen(false)
       return
@@ -362,7 +362,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           ? {
               tone: 'amber' as const,
               title: 'Sinkronisasi otomatis ditahan',
-              description: 'Daftar pemilih (whitelist) hanya bisa didaftarkan saat tahap Persiapan Pemilihan (Registration).',
+              description: 'Daftar pemilih hanya bisa didaftarkan saat tahap persiapan, sebelum pencoblosan dibuka.',
             }
           : {
               tone: 'amber' as const,
@@ -1405,7 +1405,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <ConfirmDialog
         open={syncOnchainConfirmOpen}
         title="Daftarkan Pemilih ke Kontrak?"
-        description={`Sebanyak ${unsyncedValidAddresses.length} dompet valid akan didaftarkan sebagai daftar pemilih (whitelist) di kontrak. Proses ini membutuhkan konfirmasi dompet admin dan hanya bisa dilakukan saat tahap Persiapan Pemilihan (Registration).`}
+        description={`Sebanyak ${unsyncedValidAddresses.length} dompet valid akan didaftarkan sebagai daftar pemilih di kontrak. Proses ini membutuhkan konfirmasi dompet admin dan hanya bisa dilakukan saat tahap persiapan, sebelum pencoblosan dibuka.`}
         confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Daftarkan Pemilih"}
         onCancel={() => {
           if (!isWritePending && !isConfirming) {
@@ -1420,7 +1420,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <ConfirmDialog
         open={nextPhaseConfirmOpen}
         title={`${nextPhaseLabel}?`}
-        description={`Tahap on-chain saat ini adalah ${onChainPhaseLabel}. Aksi ini mengirim transaksi admin untuk memajukan tahap kontrak satu langkah dan tidak dapat dimundurkan. Pastikan whitelist sudah sinkron sebelum membuka Masa Commit.`}
+        description={`Tahap on-chain saat ini adalah ${onChainPhaseLabel}. Aksi ini mengirim transaksi admin untuk memajukan tahap kontrak satu langkah dan tidak dapat dimundurkan. Pastikan daftar pemilih sudah sinkron sebelum membuka pencoblosan.`}
         confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Lanjutkan"}
         onCancel={() => {
           if (!isWritePending && !isConfirming) {

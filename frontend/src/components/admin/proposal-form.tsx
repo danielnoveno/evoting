@@ -47,7 +47,7 @@ type ValidationIssue = {
   message: string
 }
 
-const MIN_GAP_MINUTES = 60
+const MIN_GAP_MINUTES = 1
 const MAX_SUPPORTING_DOCUMENT_SIZE = 10 * 1024 * 1024
 const MAX_CANDIDATE_PHOTO_SIZE = 5 * 1024 * 1024
 const MAX_BANNER_IMAGE_SIZE = 5 * 1024 * 1024
@@ -186,7 +186,7 @@ export function ProposalForm({
       } else {
         const minGap = MIN_GAP_MINUTES * 60 * 1000
         if (revealTime - commitTime < minGap) {
-          nextErrors.dateRange = 'Jarak antar fase minimal 1 jam.'
+          nextErrors.dateRange = 'Jarak antar tahap minimal 1 menit.'
         }
       }
     }
@@ -215,9 +215,9 @@ export function ProposalForm({
     const issues: ValidationIssue[] = []
 
     if (nextErrors.title) issues.push({ fieldKey: 'title', label: 'Nama Pemilihan', message: nextErrors.title })
-    if (nextErrors.commitDate) issues.push({ fieldKey: 'commitDate', label: 'Mulai Commit', message: 'Tanggal dan jam mulai commit wajib diisi.' })
-    if (nextErrors.revealDate) issues.push({ fieldKey: 'revealDate', label: 'Mulai Reveal', message: 'Tanggal dan jam mulai reveal wajib diisi.' })
-    if (nextErrors.endedDate) issues.push({ fieldKey: 'endedDate', label: 'Selesai', message: 'Tanggal dan jam selesai wajib diisi.' })
+    if (nextErrors.commitDate) issues.push({ fieldKey: 'commitDate', label: 'Mulai Pencoblosan', message: 'Tanggal dan jam mulai pencoblosan wajib diisi.' })
+    if (nextErrors.revealDate) issues.push({ fieldKey: 'revealDate', label: 'Mulai Konfirmasi Suara', message: 'Tanggal dan jam mulai konfirmasi suara wajib diisi.' })
+    if (nextErrors.endedDate) issues.push({ fieldKey: 'endedDate', label: 'Selesai Pemilihan', message: 'Tanggal dan jam selesai pemilihan wajib diisi.' })
     if (nextErrors.dateRange) issues.push({ fieldKey: 'commitDate', label: 'Urutan Waktu', message: nextErrors.dateRange })
 
     data.candidateEntries.forEach((candidate, index) => {
@@ -770,21 +770,32 @@ export function ProposalForm({
           ) : null}
 
           <section className="space-y-4">
-            <h2 className="text-[14px] font-bold uppercase tracking-widest">Parameter Waktu On-Chain</h2>
+            <div>
+              <h2 className="text-[14px] font-bold uppercase tracking-widest">Jadwal Pemilihan</h2>
+              <p className="mt-2 text-[14px] leading-6 text-slate-500">
+                Admin cukup mengatur kapan pemilih mulai mencoblos, kapan suara dikonfirmasi, dan kapan pemilihan selesai. Tahap persiapan/Registration berjalan otomatis di belakang layar untuk sinkronisasi daftar pemilih.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-[13px] leading-6 text-blue-800">
+              Untuk uji coba cepat, jadwal boleh dibuat berdekatan. Contoh: pencoblosan mulai sekarang, konfirmasi suara 1 menit setelahnya, selesai 1 menit berikutnya.
+            </div>
             <div className="grid sm:grid-cols-3 gap-4">
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Commit <RequiredAsterisk /></span>
+                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Pencoblosan <RequiredAsterisk /></span>
                 <input data-validation-field="commitDate" type="datetime-local" name="commitDate" value={formData.commitDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Pemilih mulai bisa memilih dan mengunci suara.</p>
                 {errors.commitDate && <p className="mt-1 text-[12px] text-red-500">{errors.commitDate}</p>}
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Reveal <RequiredAsterisk /></span>
+                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Konfirmasi Suara <RequiredAsterisk /></span>
                 <input data-validation-field="revealDate" type="datetime-local" name="revealDate" value={formData.revealDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Pemilih mengesahkan suara yang sudah dikunci.</p>
                 {errors.revealDate && <p className="mt-1 text-[12px] text-red-500">{errors.revealDate}</p>}
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Selesai (Off-Chain) <RequiredAsterisk /></span>
+                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Selesai Pemilihan <RequiredAsterisk /></span>
                 <input data-validation-field="endedDate" type="datetime-local" name="endedDate" value={formData.endedDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Hasil akhir ditutup dan siap diaudit.</p>
                 {errors.endedDate && <p className="mt-1 text-[12px] text-red-500">{errors.endedDate}</p>}
               </label>
             </div>
@@ -937,7 +948,7 @@ export function ProposalForm({
               <div>
                 <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Whitelist Pemilih</h2>
                 <p className="mt-1 text-[14px] leading-6 text-slate-600">
-                  Masukkan wallet pemilih sejak proposal dibuat. Saat superadmin menyetujui dan deploy pemilihan, daftar valid ini akan dicoba disinkronkan ke kontrak selama fase Registration.
+                  Masukkan wallet pemilih sejak proposal dibuat. Tahap persiapan on-chain berjalan di belakang layar sebelum pencoblosan dimulai, sehingga admin tidak perlu mengatur jadwal Registration terpisah.
                 </p>
               </div>
               <span className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">

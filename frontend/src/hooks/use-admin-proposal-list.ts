@@ -66,9 +66,9 @@ function makeEmptyDetail(p: ProposalDraft, voterTarget: string): AdminElectionRe
       total: '0', target: voterTarget, integrityTitle: 'Data Supabase', integrityDescription: 'Daftar pemilih dimuat dari tabel proposal_whitelist_entries.', evidence: p.proposalTxHash ?? 'Belum ada transaksi whitelist', evidenceStatus: p.proposalTxHash ? 'Ada Tx Hash' : 'Belum on-chain', records: [], uploadSupport: 'CSV, Manual',
     },
     parameterVoting: {
-      phaseTitle: 'Parameter Waktu', phaseDescription: 'Jadwal fase yang tersimpan di Supabase.',
-      phaseOne: { label: 'Fase Commit', start: formatDate(p.commitStartAt), end: formatDate(p.revealStartAt) },
-      phaseTwo: { label: 'Fase Reveal', start: formatDate(p.revealStartAt), end: formatDate(p.endedAt) },
+      phaseTitle: 'Jadwal Pemilihan', phaseDescription: 'Admin cukup memantau jadwal pencoblosan dan konfirmasi suara. Tahap persiapan berjalan sebelum pencoblosan dibuka.',
+      phaseOne: { label: 'Pencoblosan', start: formatDate(p.commitStartAt), end: formatDate(p.revealStartAt) },
+      phaseTwo: { label: 'Konfirmasi Suara', start: formatDate(p.revealStartAt), end: formatDate(p.endedAt) },
       consensus: { method: 'Commit-Reveal', quorum: 'Belum ditetapkan', quorumProgressWidthClassName: 'w-[0%]', protectionTitle: 'Anti double-vote', protectionDescription: 'Validasi akhir bergantung pada smart contract ElectionSpace.' },
       contract: { address: p.deployedSpaceAddress ?? 'Belum deploy', network: 'Base Sepolia', version: 'ElectionSpace', currentHash: p.deploymentTxHash ?? 'Belum ada tx' },
       privacy: { headline: 'Commit-Reveal', items: [{ title: 'Hash komitmen', description: 'Pilihan disimpan sebagai hash saat fase commit lalu dibuka saat reveal.' }], ctaLabel: 'Lihat audit' },
