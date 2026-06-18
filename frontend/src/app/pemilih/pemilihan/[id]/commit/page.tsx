@@ -126,6 +126,17 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     return () => clearTimeout(timeout)
   }, [isBlockchainLoading, isOnChainStatusReady, onChainStatusError, refetchPhase, refetchHasCommitted, refetchIsWhitelisted])
 
+  useEffect(() => {
+    if (!onChainStatusError) return
+    console.warn('[VoteChain] Blockchain read error:', {
+      contractAddress,
+      connectedWallet,
+      phaseError: phaseError?.message,
+      whitelistError: whitelistError?.message,
+      hasCommittedError: hasCommittedError?.message,
+    })
+  }, [onChainStatusError, contractAddress, connectedWallet, phaseError, whitelistError, hasCommittedError])
+
   if (storeLoading || !store) {
     return (
       <VoterShell>
@@ -192,17 +203,6 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         </section>
       </VoterShell>
     )
-  }
-
-  // Debug logging untuk tracing connectivity issues
-  if (onChainStatusError && typeof window !== 'undefined') {
-    console.warn('[VoteChain] Blockchain read error:', {
-      contractAddress,
-      connectedWallet,
-      phaseError: phaseError?.message,
-      whitelistError: whitelistError?.message,
-      hasCommittedError: hasCommittedError?.message,
-    })
   }
 
   const onChainPhaseLabel = currentPhaseNumber === 0

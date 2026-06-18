@@ -49,11 +49,19 @@ export function useElectionContract(address?: string, options: UseElectionContra
   })
 
   // Read functions — include isFetching to detect stuck/loading state
-  const { data: currentPhase, refetch: refetchPhase, error: phaseError, isFetching: isPhaseFetching } = useReadContract({
+  // Pakai getter currentPhase() karena beberapa ElectionSpace yang sudah ter-deploy
+  // belum memiliki helper phase(). Memanggil phase() ke kontrak lama akan revert
+  // dan membuat halaman pemilih terkunci di status "blockchain belum merespons".
+  const {
+    data: currentPhase,
+    refetch: refetchPhase,
+    error: phaseError,
+    isFetching: isPhaseFetching,
+  } = useReadContract({
     address: address as `0x${string}`,
     abi: electionSpaceAbi,
     chainId: baseSepolia.id,
-      functionName: 'phase',
+    functionName: 'currentPhase',
     query: {
       ...DEFAULT_READ_QUERY_OPTIONS,
       enabled: !!address && enabledChecks.has('phase'),
