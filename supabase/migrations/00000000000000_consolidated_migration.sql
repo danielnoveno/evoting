@@ -1439,7 +1439,7 @@ alter table app.master_voters enable row level security;
 create policy "master_voters_select_auth"
 on app.master_voters
 for select
-using (auth.role() = 'authenticated');
+using (auth.uid() is not null);
 
 create policy "master_voters_insert_admin"
 on app.master_voters
