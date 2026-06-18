@@ -79,7 +79,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     hash: txHash,
     writeError,
     resetWrite,
-    currentPhase: onChainPhase
+    currentPhase: onChainPhase,
+    refetchPhase
   } = useElectionContract(isAddressValid ? deployedAddress : undefined)
 
   // Indexer Hooks
@@ -128,6 +129,24 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     ? Number(onChainPhase)
     : null
   const isRegistrationPhaseOnChain = onChainPhaseNumber === 0
+  const phaseLabels = ['Registration', 'Commit', 'Reveal', 'Ended'] as const
+  const phaseDescriptions = [
+    'Persiapan pemilihan: daftar pemilih masih dapat disinkronkan ke kontrak.',
+    'Masa pencoblosan: pemilih dapat mengunci pilihan melalui transaksi commit.',
+    'Masa konfirmasi: pemilih membuka pilihan dengan salt yang tersimpan.',
+    'Pemilihan selesai: hasil dapat diaudit setelah seluruh reveal selesai.',
+  ] as const
+  const phaseActionLabels = ['Buka Masa Commit', 'Buka Masa Reveal', 'Akhiri Pemilihan'] as const
+  const onChainPhaseLabel = onChainPhaseNumber !== null && phaseLabels[onChainPhaseNumber]
+    ? phaseLabels[onChainPhaseNumber]
+    : 'Belum terbaca'
+  const onChainPhaseDescription = onChainPhaseNumber !== null && phaseDescriptions[onChainPhaseNumber]
+    ? phaseDescriptions[onChainPhaseNumber]
+    : 'Status tahap on-chain belum terbaca. Tunggu koneksi Base Sepolia merespons sebelum mengubah fase.'
+  const nextPhaseLabel = onChainPhaseNumber !== null && onChainPhaseNumber >= 0 && onChainPhaseNumber < phaseActionLabels.length
+    ? phaseActionLabels[onChainPhaseNumber]
+    : 'Buka Fase Berikutnya'
+  const canAdvancePhase = isAddressValid && onChainPhaseNumber !== null && onChainPhaseNumber >= 0 && onChainPhaseNumber < 3
   const getUnsyncedValidAddresses = (extraAddresses: string[] = []) => normalizeWhitelistAddresses([
     ...(whitelistQuery.data ?? [])
       .filter((record) => record.syncStatus !== 'synced' && record.validationStatus === 'valid')
@@ -253,13 +272,14 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     if (isConfirmed && txHash && nextPhaseConfirmOpen) {
       setNextPhaseConfirmOpen(false)
       resetWrite()
+      void refetchPhase()
       showToast({
         tone: 'success',
         title: 'Fase Diperbarui',
         description: 'Fase pemilihan berhasil diubah di blockchain.',
       })
     }
-  }, [isConfirmed, txHash, nextPhaseConfirmOpen, showToast, resetWrite])
+  }, [isConfirmed, txHash, nextPhaseConfirmOpen, showToast, resetWrite, refetchPhase])
 
   // Handle Error
   useEffect(() => {
@@ -526,7 +546,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   }
 
   const handleConfirmNextPhase = () => {
-    if (!isAddressValid) return
+    if (!canAdvancePhase || isWritePending || isConfirming) return
     transitionToNextPhase()
   }
 
@@ -879,11 +899,11 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           <button 
             type="button" 
             onClick={() => setNextPhaseConfirmOpen(true)} 
-            disabled={isWritePending || isConfirming || onChainPhase === 3}
+            disabled={isWritePending || isConfirming || !canAdvancePhase}
             className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-[15px] font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${(isWritePending || isConfirming) ? 'animate-spin' : ''}`} />
-            Buka Fase Berikutnya
+            {nextPhaseLabel}
           </button>
         )}
         <button type="button" onClick={() => showToast({ tone: 'info', title: 'Edit Parameter', description: 'Parameter pemilihan hanya dapat diubah sebelum fase commit dimulai.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-500 px-5 text-[15px] font-medium text-white hover:bg-slate-600">
@@ -910,6 +930,19 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 text-slate-400">
               <CalendarDays className="h-6 w-6" />
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-[22px] border border-blue-100 bg-blue-50 p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">Tahap On-Chain Aktif</p>
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[28px] font-semibold tracking-[-0.03em] text-slate-900">{onChainPhaseLabel}</p>
+                <p className="mt-2 max-w-[620px] text-[14px] leading-6 text-slate-600">{onChainPhaseDescription}</p>
+              </div>
+              {isAddressValid ? (
+                <p className="shrink-0 rounded-full bg-white px-4 py-2 font-mono text-[12px] text-slate-600">{deployedAddress}</p>
+              ) : null}
             </div>
           </div>
 
@@ -1386,8 +1419,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
       <ConfirmDialog
         open={nextPhaseConfirmOpen}
-        title="Buka Tahap Berikutnya?"
-        description="Aksi ini akan mengubah tahap pemilihan di blockchain. Gunakan hanya jika jadwal otomatis belum dipakai dan seluruh persiapan tahap saat ini sudah selesai."
+        title={`${nextPhaseLabel}?`}
+        description={`Tahap on-chain saat ini adalah ${onChainPhaseLabel}. Aksi ini mengirim transaksi admin untuk memajukan tahap kontrak satu langkah dan tidak dapat dimundurkan. Pastikan whitelist sudah sinkron sebelum membuka Masa Commit.`}
         confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Lanjutkan"}
         onCancel={() => {
           if (!isWritePending && !isConfirming) {
