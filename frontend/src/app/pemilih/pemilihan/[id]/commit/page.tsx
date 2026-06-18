@@ -61,6 +61,9 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     phaseError,
     hasCommittedError,
     whitelistError,
+    isPhaseFetching,
+    isHasCommittedFetching,
+    isWhitelistedFetching,
     refetchPhase,
     refetchHasCommitted,
     refetchIsWhitelisted
@@ -70,7 +73,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const [isRefreshingOnChainStatus, setIsRefreshingOnChainStatus] = useState(false)
 
   const savedCommitment = loadVoteCommitment(params.id)
-  
+
   useEffect(() => {
     if (isConfirmed && hash && receipt) {
       showToast({
@@ -164,6 +167,10 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const connectWalletRoute = `/hubungkan-dompet?redirect=${encodeURIComponent(commitRoute)}`
   const isConnectedWalletProfileWallet = sameWalletAddress(connectedWallet, profileWallet)
   const isCommitPhaseOnChain = currentPhaseNumber === 1
+
+  // Deteksi apakah blockchain masih dalam proses loading
+  const isBlockchainLoading = isPhaseFetching || isWhitelistedFetching || isHasCommittedFetching
+
   const isOnChainStatusReady = Boolean(contractAddress) && Boolean(connectedWallet) && isConnectedWalletProfileWallet && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
   // Ekstrak detail error untuk debugging (hanya tampil di dev atau jika error jelas)
@@ -199,6 +206,8 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
       ? `Dompet tersambung (${formatWallet(connectedWallet)}) berbeda dari dompet akun ini (${formatWallet(profileWallet)}). Sambungkan dompet yang sama agar pengecekan whitelist sesuai.`
     : onChainStatusError
       ? `Jaringan blockchain belum merespons. (${onChainErrorDetail})`
+    : isBlockchainLoading
+      ? 'Status blockchain sedang diperiksa dari jaringan Base Sepolia. Tunggu sebentar...'
     : !isOnChainStatusReady
       ? 'Status blockchain sedang diperiksa. Tunggu sebentar atau periksa ulang sebelum mencoblos.'
       : !isCommitPhaseOnChain
@@ -208,6 +217,22 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         : hasCommittedOnChain
           ? 'Wallet ini sudah pernah menyimpan pilihan untuk ruang voting ini.'
           : ''
+
+  // Auto-retry jika blockchain reads masih loading setelah 15 detik
+  useEffect(() => {
+    if (!isBlockchainLoading || isOnChainStatusReady || onChainStatusError) return
+
+    const timeout = setTimeout(() => {
+      console.warn('[VoteChain] Auto-retrying blockchain reads after 15s timeout')
+      Promise.allSettled([
+        refetchPhase(),
+        refetchHasCommitted(),
+        refetchIsWhitelisted(),
+      ])
+    }, 15_000)
+
+    return () => clearTimeout(timeout)
+  }, [isBlockchainLoading, isOnChainStatusReady, onChainStatusError, refetchPhase, refetchHasCommitted, refetchIsWhitelisted])
 
   const handleRefreshOnChainStatus = async () => {
     setIsRefreshingOnChainStatus(true)
@@ -369,7 +394,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p>
-                {commitBlockedReason} Tombol dinonaktifkan agar dompet tidak membuka transaksi yang pasti gagal.
+                {commitBlockedReason} {!isBlockchainLoading && 'Tombol dinonaktifkan agar dompet tidak membuka transaksi yang pasti gagal.'}
               </p>
               {(connectedWallet || profileWallet) ? (
                 <p className="mt-2 text-[12px] text-amber-800/90">

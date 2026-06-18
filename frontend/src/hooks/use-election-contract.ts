@@ -19,7 +19,7 @@ const DEFAULT_READ_QUERY_OPTIONS = {
   retryDelay: (attemptIndex: number) => Math.min(1500 * 2 ** attemptIndex, 8_000),
   staleTime: 30_000,
   gcTime: 5 * 60_000,
-  refetchOnWindowFocus: false,
+  refetchOnWindowFocus: true,
   refetchOnReconnect: true,
   refetchInterval: false,
 } as const
@@ -48,8 +48,8 @@ export function useElectionContract(address?: string, options: UseElectionContra
     hash,
   })
 
-  // Read functions
-  const { data: currentPhase, refetch: refetchPhase, error: phaseError } = useReadContract({
+  // Read functions — include isFetching to detect stuck/loading state
+  const { data: currentPhase, refetch: refetchPhase, error: phaseError, isFetching: isPhaseFetching } = useReadContract({
     address: address as `0x${string}`,
     abi: electionSpaceAbi,
     chainId: baseSepolia.id,
@@ -60,7 +60,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
     }
   })
 
-  const { data: hasCommittedOnChain, refetch: refetchHasCommitted, error: hasCommittedError } = useReadContract({
+  const { data: hasCommittedOnChain, refetch: refetchHasCommitted, error: hasCommittedError, isFetching: isHasCommittedFetching } = useReadContract({
     address: address as `0x${string}`,
     abi: electionSpaceAbi,
     chainId: baseSepolia.id,
@@ -72,7 +72,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
     }
   })
 
-  const { data: hasRevealedOnChain, refetch: refetchHasRevealed, error: hasRevealedError } = useReadContract({
+  const { data: hasRevealedOnChain, refetch: refetchHasRevealed, error: hasRevealedError, isFetching: isHasRevealedFetching } = useReadContract({
     address: address as `0x${string}`,
     abi: electionSpaceAbi,
     chainId: baseSepolia.id,
@@ -84,7 +84,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
     }
   })
 
-  const { data: isWhitelistedOnChain, refetch: refetchIsWhitelisted, error: whitelistError } = useReadContract({
+  const { data: isWhitelistedOnChain, refetch: refetchIsWhitelisted, error: whitelistError, isFetching: isWhitelistedFetching } = useReadContract({
     address: address as `0x${string}`,
     abi: electionSpaceAbi,
     chainId: baseSepolia.id,
@@ -185,6 +185,10 @@ export function useElectionContract(address?: string, options: UseElectionContra
     hasCommittedError,
     hasRevealedError,
     whitelistError,
+    isPhaseFetching,
+    isHasCommittedFetching,
+    isHasRevealedFetching,
+    isWhitelistedFetching,
     
     // Actions
     commitVote,
