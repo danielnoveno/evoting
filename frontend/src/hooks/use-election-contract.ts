@@ -15,11 +15,12 @@ type UseElectionContractOptions = {
 }
 
 const DEFAULT_READ_QUERY_OPTIONS = {
-  retry: 1,
+  retry: 2,
+  retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 5_000),
   staleTime: 30_000,
   gcTime: 5 * 60_000,
   refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
+  refetchOnReconnect: true,
   refetchInterval: false,
 } as const
 

@@ -14,8 +14,8 @@ const baseSepoliaRpcUrls = Array.from(new Set([
 ].filter(Boolean)))
 
 const baseSepoliaTransports = baseSepoliaRpcUrls.map((url) => http(url, {
-  retryCount: 1,
-  timeout: 10_000,
+  retryCount: 2,
+  timeout: 12_000,
 }))
 
 export const wagmiConfig = createConfig({
