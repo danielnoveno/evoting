@@ -1436,6 +1436,9 @@ for each row execute function app.set_updated_at();
 
 alter table app.master_voters enable row level security;
 
+grant select, insert, update, delete on app.master_voters to authenticated;
+grant select, insert, update, delete on app.master_voters to service_role;
+
 create policy "master_voters_select_auth"
 on app.master_voters
 for select
