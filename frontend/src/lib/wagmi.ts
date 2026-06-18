@@ -1,6 +1,5 @@
 import { http, fallback, createConfig } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
-import { injected } from 'wagmi/connectors'
 import { baseAccountConnector } from '@/lib/base-account-connector'
 
 const BASE_SEPOLIA_RPC_URL = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL?.trim()
@@ -29,9 +28,6 @@ export const wagmiConfig = createConfig({
         options: 'smartWalletOnly',
       },
     }),
-    // Injected connector (EOA wallets) — diperlukan untuk
-    // superadmin yang wallet EOA-nya terdaftar di on-chain registry.
-    injected({ shimDisconnect: true }),
   ],
   ssr: true,
   transports: {

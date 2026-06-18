@@ -144,7 +144,7 @@ export function baseAccountConnector(parameters: BaseAccountParameters) {
 
     async getProvider() {
       if (!walletProvider) {
-        // Guard: wallet extensions (MetaMask/Rabby) define window.ethereum as
+        // Guard: beberapa ekstensi wallet browser mendefinisikan window.ethereum sebagai
         // a read-only getter. Base Account SDK's requestProvider tries to SET
         // it, which throws TypeError. Make it writable before SDK loads.
         if (typeof window !== 'undefined' && window.ethereum) {
