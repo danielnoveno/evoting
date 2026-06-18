@@ -73,6 +73,24 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const [isRefreshingOnChainStatus, setIsRefreshingOnChainStatus] = useState(false)
 
   const savedCommitment = loadVoteCommitment(params.id)
+  const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
+    ? Number(currentPhase)
+    : null
+  const profileWallet = store?.profile.wallet ?? ''
+  const commitRoute = `/pemilih/pemilihan/${params.id}/commit`
+  const connectWalletRoute = `/hubungkan-dompet?redirect=${encodeURIComponent(commitRoute)}`
+  const isConnectedWalletProfileWallet = sameWalletAddress(connectedWallet, profileWallet)
+  const isCommitPhaseOnChain = currentPhaseNumber === 1
+
+  // Deteksi apakah blockchain masih dalam proses loading
+  const isBlockchainLoading = isPhaseFetching || isWhitelistedFetching || isHasCommittedFetching
+
+  const isOnChainStatusReady = Boolean(contractAddress) && Boolean(connectedWallet) && isConnectedWalletProfileWallet && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
+  const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
+  // Ekstrak detail error untuk debugging (hanya tampil di dev atau jika error jelas)
+  const onChainErrorDetail = onChainStatusError
+    ? (onChainStatusError as Error).message?.slice(0, 120) || 'Error tidak diketahui'
+    : null
 
   useEffect(() => {
     if (isConfirmed && hash && receipt) {
@@ -90,6 +108,23 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
       })
     }
   }, [isConfirmed, hash, receipt, params.id, actions, showToast, savedCommitment?.commitment])
+
+  // Auto-retry jika blockchain reads masih loading setelah 15 detik.
+  // Hook ini harus dipanggil sebelum semua conditional return agar urutan hook React stabil.
+  useEffect(() => {
+    if (!isBlockchainLoading || isOnChainStatusReady || onChainStatusError) return
+
+    const timeout = setTimeout(() => {
+      console.warn('[VoteChain] Auto-retrying blockchain reads after 15s timeout')
+      Promise.allSettled([
+        refetchPhase(),
+        refetchHasCommitted(),
+        refetchIsWhitelisted(),
+      ])
+    }, 15_000)
+
+    return () => clearTimeout(timeout)
+  }, [isBlockchainLoading, isOnChainStatusReady, onChainStatusError, refetchPhase, refetchHasCommitted, refetchIsWhitelisted])
 
   if (storeLoading || !store) {
     return (
@@ -159,25 +194,6 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     )
   }
 
-  const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
-    ? Number(currentPhase)
-    : null
-  const profileWallet = store.profile.wallet
-  const commitRoute = `/pemilih/pemilihan/${params.id}/commit`
-  const connectWalletRoute = `/hubungkan-dompet?redirect=${encodeURIComponent(commitRoute)}`
-  const isConnectedWalletProfileWallet = sameWalletAddress(connectedWallet, profileWallet)
-  const isCommitPhaseOnChain = currentPhaseNumber === 1
-
-  // Deteksi apakah blockchain masih dalam proses loading
-  const isBlockchainLoading = isPhaseFetching || isWhitelistedFetching || isHasCommittedFetching
-
-  const isOnChainStatusReady = Boolean(contractAddress) && Boolean(connectedWallet) && isConnectedWalletProfileWallet && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
-  const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
-  // Ekstrak detail error untuk debugging (hanya tampil di dev atau jika error jelas)
-  const onChainErrorDetail = onChainStatusError
-    ? (onChainStatusError as Error).message?.slice(0, 120) || 'Error tidak diketahui'
-    : null
-
   // Debug logging untuk tracing connectivity issues
   if (onChainStatusError && typeof window !== 'undefined') {
     console.warn('[VoteChain] Blockchain read error:', {
@@ -217,22 +233,6 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         : hasCommittedOnChain
           ? 'Wallet ini sudah pernah menyimpan pilihan untuk ruang voting ini.'
           : ''
-
-  // Auto-retry jika blockchain reads masih loading setelah 15 detik
-  useEffect(() => {
-    if (!isBlockchainLoading || isOnChainStatusReady || onChainStatusError) return
-
-    const timeout = setTimeout(() => {
-      console.warn('[VoteChain] Auto-retrying blockchain reads after 15s timeout')
-      Promise.allSettled([
-        refetchPhase(),
-        refetchHasCommitted(),
-        refetchIsWhitelisted(),
-      ])
-    }, 15_000)
-
-    return () => clearTimeout(timeout)
-  }, [isBlockchainLoading, isOnChainStatusReady, onChainStatusError, refetchPhase, refetchHasCommitted, refetchIsWhitelisted])
 
   const handleRefreshOnChainStatus = async () => {
     setIsRefreshingOnChainStatus(true)
