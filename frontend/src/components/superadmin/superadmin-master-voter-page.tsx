@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Check, Download, FileText, Loader2, Mail, Pencil, Search, Trash2, Upload, X, UserPlus } from 'lucide-react'
+import { AlertTriangle, Check, Download, FileText, Loader2, Mail, Pencil, RefreshCw, Search, Trash2, Upload, X, UserPlus } from 'lucide-react'
 import { type ChangeEvent, type DragEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -110,6 +110,7 @@ export function SuperadminMasterVoterPage() {
   const [sortField, setSortField] = useState<SortField | null>(null)
   const [sortDirection, setSortDirection] = useState<TableSortDirection>(null)
   const [deleteSelectedDialogOpen, setDeleteSelectedDialogOpen] = useState(false)
+  const [syncingVoterId, setSyncingVoterId] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -197,6 +198,34 @@ export function SuperadminMasterVoterPage() {
         showToast({ tone: 'error', title: 'Gagal mengirim email aktivasi', description: error.message })
       },
     })
+  }
+
+  const handleSyncMasterVoters = async (scope: 'all' | 'single', voter?: MasterVoter) => {
+    if (scope === 'single' && !voter) return
+
+    setSyncingVoterId(voter?.id ?? 'all')
+    try {
+      const result = await votersQuery.refetch()
+      if (result.isError) {
+        throw result.error instanceof Error ? result.error : new Error('Gagal memuat ulang data voter.')
+      }
+
+      showToast({
+        tone: 'success',
+        title: scope === 'all' ? 'Data voter disinkronkan' : 'Data voter diperbarui',
+        description: scope === 'all'
+          ? 'Daftar voter sudah dimuat ulang dari database terbaru.'
+          : `Status ${voter?.fullName ?? 'voter'} sudah dicek dari database terbaru.`,
+      })
+    } catch (error) {
+      showToast({
+        tone: 'error',
+        title: 'Sinkronisasi gagal',
+        description: error instanceof Error ? error.message : 'Data voter belum berhasil disinkronkan. Coba lagi beberapa saat.',
+      })
+    } finally {
+      setSyncingVoterId(null)
+    }
   }
 
   const selectedFilteredCount = filteredVoters.filter((voter) => selectedVoterIds.includes(voter.id)).length
@@ -427,6 +456,15 @@ export function SuperadminMasterVoterPage() {
           <div className="flex flex-wrap items-center justify-end gap-3">
             <button
               type="button"
+              onClick={() => void handleSyncMasterVoters('all')}
+              disabled={votersQuery.isFetching || syncingVoterId !== null}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-[20px] border border-slate-200 bg-white px-6 text-[15px] font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {syncingVoterId === 'all' || (votersQuery.isFetching && syncingVoterId !== null) ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              {syncingVoterId === 'all' ? 'Menyinkronkan...' : 'Sinkronkan Data Voter'}
+            </button>
+            <button
+              type="button"
               onClick={() => setShowCsvModal(true)}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-[20px] bg-slate-900 px-6 text-[15px] font-semibold text-white transition hover:bg-slate-800"
             >
@@ -442,10 +480,12 @@ export function SuperadminMasterVoterPage() {
           <ScrollReveal variant="fade-up" delay={200} duration={800}>
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-wrap gap-1 rounded-[24px] bg-slate-100 p-1.5">
-                {[
-                  { key: 'semua', label: 'Semua Status' },
-                  { key: 'terpilih', label: 'Terpilih' },
-                ].map((item) => (
+                  {[
+                    { key: 'semua', label: 'Semua Status' },
+                    { key: 'belum-sinkron', label: 'Belum Sinkron' },
+                    { key: 'tersinkronisasi', label: 'Tersinkronisasi' },
+                    { key: 'terpilih', label: 'Terpilih' },
+                  ].map((item) => (
                   <button
                     key={item.key}
                     type="button"
@@ -547,18 +587,33 @@ export function SuperadminMasterVoterPage() {
                           </span>
                         </DataTableCell>
                         <DataTableCell className="text-center" onClick={(event) => event.stopPropagation()}>
-                          <button
-                            type="button"
-                            aria-label={`Lihat / edit detail ${voter.fullName}`}
-                            title="Lihat / edit detail"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              router.push(`/superadmin/data-voter/${voter.id}`)
-                            }}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              aria-label={`Sinkronkan data ${voter.fullName}`}
+                              title="Sinkronkan data voter"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                void handleSyncMasterVoters('single', voter)
+                              }}
+                              disabled={syncingVoterId !== null || votersQuery.isFetching}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                            >
+                              {syncingVoterId === voter.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Lihat / edit detail ${voter.fullName}`}
+                              title="Lihat / edit detail"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                router.push(`/superadmin/data-voter/${voter.id}`)
+                              }}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          </div>
                         </DataTableCell>
                       </DataTableRow>
                     ))
