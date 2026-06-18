@@ -1,6 +1,7 @@
 'use client'
 
-import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
+import { useCallback } from 'react'
+import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount, usePublicClient } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { PAYMASTER_URL } from '@/lib/wagmi'
 import ElectionSpaceArtifact from '@/lib/abi/ElectionSpace.json'
@@ -29,12 +30,14 @@ export function useElectionContract(address?: string, options: UseElectionContra
   )
 
   const { 
-    writeContract, 
+    writeContract,
+    writeContractAsync,
     data: hash, 
     isPending: isWritePending, 
     error: writeError,
     reset: resetWrite
   } = useWriteContract()
+  const publicClient = usePublicClient({ chainId: baseSepolia.id })
 
   const { 
     isLoading: isConfirming, 
@@ -145,6 +148,22 @@ export function useElectionContract(address?: string, options: UseElectionContra
     })
   }
 
+  const registerVotersAsync = useCallback(async (targetAddress: string, voters: string[]) => {
+    if (!targetAddress) throw new Error('Alamat kontrak pemilihan belum tersedia.')
+    if (voters.length === 0) throw new Error('Daftar wallet whitelist kosong.')
+    if (!publicClient) throw new Error('Koneksi Base Sepolia belum siap.')
+
+    const txHash = await writeContractAsync({
+      address: targetAddress as `0x${string}`,
+      abi: electionSpaceAbi,
+      chainId: baseSepolia.id,
+      functionName: 'registerVoters',
+      args: [voters],
+    })
+    await publicClient.waitForTransactionReceipt({ hash: txHash })
+    return txHash
+  }, [publicClient, writeContractAsync])
+
   const transitionToNextPhase = () => {
     if (!address) return
     writeContract({
@@ -170,6 +189,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
     commitVote,
     revealVote,
     registerVoters,
+    registerVotersAsync,
     transitionToNextPhase,
     
     // TX Status

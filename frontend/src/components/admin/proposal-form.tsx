@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { isAddress } from 'viem'
 import { useToast } from '@/components/ui/toast-provider'
 import { AlertTriangle, ArrowLeft, FileImage, FileText, Save, ShieldCheck, Trash2, Upload, X } from 'lucide-react'
 import { ScrollReveal } from '@/components/public/parallax'
@@ -107,6 +108,13 @@ export function ProposalForm({
   const [errors, setErrors] = useState<ProposalFormErrors>({})
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([])
   const isSubmitting = saveProposalDraft.isPending || isUploadingDocument || isUploadingCandidatePhotos || isUploadingBannerImage
+
+  const whitelistLines = formData.whitelistWallets
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+  const uniqueWhitelistWallets = Array.from(new Set(whitelistLines.map((wallet) => wallet.toLowerCase())))
+  const invalidWhitelistCount = whitelistLines.filter((wallet) => !isAddress(wallet)).length
 
   useEffect(() => {
     return () => {
@@ -583,7 +591,11 @@ export function ProposalForm({
       endedAt: new Date(formData.endedDate).toISOString(),
       status: submitStatus,
       candidates: candidateEntries,
-      whitelistEntries: formData.whitelistWallets.split('\n').filter(Boolean).map(w => ({ walletAddress: w.trim() }))
+      whitelistEntries: formData.whitelistWallets
+        .split('\n')
+        .map((wallet) => wallet.trim())
+        .filter((wallet) => wallet && isAddress(wallet))
+        .map((wallet) => ({ walletAddress: wallet.toLowerCase() }))
     }, {
       onSuccess: async (proposal) => {
         if (supportingDocument) {
@@ -918,6 +930,36 @@ export function ProposalForm({
                 Tambah Kandidat Lagi
               </button>
             ) : null}
+          </section>
+
+          <section className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Whitelist Pemilih</h2>
+                <p className="mt-1 text-[14px] leading-6 text-slate-600">
+                  Masukkan wallet pemilih sejak proposal dibuat. Saat superadmin menyetujui dan deploy pemilihan, daftar valid ini akan dicoba disinkronkan ke kontrak selama fase Registration.
+                </p>
+              </div>
+              <span className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                {uniqueWhitelistWallets.length} wallet unik
+              </span>
+            </div>
+            <label className="block rounded-[24px] border border-slate-200 bg-white p-5">
+              <span className="mb-2 block text-[12px] font-semibold text-slate-600">Alamat wallet pemilih <span className="font-normal text-slate-400">(opsional, 1 alamat per baris)</span></span>
+              <textarea
+                name="whitelistWallets"
+                value={formData.whitelistWallets}
+                onChange={handleChange}
+                disabled={isReadOnly}
+                placeholder="0x1234...abcd\n0xabcd...1234"
+                className="min-h-[180px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-[13px] leading-6 text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400"
+              />
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px]">
+                <span className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700">{Math.max(whitelistLines.length - invalidWhitelistCount, 0)} valid</span>
+                {invalidWhitelistCount > 0 ? <span className="rounded-full bg-red-50 px-3 py-1 font-semibold text-red-700">{invalidWhitelistCount} format tidak valid tidak akan disimpan</span> : null}
+                <span className="text-slate-500">Fitur tambah/import whitelist di halaman manajemen pemilihan tetap tersedia setelah deploy.</span>
+              </div>
+            </label>
           </section>
         </div>
       </div>

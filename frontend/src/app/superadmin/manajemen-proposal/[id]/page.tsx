@@ -15,13 +15,15 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { useProposalActivities, useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
 import { useProposalDocuments } from '@/hooks/use-proposal-documents'
-import { useProposalCandidates } from '@/hooks/use-proposal-relations'
+import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { REGISTRY_ADDRESS, useRegistryContract } from '@/hooks/use-registry-contract'
+import { useElectionContract } from '@/hooks/use-election-contract'
 import { createProposalDocumentPreviewUrl, createProposalDocumentSignedUrl } from '@/lib/repositories/proposalDocumentRepository'
+import { updateWhitelistSyncStatus } from '@/lib/repositories/whitelistRepository'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import type { SuperadminProposalDetail } from '@/lib/superadmin-data'
-import type { Address } from 'viem'
+import { isAddress, type Address } from 'viem'
 import { useConnect, useDisconnect } from 'wagmi'
 
 type DecisionType = 'approve' | 'revise' | 'reject' | 'deploy' | null
@@ -67,8 +69,10 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const proposalQuery = useProposalDraft(params.id)
   const proposalDocumentsQuery = useProposalDocuments(params.id)
   const proposalCandidatesQuery = useProposalCandidates(params.id)
+  const proposalWhitelistQuery = useProposalWhitelistEntries(params.id)
   const proposalActivitiesQuery = useProposalActivities(params.id)
   const updateStatus = useUpdateProposalStatus()
+  const { registerVotersAsync } = useElectionContract(undefined, { checks: [] })
   
   // Real contract integration
   const { 
@@ -93,7 +97,15 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const liveProposal = proposalQuery.data
   const proposalDocuments = proposalDocumentsQuery.data ?? []
   const proposalCandidates = proposalCandidatesQuery.data ?? []
+  const proposalWhitelistEntries = proposalWhitelistQuery.data ?? []
   const proposalActivities = proposalActivitiesQuery.data ?? []
+  const initialWhitelistWallets = useMemo(() => {
+    return Array.from(new Set(
+      proposalWhitelistEntries
+        .map((entry) => entry.walletAddress.trim().toLowerCase())
+        .filter((wallet) => isAddress(wallet))
+    ))
+  }, [proposalWhitelistEntries])
 
   const proposal = useMemo<SuperadminProposalDetail | null>(() => {
     if (!liveProposal) return null
@@ -145,6 +157,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   const [pendingOnchainDecision, setPendingOnchainDecision] = useState<DecisionType>(null)
+  const [isSyncingInitialWhitelist, setIsSyncingInitialWhitelist] = useState(false)
 
   const proposalDocumentsForPreview = proposal?.documents ?? []
   const selectedPreviewDocument = proposalDocumentsForPreview.find((document) => document.id === previewDocumentId) ?? proposalDocumentsForPreview[0]
@@ -236,11 +249,33 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             actorWallet: userAddress ?? null,
           },
         }, {
-          onSuccess: () => {
+          onSuccess: async () => {
+            let whitelistSyncMessage = initialWhitelistWallets.length > 0
+              ? `${initialWhitelistWallets.length} wallet whitelist akan disinkronkan ke kontrak.`
+              : 'Proposal tidak memiliki whitelist awal untuk disinkronkan.'
+
+            if (initialWhitelistWallets.length > 0) {
+              setIsSyncingInitialWhitelist(true)
+              try {
+                const whitelistTxHash = await registerVotersAsync(deployment.spaceAddress, initialWhitelistWallets)
+                await updateWhitelistSyncStatus({
+                  proposalDraftId: params.id,
+                  txHash: whitelistTxHash,
+                  walletAddresses: initialWhitelistWallets,
+                })
+                whitelistSyncMessage = `${initialWhitelistWallets.length} wallet whitelist berhasil disinkronkan on-chain.`
+              } catch (error) {
+                console.error('[superadmin] Sinkronisasi whitelist awal gagal:', error)
+                whitelistSyncMessage = 'Deploy berhasil, tetapi whitelist awal belum tersinkron. Admin masih bisa menekan tombol sinkronisasi whitelist di Manajemen Pemilihan selama fase Registration.'
+              } finally {
+                setIsSyncingInitialWhitelist(false)
+              }
+            }
+
             showToast({
               title: 'Proposal Disetujui & Pemilihan Di-deploy',
-              description: `Gas fee dibayar oleh superadmin. Alamat Space: ${deployment.spaceAddress}`,
-              tone: 'success',
+              description: `${whitelistSyncMessage} Alamat Space: ${deployment.spaceAddress}`,
+              tone: initialWhitelistWallets.length > 0 && whitelistSyncMessage.includes('belum tersinkron') ? 'info' : 'success',
             })
             resetWrite()
             setPendingOnchainDecision(null)
@@ -266,7 +301,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         setPendingOnchainDecision(null)
       }
     }
-  }, [isConfirmed, hash, receipt, pendingOnchainDecision, params.id, updateStatus, showToast, router, resetWrite, parseElectionSpaceCreated, liveProposal?.createdByWalletAddress, userAddress])
+  }, [isConfirmed, hash, receipt, pendingOnchainDecision, params.id, updateStatus, showToast, router, resetWrite, parseElectionSpaceCreated, liveProposal?.createdByWalletAddress, userAddress, initialWhitelistWallets, registerVotersAsync])
 
   if (proposalQuery.isLoading) return <div className="p-20 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto text-slate-400" /></div>
   if (!proposal) notFound()
@@ -449,22 +484,22 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             {proposal.badge === 'Disetujui' ? (
               <button
                 type="button"
-                disabled={isConnectPending || isWritePending || isConfirming || pendingOnchainDecision !== null}
+                disabled={isConnectPending || isWritePending || isConfirming || isSyncingInitialWhitelist || pendingOnchainDecision !== null}
                 onClick={() => setDecisionType('deploy')}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 text-[15px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
               >
-                 {isConnectPending || isWritePending || isConfirming || pendingOnchainDecision ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
-                Deploy ke Blockchain
+                 {isConnectPending || isWritePending || isConfirming || isSyncingInitialWhitelist || pendingOnchainDecision ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+                {isSyncingInitialWhitelist ? 'Sinkron whitelist...' : 'Deploy ke Blockchain'}
               </button>
             ) : (
               <button
                 type="button"
-                 disabled={isConnectPending || isWritePending || isConfirming || pendingOnchainDecision !== null || proposal.badge === 'Selesai' || proposal.badge === 'Berjalan' || proposal.badge === 'Perlu Revisi'}
+                 disabled={isConnectPending || isWritePending || isConfirming || isSyncingInitialWhitelist || pendingOnchainDecision !== null || proposal.badge === 'Selesai' || proposal.badge === 'Berjalan' || proposal.badge === 'Perlu Revisi'}
                 onClick={() => setDecisionType('approve')}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-5 text-[15px] font-medium text-white hover:bg-slate-800 disabled:opacity-50"
               >
-                 {isConnectPending || isWritePending || isConfirming || pendingOnchainDecision ? <Loader2 className="h-4 w-4 animate-spin" /> : <ThumbsUp className="h-4 w-4" />}
-                Setujui & Deploy
+                  {isConnectPending || isWritePending || isConfirming || isSyncingInitialWhitelist || pendingOnchainDecision ? <Loader2 className="h-4 w-4 animate-spin" /> : <ThumbsUp className="h-4 w-4" />}
+                {isSyncingInitialWhitelist ? 'Sinkron whitelist...' : 'Setujui & Deploy'}
               </button>
             )}
           </>
@@ -529,7 +564,49 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           <p className="mt-5 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">{proposal.documents.length}</p>
           <p className="mt-3 text-[15px] leading-7 text-slate-800">Berkas pendukung yang tersedia untuk diverifikasi.</p>
         </article>
+
+        <article className="rounded-[24px] border border-slate-200 bg-white p-6">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Whitelist Awal</p>
+          <p className="mt-5 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">{proposalWhitelistQuery.isLoading ? '...' : initialWhitelistWallets.length}</p>
+          <p className="mt-3 text-[15px] leading-7 text-slate-800">Wallet valid dari proposal yang akan dicoba didaftarkan on-chain setelah deploy.</p>
+        </article>
       </StaggerContainer>
+
+      <ScrollReveal variant="fade-up" delay={125} duration={800}>
+        <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-7">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="h-5 w-5 text-slate-700" />
+                <h2 className="text-[20px] font-semibold text-slate-900">Whitelist dari Proposal</h2>
+              </div>
+              <p className="mt-2 text-[14px] leading-6 text-slate-600">
+                Daftar ini diisi admin saat membuat proposal. Setelah deploy sukses, sistem akan mengirim transaksi kedua untuk mendaftarkan wallet valid ke kontrak selama fase Registration.
+              </p>
+            </div>
+            <span className="inline-flex w-fit rounded-xl bg-slate-100 px-3 py-2 text-[13px] font-medium text-slate-700">
+              {initialWhitelistWallets.length} wallet valid
+            </span>
+          </div>
+          <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[13px] leading-6 text-amber-900">
+            Jika sinkronisasi awal gagal karena wallet ditolak, gas habis, atau transaksi dibatalkan, pemilihan tetap ter-deploy dan admin masih bisa memakai fitur tambah/import/sinkron whitelist di Manajemen Pemilihan. Fitur lama tidak dihapus.
+          </div>
+          {proposalWhitelistQuery.isLoading ? (
+            <div className="mt-5 h-24 animate-pulse rounded-2xl bg-slate-100" />
+          ) : initialWhitelistWallets.length === 0 ? (
+            <div className="mt-5">
+              <SuperadminEmptyState title="Whitelist awal kosong" description="Proposal ini belum membawa daftar wallet. Admin tetap dapat menambahkan whitelist setelah pemilihan di-deploy selama fase Registration." />
+            </div>
+          ) : (
+            <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {initialWhitelistWallets.slice(0, 9).map((wallet) => (
+                <span key={wallet} className="truncate rounded-xl bg-slate-100 px-3 py-2 font-mono text-[12px] text-slate-700">{wallet}</span>
+              ))}
+              {initialWhitelistWallets.length > 9 ? <span className="rounded-xl bg-slate-900 px-3 py-2 text-[12px] font-semibold text-white">+{initialWhitelistWallets.length - 9} wallet lainnya</span> : null}
+            </div>
+          )}
+        </section>
+      </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={150} duration={800}>
         <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-7">
