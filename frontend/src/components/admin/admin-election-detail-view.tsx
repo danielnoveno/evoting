@@ -22,6 +22,7 @@ import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { PilihDariMasterVoterModal } from '@/components/admin/pilih-dari-master-voter-modal'
 import type { PublicElectionCandidateResultRecord } from '@/lib/repositories/types'
+import { useAccount, useConnect } from 'wagmi'
 
 function QuickActionIcon({ icon }: { icon: 'download' | 'share' | 'audit' | 'report' }) {
   if (icon === 'download') return <Download className="h-5 w-5" />
@@ -62,9 +63,21 @@ function StatusBadge({ status }: { status: 'synced' | 'valid' | 'pending' }) {
   )
 }
 
+function getWalletConnectionErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : ''
+
+  if (/user rejected|request rejected|user denied|user closed modal|accounts received is empty/i.test(message)) {
+    return 'Penyambungan dompet dibatalkan. Coba lagi saat Anda siap.'
+  }
+
+  return 'Dompet admin belum berhasil tersambung. Sambungkan ulang Base Account sebelum mengirim transaksi.'
+}
+
 export function AdminElectionDetailView({ election, activeTab }: { election: AdminElectionRecord; activeTab: AdminElectionDetailTabId }) {
   const canAddCandidate = election.status === 'aktif'
   const { showToast } = useToast()
+  const { isConnected } = useAccount()
+  const { connect, connectors, isPending: isConnectPending } = useConnect()
 
   // Blockchain Hook
   const deployedAddress = election.detail.parameterVoting.contract.address
@@ -154,6 +167,39 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     ...extraAddresses,
   ])
 
+  const requestWalletConnection = (description: string) => {
+    const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
+
+    if (!connector) {
+      showToast({
+        tone: 'error',
+        title: 'Dompet belum siap',
+        description: 'Connector Base Account belum tersedia. Coba muat ulang halaman.',
+      })
+      return
+    }
+
+    connect(
+      { connector },
+      {
+        onSuccess: () => {
+          showToast({
+            tone: 'info',
+            title: 'Dompet Tersambung',
+            description,
+          })
+        },
+        onError: (error) => {
+          showToast({
+            tone: 'error',
+            title: 'Gagal Menyambungkan Dompet',
+            description: getWalletConnectionErrorMessage(error),
+          })
+        },
+      },
+    )
+  }
+
   const startWhitelistSync = (addresses: string[], mode: 'manual' | 'auto') => {
     const normalizedAddresses = normalizeWhitelistAddresses(addresses)
     const batchKey = normalizedAddresses.join('|')
@@ -198,6 +244,12 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           description: 'Tunggu transaksi sinkronisasi sebelumnya selesai sebelum mencoba lagi.',
         })
       }
+      return
+    }
+
+    if (!isConnected) {
+      requestWalletConnection('Dompet admin sudah tersambung. Klik lagi tombol sinkronisasi untuk mengirim transaksi on-chain.')
+      setSyncOnchainConfirmOpen(false)
       return
     }
 
@@ -547,6 +599,11 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
   const handleConfirmNextPhase = () => {
     if (!canAdvancePhase || isWritePending || isConfirming) return
+    if (!isConnected) {
+      requestWalletConnection('Dompet admin sudah tersambung. Klik lagi tombol buka fase untuk mengirim transaksi on-chain.')
+      setNextPhaseConfirmOpen(false)
+      return
+    }
     transitionToNextPhase()
   }
 
@@ -891,6 +948,17 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const renderParameterTab = () => (
     <section className="mt-8 space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+        {!isConnected ? (
+          <button
+            type="button"
+            onClick={() => requestWalletConnection('Dompet admin sudah tersambung. Setelah ini Anda bisa mengirim transaksi fase atau sinkronisasi on-chain.')}
+            disabled={isConnectPending}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F172A] px-5 text-[15px] font-medium text-white hover:bg-[#1E293B] disabled:opacity-50"
+          >
+            {isConnectPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+            {isConnectPending ? 'Menyambungkan...' : 'Sambungkan Dompet Admin'}
+          </button>
+        ) : null}
         <button type="button" onClick={() => showToast({ tone: 'info', title: 'Log Audit', description: 'Fitur log audit akan tersedia pada versi produksi.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-700 hover:bg-slate-200">
           <ListChecks className="h-4 w-4" />
           Lihat Log Audit
