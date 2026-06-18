@@ -166,6 +166,22 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const isCommitPhaseOnChain = currentPhaseNumber === 1
   const isOnChainStatusReady = Boolean(contractAddress) && Boolean(connectedWallet) && isConnectedWalletProfileWallet && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
+  // Ekstrak detail error untuk debugging (hanya tampil di dev atau jika error jelas)
+  const onChainErrorDetail = onChainStatusError
+    ? (onChainStatusError as Error).message?.slice(0, 120) || 'Error tidak diketahui'
+    : null
+
+  // Debug logging untuk tracing connectivity issues
+  if (onChainStatusError && typeof window !== 'undefined') {
+    console.warn('[VoteChain] Blockchain read error:', {
+      contractAddress,
+      connectedWallet,
+      phaseError: phaseError?.message,
+      whitelistError: whitelistError?.message,
+      hasCommittedError: hasCommittedError?.message,
+    })
+  }
+
   const onChainPhaseLabel = currentPhaseNumber === 0
     ? 'Registrasi'
     : currentPhaseNumber === 1
@@ -182,7 +198,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     : profileWallet && !isConnectedWalletProfileWallet
       ? `Dompet tersambung (${formatWallet(connectedWallet)}) berbeda dari dompet akun ini (${formatWallet(profileWallet)}). Sambungkan dompet yang sama agar pengecekan whitelist sesuai.`
     : onChainStatusError
-      ? 'Jaringan blockchain belum merespons. Coba periksa ulang sebelum mencoblos.'
+      ? `Jaringan blockchain belum merespons. (${onChainErrorDetail})`
     : !isOnChainStatusReady
       ? 'Status blockchain sedang diperiksa. Tunggu sebentar atau periksa ulang sebelum mencoblos.'
       : !isCommitPhaseOnChain
@@ -359,6 +375,11 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
                 <p className="mt-2 text-[12px] text-amber-800/90">
                   Dompet tersambung: <span className="font-mono font-semibold">{connectedWallet ? formatWallet(connectedWallet) : 'Belum tersambung'}</span>
                   {' · '}Dompet akun: <span className="font-mono font-semibold">{profileWallet ? formatWallet(profileWallet) : 'Belum tertaut'}</span>
+                </p>
+              ) : null}
+              {onChainStatusError ? (
+                <p className="mt-2 text-[11px] text-amber-700/80 font-mono break-all">
+                  Detail: {onChainErrorDetail}
                 </p>
               ) : null}
             </div>
