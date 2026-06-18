@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Check, Download, FileText, Loader2, Search, Trash2, Upload, X, UserPlus } from 'lucide-react'
+import { AlertTriangle, Check, Download, FileText, Loader2, Pencil, Search, Trash2, Upload, X, UserPlus } from 'lucide-react'
 import { type ChangeEvent, type DragEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -21,7 +21,6 @@ import {
   DataTableRow,
   DataTableShell,
   DataTableViewport,
-  RowActionMenu,
   SelectedCounter,
   SortableTableHeader,
   type TableSortDirection,
@@ -516,14 +515,18 @@ export function SuperadminMasterVoterPage() {
                           </span>
                         </DataTableCell>
                         <DataTableCell className="text-center" onClick={(event) => event.stopPropagation()}>
-                          <RowActionMenu
-                            buttonLabel={`Aksi untuk ${voter.fullName}`}
-                            items={[
-                              { label: 'Lihat / Edit Detail', onClick: () => router.push(`/superadmin/data-voter/${voter.id}`) },
-                              { label: selectedVoterIds.includes(voter.id) ? 'Batalkan Pilihan' : 'Pilih Data Ini', onClick: () => toggleSelectedVoter(voter.id) },
-                              { label: 'Pilih Data Ini Saja', onClick: () => setSelectedVoterIds([voter.id]) },
-                            ]}
-                          />
+                          <button
+                            type="button"
+                            aria-label={`Lihat / edit detail ${voter.fullName}`}
+                            title="Lihat / edit detail"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              router.push(`/superadmin/data-voter/${voter.id}`)
+                            }}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
                         </DataTableCell>
                       </DataTableRow>
                     ))

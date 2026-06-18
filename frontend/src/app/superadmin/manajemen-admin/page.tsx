@@ -537,7 +537,6 @@ function SuperadminAdminManagementContent() {
                       items={[
                         { label: 'Detail', onClick: () => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}`) },
                         { label: 'Edit', onClick: () => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}/edit?from=list`) },
-                        { label: 'Pilih Admin', onClick: () => toggleSelectedAdmin(admin.email) },
                       ]}
                     />
                   </DataTableCell>
