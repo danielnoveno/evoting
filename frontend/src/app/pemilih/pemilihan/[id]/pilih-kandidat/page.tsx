@@ -4,7 +4,7 @@ import { AlertCircle, ArrowRight, CheckCircle2, Clock3, Info, Loader2 } from 'lu
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useConnect } from 'wagmi'
 import type { Address } from 'viem'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
@@ -37,9 +37,20 @@ function sameWalletAddress(left: string | null | undefined, right: string | null
   return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase())
 }
 
+function getWalletConnectionErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : ''
+
+  if (/user rejected|request rejected|user denied|user closed modal|accounts received is empty/i.test(message)) {
+    return 'Penyambungan dompet dibatalkan. Coba lagi saat Anda siap.'
+  }
+
+  return 'Dompet digital belum berhasil tersambung. Coba sambungkan ulang melalui tombol yang tersedia.'
+}
+
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { address } = useAccount()
+  const { connect, connectors, isPending: isConnectPending } = useConnect()
   const { showToast } = useToast()
   const { store, loading, actions } = useVoterStore()
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 8 })
@@ -213,6 +224,31 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const handleSelectClick = (candidateId: string) => {
     setCandidateToConfirm(candidateId)
     setConfirmOpen(true)
+  }
+
+  const handleConnectWallet = () => {
+    const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
+    if (!connector) {
+      showToast({
+        title: 'Dompet belum siap',
+        description: 'Connector Base Account belum tersedia. Coba muat ulang halaman.',
+        tone: 'error',
+      })
+      return
+    }
+
+    connect(
+      { connector },
+      {
+        onError: (error) => {
+          showToast({
+            title: 'Gagal menyambungkan dompet',
+            description: getWalletConnectionErrorMessage(error),
+            tone: 'error',
+          })
+        },
+      },
+    )
   }
 
   const handleConfirm = async () => {
@@ -435,6 +471,16 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                   ? 'Transaksi belum berhasil diproses. Pastikan wallet siap dan pemilihan sudah berada pada masa pencoblosan.'
                   : voteBlockedReason}
               </p>
+              {!address ? (
+                <button
+                  type="button"
+                  onClick={handleConnectWallet}
+                  disabled={isConnectPending}
+                  className="mt-3 inline-flex h-9 items-center justify-center rounded-lg bg-[#0F172A] px-4 text-[12px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isConnectPending ? 'Menyambungkan...' : 'Sambungkan dompet'}
+                </button>
+              ) : null}
             </div>
           </div>
         </section>
