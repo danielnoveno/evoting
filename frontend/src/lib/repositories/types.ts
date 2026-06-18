@@ -301,3 +301,26 @@ export interface ProfileUpsertInput {
   roleHint?: string | null
   activationToken?: string | null
 }
+
+// ─── Master Voter ────────────────────────────────────────────────────────────
+export interface MasterVoterRecord {
+  id: string
+  nim: string
+  fullName: string
+  email: string
+  prodi: string
+  fakultas: string
+  angkatan: string | null
+  walletAddress: string | null
+  status: 'active' | 'inactive' | 'pending'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MasterVoterFilter {
+  prodi?: string
+  fakultas?: string
+  angkatan?: string
+  status?: string
+  search?: string
+}

@@ -35,7 +35,7 @@ const SECTIONS = [
     content: (
       <>
         <p className="mb-3 text-[14px] leading-7 text-slate-600">
-          Layanan ini ditujukan bagi anggota organisasi mahasiswa yang terdaftar dalam Daftar Pemilih Tetap (DPT).
+          Layanan ini ditujukan bagi anggota organisasi mahasiswa yang terdaftar dalam Daftar Pemilih.
           Pengguna wajib memenuhi syarat berikut:
         </p>
         <ul className="space-y-2">

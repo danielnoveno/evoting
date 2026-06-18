@@ -145,6 +145,47 @@ export type Database = {
           updated_at?: string
         }
       }
+      master_voters: {
+        Row: {
+          id: string
+          nim: string
+          full_name: string
+          email: string
+          prodi: string
+          fakultas: string
+          angkatan: string | null
+          wallet_address: string | null
+          status: 'active' | 'inactive' | 'pending'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          nim: string
+          full_name: string
+          email: string
+          prodi: string
+          fakultas?: string
+          angkatan?: string | null
+          wallet_address?: string | null
+          status?: 'active' | 'inactive' | 'pending'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          nim?: string
+          full_name?: string
+          email?: string
+          prodi?: string
+          fakultas?: string
+          angkatan?: string | null
+          wallet_address?: string | null
+          status?: 'active' | 'inactive' | 'pending'
+          created_at?: string
+          updated_at?: string
+        }
+      }
       proposal_drafts: {
         Row: {
           id: string

@@ -58,7 +58,7 @@ export default function KebijakanPrivasiPage() {
               <h3 className="mb-4 text-xl font-bold text-black border-b border-gray-100 pb-2">5. Penggunaan dan Penyimpanan Data</h3>
               <p className="mb-4 leading-relaxed font-medium">Data Anda digunakan untuk:</p>
               <ul className="list-disc space-y-3 pl-6 leading-relaxed">
-                <li>Memverifikasi apakah Anda terdaftar dalam Daftar Pemilih Tetap (DPT).</li>
+                <li>Memverifikasi apakah Anda terdaftar dalam Daftar Pemilih.</li>
                 <li>Mencegah terjadinya pemungutan suara ganda (*double voting*).</li>
                 <li>Menyajikan jejak audit (*audit trail*) yang transparan bagi penyelenggara dan pemilih.</li>
               </ul>

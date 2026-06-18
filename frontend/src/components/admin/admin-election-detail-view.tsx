@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, CalendarDays, CirclePlus, Download, FileText, Link2, ListChecks, Loader2, Pencil, RefreshCw, Share2, ShieldCheck, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CirclePlus, Download, FileText, Link2, ListChecks, Loader2, Pencil, RefreshCw, Share2, ShieldCheck, Trash2, Upload, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
@@ -20,6 +20,7 @@ import { useElectionResults } from '@/hooks/use-election-results'
 import { useElectionAuditLogs } from '@/hooks/use-election-audit-logs'
 import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
+import { PilihDariMasterVoterModal } from '@/components/admin/pilih-dari-master-voter-modal'
 import type { PublicElectionCandidateResultRecord } from '@/lib/repositories/types'
 
 function QuickActionIcon({ icon }: { icon: 'download' | 'share' | 'audit' | 'report' }) {
@@ -100,6 +101,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncMode, setSyncMode] = useState<'manual' | 'auto' | null>(null)
   const [whitelistSearch, setWhitelistSearch] = useState('')
+  const [masterVoterModalOpen, setMasterVoterModalOpen] = useState(false)
   const whitelistQuery = useWhitelistEntries(election.id)
   const createWhitelistEntry = useCreateWhitelistEntry()
   const deleteWhitelistEntry = useDeleteWhitelistEntry(election.id)
@@ -319,32 +321,32 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         tone: 'blue' as const,
         title: syncMode === 'auto' ? 'Sinkronisasi otomatis berjalan' : 'Sinkronisasi manual berjalan',
         description: isWritePending
-          ? 'Menunggu konfirmasi dompet admin untuk mendaftarkan DPT pemilih.'
+          ? 'Menunggu konfirmasi dompet admin untuk mendaftarkan daftar pemilih.'
           : isConfirming
             ? 'Transaksi sudah dikirim dan sedang menunggu konfirmasi Base Sepolia.'
-            : 'Menyiapkan transaksi pendaftaran DPT pemilih ke kontrak.',
+            : 'Menyiapkan transaksi pendaftaran daftar pemilih ke kontrak.',
       }
     : unsyncedValidAddresses.length === 0
       ? {
           tone: 'emerald' as const,
-          title: 'DPT pemilih sudah terdaftar',
+          title: 'Daftar pemilih sudah terdaftar',
           description: 'Semua dompet valid di database sudah ditandai terdaftar di kontrak.',
         }
       : !isAddressValid
         ? {
             tone: 'amber' as const,
             title: 'Belum bisa sinkron otomatis',
-            description: 'Alamat kontrak belum valid. Finalisasi pemilihan terlebih dahulu, lalu daftarkan DPT.',
+            description: 'Alamat kontrak belum valid. Finalisasi pemilihan terlebih dahulu, lalu daftarkan daftar pemilih.',
           }
         : !isRegistrationPhaseOnChain
           ? {
               tone: 'amber' as const,
               title: 'Sinkronisasi otomatis ditahan',
-              description: 'DPT pemilih (whitelist) hanya bisa didaftarkan saat tahap Persiapan Pemilihan (Registration).',
+              description: 'Daftar pemilih (whitelist) hanya bisa didaftarkan saat tahap Persiapan Pemilihan (Registration).',
             }
           : {
               tone: 'amber' as const,
-              title: 'Ada DPT belum terdaftar di kontrak',
+              title: 'Ada pemilih belum terdaftar di kontrak',
               description: `${unsyncedValidAddresses.length} dompet valid siap didaftarkan. Sistem akan mencoba otomatis setelah penambahan data, tombol manual tetap tersedia.`,
             }
 
@@ -701,7 +703,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 text-[13px] font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {(isWritePending || isConfirming || isSyncing) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
-                Daftarkan DPT
+                Daftarkan Pemilih
               </button>
               <div className="inline-flex h-11 items-center gap-3 rounded-2xl bg-slate-100 px-4 text-slate-400 md:w-[260px]">
                 <Link2 className="h-4 w-4" />
@@ -733,7 +735,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           ) : null}
           {!whitelistQuery.isLoading && whitelistRecords.length === 0 ? (
             <div className="border-b border-slate-100 bg-slate-50 px-6 py-3 text-[13px] text-slate-600">
-              Belum ada DPT pemilih di Supabase untuk proposal ini. Tambahkan manual atau unggah CSV.
+              Belum ada daftar pemilih di Supabase untuk proposal ini. Tambahkan manual atau unggah CSV.
             </div>
           ) : null}
           <div className="overflow-x-auto rounded-[24px] border border-slate-100 bg-white">
@@ -797,12 +799,18 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-[20px] font-semibold text-slate-900">Whitelisting Pemilih</h2>
-              <p className="mt-3 max-w-[300px] text-[15px] leading-7 text-slate-500">Unggah berkas untuk mendaftarkan identitas digital pemilih secara massal.</p>
+              <p className="mt-3 max-w-[300px] text-[15px] leading-7 text-slate-500">Unggah berkas atau pilih dari data master voter untuk mendaftarkan identitas digital pemilih.</p>
             </div>
-            <button type="button" onClick={() => setManualWhitelistOpen(true)} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
-              <CirclePlus className="h-4 w-4" />
-              Tambah Pemilih Manual
-            </button>
+            <div className="flex flex-col gap-2">
+              <button type="button" onClick={() => setMasterVoterModalOpen(true)} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 text-[14px] font-medium text-white hover:bg-slate-800">
+                <Users className="h-4 w-4" />
+                Pilih dari Master Voter
+              </button>
+              <button type="button" onClick={() => setManualWhitelistOpen(true)} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
+                <CirclePlus className="h-4 w-4" />
+                Tambah Manual
+              </button>
+            </div>
           </div>
           <button type="button" onClick={() => setUploadModalOpen(true)} className="mt-8 block w-full rounded-[28px] border border-dashed border-slate-300 p-8 text-center hover:border-slate-400">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-700">
@@ -1363,9 +1371,9 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
       <ConfirmDialog
         open={syncOnchainConfirmOpen}
-        title="Daftarkan DPT ke Kontrak?"
-        description={`Sebanyak ${unsyncedValidAddresses.length} dompet valid akan didaftarkan sebagai DPT pemilih (whitelist) di kontrak. Proses ini membutuhkan konfirmasi dompet admin dan hanya bisa dilakukan saat tahap Persiapan Pemilihan (Registration).`}
-        confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Daftarkan DPT"}
+        title="Daftarkan Pemilih ke Kontrak?"
+        description={`Sebanyak ${unsyncedValidAddresses.length} dompet valid akan didaftarkan sebagai daftar pemilih (whitelist) di kontrak. Proses ini membutuhkan konfirmasi dompet admin dan hanya bisa dilakukan saat tahap Persiapan Pemilihan (Registration).`}
+        confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Daftarkan Pemilih"}
         onCancel={() => {
           if (!isWritePending && !isConfirming) {
             setSyncOnchainConfirmOpen(false)
@@ -1387,6 +1395,17 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           }
         }}
         onConfirm={handleConfirmNextPhase}
+      />
+
+      <PilihDariMasterVoterModal
+        open={masterVoterModalOpen}
+        onClose={() => setMasterVoterModalOpen(false)}
+        proposalDraftId={election.id}
+        existingWallets={new Set(whitelistRecords.map((r) => r.wallet.toLowerCase()))}
+        onSuccess={() => {
+          void whitelistQuery.refetch()
+          startWhitelistSync(getUnsyncedValidAddresses(), 'auto')
+        }}
       />
     </AdminShell>
   )
