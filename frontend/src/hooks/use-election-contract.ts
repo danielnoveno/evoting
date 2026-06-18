@@ -99,6 +99,28 @@ export function useElectionContract(address?: string, options: UseElectionContra
     return scheduledResult.data !== undefined ? scheduledResult : storedResult
   }
 
+  const { data: commitStartsAt } = useReadContract({
+    address: address as `0x${string}`,
+    abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
+    functionName: 'commitStartsAt',
+    query: {
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address && enabledChecks.has('phase'),
+    }
+  })
+
+  const { data: revealStartsAt } = useReadContract({
+    address: address as `0x${string}`,
+    abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
+    functionName: 'revealStartsAt',
+    query: {
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address && enabledChecks.has('phase'),
+    }
+  })
+
   const { data: hasCommittedOnChain, refetch: refetchHasCommitted, error: hasCommittedError, isFetching: isHasCommittedFetching } = useReadContract({
     address: address as `0x${string}`,
     abi: electionSpaceAbi,
@@ -204,6 +226,27 @@ export function useElectionContract(address?: string, options: UseElectionContra
     return txHash
   }, [publicClient, writeContractAsync])
 
+  const setPhaseScheduleAsync = useCallback(async (
+    targetAddress: string,
+    commitStartsAt: bigint,
+    commitEndsAt: bigint,
+    revealStartsAt: bigint,
+    revealEndsAt: bigint,
+  ) => {
+    if (!targetAddress) throw new Error('Alamat kontrak pemilihan belum tersedia.')
+    if (!publicClient) throw new Error('Koneksi Base Sepolia belum siap.')
+
+    const txHash = await writeContractAsync({
+      address: targetAddress as `0x${string}`,
+      abi: electionSpaceAbi,
+      chainId: baseSepolia.id,
+      functionName: 'setPhaseSchedule',
+      args: [commitStartsAt, commitEndsAt, revealStartsAt, revealEndsAt],
+    })
+    await publicClient.waitForTransactionReceipt({ hash: txHash })
+    return txHash
+  }, [publicClient, writeContractAsync])
+
   const transitionToNextPhase = () => {
     if (!address) return
     writeContract({
@@ -217,6 +260,8 @@ export function useElectionContract(address?: string, options: UseElectionContra
   return {
     // State
     currentPhase,
+    commitStartsAt,
+    revealStartsAt,
     hasCommittedOnChain,
     hasRevealedOnChain,
     isWhitelistedOnChain,
@@ -234,6 +279,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
     revealVote,
     registerVoters,
     registerVotersAsync,
+    setPhaseScheduleAsync,
     transitionToNextPhase,
     
     // TX Status

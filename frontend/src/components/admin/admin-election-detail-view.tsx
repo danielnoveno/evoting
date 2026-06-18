@@ -73,6 +73,12 @@ function getWalletConnectionErrorMessage(error: unknown) {
   return 'Dompet admin belum berhasil tersambung. Sambungkan ulang Base Account sebelum mengirim transaksi.'
 }
 
+function toUnixSeconds(value: string | null | undefined) {
+  if (!value) return null
+  const time = new Date(value).getTime()
+  return Number.isFinite(time) ? BigInt(Math.floor(time / 1000)) : null
+}
+
 export function AdminElectionDetailView({ election, activeTab }: { election: AdminElectionRecord; activeTab: AdminElectionDetailTabId }) {
   const canAddCandidate = election.status === 'aktif'
   const { showToast } = useToast()
@@ -93,6 +99,9 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     writeError,
     resetWrite,
     currentPhase: onChainPhase,
+    commitStartsAt,
+    revealStartsAt,
+    setPhaseScheduleAsync,
     refetchPhase
   } = useElectionContract(isAddressValid ? deployedAddress : undefined)
 
@@ -160,6 +169,9 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     ? phaseActionLabels[onChainPhaseNumber]
     : 'Buka Fase Berikutnya'
   const canAdvancePhase = isAddressValid && onChainPhaseNumber !== null && onChainPhaseNumber >= 0 && onChainPhaseNumber < 3
+  const hasOnChainSchedule = typeof commitStartsAt === 'bigint' && commitStartsAt > BigInt(0)
+  const onChainRevealStartsAt = typeof revealStartsAt === 'bigint' ? revealStartsAt : null
+  const canActivateAutomaticSchedule = isAddressValid && !hasOnChainSchedule && Boolean(election.schedule?.commitStartAt && election.schedule?.revealStartAt && election.schedule?.endedAt)
   const getUnsyncedValidAddresses = (extraAddresses: string[] = []) => normalizeWhitelistAddresses([
     ...(whitelistQuery.data ?? [])
       .filter((record) => record.syncStatus !== 'synced' && record.validationStatus === 'valid')
@@ -607,6 +619,43 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     transitionToNextPhase()
   }
 
+  const handleActivateAutomaticSchedule = async () => {
+    if (!canActivateAutomaticSchedule || isWritePending || isConfirming) return
+    if (!isConnected) {
+      requestWalletConnection('Dompet admin sudah tersambung. Klik lagi tombol aktifkan jadwal untuk mengirim transaksi on-chain.')
+      return
+    }
+
+    const commitStart = toUnixSeconds(election.schedule?.commitStartAt)
+    const revealStart = toUnixSeconds(election.schedule?.revealStartAt)
+    const revealEnd = toUnixSeconds(election.schedule?.endedAt)
+
+    if (!commitStart || !revealStart || !revealEnd || commitStart >= revealStart || revealStart >= revealEnd) {
+      showToast({
+        tone: 'error',
+        title: 'Jadwal Tidak Valid',
+        description: 'Pastikan jadwal pencoblosan, mulai perhitungan, dan selesai sudah berurutan.',
+      })
+      return
+    }
+
+    try {
+      await setPhaseScheduleAsync(deployedAddress, commitStart, revealStart, revealStart, revealEnd)
+      await refetchPhase()
+      showToast({
+        tone: 'success',
+        title: 'Jadwal Otomatis Aktif',
+        description: 'Fase on-chain akan mengikuti jadwal proposal: pencoblosan sebagai Commit dan perhitungan sebagai Reveal.',
+      })
+    } catch (error) {
+      showToast({
+        tone: 'error',
+        title: 'Gagal Mengaktifkan Jadwal',
+        description: error instanceof Error ? error.message : 'Transaksi jadwal otomatis belum berhasil.',
+      })
+    }
+  }
+
   const handleOpenImportFile = (filePath: string) => {
 
     whitelistImportSignedUrl.mutate(filePath, {
@@ -963,7 +1012,21 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           <ListChecks className="h-4 w-4" />
           Lihat Log Audit
         </button>
-        {isAddressValid && (
+        {isAddressValid && hasOnChainSchedule ? (
+          <div className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-5 text-[13px] font-medium text-emerald-800">
+            Fase otomatis aktif{onChainRevealStartsAt ? ` · Reveal ${new Date(Number(onChainRevealStartsAt) * 1000).toLocaleDateString('id-ID')}` : ''}
+          </div>
+        ) : isAddressValid && canActivateAutomaticSchedule ? (
+          <button
+            type="button"
+            onClick={handleActivateAutomaticSchedule}
+            disabled={isWritePending || isConfirming || isConnectPending}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-[15px] font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${(isWritePending || isConfirming) ? 'animate-spin' : ''}`} />
+            Aktifkan Jadwal Otomatis
+          </button>
+        ) : isAddressValid && !election.schedule?.commitStartAt ? (
           <button 
             type="button" 
             onClick={() => setNextPhaseConfirmOpen(true)} 
@@ -973,7 +1036,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             <RefreshCw className={`h-4 w-4 ${(isWritePending || isConfirming) ? 'animate-spin' : ''}`} />
             {nextPhaseLabel}
           </button>
-        )}
+        ) : null}
         <button type="button" onClick={() => showToast({ tone: 'info', title: 'Edit Parameter', description: 'Parameter pemilihan hanya dapat diubah sebelum fase commit dimulai.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-500 px-5 text-[15px] font-medium text-white hover:bg-slate-600">
           <Pencil className="h-4 w-4" />
           Edit Parameter

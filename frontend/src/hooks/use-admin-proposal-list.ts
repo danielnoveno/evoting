@@ -161,6 +161,11 @@ export function useAdminElectionList() {
           turnoutLabel: p.deployedSpaceAddress ? `${whitelistRows.length} pemilih whitelist` : 'Belum deploy',
           whitelistCount: whitelistRows.length,
           whitelistPreview,
+          schedule: {
+            commitStartAt: p.commitStartAt,
+            revealStartAt: p.revealStartAt,
+            endedAt: p.endedAt,
+          },
           detail: makeEmptyDetail(p, voterTarget),
           commits: p.status === 'deployed' ? {
             total: '0',

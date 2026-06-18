@@ -30,6 +30,12 @@ type DecisionType = 'approve' | 'revise' | 'reject' | 'deploy' | null
 
 const BASE_SEPOLIA_CHAIN_ID = 84532
 
+function toUnixSeconds(value: string | null | undefined) {
+  if (!value) return null
+  const time = new Date(value).getTime()
+  return Number.isFinite(time) ? BigInt(Math.floor(time / 1000)) : null
+}
+
 function getDeployErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : String(error ?? '')
   const lowerMessage = message.toLowerCase()
@@ -72,7 +78,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const proposalWhitelistQuery = useProposalWhitelistEntries(params.id)
   const proposalActivitiesQuery = useProposalActivities(params.id)
   const updateStatus = useUpdateProposalStatus()
-  const { registerVotersAsync } = useElectionContract(undefined, { checks: [] })
+  const { registerVotersAsync, setPhaseScheduleAsync } = useElectionContract(undefined, { checks: [] })
   
   // Real contract integration
   const { 
@@ -253,6 +259,8 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             let whitelistSyncMessage = initialWhitelistWallets.length > 0
               ? `${initialWhitelistWallets.length} wallet whitelist akan disinkronkan ke kontrak.`
               : 'Proposal tidak memiliki whitelist awal untuk disinkronkan.'
+            let whitelistReadyForSchedule = initialWhitelistWallets.length === 0
+            let scheduleMessage = 'Jadwal on-chain belum diaktifkan karena data jadwal proposal belum lengkap.'
 
             if (initialWhitelistWallets.length > 0) {
               setIsSyncingInitialWhitelist(true)
@@ -264,18 +272,39 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                   walletAddresses: initialWhitelistWallets,
                 })
                 whitelistSyncMessage = `${initialWhitelistWallets.length} wallet whitelist berhasil disinkronkan on-chain.`
+                whitelistReadyForSchedule = true
               } catch (error) {
                 console.error('[superadmin] Sinkronisasi whitelist awal gagal:', error)
-                whitelistSyncMessage = 'Deploy berhasil, tetapi whitelist awal belum tersinkron. Admin masih bisa menekan tombol sinkronisasi whitelist di Manajemen Pemilihan selama fase Registration.'
+                whitelistSyncMessage = 'Deploy berhasil, tetapi whitelist awal belum tersinkron. Jadwal otomatis belum diaktifkan agar pemilih tidak terkunci sebelum whitelist siap.'
               } finally {
                 setIsSyncingInitialWhitelist(false)
               }
             }
 
+            const commitStartsAt = toUnixSeconds(liveProposal?.commitStartAt)
+            const revealStartsAt = toUnixSeconds(liveProposal?.revealStartAt)
+            const revealEndsAt = toUnixSeconds(liveProposal?.endedAt)
+
+            if (whitelistReadyForSchedule && commitStartsAt && revealStartsAt && revealEndsAt && commitStartsAt < revealStartsAt && revealStartsAt < revealEndsAt) {
+              try {
+                await setPhaseScheduleAsync(
+                  deployment.spaceAddress,
+                  commitStartsAt,
+                  revealStartsAt,
+                  revealStartsAt,
+                  revealEndsAt,
+                )
+                scheduleMessage = 'Jadwal on-chain aktif: mulai pencoblosan menjadi fase Commit, mulai perhitungan menjadi fase Reveal.'
+              } catch (error) {
+                console.error('[superadmin] Aktivasi jadwal fase otomatis gagal:', error)
+                scheduleMessage = 'Jadwal otomatis belum berhasil diaktifkan. Admin masih dapat mengelola fase dari halaman parameter.'
+              }
+            }
+
             showToast({
               title: 'Proposal Disetujui & Pemilihan Di-deploy',
-              description: `${whitelistSyncMessage} Alamat Space: ${deployment.spaceAddress}`,
-              tone: initialWhitelistWallets.length > 0 && whitelistSyncMessage.includes('belum tersinkron') ? 'info' : 'success',
+              description: `${whitelistSyncMessage} ${scheduleMessage} Alamat Space: ${deployment.spaceAddress}`,
+              tone: scheduleMessage.includes('aktif') ? 'success' : 'info',
             })
             resetWrite()
             setPendingOnchainDecision(null)
@@ -301,7 +330,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         setPendingOnchainDecision(null)
       }
     }
-  }, [isConfirmed, hash, receipt, pendingOnchainDecision, params.id, updateStatus, showToast, router, resetWrite, parseElectionSpaceCreated, liveProposal?.createdByWalletAddress, userAddress, initialWhitelistWallets, registerVotersAsync])
+  }, [isConfirmed, hash, receipt, pendingOnchainDecision, params.id, updateStatus, showToast, router, resetWrite, parseElectionSpaceCreated, liveProposal?.createdByWalletAddress, liveProposal?.commitStartAt, liveProposal?.revealStartAt, liveProposal?.endedAt, userAddress, initialWhitelistWallets, registerVotersAsync, setPhaseScheduleAsync])
 
   if (proposalQuery.isLoading) return <div className="p-20 text-center"><Loader2 className="h-10 w-10 animate-spin mx-auto text-slate-400" /></div>
   if (!proposal) notFound()

@@ -16,6 +16,11 @@ export type AdminElectionRecord = {
   commits?: { total: string; target: string; hash: string; revealStart: string; integrity: string }
   whitelistCount?: number
   whitelistPreview?: Array<{ id: string; label: string; name: string }>
+  schedule?: {
+    commitStartAt: string | null
+    revealStartAt: string | null
+    endedAt: string | null
+  }
   detail: {
     statusPill: string
     candidates: Array<{
