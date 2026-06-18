@@ -29,9 +29,12 @@ import {
   DataTableShell,
   DataTableViewport,
   RowActionMenu,
+  SortableTableHeader,
+  type TableSortDirection,
 } from '@/components/ui/data-table'
 
 type ElectionFilter = (typeof superadminElectionFilters)[number]
+type SortField = 'title' | 'code' | 'status' | 'voters' | 'participation'
 const PAGE_SIZE = 10
 
 function getElectionTone(status: SuperadminElectionState) {
@@ -46,6 +49,8 @@ export default function SuperadminElectionManagementPage() {
   const [activeFilter, setActiveFilter] = useState<ElectionFilter>('Semua')
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [sortDirection, setSortDirection] = useState<TableSortDirection>(null)
   const { data: proposalRowsRaw, isLoading, error } = useSuperadminProposalDrafts()
   const { elections: storeElections, setElections } = useSuperadminElectionsStore()
 
@@ -72,7 +77,7 @@ export default function SuperadminElectionManagementPage() {
 
   const filteredElections = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()
-    return elections.filter((election) => {
+    const filtered = elections.filter((election) => {
       const matchesStatus = activeFilter === 'Semua' ? true : election.status === activeFilter
       const matchesSearch = !normalizedSearch
         || election.title.toLowerCase().includes(normalizedSearch)
@@ -80,7 +85,30 @@ export default function SuperadminElectionManagementPage() {
 
       return matchesStatus && matchesSearch
     })
-  }, [activeFilter, elections, searchTerm])
+
+    if (!sortField || !sortDirection) return filtered
+
+    return [...filtered].sort((left, right) => {
+      const leftValue = sortField === 'title' ? left.title
+        : sortField === 'code' ? left.code
+          : sortField === 'status' ? `${left.status} ${left.phaseLabel}`
+            : sortField === 'voters' ? left.totalVoters
+              : left.participation
+      const rightValue = sortField === 'title' ? right.title
+        : sortField === 'code' ? right.code
+          : sortField === 'status' ? `${right.status} ${right.phaseLabel}`
+            : sortField === 'voters' ? right.totalVoters
+              : right.participation
+
+      const leftNumber = Number(String(leftValue).replace(/[^0-9.]/g, ''))
+      const rightNumber = Number(String(rightValue).replace(/[^0-9.]/g, ''))
+      const comparison = sortField === 'voters' || sortField === 'participation'
+        ? (leftNumber || 0) - (rightNumber || 0)
+        : String(leftValue).toLowerCase().localeCompare(String(rightValue).toLowerCase())
+
+      return comparison * (sortDirection === 'asc' ? 1 : -1)
+    })
+  }, [activeFilter, elections, searchTerm, sortField, sortDirection])
 
   const totalPages = Math.max(1, Math.ceil(filteredElections.length / PAGE_SIZE))
   const paginatedElections = filteredElections.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
@@ -92,6 +120,27 @@ export default function SuperadminElectionManagementPage() {
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages)
   }, [currentPage, totalPages])
+
+  const handleSort = (field: SortField) => {
+    if (sortField !== field) {
+      setSortField(field)
+      setSortDirection('asc')
+      return
+    }
+
+    if (sortDirection === 'asc') {
+      setSortDirection('desc')
+      return
+    }
+
+    if (sortDirection === 'desc') {
+      setSortField(null)
+      setSortDirection(null)
+      return
+    }
+
+    setSortDirection('asc')
+  }
 
   const updateElectionStatus = (id: string, status: SuperadminElectionState, message: string) => {
     setElections((current) => {
@@ -151,11 +200,21 @@ export default function SuperadminElectionManagementPage() {
             <DataTable className="[border-spacing:0_10px]">
               <DataTableHead className="bg-transparent">
                 <DataTableHeaderRow>
-                  <DataTableHeaderCell>Pemilihan</DataTableHeaderCell>
-                  <DataTableHeaderCell>Kode</DataTableHeaderCell>
-                  <DataTableHeaderCell>Status / Fase</DataTableHeaderCell>
-                  <DataTableHeaderCell>Total Pemilih</DataTableHeaderCell>
-                  <DataTableHeaderCell>Partisipasi</DataTableHeaderCell>
+                  <DataTableHeaderCell>
+                    <SortableTableHeader label="Pemilihan" active={sortField === 'title'} direction={sortDirection} onClick={() => handleSort('title')} />
+                  </DataTableHeaderCell>
+                  <DataTableHeaderCell>
+                    <SortableTableHeader label="Kode" active={sortField === 'code'} direction={sortDirection} onClick={() => handleSort('code')} />
+                  </DataTableHeaderCell>
+                  <DataTableHeaderCell>
+                    <SortableTableHeader label="Status / Fase" active={sortField === 'status'} direction={sortDirection} onClick={() => handleSort('status')} />
+                  </DataTableHeaderCell>
+                  <DataTableHeaderCell>
+                    <SortableTableHeader label="Total Pemilih" active={sortField === 'voters'} direction={sortDirection} onClick={() => handleSort('voters')} />
+                  </DataTableHeaderCell>
+                  <DataTableHeaderCell>
+                    <SortableTableHeader label="Partisipasi" active={sortField === 'participation'} direction={sortDirection} onClick={() => handleSort('participation')} />
+                  </DataTableHeaderCell>
                   <DataTableHeaderCell className="text-center">Aksi</DataTableHeaderCell>
                 </DataTableHeaderRow>
               </DataTableHead>

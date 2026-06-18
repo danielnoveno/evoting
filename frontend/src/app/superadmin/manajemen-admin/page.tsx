@@ -42,6 +42,8 @@ import {
   DataTableViewport,
   RowActionMenu,
   SelectedCounter,
+  SortableTableHeader,
+  type TableSortDirection,
 } from '@/components/ui/data-table'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
@@ -55,6 +57,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import type { ProposalDraftRecord } from '@/lib/repositories/types'
 
 type AdminTabKey = (typeof superadminAdminTabs)[number]['key']
+type SortField = 'name' | 'email' | 'access' | 'status' | 'activity'
 
 type AdminScope = 'all' | 'specific'
 
@@ -88,6 +91,8 @@ function SuperadminAdminManagementContent() {
   const [selectedAdminEmails, setSelectedAdminEmails] = useState<string[]>([])
   const [selectionBarDismissed, setSelectionBarDismissed] = useState(false)
   const [bulkActionLoading, setBulkActionLoading] = useState<'send' | 'deactivate' | 'delete' | null>(null)
+  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [sortDirection, setSortDirection] = useState<TableSortDirection>(null)
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
   const [bulkDeactivateDialogOpen, setBulkDeactivateDialogOpen] = useState(false)
 
@@ -99,7 +104,7 @@ function SuperadminAdminManagementContent() {
 
   const filteredAdmins = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()
-    return admins.filter((admin) => {
+    const filtered = admins.filter((admin) => {
       const matchesStatus = activeStatus === 'Semua Status' ? true : admin.status === activeStatus
       const matchesSearch = !normalizedSearch
         || admin.name.toLowerCase().includes(normalizedSearch)
@@ -109,7 +114,24 @@ function SuperadminAdminManagementContent() {
 
       return matchesStatus && matchesSearch
     })
-  }, [activeStatus, admins, searchTerm])
+
+    if (!sortField || !sortDirection) return filtered
+
+    return [...filtered].sort((left, right) => {
+      const leftValue = sortField === 'name' ? left.name
+        : sortField === 'email' ? left.email
+          : sortField === 'access' ? `${left.accessLabel} ${left.accessDetail}`
+            : sortField === 'status' ? left.status
+              : `${left.lastSeen} ${left.lastLoginRelative}`
+      const rightValue = sortField === 'name' ? right.name
+        : sortField === 'email' ? right.email
+          : sortField === 'access' ? `${right.accessLabel} ${right.accessDetail}`
+            : sortField === 'status' ? right.status
+              : `${right.lastSeen} ${right.lastLoginRelative}`
+
+      return leftValue.toLowerCase().localeCompare(rightValue.toLowerCase()) * (sortDirection === 'asc' ? 1 : -1)
+    })
+  }, [activeStatus, admins, searchTerm, sortField, sortDirection])
 
   const selectedAdmins = useMemo(
     () => admins.filter((admin) => selectedAdminEmails.includes(admin.email)),
@@ -169,6 +191,27 @@ function SuperadminAdminManagementContent() {
     setSelectedAdminEmails((current) => current.includes(email)
       ? current.filter((item) => item !== email)
       : [...current, email])
+  }
+
+  const handleSort = (field: SortField) => {
+    if (sortField !== field) {
+      setSortField(field)
+      setSortDirection('asc')
+      return
+    }
+
+    if (sortDirection === 'asc') {
+      setSortDirection('desc')
+      return
+    }
+
+    if (sortDirection === 'desc') {
+      setSortField(null)
+      setSortDirection(null)
+      return
+    }
+
+    setSortDirection('asc')
   }
 
   const invalidateAdminDirectory = async () => {
@@ -417,11 +460,21 @@ function SuperadminAdminManagementContent() {
                         className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                       />
                     </DataTableHeaderCell>
-                    <DataTableHeaderCell>Profil Admin</DataTableHeaderCell>
-                    <DataTableHeaderCell>Email</DataTableHeaderCell>
-                    <DataTableHeaderCell>Akses Space</DataTableHeaderCell>
-                    <DataTableHeaderCell>Status</DataTableHeaderCell>
-                    <DataTableHeaderCell>Aktivitas Terakhir</DataTableHeaderCell>
+                    <DataTableHeaderCell>
+                      <SortableTableHeader label="Profil Admin" active={sortField === 'name'} direction={sortDirection} onClick={() => handleSort('name')} />
+                    </DataTableHeaderCell>
+                    <DataTableHeaderCell>
+                      <SortableTableHeader label="Email" active={sortField === 'email'} direction={sortDirection} onClick={() => handleSort('email')} />
+                    </DataTableHeaderCell>
+                    <DataTableHeaderCell>
+                      <SortableTableHeader label="Akses Space" active={sortField === 'access'} direction={sortDirection} onClick={() => handleSort('access')} />
+                    </DataTableHeaderCell>
+                    <DataTableHeaderCell>
+                      <SortableTableHeader label="Status" active={sortField === 'status'} direction={sortDirection} onClick={() => handleSort('status')} />
+                    </DataTableHeaderCell>
+                    <DataTableHeaderCell>
+                      <SortableTableHeader label="Aktivitas Terakhir" active={sortField === 'activity'} direction={sortDirection} onClick={() => handleSort('activity')} />
+                    </DataTableHeaderCell>
                     <DataTableHeaderCell className="text-center">Action</DataTableHeaderCell>
                   </DataTableHeaderRow>
                 </DataTableHead>

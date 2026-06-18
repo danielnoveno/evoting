@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Check, Database, Download, FileText, Loader2, Mail, Search, Trash2, Upload, X, UserPlus } from 'lucide-react'
+import { AlertTriangle, Check, Download, FileText, Loader2, Search, Trash2, Upload, X, UserPlus } from 'lucide-react'
 import { type ChangeEvent, type DragEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   DataTable,
   DataTableBody,
+  DataTableCell,
   DataTableEmpty,
   DataTableFooter,
   DataTableHead,
@@ -21,6 +22,8 @@ import {
   DataTableViewport,
   RowActionMenu,
   SelectedCounter,
+  SortableTableHeader,
+  type TableSortDirection,
 } from '@/components/ui/data-table'
 import { useToast } from '@/components/ui/toast-provider'
 import { useSendVoterActivationEmails } from '@/hooks/use-voter-activation'
@@ -37,6 +40,7 @@ const MASTER_VOTER_CSV_HEADERS = ['nim', 'nama', 'email', 'fakultas'] as const
 const PAGE_SIZE_OPTIONS = [5, 10, 20] as const
 
 type TabKey = 'daftar' | 'tambah'
+type SortField = 'name' | 'nim' | 'email' | 'prodi' | 'status'
 
 const initialFormData = {
   nim: '',
@@ -102,6 +106,9 @@ export function SuperadminMasterVoterPage() {
   const [csvErrors, setCsvErrors] = useState<string[]>([])
   const [parsedRows, setParsedRows] = useState<Array<{ nim: string; full_name: string; email: string; prodi: string }>>([])
   const [selectedVoterIds, setSelectedVoterIds] = useState<string[]>([])
+  const [selectionBarDismissed, setSelectionBarDismissed] = useState(false)
+  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [sortDirection, setSortDirection] = useState<TableSortDirection>(null)
   const [deleteSelectedDialogOpen, setDeleteSelectedDialogOpen] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -123,7 +130,7 @@ export function SuperadminMasterVoterPage() {
 
   const filteredVoters = useMemo(() => {
     const term = searchTerm.toLowerCase().trim()
-    return voters.filter((voter) => {
+    const filtered = voters.filter((voter) => {
       const matchesSearch = (
         voter.nim.includes(term) ||
         voter.fullName.toLowerCase().includes(term) ||
@@ -136,7 +143,24 @@ export function SuperadminMasterVoterPage() {
             : selectedVoterIds.includes(voter.id)
       return matchesSearch && matchesFilter
     })
-  }, [voters, searchTerm, activeFilter, selectedVoterIds])
+
+    if (!sortField || !sortDirection) return filtered
+
+    return [...filtered].sort((left, right) => {
+      const leftValue = sortField === 'name' ? left.fullName
+        : sortField === 'nim' ? left.nim
+          : sortField === 'email' ? left.email
+            : sortField === 'prodi' ? left.prodi
+              : left.syncStatus
+      const rightValue = sortField === 'name' ? right.fullName
+        : sortField === 'nim' ? right.nim
+          : sortField === 'email' ? right.email
+            : sortField === 'prodi' ? right.prodi
+              : right.syncStatus
+
+      return leftValue.toLowerCase().localeCompare(rightValue.toLowerCase()) * (sortDirection === 'asc' ? 1 : -1)
+    })
+  }, [voters, searchTerm, activeFilter, selectedVoterIds, sortField, sortDirection])
 
   const selectedVoters = useMemo(
     () => voters.filter((voter) => selectedVoterIds.includes(voter.id)),
@@ -150,6 +174,28 @@ export function SuperadminMasterVoterPage() {
 
   useEffect(() => { setCurrentPage(1) }, [searchTerm, activeFilter, pageSize])
   useEffect(() => { if (currentPage > totalPages) setCurrentPage(totalPages) }, [currentPage, totalPages])
+  useEffect(() => { setSelectionBarDismissed(false) }, [selectedVoterIds])
+
+  const handleSort = (field: SortField) => {
+    if (sortField !== field) {
+      setSortField(field)
+      setSortDirection('asc')
+      return
+    }
+
+    if (sortDirection === 'asc') {
+      setSortDirection('desc')
+      return
+    }
+
+    if (sortDirection === 'desc') {
+      setSortField(null)
+      setSortDirection(null)
+      return
+    }
+
+    setSortDirection('asc')
+  }
 
   const toggleSelectAllFiltered = () => {
     if (allFilteredSelected) {
@@ -319,14 +365,6 @@ export function SuperadminMasterVoterPage() {
               Kelola daftar induk voter platform dari database. Impor data kampus melalui CSV atau tambahkan manual.
             </p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            {activeTab === 'daftar' && (
-              <SuperadminToolbarButton variant="primary" onClick={() => updateTab('tambah')}>
-                <UserPlus className="h-4 w-4" />
-                Tambah Manual
-              </SuperadminToolbarButton>
-            )}
-          </div>
         </section>
 
         <div className="mt-10 flex items-end justify-between border-b border-slate-200">
@@ -353,7 +391,7 @@ export function SuperadminMasterVoterPage() {
       </ScrollReveal>
 
       {activeTab === 'daftar' ? (
-        <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 space-y-6">
+        <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 space-y-4">
           <div className="flex flex-wrap items-center justify-end gap-3">
             <button
               type="button"
@@ -363,6 +401,10 @@ export function SuperadminMasterVoterPage() {
               <Upload className="h-4 w-4" />
               Impor Data Master via CSV
             </button>
+            <SuperadminToolbarButton variant="primary" onClick={() => updateTab('tambah')}>
+              <UserPlus className="h-4 w-4" />
+              Tambah Manual
+            </SuperadminToolbarButton>
           </div>
 
           <ScrollReveal variant="fade-up" delay={200} duration={800}>
@@ -398,24 +440,6 @@ export function SuperadminMasterVoterPage() {
             </div>
           </ScrollReveal>
 
-          {selectedVoters.length > 0 ? (
-            <SelectedCounter
-              title={`${selectedVoters.length} voter dipilih`}
-              description={`${selectedFilteredCount} dari ${filteredVoters.length} voter hasil filter sedang dipilih.`}
-              onClear={() => setSelectedVoterIds([])}
-              actions={(
-                <button
-                  type="button"
-                  onClick={() => setDeleteSelectedDialogOpen(true)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-red-200 bg-white px-4 text-[13px] font-semibold text-red-600 transition hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Hapus Terpilih
-                </button>
-              )}
-            />
-          ) : null}
-
           <DataTableShell className="relative rounded-[32px] border border-slate-200 bg-slate-50 p-3">
             <DataTableViewport>
               <DataTable className="[border-spacing:0_10px]">
@@ -431,36 +455,37 @@ export function SuperadminMasterVoterPage() {
                       />
                     </DataTableHeaderCell>
                     <DataTableHeaderCell>
-                      <span className="uppercase tracking-[0.08em] text-slate-400">NPM / Identitas</span>
+                      <SortableTableHeader label="Profil Voter" active={sortField === 'name'} direction={sortDirection} onClick={() => handleSort('name')} />
                     </DataTableHeaderCell>
                     <DataTableHeaderCell>
-                      <span className="uppercase tracking-[0.08em] text-slate-400">Nama Lengkap</span>
+                      <SortableTableHeader label="Email" active={sortField === 'email'} direction={sortDirection} onClick={() => handleSort('email')} />
                     </DataTableHeaderCell>
                     <DataTableHeaderCell>
-                      <span className="uppercase tracking-[0.08em] text-slate-400">Program Studi</span>
+                      <SortableTableHeader label="Program Studi" active={sortField === 'prodi'} direction={sortDirection} onClick={() => handleSort('prodi')} />
                     </DataTableHeaderCell>
                     <DataTableHeaderCell>
-                      <span className="uppercase tracking-[0.08em] text-slate-400">Email Institusi</span>
+                      <SortableTableHeader label="Status" active={sortField === 'status'} direction={sortDirection} onClick={() => handleSort('status')} />
                     </DataTableHeaderCell>
-                    <DataTableHeaderCell className="text-center uppercase tracking-[0.08em] text-slate-400">Aksi</DataTableHeaderCell>
+                    <DataTableHeaderCell className="text-center">Aksi</DataTableHeaderCell>
                   </DataTableHeaderRow>
                 </DataTableHead>
                 <DataTableBody className="bg-transparent">
                   {votersQuery.isLoading ? (
                     Array.from({ length: 3 }).map((_, i) => (
-                      <tr key={`loading-${i}`} className="border-b border-slate-200">
-                        <td colSpan={6} className="px-4 py-5">
-                          <div className="h-10 animate-pulse rounded-2xl bg-slate-200" />
-                        </td>
-                      </tr>
+                      <DataTableRow key={`loading-${i}`} className="[&>td]:rounded-[20px] [&>td]:border [&>td]:border-slate-200 [&>td]:bg-white">
+                        <DataTableCell colSpan={6} className="px-6 py-5">
+                          <div className="h-10 animate-pulse rounded-2xl bg-slate-100" />
+                        </DataTableCell>
+                      </DataTableRow>
                     ))
                   ) : paginatedVoters.length > 0 ? (
                     paginatedVoters.map((voter) => (
                       <DataTableRow
                         key={voter.id}
-                        className="[&>td]:border-y [&>td]:border-slate-200 [&>td]:bg-white [&>td:first-child]:rounded-l-[20px] [&>td:first-child]:border-l [&>td:last-child]:rounded-r-[20px] [&>td:last-child]:border-r hover:[&>td]:border-slate-300 hover:[&>td]:bg-slate-50/80"
+                        onClick={() => toggleSelectedVoter(voter.id)}
+                        className={`cursor-pointer [&>td]:border-y [&>td]:border-slate-200 [&>td]:bg-white [&>td:first-child]:rounded-l-[20px] [&>td:first-child]:border-l [&>td:last-child]:rounded-r-[20px] [&>td:last-child]:border-r hover:[&>td]:border-slate-300 hover:[&>td]:bg-slate-50/80 ${selectedVoterIds.includes(voter.id) ? '[&>td]:border-slate-400 [&>td]:bg-slate-50' : ''}`}
                       >
-                        <td className="w-[56px]">
+                        <DataTableCell className="w-[56px]" onClick={(event) => event.stopPropagation()}>
                           <input
                             type="checkbox"
                             checked={selectedVoterIds.includes(voter.id)}
@@ -468,33 +493,36 @@ export function SuperadminMasterVoterPage() {
                             aria-label={`Pilih voter ${voter.fullName}`}
                             className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                           />
-                        </td>
-                        <td>
-                          <div className="font-mono text-[14px] font-medium text-slate-900">{voter.nim}</div>
-                        </td>
-                        <td>
+                        </DataTableCell>
+                        <DataTableCell>
                           <div className="flex items-center gap-4">
                             <SuperadminAvatar initials={getInitials(voter.fullName)} />
                             <div>
                               <div className="font-semibold text-slate-900">{voter.fullName}</div>
-                              <div className="mt-0.5 text-[12px] text-slate-500">{voter.fakultas}</div>
+                              <div className="mt-0.5 font-mono text-[12px] text-slate-500">{voter.nim}</div>
                             </div>
                           </div>
-                        </td>
-                        <td>
+                        </DataTableCell>
+                        <DataTableCell className="font-mono text-[13px] text-slate-600 break-all">{voter.email}</DataTableCell>
+                        <DataTableCell>
                           <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700">
                             {voter.prodi}
                           </span>
-                        </td>
-                        <td className="font-mono text-[13px] text-slate-600">{voter.email}</td>
-                        <td className="text-center">
+                        </DataTableCell>
+                        <DataTableCell>
+                          <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ${voter.syncStatus === 'Tersinkronisasi' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                            {voter.syncStatus}
+                          </span>
+                        </DataTableCell>
+                        <DataTableCell className="text-center" onClick={(event) => event.stopPropagation()}>
                           <RowActionMenu
                             buttonLabel={`Aksi untuk ${voter.fullName}`}
                             items={[
-                              { label: 'Pilih Data Ini', onClick: () => toggleSelectedVoter(voter.id) },
+                              { label: selectedVoterIds.includes(voter.id) ? 'Batalkan Pilihan' : 'Pilih Data Ini', onClick: () => toggleSelectedVoter(voter.id) },
+                              { label: 'Pilih Data Ini Saja', onClick: () => setSelectedVoterIds([voter.id]) },
                             ]}
                           />
-                        </td>
+                        </DataTableCell>
                       </DataTableRow>
                     ))
                   ) : (
@@ -507,6 +535,30 @@ export function SuperadminMasterVoterPage() {
                 </DataTableBody>
               </DataTable>
             </DataTableViewport>
+            {selectedVoters.length > 0 && !selectionBarDismissed ? (
+              <div className="pointer-events-none absolute inset-x-0 bottom-12 z-20 flex justify-center px-4">
+                <SelectedCounter
+                  compact
+                  className="pointer-events-auto w-fit max-w-[calc(100%-32px)] overflow-x-auto border-slate-300 shadow-[0_4px_12px_rgba(15,23,42,0.18)]"
+                  title={`${selectedVoters.length} voter dipilih`}
+                  description={`${selectedFilteredCount} dari ${filteredVoters.length} voter hasil filter.`}
+                  hideLeadingIcon
+                  hideClearButton
+                  onClear={() => setSelectedVoterIds([])}
+                  onDismiss={() => setSelectionBarDismissed(true)}
+                  actions={(
+                    <button
+                      type="button"
+                      onClick={() => setDeleteSelectedDialogOpen(true)}
+                      className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-red-200 bg-white px-3.5 text-[13px] font-semibold text-red-600 transition hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Hapus Terpilih
+                    </button>
+                  )}
+                />
+              </div>
+            ) : null}
             <DataTableFooter
               currentPage={currentPage}
               totalPages={totalPages}

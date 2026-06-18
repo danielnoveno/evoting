@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowUpDown, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { SuperadminEmptyState, SuperadminShell, SuperadminStatusBadge, SuperadminFilterChip } from '@/components/superadmin/superadmin-shell'
@@ -22,9 +22,12 @@ import {
   DataTableShell,
   DataTableViewport,
   RowActionMenu,
+  SortableTableHeader,
+  type TableSortDirection,
 } from '@/components/ui/data-table'
 
 type SortField = 'tanggal' | 'organisasi' | 'pemilihan' | 'status'
+type SortDirection = TableSortDirection
 const PAGE_SIZE = 10
 const PROPOSAL_STATUS_FILTERS = ['Semua', 'Menunggu Review', 'Perlu Revisi', 'Disetujui', 'Berjalan'] as const
 type ProposalStatusFilter = (typeof PROPOSAL_STATUS_FILTERS)[number]
@@ -43,19 +46,31 @@ export default function SuperadminProposalManagementPage() {
       organizationName: p.creatorOrganizationName ?? p.creatorDisplayName ?? p.organizationName ?? 'Organisasi Tanpa Nama',
       electionName: p.title || 'Nama pemilihan belum diisi',
       submittedAt: new Date(p.createdAt).toLocaleDateString('id-ID'),
+      submittedAtTime: new Date(p.createdAt).getTime(),
       status: p.status === 'draft' ? 'Draf' : p.status === 'submitted' ? 'Menunggu Review' : p.status === 'revision_requested' ? 'Perlu Revisi' : p.status === 'approved' ? 'Disetujui' : p.status === 'deployed' ? 'Berjalan' : p.status
     }))
   }, [proposalRowsRaw])
-  const [sortField, setSortField] = useState<SortField>('tanggal')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [sortField, setSortField] = useState<SortField | null>('tanggal')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
   const handleSort = (nextField: SortField) => {
-    if (sortField === nextField) {
-      setSortDirection((current) => current === 'asc' ? 'desc' : 'asc')
+    if (sortField !== nextField) {
+      setSortField(nextField)
+      setSortDirection(nextField === 'tanggal' ? 'desc' : 'asc')
       return
     }
 
-    setSortField(nextField)
+    if (sortDirection === 'asc') {
+      setSortDirection('desc')
+      return
+    }
+
+    if (sortDirection === 'desc') {
+      setSortField(null)
+      setSortDirection(null)
+      return
+    }
+
     setSortDirection(nextField === 'tanggal' ? 'desc' : 'asc')
   }
 
@@ -71,13 +86,15 @@ export default function SuperadminProposalManagementPage() {
       rows = rows.filter((row) => row.organizationName.toLowerCase().includes(normalizedQuery) || row.id.toLowerCase().includes(normalizedQuery) || row.electionName.toLowerCase().includes(normalizedQuery))
     }
 
+    if (!sortField || !sortDirection) return rows
+
     return [...rows].sort((left, right) => {
       const direction = sortDirection === 'asc' ? 1 : -1
 
       if (sortField === 'organisasi') return left.organizationName.localeCompare(right.organizationName) * direction
       if (sortField === 'pemilihan') return left.electionName.localeCompare(right.electionName) * direction
       if (sortField === 'status') return left.status.localeCompare(right.status) * direction
-      return left.submittedAt.localeCompare(right.submittedAt) * direction
+      return (left.submittedAtTime - right.submittedAtTime) * direction
     })
   }, [proposalRows, query, sortDirection, sortField, activeStatus])
 
@@ -93,14 +110,7 @@ export default function SuperadminProposalManagementPage() {
   }, [currentPage, totalPages])
 
   const SortHeader = ({ field, label }: { field: SortField; label: string }) => (
-    <button
-      type="button"
-      onClick={() => handleSort(field)}
-      className="group inline-flex items-center gap-1.5 border-none bg-transparent p-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 outline-none transition-colors hover:text-slate-700"
-    >
-      {label}
-      <ArrowUpDown className={`h-3.5 w-3.5 ${sortField === field ? 'text-slate-700' : 'text-slate-400'}`} />
-    </button>
+    <SortableTableHeader label={label} active={sortField === field} direction={sortDirection} onClick={() => handleSort(field)} />
   )
 
   return (
