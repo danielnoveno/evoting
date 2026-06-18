@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, Clock3, Info } from 'lucide-react'
+import { AlertCircle, ArrowRight, CheckCircle2, Clock3, Info, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -10,9 +10,12 @@ import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
-import { findElection, formatDateTime, useVoterStore } from '@/lib/voter-store'
-import { generateCommitment, generateSalt, saveVoteCommitment } from '@/lib/vote-commitment-storage'
+import { basescanTxUrl, findElection, formatDateTime, formatWallet, useVoterStore } from '@/lib/voter-store'
+import { generateCommitment, generateSalt, saveVoteCommitment, type VoteCommitmentRecord } from '@/lib/vote-commitment-storage'
 import { backendRuntimeConfig } from '@/lib/supabase/config'
+import { useElectionContract } from '@/hooks/use-election-contract'
+import { useToast } from '@/components/ui/toast-provider'
+import { queueAutoRevealIntent } from '@/lib/auto-reveal-intents'
 
 async function fetchLatestContractAddress(electionId: string): Promise<string | null> {
   try {
@@ -37,12 +40,124 @@ function sameWalletAddress(left: string | null | undefined, right: string | null
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { address } = useAccount()
+  const { showToast } = useToast()
   const { store, loading, actions } = useVoterStore()
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 8 })
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [candidateToConfirm, setCandidateToConfirm] = useState<string | null>(null)
+  const [pendingCommit, setPendingCommit] = useState<{
+    candidateUuid: string
+    candidateNumber: number
+    contractAddress: string
+    record: VoteCommitmentRecord
+  } | null>(null)
+  const [autoRevealQueueStatus, setAutoRevealQueueStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
+  const [autoRevealQueueError, setAutoRevealQueueError] = useState<string | null>(null)
 
   const election = findElection(store, params.id)
+  const contractAddress = election?.deployedSpaceAddress ?? undefined
+  const {
+    commitVote,
+    isWritePending,
+    isConfirming,
+    isConfirmed,
+    hash,
+    receipt,
+    writeError,
+    currentPhase,
+    hasCommittedOnChain,
+    isWhitelistedOnChain,
+    phaseError,
+    hasCommittedError,
+    whitelistError,
+    isPhaseFetching,
+    isHasCommittedFetching,
+    isWhitelistedFetching,
+  } = useElectionContract(contractAddress, { checks: ['phase', 'hasCommitted', 'isWhitelisted'] })
+
+  const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
+    ? Number(currentPhase)
+    : null
+  const isConnectedWalletProfileWallet = sameWalletAddress(address, store?.profile.wallet)
+  const isBlockchainLoading = isPhaseFetching || isWhitelistedFetching || isHasCommittedFetching
+  const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
+  const isOnChainStatusReady = Boolean(contractAddress)
+    && Boolean(address)
+    && isConnectedWalletProfileWallet
+    && currentPhaseNumber !== null
+    && typeof isWhitelistedOnChain === 'boolean'
+  const canSubmitVote = Boolean(contractAddress)
+    && Boolean(address)
+    && isConnectedWalletProfileWallet
+    && isOnChainStatusReady
+    && currentPhaseNumber === 1
+    && isWhitelistedOnChain === true
+    && hasCommittedOnChain !== true
+    && !isWritePending
+    && !isConfirming
+
+  const voteBlockedReason = !contractAddress
+    ? 'Pemilihan ini belum memiliki smart contract aktif.'
+    : !address
+      ? 'Dompet digital belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum mencoblos.'
+    : store?.profile.wallet && !isConnectedWalletProfileWallet
+      ? `Dompet tersambung (${formatWallet(address)}) berbeda dari dompet akun ini (${formatWallet(store.profile.wallet)}).`
+    : onChainStatusError
+      ? 'Status blockchain belum terbaca. Coba muat ulang halaman sebelum mencoblos.'
+    : isBlockchainLoading || !isOnChainStatusReady
+      ? 'Sistem sedang memeriksa status blockchain dan whitelist pemilih.'
+    : currentPhaseNumber !== 1
+      ? 'Pencoblosan belum dibuka atau sudah selesai.'
+    : isWhitelistedOnChain !== true
+      ? 'Dompet ini belum masuk daftar pemilih untuk pemilihan ini.'
+    : hasCommittedOnChain === true
+      ? 'Wallet ini sudah pernah mencoblos pada pemilihan ini.'
+      : ''
+
+  useEffect(() => {
+    if (!isConfirmed || !hash || !receipt || !pendingCommit) return
+
+    const proof = {
+      txHash: hash,
+      blockNumber: Number(receipt.blockNumber),
+      gasUsed: Number(receipt.gasUsed),
+      createdAt: new Date().toISOString(),
+      statusLabel: 'Pilihan tersimpan',
+    }
+
+    actions.commitVote(params.id, pendingCommit.record.commitment, proof)
+    setAutoRevealQueueStatus('saving')
+    setAutoRevealQueueError(null)
+
+    queueAutoRevealIntent({
+      electionId: params.id,
+      voterWallet: address ?? '',
+      contractAddress: pendingCommit.contractAddress,
+      candidateUuid: pendingCommit.candidateUuid,
+      candidateNumber: pendingCommit.candidateNumber,
+      salt: pendingCommit.record.salt,
+      commitment: pendingCommit.record.commitment,
+      commitTxHash: hash,
+      blockNumber: Number(receipt.blockNumber),
+    })
+      .then(() => {
+        setAutoRevealQueueStatus('saved')
+        showToast({
+          title: 'Suara berhasil dicoblos',
+          description: 'Pilihanmu sudah terkunci. Sistem akan menghitung otomatis saat jadwal penghitungan dibuka.',
+          tone: 'success',
+        })
+      })
+      .catch((error: Error) => {
+        setAutoRevealQueueStatus('failed')
+        setAutoRevealQueueError(error.message)
+        showToast({
+          title: 'Pilihan tersimpan, antrean otomatis perlu dicek',
+          description: 'Transaksi commit berhasil, tetapi sistem belum berhasil menyimpan antrean penghitungan otomatis.',
+          tone: 'error',
+        })
+      })
+  }, [isConfirmed, hash, receipt, pendingCommit, actions, params.id, address, showToast])
 
   useEffect(() => {
     if (!election?.deadlineIso) return
@@ -103,26 +218,42 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const handleConfirm = async () => {
     if (candidateToConfirm) {
       const candidate = election.candidates.find(c => c.id === candidateToConfirm)
-      const candidateNumber = candidate ? parseInt(candidate.id.split('-').pop() || '0') : 0
+      const candidateNumber = election.candidates.findIndex(c => c.id === candidateToConfirm) + 1
       const deployedSpaceAddress = election.deployedSpaceAddress ?? await fetchLatestContractAddress(election.id)
       const voterWallet = address
 
+      if (voteBlockedReason || !canSubmitVote) {
+        setConfirmOpen(false)
+        showToast({
+          title: 'Belum bisa mencoblos',
+          description: voteBlockedReason || 'Status pemilihan belum siap untuk mencoblos.',
+          tone: 'info',
+        })
+        return
+      }
+
       if (!voterWallet) {
         setConfirmOpen(false)
-        window.alert('Dompet digital belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum mencoblos.')
+        showToast({ title: 'Dompet belum tersambung', description: 'Sambungkan dompet yang tertaut ke akun ini sebelum mencoblos.', tone: 'info' })
         router.push(`/hubungkan-dompet?redirect=${encodeURIComponent(`/pemilih/pemilihan/${election.id}/pilih-kandidat`)}`)
         return
       }
 
       if (!deployedSpaceAddress) {
         setConfirmOpen(false)
-        window.alert('Alamat smart contract untuk ruang voting ini belum terbaca. Muat ulang halaman atau periksa kembali data deployment di dashboard.')
+        showToast({ title: 'Kontrak belum tersedia', description: 'Alamat smart contract untuk ruang voting ini belum terbaca.', tone: 'error' })
         return
       }
 
       if (address && store.profile.wallet && !sameWalletAddress(address, store.profile.wallet)) {
         setConfirmOpen(false)
-        window.alert('Dompet yang tersambung berbeda dari dompet yang tertaut ke akun ini. Sambungkan dompet yang sama sebelum memilih kandidat.')
+        showToast({ title: 'Dompet tidak sesuai', description: 'Sambungkan dompet yang sama dengan profil pemilih sebelum mencoblos.', tone: 'error' })
+        return
+      }
+
+      if (!candidate || candidateNumber <= 0) {
+        setConfirmOpen(false)
+        showToast({ title: 'Kandidat tidak valid', description: 'Pilih kandidat dari daftar yang tersedia.', tone: 'error' })
         return
       }
 
@@ -136,19 +267,97 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         deployedSpaceAddress as Address,
         backendRuntimeConfig.chainId,
       )
-      saveVoteCommitment(election.id, {
+      const record = {
         candidateId: candidateToConfirm,
         salt,
         commitment,
         timestamp: new Date().toISOString()
+      }
+      saveVoteCommitment(election.id, record)
+      setPendingCommit({
+        candidateUuid: candidateToConfirm,
+        candidateNumber,
+        contractAddress: deployedSpaceAddress,
+        record,
       })
-      
-      router.push(`/pemilih/pemilihan/${election.id}/commit`)
+      setAutoRevealQueueStatus('idle')
+      setAutoRevealQueueError(null)
+      commitVote(commitment)
     }
     setConfirmOpen(false)
   }
 
   const formatTimeVal = (val: number) => String(val).padStart(2, '0')
+  const committedCandidate = election.candidates.find((candidate) => candidate.id === (pendingCommit?.candidateUuid ?? election.committedCandidateId ?? election.selectedCandidateId))
+  const commitProof = election.commitProof || (isConfirmed && hash && receipt ? {
+    txHash: hash,
+    blockNumber: Number(receipt.blockNumber),
+    gasUsed: Number(receipt.gasUsed),
+    createdAt: new Date().toISOString(),
+    statusLabel: 'Pilihan tersimpan',
+  } : null)
+
+  if (commitProof || hasCommittedOnChain) {
+    return (
+      <VoterShell>
+        <VoterStepper
+          steps={[
+            { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
+            { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
+            { label: 'Hitung otomatis', description: 'Dikerjakan sistem', active: true },
+            { label: 'Lihat hasil', description: 'Cek hasil akhir' },
+          ]}
+        />
+
+        <section className="mt-6 rounded-[28px] border border-slate-200 bg-white p-6 text-center shadow-sm md:p-8">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600">
+            <CheckCircle2 className="h-8 w-8" />
+          </div>
+          <h1 className="mt-5 text-[24px] font-semibold text-slate-900">Suara berhasil dicoblos</h1>
+          <p className="mx-auto mt-3 max-w-2xl text-[14px] leading-7 text-slate-700">
+            Pilihanmu sudah dikunci di blockchain. Kamu tidak perlu melakukan konfirmasi manual; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.
+          </p>
+
+          <div className="mx-auto mt-8 grid max-w-3xl gap-4 text-left md:grid-cols-2">
+            <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat yang dicoblos</p>
+              <h2 className="mt-3 text-[20px] font-semibold text-slate-900">{committedCandidate?.name ?? 'Pilihan tersimpan'}</h2>
+              <p className="mt-2 text-[13px] leading-6 text-slate-600">Detail pilihan akan dibuka oleh sistem pada tahap penghitungan otomatis.</p>
+            </article>
+            <article className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">Status penghitungan otomatis</p>
+              <p className="mt-3 text-[15px] font-semibold text-slate-900">
+                {autoRevealQueueStatus === 'saving'
+                  ? 'Menyiapkan antrean penghitungan...'
+                  : autoRevealQueueStatus === 'failed'
+                    ? 'Antrean perlu dicek admin/TU'
+                    : 'Antrean penghitungan otomatis siap'}
+              </p>
+              <p className="mt-2 text-[13px] leading-6 text-slate-600">
+                {autoRevealQueueError ?? 'Saat waktu penghitungan tiba, relayer tepercaya akan mengesahkan suara ke smart contract.'}
+              </p>
+            </article>
+          </div>
+
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            {commitProof ? (
+              <a
+                href={basescanTxUrl(commitProof.txHash)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 hover:bg-slate-50"
+              >
+                Lihat Bukti Transaksi
+              </a>
+            ) : null}
+            <Link href="/pemilih" className="inline-flex h-11 items-center justify-center rounded-xl bg-[#0F172A] px-5 text-[13px] font-semibold text-white hover:bg-[#1E293B]">
+              Kembali ke Beranda
+            </Link>
+          </div>
+        </section>
+      </VoterShell>
+    )
+  }
 
   return (
     <VoterShell>
@@ -162,7 +371,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             </span>
             <h1 className="mt-3 text-[26px] font-bold tracking-tight text-white md:text-[32px]">Saatnya Mencoblos</h1>
             <p className="mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-slate-300">
-              Pilih satu kandidat. Setelah dicoblos, sistem akan mengunci pilihanmu di blockchain supaya belum terlihat oleh siapa pun sampai waktu penghitungan dibuka.
+              Pilih satu kandidat lalu konfirmasi di dompet. Setelah itu selesai; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.
             </p>
           </div>
 
@@ -210,10 +419,26 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         <div className="flex items-start gap-3">
           <Info className="mt-0.5 h-4.5 w-4.5 shrink-0 text-blue-700" />
           <p>
-            Setelah memilih, jangan ganti browser atau hapus data browser. Nanti kamu perlu membuka halaman ini lagi untuk mengesahkan suara.
+            Setelah mencoblos, kamu tidak perlu melakukan konfirmasi suara manual. Votein akan menyiapkan antrean penghitungan otomatis menggunakan relayer tepercaya saat waktunya tiba.
           </p>
         </div>
       </section>
+
+      {(voteBlockedReason || writeError) ? (
+        <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-[13px] leading-7 text-amber-900">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+            <div>
+              <p className="font-semibold">Belum bisa mencoblos</p>
+              <p className="mt-1">
+                {writeError
+                  ? 'Transaksi belum berhasil diproses. Pastikan wallet siap dan pemilihan sudah berada pada masa pencoblosan.'
+                  : voteBlockedReason}
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {election.candidates.map((candidate, index) => {
@@ -277,11 +502,21 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 <button
                   type="button"
                   onClick={() => handleSelectClick(candidate.id)}
-                  className="mt-4 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#0F172A] px-4 text-[13px] font-bold text-white transition-all hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none active:scale-[0.98] shadow-sm"
+                  disabled={!canSubmitVote || isWritePending || isConfirming}
+                  className="mt-4 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#0F172A] px-4 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label={`Pilih kandidat ${candidate.name}`}
                 >
-                  Coblos Kandidat Ini
-                  <ArrowRight className="h-4 w-4" />
+                  {isWritePending || isConfirming ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Memproses...
+                    </>
+                  ) : (
+                    <>
+                      Coblos Kandidat Ini
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </button>
               </div>
             </article>
@@ -303,9 +538,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Pilih kandidat ini?"
-        description="Pastikan namanya sudah benar. Setelah ini, pilihanmu akan disiapkan untuk disimpan dengan aman."
-        confirmLabel="Ya, Coblos Kandidat"
+        title="Coblos kandidat ini?"
+        description="Setelah kamu konfirmasi di dompet, pilihan akan dikunci di blockchain dan sistem akan menghitung otomatis saat jadwal penghitungan dibuka. Pilihan tidak bisa diubah."
+        confirmLabel="Ya, Coblos Sekarang"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleConfirm}
       />

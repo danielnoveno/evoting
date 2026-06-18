@@ -175,13 +175,13 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     ? [
         { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
         { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
-        { label: 'Pengesahan suara', description: 'Konfirmasi manual' },
+        { label: 'Hitung otomatis', description: 'Dikerjakan sistem' },
         { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
     : [
         { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
         { label: 'Kunci pilihan', description: 'Tercatat di blockchain', active: true },
-        { label: 'Pengesahan suara', description: 'Konfirmasi manual' },
+        { label: 'Hitung otomatis', description: 'Dikerjakan sistem' },
         { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
 
@@ -280,7 +280,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
 
           <h1 className="mt-5 text-center text-[24px] font-semibold text-slate-900">Pilihan berhasil disimpan aman</h1>
           <p className="mx-auto mt-3 max-w-2xl text-center text-[14px] leading-7 text-slate-700">
-            Pilihanmu sudah dikunci sebagai bukti suara. Gunakan browser dan perangkat yang sama saat waktunya mengesahkan suara dibuka.
+            Pilihanmu sudah dikunci sebagai bukti suara. Sistem akan mengesahkan dan menghitung suara otomatis saat jadwal penghitungan dibuka.
           </p>
 
           <div className="mt-8 grid gap-4 xl:grid-cols-2">
@@ -292,7 +292,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
                 </div>
                 <div>
                   <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate?.name ?? 'Pilihan tersimpan terdeteksi'}</h2>
-                  <RichTextRenderer value={selectedCandidate?.vision} emptyFallback="Detail kandidat asli tetap mengikuti data di browser dan baru dibuka saat konfirmasi suara." className="mt-1 text-[14px] text-slate-600" />
+                  <RichTextRenderer value={selectedCandidate?.vision} emptyFallback="Detail kandidat asli tetap tersimpan untuk penghitungan otomatis." className="mt-1 text-[14px] text-slate-600" />
                 </div>
               </div>
             </article>
@@ -324,14 +324,14 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
             )}
             {selectedCandidate && savedCommitment ? (
               <Link
-                href={`/pemilih/pemilihan/${election.id}/reveal`}
+                href="/pemilih"
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-[#0F172A] px-5 text-[13px] font-semibold text-white hover:bg-[#1E293B]"
               >
-                Lanjut ke Konfirmasi
+                Kembali ke Beranda
               </Link>
             ) : (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] leading-6 text-amber-900">
-                Pilihan sudah pernah disimpan, tetapi kode rahasia di browser ini tidak ditemukan. Gunakan browser yang sama seperti saat memilih agar bisa mengesahkan suara.
+                Pilihan sudah pernah disimpan. Jika penghitungan otomatis belum berjalan, hubungi admin/TU untuk pengecekan antrean reveal.
               </div>
             )}
           </div>
@@ -455,7 +455,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           </div>
           <h2 className="mt-8 text-[18px] font-semibold text-white">Ringkasan Penyimpanan Suara</h2>
           <p className="mt-4 text-[16px] leading-8 text-slate-300">
-            Sistem sudah menyiapkan kode bukti di browser ini. Pilihan aslimu tetap tersembunyi sampai tahap konfirmasi suara dibuka.
+            Sistem sudah menyiapkan kode bukti. Pilihan aslimu akan dihitung otomatis saat tahap penghitungan dibuka.
           </p>
 
           <div className="mt-8 space-y-3">
@@ -471,7 +471,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           <div>
             <h2 className="text-[18px] font-semibold text-slate-900">Privasi pilihan</h2>
             <p className="mt-2 text-[14px] leading-7 text-slate-700">
-              Setelah pilihan disimpan, suara baru dihitung saat kamu mengesahkannya pada tahap berikutnya dengan browser yang sama.
+              Setelah pilihan disimpan, suara baru dihitung saat sistem relayer tepercaya mengesahkannya pada jadwal penghitungan.
             </p>
           </div>
         </div>
@@ -481,9 +481,9 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         <div className="flex gap-3">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
           <div>
-            <h2 className="text-[18px] font-semibold text-amber-900">Gunakan browser yang sama</h2>
+            <h2 className="text-[18px] font-semibold text-amber-900">Penghitungan otomatis</h2>
             <p className="mt-2 text-[14px] leading-7 text-amber-900/90">
-              Kode rahasia untuk konfirmasi suara tersimpan di browser ini. Jika Anda berpindah browser atau menghapus data lokal, proses konfirmasi suara bisa terganggu.
+              Sistem menyimpan data pengesahan suara untuk relayer tepercaya. Karena itu, pemilih tidak perlu kembali untuk konfirmasi manual.
             </p>
           </div>
         </div>
@@ -521,7 +521,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
       <ConfirmDialog
         open={confirmOpen}
         title="Coblos dan kunci pilihan sekarang?"
-        description="Setelah disimpan, kamu perlu kembali saat tahap konfirmasi dibuka. Gunakan browser yang sama agar kode rahasianya tetap terbaca."
+        description="Setelah disimpan, sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka. Pilihan tidak bisa diubah."
         confirmLabel="Ya, Simpan Pilihan"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleCommit}

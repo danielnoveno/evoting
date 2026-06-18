@@ -37,18 +37,18 @@ const categories = [
 const faqs = [
   {
     id: 'faq-1',
-    question: 'Kenapa suara harus disimpan dulu lalu dikonfirmasi lagi?',
-    answer: 'Tahap pertama mengunci pilihanmu agar tetap rahasia. Tahap kedua mencocokkan dan mengesahkan pilihan yang sama agar bisa dihitung. Jadi suara tidak dibuka terlalu cepat dan tidak bisa diganti sembarangan.',
+    question: 'Kenapa suara harus dikunci dulu sebelum dihitung?',
+    answer: 'Saat mencoblos, pilihanmu dikunci dulu di blockchain. Saat jadwal penghitungan dibuka, sistem mencocokkan dan mengesahkan pilihan tersebut secara otomatis agar suara bisa dihitung.',
   },
   {
     id: 'faq-2',
-    question: 'Mengapa saya harus membuka dari browser yang sama?',
-    answer: 'Browser menyimpan kode rahasia kecil untuk mencocokkan pilihanmu nanti. Kalau pindah browser atau menghapus data browser, kode itu bisa hilang dan konfirmasi suara bisa gagal.',
+    question: 'Apakah saya perlu konfirmasi suara manual?',
+    answer: 'Tidak. Setelah mencoblos dan transaksi berhasil, Votein menyiapkan antrean penghitungan otomatis. Kamu cukup menunggu hasil saat jadwal penghitungan dibuka.',
   },
   {
     id: 'faq-3',
-    question: 'Bagaimana jika saya belum sempat konfirmasi suara?',
-    answer: 'Jika tahap konfirmasi masih dibuka, masuk ke dashboard pemilih lalu lanjutkan dari kartu pemilihan terkait. Jika tahapnya sudah berakhir, hubungi admin untuk informasi tindak lanjut.',
+    question: 'Bagaimana jika status penghitungan otomatis bermasalah?',
+    answer: 'Jika transaksi coblos berhasil tetapi status penghitungan belum berubah saat waktunya tiba, hubungi admin/TU agar antrean reveal otomatis diperiksa.',
   },
 ]
 
@@ -67,7 +67,7 @@ function HelpAccordion({ question, answer, openByDefault = false }: { question: 
 }
 
 const suggestedQuestions = [
-  'Saya belum bisa konfirmasi suara, harus bagaimana?',
+  'Penghitungan otomatis belum berjalan, harus bagaimana?',
   'Kenapa pilihan saya perlu dikunci dulu?',
   'Bagaimana cara melihat bukti transaksi?',
 ] as const
@@ -78,7 +78,7 @@ function HelpChatCard() {
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Halo! Saya Asisten Bantuan Otomatis Votein. Tanyakan kendala seputar login, memilih kandidat, konfirmasi suara, atau bukti transaksi.',
+      content: 'Halo! Saya Asisten Bantuan Otomatis Votein. Tanyakan kendala seputar login, memilih kandidat, penghitungan otomatis, atau bukti transaksi.',
     },
   ])
   const [input, setInput] = useState('')

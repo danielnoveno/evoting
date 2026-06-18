@@ -80,14 +80,14 @@ function FeaturedHeroCard({ election }: { election: VoterElection }) {
   const label = isUpcoming
     ? 'Acara Pemilihan Mendatang'
     : election.phase === 'reveal'
-      ? 'Fase Konfirmasi Suara'
+      ? 'Fase Penghitungan Suara'
       : election.phase === 'ended'
         ? 'Pemilihan Selesai'
         : 'Pemilihan Sedang Berlangsung'
   const countdownLabel = isUpcoming
     ? 'Hitung mundur ke pembukaan suara:'
     : election.phase === 'reveal'
-      ? 'Batas konfirmasi suara:'
+      ? 'Batas penghitungan suara:'
       : election.phase === 'ended'
         ? 'Pemilihan telah selesai:'
         : 'Sisa waktu memilih:'
