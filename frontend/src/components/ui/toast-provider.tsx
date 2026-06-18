@@ -42,9 +42,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed right-4 top-4 z-[120] flex w-full max-w-[320px] flex-col gap-3">
+      <div aria-live="assertive" className="pointer-events-none fixed right-4 top-4 z-[120] flex w-full max-w-[320px] flex-col gap-3">
         {toasts.map((toast) => (
-          <div key={toast.id} className={`pointer-events-auto rounded-lg border px-4 py-3 ${toneClassName(toast.tone)}`}>
+          <div
+            key={toast.id}
+            className={`pointer-events-auto animate-[slideIn_0.3s_ease-out] rounded-lg border px-4 py-3 ${toneClassName(toast.tone)}`}
+            role="status"
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[13px] font-semibold">{toast.title}</p>

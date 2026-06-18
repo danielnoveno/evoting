@@ -13,6 +13,7 @@ import { useCurrentProfile } from '@/hooks/use-profile'
 import { useLogoutSession } from '@/hooks/use-auth-session'
 import { NotificationModal } from '@/components/public/notification-modal'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
+import { useWelcomeToast } from '@/hooks/use-welcome-toast'
 
 export type { SidebarNavItem as ConsoleNavItem }
 
@@ -70,6 +71,9 @@ export function ConsoleShell({
   const { data: currentProfile } = useCurrentProfile()
   const logoutSession = useLogoutSession()
   const { hasUnread } = useNotificationBadge()
+
+  // Tampilkan toast selamat datang sekali per sesi login
+  useWelcomeToast()
 
   const resolvedProfile = {
     ...profile,

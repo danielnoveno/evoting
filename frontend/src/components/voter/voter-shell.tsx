@@ -17,6 +17,7 @@ import { NotificationModal } from '@/components/public/notification-modal'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
 import { OnboardingTour } from './onboarding-tour'
 import { useLanguage } from '@/lib/contexts/language-context'
+import { useWelcomeToast } from '@/hooks/use-welcome-toast'
 
 export function VoterShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -33,6 +34,9 @@ export function VoterShell({ children }: { children: ReactNode }) {
   const logoutSession = useLogoutSession()
   const { hasUnread } = useNotificationBadge()
   const { t, locale } = useLanguage()
+
+  // Tampilkan toast selamat datang sekali per sesi login
+  useWelcomeToast()
 
   const sidebarItems = [
     { href: '/pemilih', label: t.sidebar.dashboard, icon: Home },

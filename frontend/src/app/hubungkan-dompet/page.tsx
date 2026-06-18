@@ -254,12 +254,22 @@ function ConnectWalletContent() {
     if (mounted && isConnected && authSession && isWalletBound) {
       if (redirectStartedRef.current) return
       redirectStartedRef.current = true
-      setRedirectModal(getRedirectModalContent(redirectTarget, currentProfile?.role))
+
+      const modalContent = getRedirectModalContent(redirectTarget, currentProfile?.role)
+      setRedirectModal(modalContent)
+
+      // Tampilkan toast selamat datang / aktivasi berhasil
+      const toastTitle = activationMode ? 'Aktivasi Berhasil' : 'Login Berhasil'
+      const toastDesc = activationMode
+        ? 'Selamat datang! Akun Anda sudah aktif dan siap digunakan.'
+        : `Selamat datang! Anda akan diarahkan ke ${modalContent.targetLabel}.`
+      showToast({ tone: 'success', title: toastTitle, description: toastDesc })
+
       redirectTimerRef.current = window.setTimeout(() => {
         router.push(redirectTarget)
       }, 2200)
     }
-  }, [mounted, isConnected, authSession, isWalletBound, router, redirectParam, redirectTarget, currentProfile])
+  }, [mounted, isConnected, authSession, isWalletBound, router, redirectParam, redirectTarget, currentProfile, showToast, activationMode])
 
   const handleBack = () => {
     // If on step 3 (wallet connected, user logged in, but not bound)
