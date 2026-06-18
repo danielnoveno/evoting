@@ -93,7 +93,7 @@ update app.app_profiles set role = 'voter' where email = '220711663@students.uaj
 
 -- Master Voters: HIMAFORKA (Informatika)
 insert into app.master_voters (nim, full_name, email, prodi, fakultas, angkatan, wallet_address, status) values
-('2207116630', 'Daniel Noveno Windanu', '2207116630@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0xB8064e95d190777C16D1795aA872B259df4B8930', 'active'),
+('2207116630', 'Daniel Noveno Windanu', '220711663@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0xB8064e95d190777C16D1795aA872B259df4B8930', 'active'),
 ('2207116631', 'Alexander Prasetyo', '2207116631@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'active'),
 ('2207116632', 'Maria Consiglia', '2207116632@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'active'),
 ('2207116633', 'Budi Santoso', '2207116633@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'active'),
