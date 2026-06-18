@@ -65,35 +65,17 @@ insert into app.admin_registry (
   activation_accepted_at = null,
   access_scope = 'all';
 
-insert into app.admin_registry (
-  email,
-  assigned_role,
-  description,
-  status,
-access_scope,
-  wallet_address
-) values (
-  '220711663@students.uajy.ac.id',
-  'voter',
-  'Student Voter',
-  'active',
-  'all',
-  '0xB8064e95d190777C16D1795aA872B259df4B8930'
-) on conflict (email) do update set
-  assigned_role = 'voter',
-  description = excluded.description,
-  status = 'active',
-  access_scope = 'all',
-  wallet_address = '0xB8064e95d190777C16D1795aA872B259df4B8930';
+-- Voter uji sengaja tidak dibuat aktif di app_profiles/admin_registry.
+-- Gunakan menu Superadmin → Data Voter → Kirim Email Aktivasi untuk membuat token aktivasi voter.
 
 -- Jika profile lama masih ada, pastikan role tidak lebih tinggi dari status aktivasi.
 update app.app_profiles set role = 'super_admin' where email = 'dnw022003@gmail.com';
 update app.app_profiles set role = 'voter' where email = 'novenoow@gmail.com' and role = 'admin';
-update app.app_profiles set role = 'voter' where email = '220711663@students.uajy.ac.id';
+delete from app.app_profiles where email = '220711663@students.uajy.ac.id';
 
 -- Master Voters: HIMAFORKA (Informatika)
 insert into app.master_voters (nim, full_name, email, prodi, fakultas, angkatan, wallet_address, status) values
-('2207116630', 'Daniel Noveno Windanu', '220711663@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0xB8064e95d190777C16D1795aA872B259df4B8930', 'active'),
+('2207116630', 'Daniel Noveno Windanu', '220711663@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'pending'),
 ('2207116631', 'Alexander Prasetyo', '2207116631@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'active'),
 ('2207116632', 'Maria Consiglia', '2207116632@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'active'),
 ('2207116633', 'Budi Santoso', '2207116633@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'active'),
@@ -104,6 +86,12 @@ insert into app.master_voters (nim, full_name, email, prodi, fakultas, angkatan,
 ('2307116643', 'Angela Florencia', '2307116643@students.uajy.ac.id', 'Informatika', 'FTI', '2023', null, 'active'),
 ('2307116644', 'David Chen', '2307116644@students.uajy.ac.id', 'Informatika', 'FTI', '2023', null, 'active')
 on conflict (nim) do nothing;
+
+-- Pastikan voter uji tetap belum aktif meskipun seed dijalankan ulang tanpa reset penuh.
+update app.master_voters
+set wallet_address = null,
+    status = 'pending'
+where nim = '2207116630';
 
 -- Master Voters: PEMILRA (multi-prodi)
 insert into app.master_voters (nim, full_name, email, prodi, fakultas, angkatan, wallet_address, status) values
