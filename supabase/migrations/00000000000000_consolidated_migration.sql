@@ -1464,38 +1464,3 @@ for delete
 using (
   app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
-
--- Seed data: HIMAFORKA (Informatika) voters
-insert into app.master_voters (nim, full_name, email, prodi, fakultas, angkatan, wallet_address, status) values
-('2207116630', 'Daniel Noveno Windanu', '2207116630@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0xB8064e95d190777C16D1795aA872B259df4B8930', 'active'),
-('2207116631', 'Alexander Prasetyo', '2207116631@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'active'),
-('2207116632', 'Maria Consiglia', '2207116632@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'active'),
-('2207116633', 'Budi Santoso', '2207116633@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'active'),
-('2207116634', 'Rina Wijaya', '2207116634@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'active'),
-('2307116640', 'Christoper Reno', '2307116640@students.uajy.ac.id', 'Informatika', 'FTI', '2023', null, 'active'),
-('2307116641', 'Sarah Putri', '2307116641@students.uajy.ac.id', 'Informatika', 'FTI', '2023', null, 'active'),
-('2307116642', 'Kevin Anggara', '2307116642@students.uajy.ac.id', 'Informatika', 'FTI', '2023', null, 'active'),
-('2307116643', 'Angela Florencia', '2307116643@students.uajy.ac.id', 'Informatika', 'FTI', '2023', null, 'active'),
-('2307116644', 'David Chen', '2307116644@students.uajy.ac.id', 'Informatika', 'FTI', '2023', null, 'active')
-on conflict (nim) do nothing;
-
--- Seed data: PEMILRA (multi-prodi) voters
-insert into app.master_voters (nim, full_name, email, prodi, fakultas, angkatan, wallet_address, status) values
--- Sistem Informasi
-('2207126010', 'Rizky Pratama', '2207126010@students.uajy.ac.id', 'Sistem Informasi', 'FTI', '2022', null, 'active'),
-('2207126011', 'Dewi Anggraeni', '2207126011@students.uajy.ac.id', 'Sistem Informasi', 'FTI', '2022', null, 'active'),
-('2207126012', 'Fajar Nugroho', '2207126012@students.uajy.ac.id', 'Sistem Informasi', 'FTI', '2022', null, 'active'),
-('2307126020', 'Lestari Budiman', '2307126020@students.uajy.ac.id', 'Sistem Informasi', 'FTI', '2023', null, 'active'),
-('2307126021', 'Yoga Saputra', '2307126021@students.uajy.ac.id', 'Sistem Informasi', 'FTI', '2023', null, 'active'),
--- Teknik Industri
-('2207136010', 'Hendra Kurniawan', '2207136010@students.uajy.ac.id', 'Teknik Industri', 'FTI', '2022', null, 'active'),
-('2207136011', 'Putri Ayu Lestari', '2207136011@students.uajy.ac.id', 'Teknik Industri', 'FTI', '2022', null, 'active'),
-('2307136020', 'Andi Cahyono', '2307136020@students.uajy.ac.id', 'Teknik Industri', 'FTI', '2023', null, 'active'),
-('2307136021', 'Maya Sari', '2307136021@students.uajy.ac.id', 'Teknik Industri', 'FTI', '2023', null, 'active'),
--- Arsitektur
-('2207146010', 'Rudi Hartono', '2207146010@students.uajy.ac.id', 'Arsitektur', 'FTI', '2022', null, 'active'),
-('2307146020', 'Sinta Dewi', '2307146020@students.uajy.ac.id', 'Arsitektur', 'FTI', '2023', null, 'active'),
--- Teknik Sipil
-('2207156010', 'Bambang Setiadi', '2207156010@students.uajy.ac.id', 'Teknik Sipil', 'FTI', '2022', null, 'active'),
-('2307156020', 'Eko Prasetyo', '2307156020@students.uajy.ac.id', 'Teknik Sipil', 'FTI', '2023', null, 'active')
-on conflict (nim) do nothing;
