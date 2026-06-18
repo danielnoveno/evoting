@@ -519,6 +519,7 @@ export function SuperadminMasterVoterPage() {
                           <RowActionMenu
                             buttonLabel={`Aksi untuk ${voter.fullName}`}
                             items={[
+                              { label: 'Lihat / Edit Detail', onClick: () => router.push(`/superadmin/data-voter/${voter.id}`) },
                               { label: selectedVoterIds.includes(voter.id) ? 'Batalkan Pilihan' : 'Pilih Data Ini', onClick: () => toggleSelectedVoter(voter.id) },
                               { label: 'Pilih Data Ini Saja', onClick: () => setSelectedVoterIds([voter.id]) },
                             ]}

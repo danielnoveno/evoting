@@ -32,6 +32,16 @@ type MasterVoterRow = {
   updated_at: string
 }
 
+export type MasterVoterUpdateInput = {
+  id: string
+  nim: string
+  fullName: string
+  prodi: string
+  fakultas: string
+  angkatan: string | null
+  status: MasterVoter['status']
+}
+
 function mapRow(row: MasterVoterRow): MasterVoter {
   return {
     id: row.id,
@@ -46,6 +56,23 @@ function mapRow(row: MasterVoterRow): MasterVoter {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
+}
+
+async function getAccessToken() {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const { data, error } = await client.auth.getSession()
+  if (error || !data.session?.access_token) throw new RepositoryError('Sesi superadmin tidak ditemukan. Silakan masuk ulang.')
+  return data.session.access_token
+}
+
+async function readApiError(response: Response, fallback: string) {
+  const payload: unknown = await response.json().catch(() => null)
+  if (payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string') {
+    return payload.error
+  }
+  return fallback
 }
 
 export function useMasterVotersList() {
@@ -65,6 +92,27 @@ export function useMasterVotersList() {
       if (error) throw new RepositoryError('Gagal memuat data master voter.')
       return (data ?? []).map(mapRow)
     },
+    retry: false,
+  })
+}
+
+export function useMasterVoterDetail(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ['master-voters', 'detail', id ?? 'unknown'],
+    queryFn: async (): Promise<MasterVoter> => {
+      if (!id) throw new RepositoryError('ID voter tidak ditemukan.')
+      const token = await getAccessToken()
+      const response = await fetch(`/api/superadmin/master-voters/${encodeURIComponent(id)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!response.ok) throw new RepositoryError(await readApiError(response, 'Gagal memuat detail voter.'))
+
+      const payload: unknown = await response.json()
+      if (!payload || typeof payload !== 'object' || !('voter' in payload)) throw new RepositoryError('Respons detail voter tidak valid.')
+      return (payload as { voter: MasterVoter }).voter
+    },
+    enabled: Boolean(id),
     retry: false,
   })
 }
@@ -131,6 +179,41 @@ export function useDeleteMasterVoter() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['master-voters', 'all'] })
+    },
+  })
+}
+
+export function useUpdateMasterVoter() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: MasterVoterUpdateInput): Promise<MasterVoter> => {
+      const token = await getAccessToken()
+      const response = await fetch(`/api/superadmin/master-voters/${encodeURIComponent(input.id)}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          nim: input.nim,
+          fullName: input.fullName,
+          prodi: input.prodi,
+          fakultas: input.fakultas,
+          angkatan: input.angkatan,
+          status: input.status,
+        }),
+      })
+
+      if (!response.ok) throw new RepositoryError(await readApiError(response, 'Gagal memperbarui data voter.'))
+
+      const payload: unknown = await response.json()
+      if (!payload || typeof payload !== 'object' || !('voter' in payload)) throw new RepositoryError('Respons update voter tidak valid.')
+      return (payload as { voter: MasterVoter }).voter
+    },
+    onSuccess: (voter) => {
+      void queryClient.invalidateQueries({ queryKey: ['master-voters', 'all'] })
+      void queryClient.invalidateQueries({ queryKey: ['master-voters', 'detail', voter.id] })
     },
   })
 }

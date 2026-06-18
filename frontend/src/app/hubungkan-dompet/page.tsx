@@ -36,6 +36,8 @@ function sameWalletAddress(left: string | null | undefined, right: string | null
 }
 
 function resolveRedirectTarget(redirectParam: string | null, activationContext: 'admin' | 'voter') {
+  if (redirectParam?.startsWith('/auth/aktivasi-admin')) return '/admin'
+
   if (redirectParam?.startsWith('/') && !redirectParam.startsWith('//')) {
     try {
       const parsed = new URL(redirectParam, 'https://votechain.local')
@@ -46,6 +48,19 @@ function resolveRedirectTarget(redirectParam: string | null, activationContext: 
   }
   if (activationContext === 'admin') return '/admin'
   return '/pemilih'
+}
+
+function getAdminInviteTokenFromRedirect(redirectParam: string | null) {
+  if (!redirectParam?.startsWith('/') || redirectParam.startsWith('//')) return ''
+
+  try {
+    const parsed = new URL(redirectParam, 'https://votechain.local')
+    if (parsed.origin !== 'https://votechain.local') return ''
+    if (parsed.pathname !== '/auth/aktivasi-admin') return ''
+    return parsed.searchParams.get('invite')?.trim() ?? ''
+  } catch {
+    return ''
+  }
 }
 
 function getRedirectModalContent(target: string, role: string | null | undefined) {
@@ -111,7 +126,9 @@ function ConnectWalletContent() {
 
   const redirectParam = searchParams.get('redirect')
   const activateParam = searchParams.get('activate')
-  const activationToken = searchParams.get('token')?.trim() ?? ''
+  const directActivationToken = searchParams.get('token')?.trim() ?? ''
+  const adminInviteTokenFromRedirect = useMemo(() => getAdminInviteTokenFromRedirect(redirectParam), [redirectParam])
+  const activationToken = directActivationToken || adminInviteTokenFromRedirect
   const authSession = authSessionQuery.data
   const currentProfile = currentProfileQuery.data
   const connectedWalletProfile = connectedWalletProfileQuery.data
@@ -119,15 +136,19 @@ function ConnectWalletContent() {
   // Determine context: prioritized by profile role if logged in, then URL param, then redirect hint
   const activationContext = useMemo((): 'admin' | 'voter' => {
     if (currentProfile?.role === 'admin' || currentProfile?.role === 'super_admin') return 'admin'
+    if (adminInviteTokenFromRedirect) return 'admin'
     if (activateParam === 'admin') return 'admin'
     if (redirectParam?.startsWith('/admin') || redirectParam?.startsWith('/superadmin') || redirectParam?.startsWith('/portal-admin')) return 'admin'
     return 'voter'
-  }, [currentProfile?.role, activateParam, redirectParam])
+  }, [currentProfile?.role, adminInviteTokenFromRedirect, activateParam, redirectParam])
 
-  const activationMode = activateParam === '1' || activateParam === 'admin' || (Boolean(authSession) && activationContext === 'admin')
+  const activationMode = activateParam === '1' || activateParam === 'admin' || Boolean(adminInviteTokenFromRedirect) || (Boolean(authSession) && activationContext === 'admin')
   const voterActivationMissingToken = activationMode && activationContext === 'voter' && !activationToken
   const adminActivationMissingToken = activateParam === 'admin' && activationContext === 'admin' && !activationToken && !currentProfile
-  const redirectTarget = useMemo(() => resolveRedirectTarget(redirectParam, activationContext), [redirectParam, activationContext])
+  const redirectTarget = useMemo(() => {
+    if (adminInviteTokenFromRedirect) return currentProfile?.role === 'super_admin' ? '/portal-admin' : '/admin'
+    return resolveRedirectTarget(redirectParam, activationContext)
+  }, [redirectParam, activationContext, adminInviteTokenFromRedirect, currentProfile?.role])
 
   const [mounted, setMounted] = useState(false)
   const [email, setEmail] = useState('')
