@@ -48,15 +48,31 @@ export function useElectionContract(address?: string, options: UseElectionContra
     hash,
   })
 
-  // Read functions — include isFetching to detect stuck/loading state
-  // Pakai getter currentPhase() karena beberapa ElectionSpace yang sudah ter-deploy
-  // belum memiliki helper phase(). Memanggil phase() ke kontrak lama akan revert
-  // dan membuat halaman pemilih terkunci di status "blockchain belum merespons".
+  // Read functions — include isFetching to detect stuck/loading state.
+  // Prefer phase() because it accounts for the on-chain phase schedule.
+  // Fall back to currentPhase() for older deployed ElectionSpace contracts
+  // that do not expose phase().
   const {
-    data: currentPhase,
-    refetch: refetchPhase,
-    error: phaseError,
-    isFetching: isPhaseFetching,
+    data: scheduledPhase,
+    refetch: refetchScheduledPhase,
+    error: scheduledPhaseError,
+    isFetching: isScheduledPhaseFetching,
+  } = useReadContract({
+    address: address as `0x${string}`,
+    abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
+    functionName: 'phase',
+    query: {
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address && enabledChecks.has('phase'),
+    }
+  })
+
+  const {
+    data: storedPhase,
+    refetch: refetchStoredPhase,
+    error: storedPhaseError,
+    isFetching: isStoredPhaseFetching,
   } = useReadContract({
     address: address as `0x${string}`,
     abi: electionSpaceAbi,
@@ -67,6 +83,21 @@ export function useElectionContract(address?: string, options: UseElectionContra
       enabled: !!address && enabledChecks.has('phase'),
     }
   })
+
+  const currentPhase = scheduledPhase ?? storedPhase
+  const phaseError = scheduledPhase === undefined && storedPhase === undefined
+    ? (scheduledPhaseError ?? storedPhaseError)
+    : null
+  const isPhaseFetching = currentPhase === undefined
+    ? isScheduledPhaseFetching || isStoredPhaseFetching
+    : false
+  const refetchPhase = async () => {
+    const [scheduledResult, storedResult] = await Promise.all([
+      refetchScheduledPhase(),
+      refetchStoredPhase(),
+    ])
+    return scheduledResult.data !== undefined ? scheduledResult : storedResult
+  }
 
   const { data: hasCommittedOnChain, refetch: refetchHasCommitted, error: hasCommittedError, isFetching: isHasCommittedFetching } = useReadContract({
     address: address as `0x${string}`,
