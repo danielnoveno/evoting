@@ -36,6 +36,7 @@ import {
   DataTableHead,
   DataTableHeaderCell,
   DataTableHeaderRow,
+  FloatingSelectionBar,
   DataTableRow,
   DataTableShell,
   DataTableToolbar,
@@ -548,7 +549,7 @@ function SuperadminAdminManagementContent() {
               </DataTable>
             </DataTableViewport>
             {selectedAdmins.length > 0 && !selectionBarDismissed && (
-              <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4">
+              <FloatingSelectionBar>
                 <SelectedCounter
                   compact
                   className="pointer-events-auto w-fit max-w-[calc(100%-32px)] overflow-x-auto border-slate-300 shadow-[0_12px_32px_rgba(15,23,42,0.18)]"
@@ -589,7 +590,7 @@ function SuperadminAdminManagementContent() {
                     </>
                   )}
                 />
-              </div>
+              </FloatingSelectionBar>
             )}
             <DataTableFooter
               currentPage={currentPage}

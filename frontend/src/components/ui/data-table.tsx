@@ -223,6 +223,23 @@ export function SelectedCounter({
   )
 }
 
+export function FloatingSelectionBar({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
+
+  return createPortal(
+    <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[90] flex justify-center px-4">
+      {children}
+    </div>,
+    document.body,
+  )
+}
+
 type RowActionItem = {
   label: string
   onClick: () => void
