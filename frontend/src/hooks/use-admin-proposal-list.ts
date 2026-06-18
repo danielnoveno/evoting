@@ -5,6 +5,12 @@ import { useQuery } from '@tanstack/react-query'
 import { listProposalDrafts } from '@/lib/repositories/proposalRepository'
 import { mapProposalDraftToListItem } from '@/lib/mappers/proposalMapper'
 import type { AdminElectionRecord } from '@/lib/admin-election-data'
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
+import { RepositoryError } from '@/lib/repositories/errors'
+import type { Database } from '@/lib/supabase/database.types'
+
+type ProposalDraft = NonNullable<Awaited<ReturnType<typeof listProposalDrafts>>>[number]
+type WhitelistRow = Pick<Database['app']['Tables']['proposal_whitelist_entries']['Row'], 'id' | 'proposal_draft_id' | 'wallet_address' | 'voter_name'>
 
 export function useAdminProposalList() {
   const query = useQuery({
@@ -47,7 +53,7 @@ function formatDate(value: string | null) {
   return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(date)
 }
 
-function makeEmptyDetail(p: NonNullable<Awaited<ReturnType<typeof listProposalDrafts>>>[number], voterTarget: string): AdminElectionRecord['detail'] {
+function makeEmptyDetail(p: ProposalDraft, voterTarget: string): AdminElectionRecord['detail'] {
   const tx = p.deploymentTxHash ?? p.proposalTxHash ?? 'Belum ada transaksi'
   return {
     statusPill: p.status === 'deployed' ? 'Sedang Berjalan' : 'Siap Sinkronisasi',
@@ -79,20 +85,66 @@ function makeEmptyDetail(p: NonNullable<Awaited<ReturnType<typeof listProposalDr
   }
 }
 
+function getInitials(name: string | null, wallet: string) {
+  const source = name?.trim() || wallet
+  if (source.startsWith('0x')) return source.slice(2, 4).toUpperCase()
+
+  return source
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'VT'
+}
+
+async function listProposalDraftsWithWhitelist() {
+  const proposals = await listProposalDrafts()
+  const deployedIds = proposals.filter((proposal) => proposal.status === 'deployed').map((proposal) => proposal.id)
+
+  if (deployedIds.length === 0) return { proposals, whitelistByProposalId: new Map<string, WhitelistRow[]>() }
+
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const { data, error } = await client
+    .schema('app')
+    .from('proposal_whitelist_entries')
+    .select('id,proposal_draft_id,wallet_address,voter_name')
+    .in('proposal_draft_id', deployedIds)
+
+  if (error) throw new RepositoryError('Gagal memuat data whitelist pemilihan.')
+
+  const whitelistByProposalId = new Map<string, WhitelistRow[]>()
+  for (const row of (data ?? []) as WhitelistRow[]) {
+    const rows = whitelistByProposalId.get(row.proposal_draft_id) ?? []
+    rows.push(row)
+    whitelistByProposalId.set(row.proposal_draft_id, rows)
+  }
+
+  return { proposals, whitelistByProposalId }
+}
+
 export function useAdminElectionList() {
   const query = useQuery({
     queryKey: ['admin', 'elections'],
-    queryFn: listProposalDrafts,
+    queryFn: listProposalDraftsWithWhitelist,
     retry: false,
   })
 
   const elections = useMemo<AdminElectionRecord[]>(() => {
-    if (!query.data || query.data.length === 0) return []
+    if (!query.data || query.data.proposals.length === 0) return []
     
-    return query.data
+    return query.data.proposals
       .filter(p => p.status === 'deployed')
       .map((p, index) => {
-        const voterTarget = '0'
+        const whitelistRows = query.data.whitelistByProposalId.get(p.id) ?? []
+        const voterTarget = String(whitelistRows.length)
+        const whitelistPreview = whitelistRows.slice(0, 3).map((row) => ({
+          id: row.id,
+          label: getInitials(row.voter_name, row.wallet_address),
+          name: row.voter_name ?? row.wallet_address,
+        }))
 
         return {
           id: p.id,
@@ -103,10 +155,12 @@ export function useAdminElectionList() {
           meta: p.description ?? 'Ruang pemilihan blockchain.',
           iconTone: p.status === 'deployed' ? 'emerald' : 'blue',
           actionLabel: p.status === 'deployed' ? 'Monitoring' : 'Review Draft',
-          secondaryActionLabel: 'Statistik',
+          secondaryActionLabel: whitelistRows.length > 0 ? `${whitelistRows.length} pemilih` : 'Belum ada pemilih',
           actionTone: 'blue',
           periodLabel: 'Mei - Juni 2026',
-          turnoutLabel: p.deployedSpaceAddress ? 'Menunggu data whitelist' : 'Belum deploy',
+          turnoutLabel: p.deployedSpaceAddress ? `${whitelistRows.length} pemilih whitelist` : 'Belum deploy',
+          whitelistCount: whitelistRows.length,
+          whitelistPreview,
           detail: makeEmptyDetail(p, voterTarget),
           commits: p.status === 'deployed' ? {
             total: '0',

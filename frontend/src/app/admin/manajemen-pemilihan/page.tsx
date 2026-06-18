@@ -53,14 +53,24 @@ function ElectionCard({ election }: { election: AdminElectionRecord }) {
               <span className="inline-flex self-start rounded-full bg-emerald-100 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700 sm:self-auto">
                 {election.badge}
               </span>
-              <div className="flex -space-x-2 self-start sm:self-auto">
-                {['DN', 'AP', 'RS'].map((avatar) => (
-                  <div key={avatar} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-slate-200 text-[11px] font-semibold text-slate-700">
-                    {avatar}
-                  </div>
-                ))}
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-slate-100 text-[11px] font-semibold text-slate-500">+21</div>
-              </div>
+              {(election.whitelistCount ?? 0) > 0 ? (
+                <div className="flex -space-x-2 self-start sm:self-auto" aria-label={`${election.whitelistCount} pemilih whitelist`}>
+                  {(election.whitelistPreview ?? []).map((avatar) => (
+                    <div key={avatar.id} title={avatar.name} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-slate-200 text-[11px] font-semibold text-slate-700">
+                      {avatar.label}
+                    </div>
+                  ))}
+                  {(election.whitelistCount ?? 0) > (election.whitelistPreview?.length ?? 0) ? (
+                    <div className="flex h-8 min-w-8 items-center justify-center rounded-full border-2 border-white bg-slate-100 px-2 text-[11px] font-semibold text-slate-500">
+                      +{(election.whitelistCount ?? 0) - (election.whitelistPreview?.length ?? 0)}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <span className="inline-flex self-start rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-semibold text-slate-500 sm:self-auto">
+                  Whitelist kosong
+                </span>
+              )}
             </div>
           </div>
 

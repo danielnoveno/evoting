@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Check, Download, FileText, Loader2, Pencil, Search, Trash2, Upload, X, UserPlus } from 'lucide-react'
+import { AlertTriangle, Check, Download, FileText, Loader2, Mail, Pencil, Search, Trash2, Upload, X, UserPlus } from 'lucide-react'
 import { type ChangeEvent, type DragEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -166,6 +166,38 @@ export function SuperadminMasterVoterPage() {
     () => voters.filter((voter) => selectedVoterIds.includes(voter.id)),
     [selectedVoterIds, voters],
   )
+
+  const handleSendActivationEmails = (targets: MasterVoter[]) => {
+    const recipients = targets
+      .filter((voter) => !voter.walletAddress)
+      .map((voter) => ({
+        email: voter.email,
+        name: voter.fullName,
+        nim: voter.nim,
+      }))
+
+    if (recipients.length === 0) {
+      showToast({
+        tone: 'info',
+        title: 'Tidak ada email yang dikirim',
+        description: 'Voter terpilih sudah memiliki wallet atau tidak membutuhkan aktivasi ulang.',
+      })
+      return
+    }
+
+    sendVoterActivationEmailsMutation.mutate({ recipients }, {
+      onSuccess: (result) => {
+        showToast({
+          tone: result.failedCount > 0 ? 'info' : 'success',
+          title: 'Email aktivasi diproses',
+          description: `${result.sentCount} terkirim, ${result.failedCount} gagal.`,
+        })
+      },
+      onError: (error) => {
+        showToast({ tone: 'error', title: 'Gagal mengirim email aktivasi', description: error.message })
+      },
+    })
+  }
 
   const selectedFilteredCount = filteredVoters.filter((voter) => selectedVoterIds.includes(voter.id)).length
   const totalPages = Math.max(1, Math.ceil(filteredVoters.length / pageSize))
@@ -552,14 +584,25 @@ export function SuperadminMasterVoterPage() {
                   onClear={() => setSelectedVoterIds([])}
                   onDismiss={() => setSelectionBarDismissed(true)}
                   actions={(
-                    <button
-                      type="button"
-                      onClick={() => setDeleteSelectedDialogOpen(true)}
-                      className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-red-200 bg-white px-3.5 text-[13px] font-semibold text-red-600 transition hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Hapus Terpilih
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleSendActivationEmails(selectedVoters)}
+                        disabled={sendVoterActivationEmailsMutation.isPending}
+                        className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {sendVoterActivationEmailsMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                        {sendVoterActivationEmailsMutation.isPending ? 'Mengirim...' : 'Kirim Email Aktivasi'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteSelectedDialogOpen(true)}
+                        className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-red-200 bg-white px-3.5 text-[13px] font-semibold text-red-600 transition hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Hapus Terpilih
+                      </button>
+                    </>
                   )}
                 />
               </FloatingSelectionBar>

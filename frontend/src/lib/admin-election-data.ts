@@ -14,6 +14,8 @@ export type AdminElectionRecord = {
   periodLabel: string
   turnoutLabel: string
   commits?: { total: string; target: string; hash: string; revealStart: string; integrity: string }
+  whitelistCount?: number
+  whitelistPreview?: Array<{ id: string; label: string; name: string }>
   detail: {
     statusPill: string
     candidates: Array<{
