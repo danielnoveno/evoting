@@ -138,6 +138,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const pendingSyncAddressesRef = useRef<string[]>([])
   const syncInFlightKeyRef = useRef<string | null>(null)
   const lastAutoSyncKeyRef = useRef<string | null>(null)
+  const scheduleAutoActivationAttemptedRef = useRef<string | null>(null)
 
   const normalizeWhitelistAddresses = (addresses: string[]) => {
     return Array.from(new Set(
@@ -622,7 +623,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const handleActivateAutomaticSchedule = async () => {
     if (!canActivateAutomaticSchedule || isWritePending || isConfirming) return
     if (!isConnected) {
-      requestWalletConnection('Dompet admin sudah tersambung. Klik lagi tombol aktifkan jadwal untuk mengirim transaksi on-chain.')
       return
     }
 
@@ -655,6 +655,22 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       })
     }
   }
+
+  useEffect(() => {
+    if (!canActivateAutomaticSchedule || !isConnected || isWritePending || isConfirming) return
+
+    const scheduleKey = [
+      election.id,
+      election.schedule?.commitStartAt,
+      election.schedule?.revealStartAt,
+      election.schedule?.endedAt,
+    ].join('|')
+
+    if (scheduleAutoActivationAttemptedRef.current === scheduleKey) return
+    scheduleAutoActivationAttemptedRef.current = scheduleKey
+    void handleActivateAutomaticSchedule()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canActivateAutomaticSchedule, isConnected, isWritePending, isConfirming, election.id, election.schedule?.commitStartAt, election.schedule?.revealStartAt, election.schedule?.endedAt])
 
   const handleOpenImportFile = (filePath: string) => {
 
@@ -1017,15 +1033,9 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             Fase otomatis aktif{onChainRevealStartsAt ? ` · Reveal ${new Date(Number(onChainRevealStartsAt) * 1000).toLocaleDateString('id-ID')}` : ''}
           </div>
         ) : isAddressValid && canActivateAutomaticSchedule ? (
-          <button
-            type="button"
-            onClick={handleActivateAutomaticSchedule}
-            disabled={isWritePending || isConfirming || isConnectPending}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-[15px] font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${(isWritePending || isConfirming) ? 'animate-spin' : ''}`} />
-            Aktifkan Jadwal Otomatis
-          </button>
+          <div className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-5 text-[13px] font-medium text-blue-800">
+            Jadwal otomatis disiapkan sistem{isConnected ? ' · menunggu konfirmasi dompet' : ''}
+          </div>
         ) : isAddressValid && !election.schedule?.commitStartAt ? (
           <button 
             type="button" 
