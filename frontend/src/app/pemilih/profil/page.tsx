@@ -177,7 +177,7 @@ export default function VoterProfilePage() {
             <div>
               <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Nama tampilan (display name) <RequiredAsterisk /></label>
               <div className="relative">
-                 <input value={displayName || resolvedProfile.displayName} onChange={(event) => setDisplayName(event.target.value)} className="h-14 w-full rounded-2xl bg-slate-100 px-4 pr-12 text-[16px] text-slate-900 outline-none focus:bg-white focus:ring-1 focus:ring-slate-300 sm:px-5" />
+                 <input value={displayName || resolvedProfile.displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={100} className="h-14 w-full rounded-2xl bg-slate-100 px-4 pr-12 text-[16px] text-slate-900 outline-none focus:bg-white focus:ring-1 focus:ring-slate-300 sm:px-5" />
                 <Pencil className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
@@ -201,7 +201,7 @@ export default function VoterProfilePage() {
 
             <div>
               <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Bio singkat</label>
-               <textarea value={bio || resolvedProfile.bio} onChange={(event) => setBio(event.target.value)} rows={4} className="w-full rounded-2xl bg-slate-100 p-4 text-[16px] leading-8 text-slate-900 outline-none focus:bg-white focus:ring-1 focus:ring-slate-300 sm:p-5" />
+               <textarea value={bio || resolvedProfile.bio} onChange={(event) => setBio(event.target.value)} maxLength={1000} rows={4} className="w-full rounded-2xl bg-slate-100 p-4 text-[16px] leading-8 text-slate-900 outline-none focus:bg-white focus:ring-1 focus:ring-slate-300 sm:p-5" />
             </div>
           </div>
 

@@ -54,6 +54,7 @@ import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
 import { profileQueryKeys } from '@/hooks/use-profile'
 import { syncAdminSpaces } from '@/lib/repositories/adminAccessRepository'
 import { useAdminProposalList } from '@/hooks/use-admin-proposal-list'
+import { useFormDraft } from '@/hooks/use-form-draft'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { ProposalDraftRecord } from '@/lib/repositories/types'
 
@@ -86,6 +87,7 @@ function SuperadminAdminManagementContent() {
   const createAdminMutation = useCreateAdminRegistry()
   const createAdminInviteMutation = useCreateAdminInvite()
   const [formData, setFormData] = useState(initialFormData)
+  const { clearDraft: clearAdminDraft } = useFormDraft('admin-create', formData, setFormData)
   const [selectedSpaceIds, setSelectedSpaceIds] = useState<string[]>([])
   const proposalDraftsQuery = useAdminProposalList()
   const [activationLink, setActivationLink] = useState('')
@@ -355,6 +357,7 @@ function SuperadminAdminManagementContent() {
           }
           setFormData(initialFormData)
           setSelectedSpaceIds([])
+          clearAdminDraft()
 
           const emailMsg = invite.emailStatus === 'sent'
             ? 'Email aktivasi sudah dikirim.'
@@ -616,6 +619,7 @@ function SuperadminAdminManagementContent() {
                   value={formData.organizationName}
                   onChange={(event) => setFormData((current) => ({ ...current, organizationName: event.target.value }))}
                   placeholder="Contoh: HIMAFORKA FTI UAJY"
+                  maxLength={100}
                 />
               </label>
 
@@ -625,6 +629,7 @@ function SuperadminAdminManagementContent() {
                   value={formData.email}
                   onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
                   placeholder="nama@institusi.edu"
+                  maxLength={254}
                 />
               </label>
 
@@ -634,6 +639,7 @@ function SuperadminAdminManagementContent() {
                   value={formData.walletAddress}
                   onChange={(event) => setFormData((current) => ({ ...current, walletAddress: event.target.value }))}
                   placeholder="0x... (Kosongkan jika admin akan menyambungkan dompetnya sendiri saat aktivasi)"
+                  maxLength={42}
                 />
                 <p className="mt-2 text-[12px] text-slate-500 italic">
                   Jika dikosongkan, admin harus menyambungkan dompetnya sendiri saat pertama kali login.

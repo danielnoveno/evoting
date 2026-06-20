@@ -300,6 +300,7 @@ export default function SuperadminProfilePage() {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="Masukkan nama lengkap"
+                  maxLength={100}
                   className="mt-2 w-full text-[17px] font-semibold text-slate-900 bg-transparent border-none outline-none p-0"
                 />
               </div>
@@ -480,6 +481,7 @@ export default function SuperadminProfilePage() {
                     <input
                       value={networkName}
                       onChange={(e) => setNetworkName(e.target.value)}
+                      maxLength={100}
                       className="mt-2 w-full text-[18px] font-semibold text-slate-900 bg-transparent outline-none border-b border-transparent focus:border-slate-200 transition-colors"
                     />
                   </div>
@@ -510,6 +512,7 @@ export default function SuperadminProfilePage() {
                     type="number"
                     value={gasLimit}
                     onChange={(e) => setGasLimit(Number(e.target.value))}
+                    maxLength={10}
                     className="w-24 bg-transparent text-[34px] font-semibold tracking-[-0.04em] outline-none"
                   />
                   <span className="font-semibold text-slate-800">GWEI</span>
@@ -526,6 +529,7 @@ export default function SuperadminProfilePage() {
                 <input
                   value={platformName}
                   onChange={(event) => setPlatformName(event.target.value)}
+                  maxLength={100}
                   className="mt-3 h-14 w-full rounded-[20px] bg-white border border-slate-200 px-4 text-[18px] text-slate-900 outline-none transition focus:border-slate-900"
                 />
               </label>

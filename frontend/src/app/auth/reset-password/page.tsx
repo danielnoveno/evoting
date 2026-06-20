@@ -103,6 +103,7 @@ export default function ResetPasswordPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="nama@students.uajy.ac.id"
+              maxLength={254}
               error={emailError}
               required
             />

@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/toast-provider'
 import { AlertTriangle, ArrowLeft, Check, FileImage, FileText, Filter, Loader2, Save, Search, Trash2, Upload, Users, X } from 'lucide-react'
 import { ScrollReveal } from '@/components/public/parallax'
 import { useCandidateAssetUpload } from '@/hooks/use-candidate-asset-upload'
+import { useFormDraft } from '@/hooks/use-form-draft'
 import { useMasterVoters, useMasterVoterProdiOptions } from '@/hooks/use-master-voters'
 import { useSaveProposalDraft } from '@/hooks/use-save-proposal-draft'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
@@ -119,6 +120,8 @@ export function ProposalForm({
     candidateEntries: initialData?.candidateEntries || [EMPTY_CANDIDATE, EMPTY_CANDIDATE],
     whitelistWallets: initialData?.whitelistWallets || '',
   })
+  const draftKey = proposalId ? `proposal-edit-${proposalId}` : 'proposal-create'
+  const { clearDraft } = useFormDraft(draftKey, formData, setFormData)
   const [errors, setErrors] = useState<ProposalFormErrors>({})
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([])
   const isSubmitting = saveProposalDraft.isPending || isUploadingDocument || isUploadingCandidatePhotos || isUploadingBannerImage
@@ -647,6 +650,7 @@ export function ProposalForm({
           .map((wallet) => ({ walletAddress: wallet.toLowerCase() }))
     }, {
       onSuccess: async (proposal) => {
+        clearDraft()
         if (supportingDocument) {
           setIsUploadingDocument(true)
           try {
@@ -757,12 +761,12 @@ export function ProposalForm({
               <div className="grid gap-4">
                 <label className="block">
                   <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama Pemilihan <RequiredAsterisk /></span>
-                  <input data-validation-field="title" name="title" value={formData.title} onChange={handleChange} disabled={isReadOnly} placeholder="Masukkan nama pemilihan..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  <input data-validation-field="title" name="title" value={formData.title} onChange={handleChange} disabled={isReadOnly} placeholder="Masukkan nama pemilihan..." maxLength={100} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                   {errors.title && <p className="mt-1 text-[12px] text-red-500">{errors.title}</p>}
                 </label>
                 <label className="block">
                   <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Deskripsi</span>
-                  <textarea name="description" value={formData.description} onChange={handleChange} disabled={isReadOnly} placeholder="Tuliskan deskripsi pemilihan..." className="h-32 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  <textarea name="description" value={formData.description} onChange={handleChange} disabled={isReadOnly} placeholder="Tuliskan deskripsi pemilihan..." maxLength={2000} className="h-32 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                 </label>
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -979,19 +983,19 @@ export function ProposalForm({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="block">
                     <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama lengkap <RequiredAsterisk /></span>
-                    <input data-validation-field={`candidate-${i}-name`} value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Contoh: Daniel Noveno" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                    <input data-validation-field={`candidate-${i}-name`} value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Contoh: Daniel Noveno" maxLength={100} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">NPM/NIM <RequiredAsterisk /></span>
-                    <input data-validation-field={`candidate-${i}-studentId`} value={c.studentId || ''} onChange={e => handleCandidateChange(i, 'studentId', e.target.value.replace(/[^0-9]/g, ''))} disabled={isReadOnly} placeholder="Contoh: 220711663" inputMode="numeric" pattern="[0-9]*" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                    <input data-validation-field={`candidate-${i}-studentId`} value={c.studentId || ''} onChange={e => handleCandidateChange(i, 'studentId', e.target.value.replace(/[^0-9]/g, ''))} disabled={isReadOnly} placeholder="Contoh: 220711663" inputMode="numeric" pattern="[0-9]*" maxLength={10} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Fakultas/Prodi <span className="font-normal text-slate-400">(opsional)</span></span>
-                    <input value={c.faculty || ''} onChange={e => handleCandidateChange(i, 'faculty', e.target.value)} disabled={isReadOnly} placeholder="Contoh: FTI / Informatika" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                    <input value={c.faculty || ''} onChange={e => handleCandidateChange(i, 'faculty', e.target.value)} disabled={isReadOnly} placeholder="Contoh: FTI / Informatika" maxLength={100} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Link video YouTube <span className="font-normal text-slate-400">(opsional)</span></span>
-                    <input value={c.youtubeUrl || ''} onChange={e => handleCandidateChange(i, 'youtubeUrl', e.target.value)} disabled={isReadOnly} placeholder="https://youtube.com/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                    <input value={c.youtubeUrl || ''} onChange={e => handleCandidateChange(i, 'youtubeUrl', e.target.value)} disabled={isReadOnly} placeholder="https://youtube.com/..." maxLength={255} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                   </label>
                   <label className="block sm:col-span-2">
                     <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Bio singkat <span className="font-normal text-slate-400">(opsional)</span></span>
@@ -1048,6 +1052,7 @@ export function ProposalForm({
                 value={voterSearch}
                 onChange={(e) => setVoterSearch(e.target.value)}
                 placeholder="Cari berdasarkan NPM, nama, atau email..."
+                maxLength={100}
                 className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 text-[14px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
               />
             </div>

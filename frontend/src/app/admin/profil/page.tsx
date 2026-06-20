@@ -307,6 +307,7 @@ export default function AdminProfilePage() {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     disabled={!isEditing}
+                    maxLength={100}
                     className={`w-full h-14 pl-5 pr-12 rounded-2xl text-[16px] font-medium transition-all outline-none ${
                       isEditing ? 'bg-white border-slate-300 focus:border-slate-900' : 'bg-slate-50 border-transparent cursor-not-allowed opacity-70'
                     }`}
@@ -366,6 +367,7 @@ export default function AdminProfilePage() {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   disabled={!isEditing}
+                  maxLength={1000}
                   rows={4}
                   className={`w-full p-5 rounded-2xl text-[15px] leading-7 transition-all outline-none resize-none ${
                     isEditing ? 'bg-white border-slate-300 focus:border-slate-900' : 'bg-slate-50 border-transparent cursor-not-allowed opacity-70'

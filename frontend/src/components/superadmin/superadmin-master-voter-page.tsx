@@ -636,6 +636,7 @@ export function SuperadminMasterVoterPage() {
                   value={formData.nim}
                   onChange={(event) => handleNpmChange(event.target.value)}
                   placeholder="Cth: 2207116630"
+                  maxLength={10}
                 />
               </label>
 
@@ -645,6 +646,7 @@ export function SuperadminMasterVoterPage() {
                   value={formData.name}
                   onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
                   placeholder="Cth: Alexander Graham"
+                  maxLength={100}
                 />
               </label>
 
@@ -654,6 +656,7 @@ export function SuperadminMasterVoterPage() {
                   value={formData.email}
                   onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
                   placeholder="name@students.uajy.ac.id"
+                  maxLength={254}
                 />
               </label>
 

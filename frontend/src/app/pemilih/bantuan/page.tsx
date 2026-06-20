@@ -199,6 +199,7 @@ function HelpChatCard() {
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder="Contoh: Kenapa tombol konfirmasi suara belum muncul?"
+            maxLength={1200}
             className="min-h-[48px] flex-1 resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[14px] leading-6 text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10"
             disabled={loading}
           />
@@ -237,6 +238,7 @@ export default function VoterHelpPage() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Cari panduan memilih, akun, atau kendala..."
+            maxLength={100}
             className="h-full w-full bg-transparent text-[16px] text-slate-900 outline-none placeholder:text-slate-400"
           />
         </div>

@@ -202,12 +202,12 @@ export function SuperadminMasterVoterDetailPage({ voterId }: { voterId: string }
               <div className="mt-8 grid gap-5 md:grid-cols-2">
                 <label className="block">
                   <SuperadminFieldLabel required>NIM</SuperadminFieldLabel>
-                  <SuperadminTextInput value={form.nim} onChange={(event) => setForm((current) => current ? { ...current, nim: event.target.value.replace(/\D/g, '') } : current)} />
+                  <SuperadminTextInput value={form.nim} onChange={(event) => setForm((current) => current ? { ...current, nim: event.target.value.replace(/\D/g, '') } : current)} maxLength={10} />
                 </label>
 
                 <label className="block">
                   <SuperadminFieldLabel required>Nama Lengkap</SuperadminFieldLabel>
-                  <SuperadminTextInput value={form.fullName} onChange={(event) => setForm((current) => current ? { ...current, fullName: event.target.value } : current)} />
+                  <SuperadminTextInput value={form.fullName} onChange={(event) => setForm((current) => current ? { ...current, fullName: event.target.value } : current)} maxLength={100} />
                 </label>
 
                 <label className="block">
@@ -220,7 +220,7 @@ export function SuperadminMasterVoterDetailPage({ voterId }: { voterId: string }
 
                 <label className="block">
                   <SuperadminFieldLabel required>Fakultas</SuperadminFieldLabel>
-                  <SuperadminTextInput value={form.fakultas} onChange={(event) => setForm((current) => current ? { ...current, fakultas: event.target.value } : current)} />
+                  <SuperadminTextInput value={form.fakultas} onChange={(event) => setForm((current) => current ? { ...current, fakultas: event.target.value } : current)} maxLength={100} />
                 </label>
 
                 <label className="block">

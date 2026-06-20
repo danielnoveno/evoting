@@ -163,17 +163,17 @@ export default function SuperadminEditPage({ params }: { params: { id: string } 
             <div className="mt-8 grid gap-5 xl:grid-cols-2">
               <label className="block xl:col-span-2">
                 <SuperadminFieldLabel required>Nama Lengkap</SuperadminFieldLabel>
-                <SuperadminTextInput value={formData.name} onChange={(event) => handleChange('name', event.target.value)} placeholder="Masukkan nama lengkap" />
+                <SuperadminTextInput value={formData.name} onChange={(event) => handleChange('name', event.target.value)} placeholder="Masukkan nama lengkap" maxLength={100} />
               </label>
 
               <label className="block xl:col-span-2">
                 <SuperadminFieldLabel required>Email Institusi</SuperadminFieldLabel>
-                <SuperadminTextInput value={formData.email} onChange={(event) => handleChange('email', event.target.value)} placeholder="nama@institusi.ac.id" />
+                <SuperadminTextInput value={formData.email} onChange={(event) => handleChange('email', event.target.value)} placeholder="nama@institusi.ac.id" maxLength={254} />
               </label>
 
               <label className="block xl:col-span-2">
                 <SuperadminFieldLabel>Wallet Address (On-Chain Identity)</SuperadminFieldLabel>
-                <SuperadminTextInput value={formData.walletAddress} onChange={(event) => handleChange('walletAddress', event.target.value)} placeholder="0x..." className="font-mono" />
+                <SuperadminTextInput value={formData.walletAddress} onChange={(event) => handleChange('walletAddress', event.target.value)} placeholder="0x..." className="font-mono" maxLength={42} />
                 <p className="mt-2 text-[12px] text-slate-500 italic">Alamat wallet ini dipakai sebagai identitas transaksi blockchain untuk otoritas terkait.</p>
               </label>
 

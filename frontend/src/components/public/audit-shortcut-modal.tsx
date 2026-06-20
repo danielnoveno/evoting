@@ -58,6 +58,7 @@ export function AuditShortcutModal({
                 id="tx-search"
                 type="text"
                 placeholder="Masukkan Tx Hash (0x...)"
+                maxLength={66}
                 className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-[14px] text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                 value={txHash}
                 onChange={(e) => setTxHash(e.target.value)}

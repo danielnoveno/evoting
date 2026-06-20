@@ -11,6 +11,7 @@ import { upsertStoredCandidate } from '@/lib/admin-candidate-store'
 import { AdminElectionRecord } from '@/lib/admin-election-data'
 import { ScrollReveal } from '@/components/public/parallax'
 import { useCandidateAssetUpload } from '@/hooks/use-candidate-asset-upload'
+import { useFormDraft } from '@/hooks/use-form-draft'
 import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 
@@ -41,12 +42,17 @@ export function AdminCandidateFormView({
   const form = election.detail.candidateForm
   const router = useRouter()
   const { showToast } = useToast()
-  const [fullName, setFullName] = useState(prefill?.fullName ?? '')
-  const [identityNumber, setIdentityNumber] = useState(prefill?.identityNumber ?? '')
-  const [faculty, setFaculty] = useState(prefill?.faculty ?? '')
-  const [bio, setBio] = useState(prefill?.bio ?? '')
-  const [vision, setVision] = useState(prefill?.vision ?? '')
-  const [mission, setMission] = useState(prefill?.mission ?? '')
+  const [formState, setFormState] = useState({
+    fullName: prefill?.fullName ?? '',
+    identityNumber: prefill?.identityNumber ?? '',
+    faculty: prefill?.faculty ?? '',
+    bio: prefill?.bio ?? '',
+    vision: prefill?.vision ?? '',
+    mission: prefill?.mission ?? '',
+  })
+  const draftKey = candidateId ? `candidate-edit-${candidateId}` : `candidate-create-${election.id}`
+  const { clearDraft } = useFormDraft(draftKey, formState, setFormState)
+  const { fullName, identityNumber, faculty, bio, vision, mission } = formState
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -144,6 +150,7 @@ export function AdminCandidateFormView({
       vision: vision.trim(),
       mission: mission.trim(),
     })
+    clearDraft()
     showToast({
       tone: 'success',
       title: 'Perubahan disimpan',
@@ -252,10 +259,11 @@ export function AdminCandidateFormView({
                   value={identityNumber}
                   onChange={(event) => {
                     const val = event.target.value
-                    setIdentityNumber(val)
+                    setFormState((prev) => ({ ...prev, identityNumber: val }))
                     setErrors((prev) => ({ ...prev, identityNumber: validateForm(fullName, val, vision, mission).identityNumber }))
                   }}
                   className={`h-12 w-full rounded-2xl border bg-white px-4 text-[15px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all ${errors.identityNumber ? 'border-red-500 focus:border-red-500' : 'border-slate-200'}`}
+                  maxLength={10}
                 />
                 {errors.identityNumber && <p className="mt-2 text-[12px] text-red-600 font-medium">{errors.identityNumber}</p>}
               </div>
@@ -284,10 +292,11 @@ export function AdminCandidateFormView({
                   value={fullName}
                   onChange={(event) => {
                     const val = event.target.value
-                    setFullName(val)
+                    setFormState((prev) => ({ ...prev, fullName: val }))
                     setErrors((prev) => ({ ...prev, fullName: validateForm(val, identityNumber, vision, mission).fullName }))
                   }}
                   className={`h-14 w-full rounded-2xl border bg-white px-5 text-[16px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all ${errors.fullName ? 'border-red-500 focus:border-red-500' : 'border-slate-200'}`}
+                  maxLength={100}
                 />
                 {errors.fullName && <p className="mt-2 text-[12px] text-red-600 font-medium">{errors.fullName}</p>}
               </div>
@@ -297,7 +306,7 @@ export function AdminCandidateFormView({
                   <select
                     id="cand-faculty"
                     value={faculty}
-                    onChange={(event) => setFaculty(event.target.value)}
+                    onChange={(event) => setFormState((prev) => ({ ...prev, faculty: event.target.value }))}
                     className="h-14 w-full appearance-none rounded-2xl border border-slate-200 bg-white px-5 pr-10 text-[16px] text-slate-900 outline-none focus:ring-2 focus:ring-black focus:outline-none transition-all"
                   >
                     <option value="">Pilih fakultas...</option>
@@ -315,7 +324,7 @@ export function AdminCandidateFormView({
               </div>
               <div>
                 <label htmlFor="cand-bio" className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{form.bioLabel}</label>
-                <RichTextEditor value={bio} onChange={setBio} placeholder={form.bioPlaceholder} minHeightClassName="min-h-[112px]" />
+                <RichTextEditor value={bio} onChange={(val) => setFormState((prev) => ({ ...prev, bio: val }))} placeholder={form.bioPlaceholder} minHeightClassName="min-h-[112px]" />
               </div>
             </div>
           </article>
@@ -328,7 +337,7 @@ export function AdminCandidateFormView({
                 <RichTextEditor
                   value={vision}
                   onChange={(val) => {
-                    setVision(val)
+                    setFormState((prev) => ({ ...prev, vision: val }))
                     setErrors((prev) => ({ ...prev, vision: validateForm(fullName, identityNumber, val, mission).vision }))
                   }}
                   placeholder={form.visionPlaceholder}
@@ -341,7 +350,7 @@ export function AdminCandidateFormView({
                 <RichTextEditor
                   value={mission}
                   onChange={(val) => {
-                    setMission(val)
+                    setFormState((prev) => ({ ...prev, mission: val }))
                     setErrors((prev) => ({ ...prev, mission: validateForm(fullName, identityNumber, vision, val).mission }))
                   }}
                   placeholder={form.missionPlaceholder}

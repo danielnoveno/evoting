@@ -200,17 +200,17 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
             <div className="mt-8 grid gap-5 xl:grid-cols-2">
               <label className="block xl:col-span-2">
                 <SuperadminFieldLabel required>Nama Lengkap</SuperadminFieldLabel>
-                <SuperadminTextInput value={formData.name} onChange={(event) => handleChange('name', event.target.value)} placeholder="Masukkan nama lengkap" />
+                <SuperadminTextInput value={formData.name} onChange={(event) => handleChange('name', event.target.value)} placeholder="Masukkan nama lengkap" maxLength={100} />
               </label>
 
               <label className="block xl:col-span-2">
                 <SuperadminFieldLabel required>Email Institusi</SuperadminFieldLabel>
-                <SuperadminTextInput value={formData.email} onChange={(event) => handleChange('email', event.target.value)} placeholder="nama@institusi.edu" />
+                <SuperadminTextInput value={formData.email} onChange={(event) => handleChange('email', event.target.value)} placeholder="nama@institusi.edu" maxLength={254} />
               </label>
 
               <label className="block xl:col-span-2">
                 <SuperadminFieldLabel required>Nama Organisasi</SuperadminFieldLabel>
-                <SuperadminTextInput value={formData.organizationName} onChange={(event) => handleChange('organizationName', event.target.value)} placeholder="Contoh: HIMAFORKA FTI UAJY" />
+                <SuperadminTextInput value={formData.organizationName} onChange={(event) => handleChange('organizationName', event.target.value)} placeholder="Contoh: HIMAFORKA FTI UAJY" maxLength={100} />
               </label>
 
               <label className="block">
@@ -224,12 +224,12 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
 
               <label className="block">
                 <SuperadminFieldLabel>Label Akses</SuperadminFieldLabel>
-                <SuperadminTextInput value={formData.accessLabel} onChange={(event) => handleChange('accessLabel', event.target.value)} placeholder="Contoh: Global Access" />
+                <SuperadminTextInput value={formData.accessLabel} onChange={(event) => handleChange('accessLabel', event.target.value)} placeholder="Contoh: Global Access" maxLength={100} />
               </label>
 
               <label className="block xl:col-span-2">
                 <SuperadminFieldLabel>Detail Akses</SuperadminFieldLabel>
-                <SuperadminTextInput value={formData.accessDetail} onChange={(event) => handleChange('accessDetail', event.target.value)} placeholder="Contoh: Semua Pemilihan" />
+                <SuperadminTextInput value={formData.accessDetail} onChange={(event) => handleChange('accessDetail', event.target.value)} placeholder="Contoh: Semua Pemilihan" maxLength={200} />
               </label>
             </div>
           </SuperadminSectionCard>
