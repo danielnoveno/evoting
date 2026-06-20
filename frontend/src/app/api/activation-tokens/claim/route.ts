@@ -95,6 +95,14 @@ export async function POST(request: NextRequest) {
 
   if (updateError) return jsonError(`Gagal memakai token aktivasi: ${updateError.message}`, 500)
 
+  // Write wallet address back to master_voters so admins can see it in whitelist
+  if (activation.role === 'voter') {
+    await client
+      .from('master_voters')
+      .update({ wallet_address: walletAddress, status: 'active' })
+      .eq('email', activation.email.trim().toLowerCase())
+  }
+
   return NextResponse.json({
     success: true,
     email: activation.email,
