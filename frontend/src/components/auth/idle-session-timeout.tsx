@@ -194,11 +194,6 @@ export function IdleSessionTimeout() {
     scheduleFromLastActivity(lastActivityAt)
   }, [readLastActivityAt, scheduleFromLastActivity, shouldTrackSession])
 
-  const handleExtendSession = useCallback(() => {
-    hasTimedOutRef.current = false
-    markActivity()
-  }, [markActivity])
-
   useEffect(() => {
     if (isManualLogoutInProgress()) {
       hasTimedOutRef.current = true
@@ -294,23 +289,16 @@ export function IdleSessionTimeout() {
           Sesi akan berakhir
         </h2>
         <p className="mt-3 text-center text-[14px] leading-7 text-slate-500">
-          Sesi akun akan segera ditutup karena tidak ada aktivitas. Pilih &ldquo;Tetap Terhubung&rdquo; untuk melanjutkan.
+          Sesi akun akan segera ditutup karena tidak ada aktivitas. Anda akan diarahkan ke halaman login.
         </p>
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <div className="mt-6 flex justify-center">
           <button
             type="button"
             onClick={handleForceLogout.bind(null, expiredTargetPath ?? (isAdmin ? '/portal-admin?reason=session-timeout' : '/hubungkan-dompet?reason=session-timeout'))}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-6 text-[14px] font-semibold text-slate-700 transition hover:bg-slate-50"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Keluar Sekarang
-          </button>
-          <button
-            type="button"
-            onClick={handleExtendSession}
             className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-6 text-[14px] font-semibold text-white transition hover:bg-slate-800"
           >
-            Tetap Terhubung
+            <LogOut className="mr-2 h-4 w-4" />
+            Login Ulang
           </button>
         </div>
       </div>
