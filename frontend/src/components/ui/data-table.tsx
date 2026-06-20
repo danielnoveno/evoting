@@ -234,17 +234,44 @@ export function FloatingSelectionBar({ children }: { children: ReactNode }) {
 
   const measure = useCallback(() => {
     if (!containerRef.current) return
-    const parent = containerRef.current.parentElement
-    if (!parent) return
-    const rect = parent.getBoundingClientRect()
-    setBounds({ left: rect.left, width: rect.width })
+    // Walk up the DOM to find the content wrapper that has margin-left from sidebar
+    let el: HTMLElement | null = containerRef.current.parentElement
+    while (el && el !== document.body) {
+      const style = window.getComputedStyle(el)
+      const ml = parseInt(style.marginLeft, 10)
+      if (ml > 0) {
+        const rect = el.getBoundingClientRect()
+        setBounds({ left: rect.left, width: rect.width })
+        return
+      }
+      el = el.parentElement
+    }
+    // Fallback: use viewport
+    setBounds({ left: 0, width: window.innerWidth })
   }, [])
 
   useEffect(() => {
     if (!mounted) return
     measure()
+
+    // Use ResizeObserver on the content wrapper for reliable re-measurement
+    let observer: ResizeObserver | null = null
+    let el: HTMLElement | null = containerRef.current?.parentElement ?? null
+    while (el && el !== document.body) {
+      const ml = parseInt(window.getComputedStyle(el).marginLeft, 10)
+      if (ml > 0) {
+        observer = new ResizeObserver(measure)
+        observer.observe(el)
+        break
+      }
+      el = el.parentElement
+    }
+
     window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
+    return () => {
+      window.removeEventListener('resize', measure)
+      observer?.disconnect()
+    }
   }, [mounted, measure])
 
   if (!mounted) return null
