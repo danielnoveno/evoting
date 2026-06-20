@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { isAddress } from 'viem'
 import { useToast } from '@/components/ui/toast-provider'
-import { AlertTriangle, ArrowLeft, FileImage, FileText, Save, ShieldCheck, Trash2, Upload, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Check, FileImage, FileText, Filter, Loader2, Save, Search, Trash2, Upload, Users, X } from 'lucide-react'
 import { ScrollReveal } from '@/components/public/parallax'
 import { useCandidateAssetUpload } from '@/hooks/use-candidate-asset-upload'
+import { useMasterVoters, useMasterVoterProdiOptions } from '@/hooks/use-master-voters'
 import { useSaveProposalDraft } from '@/hooks/use-save-proposal-draft'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { uploadProposalDocument } from '@/lib/repositories/proposalDocumentRepository'
@@ -63,6 +64,7 @@ interface ProposalFormProps {
   successMessageTitle?: string
   successMessageDesc?: string
   extraActions?: React.ReactNode
+  stepper?: boolean
 }
 
 export function ProposalForm({
@@ -75,7 +77,8 @@ export function ProposalForm({
   submitStatus = 'submitted',
   successMessageTitle = 'Proposal Berhasil Diajukan',
   successMessageDesc = 'Data proposal tersimpan di Supabase and masuk antrean review superadmin.',
-  extraActions
+  extraActions,
+  stepper = false
 }: ProposalFormProps) {
   const router = useRouter()
   const { showToast } = useToast()
@@ -91,6 +94,17 @@ export function ProposalForm({
   const [isUploadingCandidatePhotos, setIsUploadingCandidatePhotos] = useState(false)
   const [pendingRemovalIndex, setPendingRemovalIndex] = useState<number | null>(null)
   const [removalDialogOpen, setRemovalDialogOpen] = useState(false)
+  const [currentStep, setCurrentStep] = useState(0)
+  const [selectedWhitelistVoterIds, setSelectedWhitelistVoterIds] = useState<Set<string>>(new Set())
+  const [voterSearch, setVoterSearch] = useState('')
+  const [voterFilterProdi, setVoterFilterProdi] = useState('')
+  const [showVoterFilters, setShowVoterFilters] = useState(false)
+
+  const masterVotersQuery = useMasterVoters({
+    prodi: voterFilterProdi || undefined,
+    search: voterSearch || undefined,
+  })
+  const prodiOptionsQuery = useMasterVoterProdiOptions()
   
   const [formData, setFormData] = useState<ProposalFormData>({
     title: initialData?.title || '',
@@ -115,6 +129,43 @@ export function ProposalForm({
     .filter(Boolean)
   const uniqueWhitelistWallets = Array.from(new Set(whitelistLines.map((wallet) => wallet.toLowerCase())))
   const invalidWhitelistCount = whitelistLines.filter((wallet) => !isAddress(wallet)).length
+
+  const allMasterVoters = masterVotersQuery.data ?? []
+  const prodiOptions = prodiOptionsQuery.data ?? []
+  const selectedWhitelistWallets = useMemo(() => {
+    const wallets: string[] = []
+    for (const voter of allMasterVoters) {
+      if (selectedWhitelistVoterIds.has(voter.id) && voter.walletAddress) {
+        wallets.push(voter.walletAddress.toLowerCase())
+      }
+    }
+    return wallets
+  }, [allMasterVoters, selectedWhitelistVoterIds])
+
+  const STEP_LABELS = ['Informasi Umum', 'Kandidat', 'Whitelist']
+
+  const canAdvanceStep = (step: number): boolean => {
+    if (step === 0) {
+      if (!formData.title.trim()) return false
+      if (!formData.commitDate || !formData.revealDate || !formData.endedDate) return false
+      const commitTime = new Date(formData.commitDate).getTime()
+      const revealTime = new Date(formData.revealDate).getTime()
+      const endedTime = new Date(formData.endedDate).getTime()
+      if (revealTime <= commitTime || endedTime <= revealTime) return false
+      return true
+    }
+    if (step === 1) {
+      const filled = formData.candidateEntries.filter((c) => c.name.trim())
+      if (filled.length < 2) return false
+      const hasIncomplete = filled.some((c) =>
+        !c.studentId?.trim() ||
+        !c.vision?.trim() ||
+        (Array.isArray(c.mission) ? c.mission.length === 0 : !c.mission?.trim())
+      )
+      return !hasIncomplete
+    }
+    return true
+  }
 
   useEffect(() => {
     return () => {
@@ -591,11 +642,13 @@ export function ProposalForm({
       endedAt: new Date(formData.endedDate).toISOString(),
       status: submitStatus,
       candidates: candidateEntries,
-      whitelistEntries: formData.whitelistWallets
-        .split('\n')
-        .map((wallet) => wallet.trim())
-        .filter((wallet) => wallet && isAddress(wallet))
-        .map((wallet) => ({ walletAddress: wallet.toLowerCase() }))
+      whitelistEntries: stepper && selectedWhitelistWallets.length > 0
+        ? selectedWhitelistWallets.map((wallet) => ({ walletAddress: wallet }))
+        : formData.whitelistWallets
+          .split('\n')
+          .map((wallet) => wallet.trim())
+          .filter((wallet) => wallet && isAddress(wallet))
+          .map((wallet) => ({ walletAddress: wallet.toLowerCase() }))
     }, {
       onSuccess: async (proposal) => {
         if (supportingDocument) {
@@ -646,7 +699,7 @@ export function ProposalForm({
         </div>
         <div className="flex items-center gap-3">
           {extraActions}
-          {!isReadOnly && (
+          {!isReadOnly && (!stepper || currentStep === STEP_LABELS.length - 1) && (
             <button onClick={handleSubmit} disabled={isSubmitting} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-black px-6 text-white disabled:cursor-not-allowed disabled:opacity-60">
               <Save className="h-4 w-4" /> {isUploadingBannerImage ? 'Mengunggah banner...' : isUploadingCandidatePhotos ? 'Mengunggah foto...' : isUploadingDocument ? 'Mengunggah dokumen...' : saveProposalDraft.isPending ? 'Menyimpan...' : submitLabel}
             </button>
@@ -654,326 +707,544 @@ export function ProposalForm({
         </div>
       </div>
 
-      <div className="grid gap-x-8 gap-y-10 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <div>
-          {validationIssues.length > 0 ? (
-            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800" role="alert">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <div>
-                  <p className="text-[13px] font-semibold">Lengkapi field berikut sebelum mengajukan proposal:</p>
-                  <ul className="mt-2 space-y-1 text-[12px] leading-6">
-                    {validationIssues.map((issue) => (
-                      <li key={`${issue.fieldKey}-${issue.message}`}>• <strong>{issue.label}:</strong> {issue.message}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          <section className="space-y-4">
-            <h2 className="text-[14px] font-bold uppercase tracking-widest">Informasi Dasar</h2>
-            <div className="grid gap-4">
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama Pemilihan <RequiredAsterisk /></span>
-                <input data-validation-field="title" name="title" value={formData.title} onChange={handleChange} disabled={isReadOnly} placeholder="Masukkan nama pemilihan..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-                {errors.title && <p className="mt-1 text-[12px] text-red-500">{errors.title}</p>}
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Deskripsi</span>
-                <textarea name="description" value={formData.description} onChange={handleChange} disabled={isReadOnly} placeholder="Tuliskan deskripsi pemilihan..." className="h-32 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-              </label>
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <span className="block text-[12px] font-semibold text-slate-600">Banner Pemilihan <span className="font-normal text-slate-400">(opsional)</span></span>
-                    <p className="mt-1 text-[12px] leading-5 text-slate-400">Gambar akan tampil sebagai background card dengan linear-gradient overlay.</p>
+      {/* ── Step Indicator (stepper mode) ── */}
+      {stepper && (
+        <div className="mb-10">
+          <div className="flex items-center justify-center">
+            {STEP_LABELS.map((label, index) => (
+              <div key={label} className="flex items-center">
+                <div className="flex items-center gap-2.5">
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-semibold transition-colors ${
+                    currentStep > index
+                      ? 'bg-slate-900 text-white'
+                      : currentStep === index
+                        ? 'border-2 border-slate-900 bg-white text-slate-900'
+                        : 'border border-slate-200 bg-white text-slate-400'
+                  }`}>
+                    {currentStep > index ? <Check className="h-4 w-4" /> : index + 1}
                   </div>
-                  {(bannerImagePreview || formData.bannerImagePath) && !isReadOnly ? (
-                    <button type="button" onClick={removeBannerImage} className="inline-flex h-9 items-center justify-center rounded-xl text-[13px] font-medium text-red-600 hover:bg-red-50">
-                      Hapus banner
-                    </button>
-                  ) : null}
+                  <span className={`text-[13px] font-medium hidden sm:inline ${currentStep >= index ? 'text-slate-900' : 'text-slate-400'}`}>
+                    {label}
+                  </span>
                 </div>
-                <label
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={handleBannerImageDrop}
-                  className="group block cursor-pointer rounded-2xl focus-within:outline-none focus-within:ring-4 focus-within:ring-slate-900/5"
-                >
-                  <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" className="sr-only" onChange={handleBannerImageChange} disabled={isReadOnly} />
-                  <BannerPreviewCard
-                    imageUrl={bannerImagePreview ?? formData.bannerImagePath}
-                    title={formData.title || 'Nama Pemilihan'}
-                    description={formData.description || 'Deskripsi singkat pemilihan akan tampil di area ini.'}
-                    isReadOnly={isReadOnly}
-                  />
-                </label>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <aside className="space-y-6">
-           <div className="rounded-3xl bg-slate-900 p-8 text-white">
-              <ShieldCheck className="h-10 w-10 text-emerald-400 mb-6" />
-              <h3 className="text-[20px] font-bold">Hardened Logic</h3>
-              <p className="mt-4 text-slate-400 leading-7">Parameter waktu akan dikunci di blockchain untuk menjamin pemilihan tidak dapat dimanipulasi setelah dimulai.</p>
-           </div>
-        </aside>
-
-        <div className="space-y-10 lg:col-span-2">
-
-          {!isReadOnly ? (
-            <section className="space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-[14px] font-bold uppercase tracking-widest">Dokumen Pendukung</h2>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Opsional</span>
-              </div>
-              <label className="block cursor-pointer rounded-[28px] border border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:border-slate-400 hover:bg-white">
-                <input
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  className="hidden"
-                  onChange={handleSupportingDocumentChange}
-                />
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-slate-700">
-                  <Upload className="h-6 w-6" />
-                </div>
-                <p className="mt-4 text-[17px] font-semibold text-slate-900">Unggah surat rekomendasi</p>
-                <p className="mx-auto mt-2 max-w-[520px] text-[14px] leading-7 text-slate-500">
-                  Lampirkan surat rekomendasi atau dokumen pendukung lain untuk review superadmin. Format PDF maksimal 10 MB.
-                </p>
-              </label>
-              {supportingDocument ? (
-                <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-                      <FileText className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-[14px] font-semibold text-slate-900">{supportingDocument.name}</p>
-                      <p className="mt-0.5 text-[12px] text-slate-500">{(supportingDocument.size / 1024 / 1024).toFixed(2)} MB</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSupportingDocument(null)}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"
-                    aria-label="Hapus dokumen pendukung"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : null}
-            </section>
-          ) : null}
-
-          <section className="space-y-4">
-            <div>
-              <h2 className="text-[14px] font-bold uppercase tracking-widest">Jadwal Pemilihan</h2>
-              <p className="mt-2 text-[14px] leading-6 text-slate-500">
-                Admin cukup mengatur kapan pemilih mulai mencoblos, kapan suara dikonfirmasi, dan kapan pemilihan selesai. Tahap persiapan/Registration berjalan otomatis di belakang layar untuk sinkronisasi daftar pemilih.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-[13px] leading-6 text-blue-800">
-              Untuk uji coba cepat, jadwal boleh dibuat berdekatan. Contoh: pencoblosan mulai sekarang, konfirmasi suara 1 menit setelahnya, selesai 1 menit berikutnya.
-            </div>
-            <div className="grid sm:grid-cols-3 gap-4">
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Pencoblosan <RequiredAsterisk /></span>
-                <input data-validation-field="commitDate" type="datetime-local" name="commitDate" value={formData.commitDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-                <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Pemilih mulai bisa memilih dan mengunci suara.</p>
-                {errors.commitDate && <p className="mt-1 text-[12px] text-red-500">{errors.commitDate}</p>}
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Konfirmasi Suara <RequiredAsterisk /></span>
-                <input data-validation-field="revealDate" type="datetime-local" name="revealDate" value={formData.revealDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-                <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Pemilih mengesahkan suara yang sudah dikunci.</p>
-                {errors.revealDate && <p className="mt-1 text-[12px] text-red-500">{errors.revealDate}</p>}
-              </label>
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Selesai Pemilihan <RequiredAsterisk /></span>
-                <input data-validation-field="endedDate" type="datetime-local" name="endedDate" value={formData.endedDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-                <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Hasil akhir ditutup dan siap diaudit.</p>
-                {errors.endedDate && <p className="mt-1 text-[12px] text-red-500">{errors.endedDate}</p>}
-              </label>
-            </div>
-            {errors.dateRange && <p className="text-red-500 text-[12px]">{errors.dateRange}</p>}
-          </section>
-
-          <section className="space-y-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Kandidat</h2>
-                <p className="mt-1 text-[14px] leading-6 text-slate-600">Isi profil kandidat yang akan tampil kepada pemilih saat pemilihan berjalan.</p>
-              </div>
-              {!isReadOnly ? (
-                <button
-                  type="button"
-                  onClick={addCandidateEntry}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50"
-                >
-                  + Tambah Kandidat
-                </button>
-              ) : null}
-            </div>
-            {formData.candidateEntries.map((c, i) => (
-              <div key={i} className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-5 transition-colors duration-150 hover:border-slate-300">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-[13px] font-semibold text-slate-700">{i + 1}</span>
-                    <div>
-                      <p className="text-[14px] font-semibold text-slate-900">Profil Kandidat {i + 1}</p>
-                      <p className="mt-0.5 text-[12px] text-slate-400">Foto, identitas, bio, visi, misi, dan media kandidat.</p>
-                    </div>
-                  </div>
-                  {!isReadOnly ? (
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Foto opsional</span>
-                      {formData.candidateEntries.length > 1 ? (
-                        <button
-                          type="button"
-                          onClick={() => requestRemoveCandidate(i)}
-                          aria-label={`Hapus kandidat ${i + 1}`}
-                          title="Hapus kandidat"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-4 focus:ring-red-500/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-stretch">
-                  <div className="flex h-full flex-col gap-2">
-                    {!isReadOnly ? (
-                      <div className="flex h-full flex-col gap-2">
-                        <label
-                          onDragOver={(event) => event.preventDefault()}
-                          onDrop={(event) => handleCandidatePhotoDrop(i, event)}
-                          className="relative flex min-h-[240px] w-full flex-1 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[14px] border border-dashed border-slate-300 bg-white text-center transition-colors duration-150 hover:border-slate-400 hover:bg-slate-50 focus-within:border-slate-900 focus-within:ring-4 focus-within:ring-slate-900/5 lg:min-h-[384px]"
-                        >
-                          <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" className="sr-only" onChange={(event) => handleCandidatePhotoChange(i, event)} />
-                          {candidatePhotoPreviews[i] || c.avatarPath ? (
-                            <div className="absolute inset-0 h-full w-full">
-                              <img
-                                src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''}
-                                alt={`Foto kandidat ${c.name || i + 1}`}
-                                className="h-full w-full object-cover"
-                              />
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
-                                <p className="text-[13px] font-semibold text-white">Ganti Foto</p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center px-4 py-6">
-                              <Upload className="mb-2.5 h-5 w-5 text-slate-400" />
-                              <p className="text-[13px] font-semibold leading-5 text-slate-900">Pilih file atau tarik ke sini.</p>
-                              <p className="mt-1 text-[12px] leading-5 text-slate-400">JPG atau PNG, maksimal 5 MB.</p>
-                              <span className="mt-4 inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50">
-                                Pilih File
-                              </span>
-                            </div>
-                          )}
-                        </label>
-                        {(candidatePhotoPreviews[i] || c.avatarPath) ? (
-                          <button type="button" onClick={() => removeCandidatePhoto(i)} className="inline-flex h-9 items-center justify-center rounded-xl text-[13px] font-medium text-red-600 hover:bg-red-50">
-                            Hapus foto
-                          </button>
-                        ) : null}
-                      </div>
-                    ) : candidatePhotoPreviews[i] || c.avatarPath ? (
-                      <div className="min-h-[240px] flex-1 overflow-hidden rounded-[14px] border border-slate-200 bg-slate-50 lg:min-h-[384px]">
-                        <img src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''} alt={`Foto kandidat ${c.name || i + 1}`} className="h-full min-h-[240px] w-full object-cover lg:min-h-[384px]" />
-                      </div>
-                    ) : (
-                      <div className="flex min-h-[240px] w-full flex-1 flex-col items-center justify-center rounded-[14px] border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-slate-400 lg:min-h-[384px]">
-                        <Upload className="mb-2.5 h-5 w-5" />
-                        <p className="text-[13px] font-semibold text-slate-500">Foto belum tersedia</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama lengkap <RequiredAsterisk /></span>
-                      <input data-validation-field={`candidate-${i}-name`} value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Contoh: Daniel Noveno" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">NPM/NIM <RequiredAsterisk /></span>
-                      <input data-validation-field={`candidate-${i}-studentId`} value={c.studentId || ''} onChange={e => handleCandidateChange(i, 'studentId', e.target.value.replace(/[^0-9]/g, ''))} disabled={isReadOnly} placeholder="Contoh: 220711663" inputMode="numeric" pattern="[0-9]*" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Fakultas/Prodi <span className="font-normal text-slate-400">(opsional)</span></span>
-                      <input value={c.faculty || ''} onChange={e => handleCandidateChange(i, 'faculty', e.target.value)} disabled={isReadOnly} placeholder="Contoh: FTI / Informatika" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Link video YouTube <span className="font-normal text-slate-400">(opsional)</span></span>
-                      <input value={c.youtubeUrl || ''} onChange={e => handleCandidateChange(i, 'youtubeUrl', e.target.value)} disabled={isReadOnly} placeholder="https://youtube.com/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-                    </label>
-                    <label className="block sm:col-span-2">
-                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Bio singkat <span className="font-normal text-slate-400">(opsional)</span></span>
-                      <RichTextEditor value={c.bio || ''} onChange={(value) => handleCandidateChange(i, 'bio', value)} disabled={isReadOnly} placeholder="Tuliskan latar belakang atau pengalaman organisasi kandidat secara singkat." minHeightClassName="min-h-[96px]" />
-                    </label>
-                    <label className="block sm:col-span-2">
-                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Visi kandidat <RequiredAsterisk /></span>
-                      <RichTextEditor dataValidationField={`candidate-${i}-vision`} value={c.vision || ''} onChange={(value) => handleCandidateChange(i, 'vision', value)} disabled={isReadOnly} placeholder="Tuliskan visi utama kandidat secara ringkas." minHeightClassName="min-h-[96px]" />
-                    </label>
-                    <label className="block sm:col-span-2">
-                      <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Misi kandidat <RequiredAsterisk /></span>
-                      <RichTextEditor dataValidationField={`candidate-${i}-mission`} value={Array.isArray(c.mission) ? c.mission.join('\n') : c.mission || ''} onChange={(value) => handleCandidateChange(i, 'mission', value)} disabled={isReadOnly} placeholder="Tulis satu poin misi per baris. Gunakan toolbar untuk membuat numbering atau bullet." minHeightClassName="min-h-[120px]" />
-                      <span className="mt-1.5 block text-[12px] text-slate-400">Setiap baris akan disimpan sebagai satu poin misi.</span>
-                    </label>
-                  </div>
-                </div>
+                {index < STEP_LABELS.length - 1 && (
+                  <div className={`mx-3 h-px w-8 sm:w-16 ${currentStep > index ? 'bg-slate-900' : 'bg-slate-200'}`} />
+                )}
               </div>
             ))}
-            {errors.candidateCount ? <p className="text-[12px] text-red-500">{errors.candidateCount}</p> : null}
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 0: Informasi Umum ── */}
+      {(!stepper || currentStep === 0) && (
+        <div className="space-y-10">
+          <div>
+            {validationIssues.length > 0 ? (
+              <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800" role="alert">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="text-[13px] font-semibold">Lengkapi field berikut sebelum mengajukan proposal:</p>
+                    <ul className="mt-2 space-y-1 text-[12px] leading-6">
+                      {validationIssues.map((issue) => (
+                        <li key={`${issue.fieldKey}-${issue.message}`}>• <strong>{issue.label}:</strong> {issue.message}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            <section className="space-y-4">
+              <h2 className="text-[14px] font-bold uppercase tracking-widest">Informasi Dasar</h2>
+              <div className="grid gap-4">
+                <label className="block">
+                  <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama Pemilihan <RequiredAsterisk /></span>
+                  <input data-validation-field="title" name="title" value={formData.title} onChange={handleChange} disabled={isReadOnly} placeholder="Masukkan nama pemilihan..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  {errors.title && <p className="mt-1 text-[12px] text-red-500">{errors.title}</p>}
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Deskripsi</span>
+                  <textarea name="description" value={formData.description} onChange={handleChange} disabled={isReadOnly} placeholder="Tuliskan deskripsi pemilihan..." className="h-32 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                </label>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <span className="block text-[12px] font-semibold text-slate-600">Banner Pemilihan <span className="font-normal text-slate-400">(opsional)</span></span>
+                      <p className="mt-1 text-[12px] leading-5 text-slate-400">Gambar akan tampil sebagai background card dengan linear-gradient overlay.</p>
+                    </div>
+                    {(bannerImagePreview || formData.bannerImagePath) && !isReadOnly ? (
+                      <button type="button" onClick={removeBannerImage} className="inline-flex h-9 items-center justify-center rounded-xl text-[13px] font-medium text-red-600 hover:bg-red-50">
+                        Hapus banner
+                      </button>
+                    ) : null}
+                  </div>
+                  <label
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={handleBannerImageDrop}
+                    className="group block cursor-pointer rounded-2xl focus-within:outline-none focus-within:ring-4 focus-within:ring-slate-900/5"
+                  >
+                    <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" className="sr-only" onChange={handleBannerImageChange} disabled={isReadOnly} />
+                    <BannerPreviewCard
+                      imageUrl={bannerImagePreview ?? formData.bannerImagePath}
+                      title={formData.title || 'Nama Pemilihan'}
+                      description={formData.description || 'Deskripsi singkat pemilihan akan tampil di area ini.'}
+                      isReadOnly={isReadOnly}
+                    />
+                  </label>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div className="space-y-10">
+            {!isReadOnly ? (
+              <section className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-[14px] font-bold uppercase tracking-widest">Dokumen Pendukung</h2>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Opsional</span>
+                </div>
+                <label className="block cursor-pointer rounded-[28px] border border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:border-slate-400 hover:bg-white">
+                  <input
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    className="hidden"
+                    onChange={handleSupportingDocumentChange}
+                  />
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-slate-700">
+                    <Upload className="h-6 w-6" />
+                  </div>
+                  <p className="mt-4 text-[17px] font-semibold text-slate-900">Unggah surat rekomendasi</p>
+                  <p className="mx-auto mt-2 max-w-[520px] text-[14px] leading-7 text-slate-500">
+                    Lampirkan surat rekomendasi atau dokumen pendukung lain untuk review superadmin. Format PDF maksimal 10 MB.
+                  </p>
+                </label>
+                {supportingDocument ? (
+                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-[14px] font-semibold text-slate-900">{supportingDocument.name}</p>
+                        <p className="mt-0.5 text-[12px] text-slate-500">{(supportingDocument.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSupportingDocument(null)}
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200"
+                      aria-label="Hapus dokumen pendukung"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
+
+            <section className="space-y-4">
+              <div>
+                <h2 className="text-[14px] font-bold uppercase tracking-widest">Jadwal Pemilihan</h2>
+                <p className="mt-2 text-[14px] leading-6 text-slate-500">
+                  Admin cukup mengatur kapan pemilih mulai mencoblos, kapan suara dikonfirmasi, dan kapan pemilihan selesai. Tahap persiapan/Registration berjalan otomatis di belakang layar untuk sinkronisasi daftar pemilih.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-[13px] leading-6 text-blue-800">
+                Untuk uji coba cepat, jadwal boleh dibuat berdekatan. Contoh: pencoblosan mulai sekarang, konfirmasi suara 1 menit setelahnya, selesai 1 menit berikutnya.
+              </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <label className="block">
+                  <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Pencoblosan <RequiredAsterisk /></span>
+                  <input data-validation-field="commitDate" type="datetime-local" name="commitDate" value={formData.commitDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Pemilih mulai bisa memilih dan mengunci suara.</p>
+                  {errors.commitDate && <p className="mt-1 text-[12px] text-red-500">{errors.commitDate}</p>}
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Konfirmasi Suara <RequiredAsterisk /></span>
+                  <input data-validation-field="revealDate" type="datetime-local" name="revealDate" value={formData.revealDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Pemilih mengesahkan suara yang sudah dikunci.</p>
+                  {errors.revealDate && <p className="mt-1 text-[12px] text-red-500">{errors.revealDate}</p>}
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Selesai Pemilihan <RequiredAsterisk /></span>
+                  <input data-validation-field="endedDate" type="datetime-local" name="endedDate" value={formData.endedDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Hasil akhir ditutup dan siap diaudit.</p>
+                  {errors.endedDate && <p className="mt-1 text-[12px] text-red-500">{errors.endedDate}</p>}
+                </label>
+              </div>
+              {errors.dateRange && <p className="text-red-500 text-[12px]">{errors.dateRange}</p>}
+            </section>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 1: Kandidat ── */}
+      {(!stepper || currentStep === 1) && (
+        <section className="space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Kandidat</h2>
+              <p className="mt-1 text-[14px] leading-6 text-slate-600">Isi profil kandidat yang akan tampil kepada pemilih saat pemilihan berjalan.</p>
+            </div>
             {!isReadOnly ? (
               <button
                 type="button"
                 onClick={addCandidateEntry}
-                className="flex min-h-[76px] w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 text-center text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-400 hover:bg-white"
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50"
               >
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-[16px] text-slate-700">+</span>
-                Tambah Kandidat Lagi
+                + Tambah Kandidat
               </button>
             ) : null}
-          </section>
-
-          <section className="space-y-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Whitelist Pemilih</h2>
-                <p className="mt-1 text-[14px] leading-6 text-slate-600">
-                  Masukkan wallet pemilih sejak proposal dibuat. Tahap persiapan on-chain berjalan di belakang layar sebelum pencoblosan dimulai, sehingga admin tidak perlu mengatur jadwal Registration terpisah.
-                </p>
+          </div>
+          {formData.candidateEntries.map((c, i) => (
+            <div key={i} className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-5 transition-colors duration-150 hover:border-slate-300">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-[13px] font-semibold text-slate-700">{i + 1}</span>
+                  <div>
+                    <p className="text-[14px] font-semibold text-slate-900">Profil Kandidat {i + 1}</p>
+                    <p className="mt-0.5 text-[12px] text-slate-400">Foto, identitas, bio, visi, misi, dan media kandidat.</p>
+                  </div>
+                </div>
+                {!isReadOnly ? (
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Foto opsional</span>
+                    {formData.candidateEntries.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => requestRemoveCandidate(i)}
+                        aria-label={`Hapus kandidat ${i + 1}`}
+                        title="Hapus kandidat"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-4 focus:ring-red-500/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
-              <span className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                {uniqueWhitelistWallets.length} wallet unik
+
+              <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-stretch">
+                <div className="flex h-full flex-col gap-2">
+                  {!isReadOnly ? (
+                    <div className="flex h-full flex-col gap-2">
+                      <label
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={(event) => handleCandidatePhotoDrop(i, event)}
+                        className="relative flex min-h-[240px] w-full flex-1 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[14px] border border-dashed border-slate-300 bg-white text-center transition-colors duration-150 hover:border-slate-400 hover:bg-slate-50 focus-within:border-slate-900 focus-within:ring-4 focus-within:ring-slate-900/5 lg:min-h-[384px]"
+                      >
+                        <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" className="sr-only" onChange={(event) => handleCandidatePhotoChange(i, event)} />
+                        {candidatePhotoPreviews[i] || c.avatarPath ? (
+                          <div className="absolute inset-0 h-full w-full">
+                            <img
+                              src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''}
+                              alt={`Foto kandidat ${c.name || i + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
+                              <p className="text-[13px] font-semibold text-white">Ganti Foto</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center px-4 py-6">
+                            <Upload className="mb-2.5 h-5 w-5 text-slate-400" />
+                            <p className="text-[13px] font-semibold leading-5 text-slate-900">Pilih file atau tarik ke sini.</p>
+                            <p className="mt-1 text-[12px] leading-5 text-slate-400">JPG atau PNG, maksimal 5 MB.</p>
+                            <span className="mt-4 inline-flex h-9 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50">
+                              Pilih File
+                            </span>
+                          </div>
+                        )}
+                      </label>
+                      {(candidatePhotoPreviews[i] || c.avatarPath) ? (
+                        <button type="button" onClick={() => removeCandidatePhoto(i)} className="inline-flex h-9 items-center justify-center rounded-xl text-[13px] font-medium text-red-600 hover:bg-red-50">
+                          Hapus foto
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : candidatePhotoPreviews[i] || c.avatarPath ? (
+                    <div className="min-h-[240px] flex-1 overflow-hidden rounded-[14px] border border-slate-200 bg-slate-50 lg:min-h-[384px]">
+                      <img src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''} alt={`Foto kandidat ${c.name || i + 1}`} className="h-full min-h-[240px] w-full object-cover lg:min-h-[384px]" />
+                    </div>
+                  ) : (
+                    <div className="flex min-h-[240px] w-full flex-1 flex-col items-center justify-center rounded-[14px] border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-slate-400 lg:min-h-[384px]">
+                      <Upload className="mb-2.5 h-5 w-5" />
+                      <p className="text-[13px] font-semibold text-slate-500">Foto belum tersedia</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Nama lengkap <RequiredAsterisk /></span>
+                    <input data-validation-field={`candidate-${i}-name`} value={c.name} onChange={e => handleCandidateChange(i, 'name', e.target.value)} disabled={isReadOnly} placeholder="Contoh: Daniel Noveno" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">NPM/NIM <RequiredAsterisk /></span>
+                    <input data-validation-field={`candidate-${i}-studentId`} value={c.studentId || ''} onChange={e => handleCandidateChange(i, 'studentId', e.target.value.replace(/[^0-9]/g, ''))} disabled={isReadOnly} placeholder="Contoh: 220711663" inputMode="numeric" pattern="[0-9]*" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Fakultas/Prodi <span className="font-normal text-slate-400">(opsional)</span></span>
+                    <input value={c.faculty || ''} onChange={e => handleCandidateChange(i, 'faculty', e.target.value)} disabled={isReadOnly} placeholder="Contoh: FTI / Informatika" className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Link video YouTube <span className="font-normal text-slate-400">(opsional)</span></span>
+                    <input value={c.youtubeUrl || ''} onChange={e => handleCandidateChange(i, 'youtubeUrl', e.target.value)} disabled={isReadOnly} placeholder="https://youtube.com/..." className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  </label>
+                  <label className="block sm:col-span-2">
+                    <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Bio singkat <span className="font-normal text-slate-400">(opsional)</span></span>
+                    <RichTextEditor value={c.bio || ''} onChange={(value) => handleCandidateChange(i, 'bio', value)} disabled={isReadOnly} placeholder="Tuliskan latar belakang atau pengalaman organisasi kandidat secara singkat." minHeightClassName="min-h-[96px]" />
+                  </label>
+                  <label className="block sm:col-span-2">
+                    <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Visi kandidat <RequiredAsterisk /></span>
+                    <RichTextEditor dataValidationField={`candidate-${i}-vision`} value={c.vision || ''} onChange={(value) => handleCandidateChange(i, 'vision', value)} disabled={isReadOnly} placeholder="Tuliskan visi utama kandidat secara ringkas." minHeightClassName="min-h-[96px]" />
+                  </label>
+                  <label className="block sm:col-span-2">
+                    <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Misi kandidat <RequiredAsterisk /></span>
+                    <RichTextEditor dataValidationField={`candidate-${i}-mission`} value={Array.isArray(c.mission) ? c.mission.join('\n') : c.mission || ''} onChange={(value) => handleCandidateChange(i, 'mission', value)} disabled={isReadOnly} placeholder="Tulis satu poin misi per baris. Gunakan toolbar untuk membuat numbering atau bullet." minHeightClassName="min-h-[120px]" />
+                    <span className="mt-1.5 block text-[12px] text-slate-400">Setiap baris akan disimpan sebagai satu poin misi.</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          ))}
+          {errors.candidateCount ? <p className="text-[12px] text-red-500">{errors.candidateCount}</p> : null}
+          {!isReadOnly ? (
+            <button
+              type="button"
+              onClick={addCandidateEntry}
+              className="flex min-h-[76px] w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 text-center text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-400 hover:bg-white"
+            >
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-[16px] text-slate-700">+</span>
+              Tambah Kandidat Lagi
+            </button>
+          ) : null}
+        </section>
+      )}
+
+      {/* ── Step 2: Whitelist (Master Voter Selection) ── */}
+      {(!stepper || currentStep === 2) && (
+        <section className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Whitelist Pemilih</h2>
+              <p className="mt-1 text-[14px] leading-6 text-slate-600">
+                Pilih pemilih dari daftar data master yang sudah terdaftar. Wallet address akan otomatis diambil dari data pemilih.
+              </p>
+            </div>
+            <span className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+              {selectedWhitelistVoterIds.size} dipilih
+            </span>
+          </div>
+
+          {/* Search & Filter */}
+          <div className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={voterSearch}
+                onChange={(e) => setVoterSearch(e.target.value)}
+                placeholder="Cari berdasarkan NPM, nama, atau email..."
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-4 text-[14px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setShowVoterFilters(!showVoterFilters)}
+                className="inline-flex h-9 items-center gap-2 rounded-xl bg-slate-100 px-3 text-[13px] font-medium text-slate-700 hover:bg-slate-200"
+              >
+                <Filter className="h-3.5 w-3.5" />
+                Filter Prodi
+                {voterFilterProdi && (
+                  <span className="ml-1 rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-white">
+                    {voterFilterProdi}
+                  </span>
+                )}
+              </button>
+              <span className="text-[12px] text-slate-500">
+                {allMasterVoters.length} data ditemukan
               </span>
             </div>
-            <label className="block rounded-[24px] border border-slate-200 bg-white p-5">
-              <span className="mb-2 block text-[12px] font-semibold text-slate-600">Alamat wallet pemilih <span className="font-normal text-slate-400">(opsional, 1 alamat per baris)</span></span>
-              <textarea
-                name="whitelistWallets"
-                value={formData.whitelistWallets}
-                onChange={handleChange}
-                disabled={isReadOnly}
-                placeholder="0x1234...abcd\n0xabcd...1234"
-                className="min-h-[180px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-[13px] leading-6 text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400"
-              />
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px]">
-                <span className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700">{Math.max(whitelistLines.length - invalidWhitelistCount, 0)} valid</span>
-                {invalidWhitelistCount > 0 ? <span className="rounded-full bg-red-50 px-3 py-1 font-semibold text-red-700">{invalidWhitelistCount} format tidak valid tidak akan disimpan</span> : null}
-                <span className="text-slate-500">Fitur tambah/import whitelist di halaman manajemen pemilihan tetap tersedia setelah deploy.</span>
+            {showVoterFilters && (
+              <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                <button
+                  type="button"
+                  onClick={() => setVoterFilterProdi('')}
+                  className={`inline-flex h-8 items-center rounded-xl px-3 text-[12px] font-medium transition ${
+                    !voterFilterProdi ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  Semua
+                </button>
+                {prodiOptions.map((prodi) => (
+                  <button
+                    key={prodi}
+                    type="button"
+                    onClick={() => setVoterFilterProdi(prodi === voterFilterProdi ? '' : prodi)}
+                    className={`inline-flex h-8 items-center rounded-xl px-3 text-[12px] font-medium transition ${
+                      voterFilterProdi === prodi ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {prodi}
+                  </button>
+                ))}
               </div>
-            </label>
-          </section>
+            )}
+          </div>
+
+          {/* Selected summary */}
+          {selectedWhitelistVoterIds.size > 0 && (
+            <div className="flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3">
+              <span className="text-[13px] font-medium text-blue-800">
+                {selectedWhitelistVoterIds.size} pemilih dipilih untuk whitelist
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedWhitelistVoterIds(new Set())}
+                className="text-[12px] font-medium text-blue-600 hover:text-blue-800"
+              >
+                Batalkan Semua
+              </button>
+            </div>
+          )}
+
+          {/* Voter list */}
+          <div className="max-h-[480px] overflow-y-auto rounded-2xl border border-slate-100">
+            {masterVotersQuery.isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                <span className="ml-2 text-[13px] text-slate-500">Memuat data pemilih...</span>
+              </div>
+            ) : allMasterVoters.length === 0 ? (
+              <div className="py-12 text-center">
+                <Users className="mx-auto h-8 w-8 text-slate-300" />
+                <p className="mt-3 text-[14px] text-slate-500">Tidak ada data pemilih ditemukan.</p>
+                <p className="mt-1 text-[12px] text-slate-400">Tambahkan data master voter terlebih dahulu di halaman superadmin.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {allMasterVoters.map((voter) => {
+                  const isSelected = selectedWhitelistVoterIds.has(voter.id)
+                  const hasWallet = Boolean(voter.walletAddress)
+                  const initials = voter.fullName.split(' ').filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || 'VT'
+                  return (
+                    <label
+                      key={voter.id}
+                      className={`flex cursor-pointer items-center gap-3 px-4 py-3 transition hover:bg-slate-50 ${
+                        isSelected ? 'bg-blue-50/50' : ''
+                      } ${!hasWallet ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        disabled={!hasWallet}
+                        onChange={() => {
+                          if (!hasWallet) return
+                          setSelectedWhitelistVoterIds((prev) => {
+                            const next = new Set(prev)
+                            if (next.has(voter.id)) next.delete(voter.id)
+                            else next.add(voter.id)
+                            return next
+                          })
+                        }}
+                        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                      />
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[12px] font-semibold text-slate-600">
+                        {initials}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[14px] font-medium text-slate-900">{voter.fullName}</span>
+                          {voter.prodi && (
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                              {voter.prodi}
+                            </span>
+                          )}
+                          {voter.angkatan && (
+                            <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[10px] text-slate-400">
+                              {voter.angkatan}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-2 text-[12px] text-slate-500">
+                          <span className="font-mono">{voter.nim}</span>
+                          <span>·</span>
+                          <span className="truncate">{voter.email}</span>
+                          {voter.walletAddress && (
+                            <>
+                              <span>·</span>
+                              <span className="font-mono text-[11px]">{voter.walletAddress.slice(0, 6)}...{voter.walletAddress.slice(-4)}</span>
+                            </>
+                          )}
+                        </div>
+                        {!hasWallet && (
+                          <p className="mt-0.5 text-[11px] text-amber-600">Belum memiliki wallet address</p>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
+                    </label>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ── Navigation Buttons (stepper mode) ── */}
+      {stepper && (
+        <div className="flex items-center justify-between pt-4">
+          <button
+            type="button"
+            onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
+            disabled={currentStep === 0}
+            className="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-[14px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Sebelumnya
+          </button>
+          {currentStep < STEP_LABELS.length - 1 ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (canAdvanceStep(currentStep)) {
+                  setCurrentStep((s) => s + 1)
+                  setValidationIssues([])
+                } else {
+                  const nextErrors = validateForm(formData)
+                  const issues = getValidationIssues(formData, nextErrors)
+                  setErrors(nextErrors)
+                  setValidationIssues(issues)
+                  showToast({
+                    title: 'Lengkapi field pada langkah ini',
+                    description: issues.length > 0 ? `${issues[0].label}: ${issues[0].message}` : 'Isi field yang wajib diisi terlebih dahulu.',
+                    tone: 'error',
+                  })
+                }
+              }}
+              className="inline-flex h-12 items-center gap-2 rounded-2xl bg-black px-6 text-[14px] font-medium text-white transition hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Selanjutnya
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="inline-flex h-12 items-center gap-2 rounded-2xl bg-black px-6 text-[14px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Save className="h-4 w-4" /> {isUploadingBannerImage ? 'Mengunggah banner...' : isUploadingCandidatePhotos ? 'Mengunggah foto...' : isUploadingDocument ? 'Mengunggah dokumen...' : saveProposalDraft.isPending ? 'Menyimpan...' : submitLabel}
+            </button>
+          )}
         </div>
-      </div>
+      )}
       <ConfirmDialog
         open={removalDialogOpen}
         title="Hapus kandidat ini?"

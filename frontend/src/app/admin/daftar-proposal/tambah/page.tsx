@@ -9,6 +9,7 @@ export default function AdminCreateProposalPage() {
       <ProposalForm
         pageTitle="Formulir Proposal"
         pageDescription="Ajukan proposal pemilihan ke superadmin. Pemilihan baru akan dibuat di blockchain hanya setelah proposal disetujui dan di-deploy oleh superadmin."
+        stepper
       />
     </AdminShell>
   )
