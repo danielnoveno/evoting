@@ -142,7 +142,7 @@ function ConnectWalletContent() {
     return 'voter'
   }, [currentProfile?.role, adminInviteTokenFromRedirect, activateParam, redirectParam])
 
-  const activationMode = activateParam === '1' || activateParam === 'admin' || Boolean(adminInviteTokenFromRedirect) || (Boolean(authSession) && activationContext === 'admin')
+  const activationMode = activateParam === '1' || activateParam === 'admin' || activateParam === 'voter' || Boolean(adminInviteTokenFromRedirect) || (Boolean(authSession) && activationContext === 'admin')
   const voterActivationMissingToken = activationMode && activationContext === 'voter' && !activationToken
   const adminActivationMissingToken = activateParam === 'admin' && activationContext === 'admin' && !activationToken && !currentProfile
   const redirectTarget = useMemo(() => {
@@ -245,9 +245,13 @@ function ConnectWalletContent() {
         ? 'Link aktivasi admin tidak membawa token undangan. Minta superadmin mengirim ulang link aktivasi terbaru.'
       : ''
   const isAdminActivationFlow = activationMode && activationContext === 'admin'
+  const isVoterSsoFirstFlow = activationMode && activationContext === 'voter' && Boolean(authSession)
   const completedSteps = isAdminActivationFlow
     ? (authSession ? 1 : 0) + (isConnected ? 1 : 0) + (isWalletBound ? 1 : 0)
-    : (isConnected ? 1 : 0) + (authSession ? 1 : 0) + (isWalletBound ? 1 : 0)
+    : isVoterSsoFirstFlow
+      ? (isConnected ? 1 : 0) + (isWalletBound ? 1 : 0)
+      : (isConnected ? 1 : 0) + (authSession ? 1 : 0) + (isWalletBound ? 1 : 0)
+  const totalSteps = isVoterSsoFirstFlow ? 2 : 3
   const currentStepLabel = isAdminActivationFlow
     ? !authSession
       ? 'Tahap 1 dari 3'
@@ -256,13 +260,19 @@ function ConnectWalletContent() {
         : !isWalletBound
           ? 'Tahap 3 dari 3'
           : 'Aktivasi selesai'
-    : !isConnected
-      ? activationMode ? 'Tahap 1 dari 3' : 'Sambungkan Dompet'
-      : !authSession
-        ? activationMode ? 'Tahap 2 dari 3' : 'Masuk dengan Akun Kampus'
+    : isVoterSsoFirstFlow
+      ? !isConnected
+        ? 'Tahap 1 dari 2'
         : !isWalletBound
-          ? activationMode ? 'Tahap 3 dari 3' : 'Aktifkan Hak Suara'
-          : activationMode ? 'Aktivasi selesai' : 'Selesai'
+          ? 'Tahap 2 dari 2'
+          : 'Aktivasi selesai'
+      : !isConnected
+        ? activationMode ? 'Tahap 1 dari 3' : 'Sambungkan Dompet'
+        : !authSession
+          ? activationMode ? 'Tahap 2 dari 3' : 'Masuk dengan Akun Kampus'
+          : !isWalletBound
+            ? activationMode ? 'Tahap 3 dari 3' : 'Aktifkan Hak Suara'
+            : activationMode ? 'Aktivasi selesai' : 'Selesai'
 
   // Auto-bind if both are ready but not yet bound
   useEffect(() => {
@@ -481,16 +491,16 @@ function ConnectWalletContent() {
                           stroke="currentColor"
                           strokeWidth="3"
                           strokeLinecap="round"
-                          strokeDasharray={`${completedSteps * 33.34} 100`}
+                          strokeDasharray={`${completedSteps * (100 / totalSteps)} 100`}
                           className="text-emerald-500"
                         />
                       </svg>
-                      <span className="absolute text-[13px] font-semibold text-slate-700">{completedSteps}/3</span>
+                      <span className="absolute text-[13px] font-semibold text-slate-700">{completedSteps}/{totalSteps}</span>
                     </div>
                   </div>
 
                   <div className="relative mt-10 space-y-5">
-                    <div className="absolute bottom-16 left-[18px] top-12 border-l border-dashed border-slate-300" aria-hidden="true" />
+                    <div className={`absolute border-l border-dashed border-slate-300 ${isVoterSsoFirstFlow ? 'bottom-16 left-[18px] top-12' : 'bottom-16 left-[18px] top-12'}`} aria-hidden="true" />
 
                     {isAdminActivationFlow ? (
                       <>
@@ -518,6 +528,33 @@ function ConnectWalletContent() {
                         </p>
                       </div>
                       {authSession && !isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
+                    </div>
+                      </>
+                    ) : isVoterSsoFirstFlow ? (
+                      <>
+                    <div className={`relative flex items-center gap-4 rounded-lg p-4 bg-white`}>
+                      <div className="z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                        <Check className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-[14px] font-semibold text-slate-900">Verifikasi Akun Kampus</h2>
+                        <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
+                          Akun kampus sudah terverifikasi.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${!isConnected ? 'bg-slate-100' : 'bg-white'}`}>
+                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isConnected ? 'bg-emerald-50 text-emerald-600' : 'bg-[#0F172A] text-white'}`}>
+                        {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-[14px] font-semibold text-slate-900">Sambungkan Dompet</h2>
+                        <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
+                          {isConnected ? 'Dompet sudah tersambung.' : 'Hubungkan dompet sebagai identitas digital.'}
+                        </p>
+                      </div>
+                      {!isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
                     </div>
                       </>
                     ) : (
@@ -550,7 +587,7 @@ function ConnectWalletContent() {
                       </>
                     )}
 
-                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${isConnected && authSession && !isWalletBound ? 'bg-slate-100' : 'bg-white'} ${!isConnected || !authSession ? 'opacity-50' : ''}`}>
+                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${((!isVoterSsoFirstFlow && isConnected && authSession) || (isVoterSsoFirstFlow && isConnected)) && !isWalletBound ? 'bg-slate-100' : 'bg-white'} ${(!isVoterSsoFirstFlow && (!isConnected || !authSession)) || (isVoterSsoFirstFlow && !isConnected) ? 'opacity-50' : ''}`}>
                       <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isWalletBound ? 'bg-emerald-50 text-emerald-600' : isConnected && authSession ? 'bg-[#0F172A] text-white' : 'bg-slate-100 text-slate-400'}`}>
                         {isWalletBound ? <Check className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
                       </div>
@@ -569,9 +606,9 @@ function ConnectWalletContent() {
                   <div className="w-full">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">{currentStepLabel}</p>
 
-                    {((!isAdminActivationFlow && !isConnected) || (isAdminActivationFlow && authSession && !isConnected)) && (
+                    {((!isAdminActivationFlow && !isVoterSsoFirstFlow && !isConnected) || (isAdminActivationFlow && authSession && !isConnected) || (isVoterSsoFirstFlow && !isConnected)) && (
                       <div className="mt-8 w-full">
-                        <h2 className="text-[20px] font-semibold text-slate-900">{isAdminActivationFlow ? 'Tahap 2 — Sambungkan Dompet' : activationMode ? 'Tahap 1 — Sambungkan Dompet' : 'Sambungkan Dompet'}</h2>
+                        <h2 className="text-[20px] font-semibold text-slate-900">{isAdminActivationFlow ? 'Tahap 2 — Sambungkan Dompet' : activationMode ? isVoterSsoFirstFlow ? 'Tahap 2 — Sambungkan Dompet' : 'Tahap 1 — Sambungkan Dompet' : 'Sambungkan Dompet'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationMode
                             ? activationContext === 'admin'
@@ -584,9 +621,18 @@ function ConnectWalletContent() {
                           <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50/60 p-5">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">{activationContext === 'admin' ? 'Cara Aktivasi Admin' : 'Cara Aktivasi Pemilih'}</p>
                             <div className="mt-3 space-y-2 text-[13px] leading-6 text-blue-900/80">
-                              <p><strong>Tahap 1.</strong> {activationContext === 'admin' ? 'Masuk dengan email organisasi yang sudah didaftarkan.' : 'Sambungkan dompet yang akan dipakai untuk memilih.'}</p>
-                              <p><strong>Tahap 2.</strong> {activationContext === 'admin' ? 'Sambungkan dompet yang akan dipakai sebagai identitas admin.' : 'Masuk dengan akun kampus untuk verifikasi identitas.'}</p>
-                              <p><strong>Tahap 3.</strong> {activationContext === 'admin' ? 'Aktifkan akses admin' : 'Aktifkan hak suara'} dengan menautkan akun kampus dan dompet.</p>
+                              {isVoterSsoFirstFlow ? (
+                                <>
+                                  <p><strong>Tahap 1.</strong> Verifikasi akun kampus sudah selesai.</p>
+                                  <p><strong>Tahap 2.</strong> Sambungkan dompet digital, lalu aktifkan hak suara.</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p><strong>Tahap 1.</strong> {activationContext === 'admin' ? 'Masuk dengan email organisasi yang sudah didaftarkan.' : 'Sambungkan dompet yang akan dipakai untuk memilih.'}</p>
+                                  <p><strong>Tahap 2.</strong> {activationContext === 'admin' ? 'Sambungkan dompet yang akan dipakai sebagai identitas admin.' : 'Masuk dengan akun kampus untuk verifikasi identitas.'}</p>
+                                  <p><strong>Tahap 3.</strong> {activationContext === 'admin' ? 'Aktifkan akses admin' : 'Aktifkan hak suara'} dengan menautkan akun kampus dan dompet.</p>
+                                </>
+                              )}
                             </div>
                           </div>
                         )}
@@ -718,7 +764,7 @@ function ConnectWalletContent() {
 
                     {isConnected && authSession && !isWalletBound && (
                       <div className="mt-8 w-full">
-                          <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? `Tahap 3 — ${activationContext === 'admin' ? 'Aktifkan Akses Admin' : 'Aktifkan Hak Suara'}` : activationContext === 'admin' ? 'Aktifkan Akses Admin' : 'Aktifkan Hak Suara'}</h2>
+                          <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? `Tahap ${isVoterSsoFirstFlow ? 2 : 3} — ${activationContext === 'admin' ? 'Aktifkan Akses Admin' : 'Aktifkan Hak Suara'}` : activationContext === 'admin' ? 'Aktifkan Akses Admin' : 'Aktifkan Hak Suara'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationContext === 'admin'
                             ? 'Tautkan akun kampus dan dompet untuk mengaktifkan akses admin.'

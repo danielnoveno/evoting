@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       return { email: recipient.email, success: false, error: 'Gagal membuat token aktivasi voter.' }
     }
 
-    const activationLink = `${origin}/hubungkan-dompet?activate=1&token=${encodeURIComponent(token)}`
+    const activationLink = `${origin}/auth/aktivasi-voter?token=${encodeURIComponent(token)}`
     const emailResult = await sendVoterActivationEmail({
       displayName: recipient.name,
       email: recipient.email,

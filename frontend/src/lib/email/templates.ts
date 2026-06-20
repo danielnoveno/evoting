@@ -94,7 +94,7 @@ export function buildVoterActivationEmail(params: {
         Aktivasi Hak Suara Kamu
       </h2>
       <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#475569;">
-        Halo <strong>${params.displayName}</strong>, data kamu sudah disiapkan pada sistem Votein. Klik tombol di bawah untuk memulai aktivasi hak suara dengan 3 tahap singkat: sambungkan dompet, verifikasi akun kampus, lalu aktifkan hak suara.
+        Halo <strong>${params.displayName}</strong>, data kamu sudah disiapkan pada sistem Votein. Klik tombol di bawah untuk memulai aktivasi hak suara: verifikasi akun kampus (SSO) terlebih dahulu, lalu sambungkan dompet digital.
       </p>
       <a href="${params.activationLink}"
          style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;padding:12px 18px;background:#0F172A;color:#FFFFFF;text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;">

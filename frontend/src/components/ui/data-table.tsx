@@ -5,7 +5,7 @@ import { type HTMLAttributes, type ReactNode, type TdHTMLAttributes, useEffect, 
 import { createPortal } from 'react-dom'
 
 export function DataTableShell({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`overflow-hidden rounded-[28px] border border-slate-200 bg-white ${className}`}>{children}</section>
+  return <section className={`rounded-[28px] border border-slate-200 bg-white ${className}`}>{children}</section>
 }
 
 export function DataTableToolbar({ children, className = '' }: { children: ReactNode; className?: string }) {
@@ -22,7 +22,7 @@ export function DataTableCount({ title, description }: { title: string; descript
 }
 
 export function DataTableViewport({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`overflow-x-auto ${className}`}><div className="min-w-full">{children}</div></div>
+  return <div className={`overflow-hidden ${className}`}><div className="overflow-x-auto"><div className="min-w-full">{children}</div></div></div>
 }
 
 export function DataTable({ children, className = '' }: { children: ReactNode; className?: string }) {
@@ -224,19 +224,10 @@ export function SelectedCounter({
 }
 
 export function FloatingSelectionBar({ children }: { children: ReactNode }) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) return null
-
-  return createPortal(
-    <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[90] flex justify-center px-4">
+  return (
+    <div className="flex justify-center py-4">
       {children}
-    </div>,
-    document.body,
+    </div>
   )
 }
 
