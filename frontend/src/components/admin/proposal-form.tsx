@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { isAddress } from 'viem'
 import { useToast } from '@/components/ui/toast-provider'
-import { AlertTriangle, ArrowLeft, Check, FileImage, FileText, Filter, Loader2, Save, Search, Trash2, Upload, Users, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, FileImage, FileText, Filter, Loader2, Save, Search, Trash2, Upload, Users, X } from 'lucide-react'
 import { ScrollReveal } from '@/components/public/parallax'
 import { useCandidateAssetUpload } from '@/hooks/use-candidate-asset-upload'
 import { useFormDraft } from '@/hooks/use-form-draft'
@@ -990,8 +990,21 @@ export function ProposalForm({
                     <input data-validation-field={`candidate-${i}-studentId`} value={c.studentId || ''} onChange={e => handleCandidateChange(i, 'studentId', e.target.value.replace(/[^0-9]/g, ''))} disabled={isReadOnly} placeholder="Contoh: 220711663" inputMode="numeric" pattern="[0-9]*" maxLength={10} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                   </label>
                   <label className="block">
-                    <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Fakultas/Prodi <span className="font-normal text-slate-400">(opsional)</span></span>
-                    <input value={c.faculty || ''} onChange={e => handleCandidateChange(i, 'faculty', e.target.value)} disabled={isReadOnly} placeholder="Contoh: FTI / Informatika" maxLength={100} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                    <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Fakultas <span className="font-normal text-slate-400">(opsional)</span></span>
+                    <div className="relative">
+                      <select value={c.faculty || ''} onChange={e => handleCandidateChange(i, 'faculty', e.target.value)} disabled={isReadOnly} className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400">
+                        <option value="">Pilih fakultas...</option>
+                        <option value="FTI">Fakultas Teknologi dan Industri</option>
+                        <option value="FEB">Fakultas Ekonomi dan Bisnis</option>
+                        <option value="FH">Fakultas Hukum</option>
+                        <option value="FISIPOL">Fakultas Ilmu Sosial dan Ilmu Politik</option>
+                        <option value="FKIK">Fakultas Kedokteran dan Ilmu Kesehatan</option>
+                        <option value="FB">Fakultas Biologi</option>
+                        <option value="FPsi">Fakultas Psikologi</option>
+                        <option value="SPs">Sekolah Pascasarjana</option>
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    </div>
                   </label>
                   <label className="block">
                     <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Link video YouTube <span className="font-normal text-slate-400">(opsional)</span></span>
