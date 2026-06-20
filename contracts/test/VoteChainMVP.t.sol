@@ -147,6 +147,51 @@ contract VoteChainMVPTest {
         require(registry.spaceById(1) == spaceAddress, "registry mapping mismatch");
     }
 
+    function test_super_admin_can_deploy_with_initial_whitelist_and_schedule() external {
+        VoteChainRegistry registry = new VoteChainRegistry(address(this));
+        AdminClient admin = new AdminClient();
+        VoterClient voter1 = new VoterClient();
+        VoterClient voter2 = new VoterClient();
+
+        address[] memory voters = new address[](2);
+        voters[0] = address(voter1);
+        voters[1] = address(voter2);
+
+        uint256 commitStartsAt = block.timestamp + 10;
+        uint256 commitEndsAt = block.timestamp + 20;
+        uint256 revealStartsAt = commitEndsAt;
+        uint256 revealEndsAt = block.timestamp + 30;
+
+        (uint256 proposalId, uint256 spaceId, address spaceAddress) =
+            registry.createElectionForAdminWithConfig(
+                address(admin),
+                "Pemilihan Ketua HIMAFORKA",
+                "supabase://proposal-drafts/example",
+                2,
+                voters,
+                commitStartsAt,
+                commitEndsAt,
+                revealStartsAt,
+                revealEndsAt
+            );
+
+        ElectionSpace space = ElectionSpace(spaceAddress);
+        require(proposalId == 1, "proposalId should be 1");
+        require(spaceId == 1, "spaceId should be 1");
+        require(space.isWhitelisted(address(voter1)), "voter1 should be whitelisted");
+        require(space.isWhitelisted(address(voter2)), "voter2 should be whitelisted");
+        require(space.commitStartsAt() == commitStartsAt, "commit start mismatch");
+        require(space.commitEndsAt() == commitEndsAt, "commit end mismatch");
+        require(space.revealStartsAt() == revealStartsAt, "reveal start mismatch");
+        require(space.revealEndsAt() == revealEndsAt, "reveal end mismatch");
+
+        _warp(commitStartsAt + 1);
+        bytes32 salt = bytes32(uint256(123));
+        bytes32 commitment = _commitment(space, address(voter1), 1, salt);
+        voter1.commit(space, commitment);
+        require(space.hasCommitted(address(voter1)), "voter1 should commit without manual sync");
+    }
+
     function test_root_super_admin_can_add_and_remove_super_admin() external {
         VoteChainRegistry registry = new VoteChainRegistry(address(this));
         AdminClient facultyTu = new AdminClient();

@@ -109,6 +109,75 @@
     },
     {
       "type": "function",
+      "name": "createElectionForAdminWithConfig",
+      "inputs": [
+        {
+          "name": "spaceAdmin",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "metadataURI",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "candidateCount",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "initialVoters",
+          "type": "address[]",
+          "internalType": "address[]"
+        },
+        {
+          "name": "commitStartsAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "commitEndsAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "revealStartsAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "revealEndsAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "proposalId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "spaceId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "spaceAddress",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
       "name": "createElectionFromProposal",
       "inputs": [
         {
@@ -552,6 +621,61 @@
           "type": "address",
           "indexed": false,
           "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ElectionSpaceConfigured",
+      "inputs": [
+        {
+          "name": "spaceId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "space",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "proposalId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "voterCount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "commitStartsAt",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "commitEndsAt",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "revealStartsAt",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "revealEndsAt",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
         }
       ],
       "anonymous": false

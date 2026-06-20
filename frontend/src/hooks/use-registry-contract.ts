@@ -90,6 +90,35 @@ export function useRegistryContract() {
     })
   }, [writeContractAsync])
 
+  const createElectionForAdminWithConfig = useCallback((
+    spaceAdmin: Address,
+    title: string,
+    metadataURI: string,
+    candidateCount: number,
+    initialVoters: Address[],
+    commitStartsAt: bigint,
+    commitEndsAt: bigint,
+    revealStartsAt: bigint,
+    revealEndsAt: bigint,
+  ) => {
+    return writeContractAsync({
+      address: REGISTRY_ADDRESS as Address,
+      abi: registryAbi,
+      functionName: 'createElectionForAdminWithConfig',
+      args: [
+        spaceAdmin,
+        title,
+        metadataURI,
+        BigInt(candidateCount),
+        initialVoters,
+        commitStartsAt,
+        commitEndsAt,
+        revealStartsAt,
+        revealEndsAt,
+      ],
+    })
+  }, [writeContractAsync])
+
   const addSuperAdmin = useCallback((admin: Address) => {
     return writeContractAsync({
       address: REGISTRY_ADDRESS as Address,
@@ -160,6 +189,7 @@ export function useRegistryContract() {
     reviewProposal,
     createElection,
     createElectionForAdmin,
+    createElectionForAdminWithConfig,
     addSuperAdmin,
     removeSuperAdmin,
     submitProposal,

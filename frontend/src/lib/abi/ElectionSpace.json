@@ -1,763 +1,950 @@
 {
   "abi": [
     {
+      "type": "constructor",
       "inputs": [
         {
-          "internalType": "address",
           "name": "_registry",
-          "type": "address"
+          "type": "address",
+          "internalType": "address"
         },
         {
-          "internalType": "address",
           "name": "_spaceAdmin",
-          "type": "address"
+          "type": "address",
+          "internalType": "address"
         },
         {
-          "internalType": "uint256",
           "name": "_spaceId",
-          "type": "uint256"
+          "type": "uint256",
+          "internalType": "uint256"
         },
         {
-          "internalType": "uint256",
           "name": "_candidateCount",
-          "type": "uint256"
+          "type": "uint256",
+          "internalType": "uint256"
         },
         {
-          "internalType": "string",
           "name": "_title",
-          "type": "string"
+          "type": "string",
+          "internalType": "string"
         },
         {
-          "internalType": "string",
           "name": "_metadataURI",
-          "type": "string"
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "_initialActor",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "_initialVoters",
+          "type": "address[]",
+          "internalType": "address[]"
+        },
+        {
+          "name": "_commitStartsAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_commitEndsAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_revealStartsAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_revealEndsAt",
+          "type": "uint256",
+          "internalType": "uint256"
         }
       ],
-      "stateMutability": "nonpayable",
-      "type": "constructor"
+      "stateMutability": "nonpayable"
     },
     {
-      "inputs": [],
-      "name": "AlreadyCommitted",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "AlreadyRegistered",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "AlreadyRevealed",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "CommitmentMismatch",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "ElectionSuspended",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "ElectionTerminated",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "InvalidCandidate",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "InvalidPhaseSchedule",
-      "type": "error"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "enum ElectionSpace.Phase",
-          "name": "current",
-          "type": "uint8"
-        },
-        {
-          "internalType": "enum ElectionSpace.Phase",
-          "name": "requested",
-          "type": "uint8"
-        }
-      ],
-      "name": "InvalidPhaseTransition",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "NotAuthorized",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "NotCommittedYet",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "NotRegistered",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "NotRegistry",
-      "type": "error"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "enum ElectionSpace.Phase",
-          "name": "expected",
-          "type": "uint8"
-        },
-        {
-          "internalType": "enum ElectionSpace.Phase",
-          "name": "actual",
-          "type": "uint8"
-        }
-      ],
-      "name": "WrongPhase",
-      "type": "error"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "spaceId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "voter",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "bytes32",
-          "name": "commitment",
-          "type": "bytes32"
-        }
-      ],
-      "name": "Committed",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "spaceId",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "title",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "metadataURI",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "actor",
-          "type": "address"
-        }
-      ],
-      "name": "ElectionMetadataUpdated",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "spaceId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "enum ElectionSpace.ElectionStatus",
-          "name": "status",
-          "type": "uint8"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "actor",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "string",
-          "name": "reasonCode",
-          "type": "string"
-        }
-      ],
-      "name": "ElectionStatusChanged",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "spaceId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "enum ElectionSpace.Phase",
-          "name": "previousPhase",
-          "type": "uint8"
-        },
-        {
-          "indexed": true,
-          "internalType": "enum ElectionSpace.Phase",
-          "name": "newPhase",
-          "type": "uint8"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "actor",
-          "type": "address"
-        }
-      ],
-      "name": "PhaseChanged",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        { "indexed": true, "internalType": "uint256", "name": "spaceId", "type": "uint256" },
-        { "indexed": false, "internalType": "uint256", "name": "commitStartsAt", "type": "uint256" },
-        { "indexed": false, "internalType": "uint256", "name": "commitEndsAt", "type": "uint256" },
-        { "indexed": false, "internalType": "uint256", "name": "revealStartsAt", "type": "uint256" },
-        { "indexed": false, "internalType": "uint256", "name": "revealEndsAt", "type": "uint256" },
-        { "indexed": false, "internalType": "address", "name": "actor", "type": "address" }
-      ],
-      "name": "PhaseScheduleUpdated",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "spaceId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "voter",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "candidateId",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "newVoteCount",
-          "type": "uint256"
-        }
-      ],
-      "name": "Revealed",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "spaceId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "voter",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "relayer",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "candidateId",
-          "type": "uint256"
-        }
-      ],
-      "name": "RevealRelayed",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "spaceId",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "voter",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "bool",
-          "name": "isRegistered",
-          "type": "bool"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "actor",
-          "type": "address"
-        }
-      ],
-      "name": "WhitelistUpdated",
-      "type": "event"
-    },
-    {
-      "inputs": [],
+      "type": "function",
       "name": "candidateCount",
+      "inputs": [],
       "outputs": [
         {
-          "internalType": "uint256",
           "name": "",
-          "type": "uint256"
+          "type": "uint256",
+          "internalType": "uint256"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
+      "stateMutability": "view"
     },
     {
-      "inputs": [
+      "type": "function",
+      "name": "commitEndsAt",
+      "inputs": [],
+      "outputs": [
         {
-          "internalType": "bytes32",
-          "name": "commitment",
-          "type": "bytes32"
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
         }
       ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "commitStartsAt",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "commitVote",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "voter",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "candidateId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "bytes32",
-          "name": "salt",
-          "type": "bytes32"
+          "name": "commitment",
+          "type": "bytes32",
+          "internalType": "bytes32"
         }
       ],
-      "name": "revealFor",
       "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "stateMutability": "nonpayable"
     },
     {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
+      "type": "function",
       "name": "commitmentOf",
-      "outputs": [
+      "inputs": [
         {
-          "internalType": "bytes32",
           "name": "",
-          "type": "bytes32"
+          "type": "address",
+          "internalType": "address"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
     },
     {
-      "inputs": [],
+      "type": "function",
       "name": "currentPhase",
+      "inputs": [],
       "outputs": [
         {
-          "internalType": "uint8",
           "name": "",
-          "type": "uint8"
+          "type": "uint8",
+          "internalType": "enum ElectionSpace.Phase"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
+      "stateMutability": "view"
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "candidateId",
-          "type": "uint256"
-        }
-      ],
+      "type": "function",
       "name": "getResult",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "name": "hasCommitted",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "name": "hasRevealed",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "name": "isWhitelisted",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "metadataURI",
-      "outputs": [
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "voter",
-          "type": "address"
-        }
-      ],
-      "name": "registerVoter",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address[]",
-          "name": "voters",
-          "type": "address[]"
-        }
-      ],
-      "name": "registerVoters",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "phase",
-      "outputs": [
-        {
-          "internalType": "enum ElectionSpace.Phase",
-          "name": "",
-          "type": "uint8"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "registry",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
           "name": "candidateId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "bytes32",
-          "name": "salt",
-          "type": "bytes32"
+          "type": "uint256",
+          "internalType": "uint256"
         }
       ],
-      "name": "revealVote",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        { "internalType": "uint256", "name": "_commitStartsAt", "type": "uint256" },
-        { "internalType": "uint256", "name": "_commitEndsAt", "type": "uint256" },
-        { "internalType": "uint256", "name": "_revealStartsAt", "type": "uint256" },
-        { "internalType": "uint256", "name": "_revealEndsAt", "type": "uint256" }
-      ],
-      "name": "setPhaseSchedule",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "bool",
-          "name": "suspended",
-          "type": "bool"
-        },
-        {
-          "internalType": "address",
-          "name": "actor",
-          "type": "address"
-        },
-        {
-          "internalType": "string",
-          "name": "reasonCode",
-          "type": "string"
-        }
-      ],
-      "name": "setSuspended",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "spaceAdmin",
       "outputs": [
         {
-          "internalType": "address",
           "name": "",
-          "type": "address"
+          "type": "uint256",
+          "internalType": "uint256"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
+      "stateMutability": "view"
     },
     {
-      "inputs": [],
-      "name": "spaceId",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "status",
-      "outputs": [
-        {
-          "internalType": "uint8",
-          "name": "",
-          "type": "uint8"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
+      "type": "function",
+      "name": "hasCommitted",
       "inputs": [
         {
-          "internalType": "address",
-          "name": "actor",
-          "type": "address"
-        },
-        {
-          "internalType": "string",
-          "name": "reasonCode",
-          "type": "string"
+          "name": "",
+          "type": "address",
+          "internalType": "address"
         }
       ],
-      "name": "terminate",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "title",
       "outputs": [
         {
-          "internalType": "string",
           "name": "",
-          "type": "string"
+          "type": "bool",
+          "internalType": "bool"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
+      "stateMutability": "view"
     },
     {
-      "inputs": [],
-      "name": "transitionToNextPhase",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
+      "type": "function",
+      "name": "hasRevealed",
       "inputs": [
         {
-          "internalType": "address",
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "isWhitelisted",
+      "inputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "metadataURI",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "phase",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint8",
+          "internalType": "enum ElectionSpace.Phase"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "registerVoter",
+      "inputs": [
+        {
           "name": "voter",
-          "type": "address"
+          "type": "address",
+          "internalType": "address"
         }
       ],
-      "name": "unregisterVoter",
       "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "stateMutability": "nonpayable"
     },
     {
+      "type": "function",
+      "name": "registerVoters",
       "inputs": [
         {
-          "internalType": "string",
-          "name": "_title",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "_metadataURI",
-          "type": "string"
-        },
-        {
-          "internalType": "address",
-          "name": "actor",
-          "type": "address"
+          "name": "voters",
+          "type": "address[]",
+          "internalType": "address[]"
         }
       ],
-      "name": "updateMetadata",
       "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
+      "stateMutability": "nonpayable"
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "name": "voteCount",
+      "type": "function",
+      "name": "registry",
+      "inputs": [],
       "outputs": [
         {
-          "internalType": "uint256",
           "name": "",
-          "type": "uint256"
+          "type": "address",
+          "internalType": "address"
         }
       ],
-      "stateMutability": "view",
-      "type": "function"
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "revealEndsAt",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "revealFor",
+      "inputs": [
+        {
+          "name": "voter",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "candidateId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "salt",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "revealStartsAt",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "revealVote",
+      "inputs": [
+        {
+          "name": "candidateId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "salt",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setPhaseSchedule",
+      "inputs": [
+        {
+          "name": "_commitStartsAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_commitEndsAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_revealStartsAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "_revealEndsAt",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setSuspended",
+      "inputs": [
+        {
+          "name": "suspended",
+          "type": "bool",
+          "internalType": "bool"
+        },
+        {
+          "name": "actor",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "reasonCode",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "spaceAdmin",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "spaceId",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "status",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint8",
+          "internalType": "enum ElectionSpace.ElectionStatus"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "terminate",
+      "inputs": [
+        {
+          "name": "actor",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "reasonCode",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "title",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "transitionToNextPhase",
+      "inputs": [],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "unregisterVoter",
+      "inputs": [
+        {
+          "name": "voter",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "updateMetadata",
+      "inputs": [
+        {
+          "name": "_title",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "_metadataURI",
+          "type": "string",
+          "internalType": "string"
+        },
+        {
+          "name": "actor",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "voteCount",
+      "inputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "event",
+      "name": "Committed",
+      "inputs": [
+        {
+          "name": "spaceId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "voter",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "commitment",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ElectionMetadataUpdated",
+      "inputs": [
+        {
+          "name": "spaceId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "indexed": false,
+          "internalType": "string"
+        },
+        {
+          "name": "metadataURI",
+          "type": "string",
+          "indexed": false,
+          "internalType": "string"
+        },
+        {
+          "name": "actor",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ElectionStatusChanged",
+      "inputs": [
+        {
+          "name": "spaceId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "status",
+          "type": "uint8",
+          "indexed": true,
+          "internalType": "enum ElectionSpace.ElectionStatus"
+        },
+        {
+          "name": "actor",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "reasonCode",
+          "type": "string",
+          "indexed": false,
+          "internalType": "string"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "InitialConfigurationApplied",
+      "inputs": [
+        {
+          "name": "spaceId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "voterCount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "commitStartsAt",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "commitEndsAt",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "revealStartsAt",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "revealEndsAt",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "actor",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "PhaseChanged",
+      "inputs": [
+        {
+          "name": "spaceId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "previousPhase",
+          "type": "uint8",
+          "indexed": true,
+          "internalType": "enum ElectionSpace.Phase"
+        },
+        {
+          "name": "newPhase",
+          "type": "uint8",
+          "indexed": true,
+          "internalType": "enum ElectionSpace.Phase"
+        },
+        {
+          "name": "actor",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "PhaseScheduleUpdated",
+      "inputs": [
+        {
+          "name": "spaceId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "commitStartsAt",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "commitEndsAt",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "revealStartsAt",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "revealEndsAt",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "actor",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "RevealRelayed",
+      "inputs": [
+        {
+          "name": "spaceId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "voter",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "relayer",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "candidateId",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "Revealed",
+      "inputs": [
+        {
+          "name": "spaceId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "voter",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "candidateId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "newVoteCount",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "WhitelistUpdated",
+      "inputs": [
+        {
+          "name": "spaceId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "voter",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "isRegistered",
+          "type": "bool",
+          "indexed": false,
+          "internalType": "bool"
+        },
+        {
+          "name": "actor",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "error",
+      "name": "AlreadyCommitted",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "AlreadyRegistered",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "AlreadyRevealed",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "CommitmentMismatch",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ElectionSuspended",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "ElectionTerminated",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidCandidate",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidCommitment",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidPhaseSchedule",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidPhaseTransition",
+      "inputs": [
+        {
+          "name": "current",
+          "type": "uint8",
+          "internalType": "enum ElectionSpace.Phase"
+        },
+        {
+          "name": "requested",
+          "type": "uint8",
+          "internalType": "enum ElectionSpace.Phase"
+        }
+      ]
+    },
+    {
+      "type": "error",
+      "name": "InvalidVoter",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NotAuthorized",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NotCommittedYet",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NotRegistered",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "NotRegistry",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "WrongPhase",
+      "inputs": [
+        {
+          "name": "expected",
+          "type": "uint8",
+          "internalType": "enum ElectionSpace.Phase"
+        },
+        {
+          "name": "actual",
+          "type": "uint8",
+          "internalType": "enum ElectionSpace.Phase"
+        }
+      ]
     }
   ]
 }

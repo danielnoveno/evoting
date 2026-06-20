@@ -17,7 +17,6 @@ import { useProposalActivities, useProposalDraft, useUpdateProposalStatus } from
 import { useProposalDocuments } from '@/hooks/use-proposal-documents'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { REGISTRY_ADDRESS, useRegistryContract } from '@/hooks/use-registry-contract'
-import { useElectionContract } from '@/hooks/use-election-contract'
 import { createProposalDocumentPreviewUrl, createProposalDocumentSignedUrl } from '@/lib/repositories/proposalDocumentRepository'
 import { updateWhitelistSyncStatus } from '@/lib/repositories/whitelistRepository'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -78,11 +77,10 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const proposalWhitelistQuery = useProposalWhitelistEntries(params.id)
   const proposalActivitiesQuery = useProposalActivities(params.id)
   const updateStatus = useUpdateProposalStatus()
-  const { registerVotersAsync, setPhaseScheduleAsync } = useElectionContract(undefined, { checks: [] })
   
   // Real contract integration
   const { 
-    createElectionForAdmin,
+    createElectionForAdminWithConfig,
     parseElectionSpaceCreated,
     userAddress,
     isConnected,
@@ -258,58 +256,42 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           blockNumber: receipt.blockNumber ? Number(receipt.blockNumber) : null,
           actorWallet: userAddress ?? null,
         },
-      }, {
-        onSuccess: async () => {
-          let whitelistSyncMessage = initialWhitelistWallets.length > 0
-            ? `${initialWhitelistWallets.length} wallet whitelist akan disinkronkan ke kontrak.`
-            : 'Proposal tidak memiliki whitelist awal untuk disinkronkan.'
-          let whitelistReadyForSchedule = initialWhitelistWallets.length === 0
-          let scheduleMessage = 'Jadwal on-chain belum diaktifkan karena data jadwal proposal belum lengkap.'
+        }, {
+          onSuccess: async () => {
+            let whitelistSyncMessage = initialWhitelistWallets.length > 0
+              ? `${initialWhitelistWallets.length} wallet whitelist sudah ikut diinisialisasi dalam transaksi deploy.`
+              : 'Proposal tidak memiliki whitelist awal untuk disinkronkan.'
+            let scheduleMessage = 'Jadwal on-chain sudah ikut diinisialisasi dalam transaksi deploy.'
 
-          if (initialWhitelistWallets.length > 0) {
-            setIsSyncingInitialWhitelist(true)
-            try {
-              const whitelistTxHash = await registerVotersAsync(deployment.spaceAddress, initialWhitelistWallets)
-              await updateWhitelistSyncStatus({
-                proposalDraftId: params.id,
-                txHash: whitelistTxHash,
-                walletAddresses: initialWhitelistWallets,
-              })
-              whitelistSyncMessage = `${initialWhitelistWallets.length} wallet whitelist berhasil disinkronkan on-chain.`
-              whitelistReadyForSchedule = true
-            } catch (error) {
-              console.error('[superadmin] Sinkronisasi whitelist awal gagal:', error)
-              whitelistSyncMessage = 'Deploy berhasil, tetapi whitelist awal belum tersinkron. Jadwal otomatis belum diaktifkan agar pemilih tidak terkunci sebelum whitelist siap.'
-            } finally {
-              setIsSyncingInitialWhitelist(false)
+            if (initialWhitelistWallets.length > 0) {
+              setIsSyncingInitialWhitelist(true)
+              try {
+                await updateWhitelistSyncStatus({
+                  proposalDraftId: params.id,
+                  txHash: hash,
+                  walletAddresses: initialWhitelistWallets,
+                })
+              } catch (error) {
+                console.error('[superadmin] Gagal menandai whitelist awal tersinkron:', error)
+                whitelistSyncMessage = `${initialWhitelistWallets.length} wallet whitelist sudah dikirim dalam deploy, tetapi status sinkron Supabase belum berhasil diperbarui.`
+              } finally {
+                setIsSyncingInitialWhitelist(false)
+              }
             }
-          }
 
-          const commitStartsAt = toUnixSeconds(liveProposal?.commitStartAt)
-          const revealStartsAt = toUnixSeconds(liveProposal?.revealStartAt)
-          const revealEndsAt = toUnixSeconds(liveProposal?.endedAt)
+            const commitStartsAt = toUnixSeconds(liveProposal?.commitStartAt)
+            const revealStartsAt = toUnixSeconds(liveProposal?.revealStartAt)
+            const revealEndsAt = toUnixSeconds(liveProposal?.endedAt)
 
-          if (whitelistReadyForSchedule && commitStartsAt && revealStartsAt && revealEndsAt && commitStartsAt < revealStartsAt && revealStartsAt < revealEndsAt) {
-            try {
-              await setPhaseScheduleAsync(
-                deployment.spaceAddress,
-                commitStartsAt,
-                revealStartsAt,
-                revealStartsAt,
-                revealEndsAt,
-              )
-              scheduleMessage = 'Jadwal on-chain aktif: mulai pencoblosan menjadi fase Commit, mulai perhitungan menjadi fase Reveal.'
-            } catch (error) {
-              console.error('[superadmin] Aktivasi jadwal fase otomatis gagal:', error)
-              scheduleMessage = 'Jadwal otomatis belum berhasil diaktifkan. Admin masih dapat mengelola fase dari halaman parameter.'
+            if (!commitStartsAt || !revealStartsAt || !revealEndsAt || commitStartsAt >= revealStartsAt || revealStartsAt >= revealEndsAt) {
+              scheduleMessage = 'Data jadwal proposal belum lengkap/valid, sehingga jadwal on-chain tidak ikut diaktifkan.'
             }
-          }
 
           showToast({
             title: 'Proposal Disetujui & Pemilihan Di-deploy',
             description: `${whitelistSyncMessage} ${scheduleMessage} Alamat Space: ${deployment.spaceAddress}`,
-            tone: scheduleMessage.includes('aktif') ? 'success' : 'info',
-          })
+              tone: scheduleMessage.includes('tidak ikut') ? 'info' : 'success',
+            })
           resetWrite()
           setPendingOnchainDecision(null)
           window.setTimeout(() => router.push('/superadmin/manajemen-pemilihan'), 1500)
@@ -436,15 +418,34 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       setPendingOnchainDecision(activeDecision)
       resetWrite()
       try {
-        const txHash = await createElectionForAdmin(
+        const commitStartsAt = toUnixSeconds(liveProposal.commitStartAt)
+        const revealStartsAt = toUnixSeconds(liveProposal.revealStartAt)
+        const revealEndsAt = toUnixSeconds(liveProposal.endedAt)
+
+        if (!commitStartsAt || !revealStartsAt || !revealEndsAt || commitStartsAt >= revealStartsAt || revealStartsAt >= revealEndsAt) {
+          showToast({
+            title: 'Jadwal belum valid',
+            description: 'Lengkapi jadwal pencoblosan dan penghitungan sebelum deploy ke blockchain.',
+            tone: 'error',
+          })
+          setPendingOnchainDecision(null)
+          return
+        }
+
+        const txHash = await createElectionForAdminWithConfig(
           liveProposal.createdByWalletAddress as Address,
           liveProposal.title,
           `supabase://proposal-drafts/${liveProposal.id}`,
           liveProposal.candidateCount,
+          initialWhitelistWallets as Address[],
+          commitStartsAt,
+          revealStartsAt,
+          revealStartsAt,
+          revealEndsAt,
         )
         showToast({
-          title: 'Transaksi deploy dikirim',
-          description: `Menunggu konfirmasi Base Sepolia. Tx: ${txHash.slice(0, 10)}...`,
+          title: 'Transaksi deploy & sinkronisasi dikirim',
+          description: `Whitelist dan jadwal ikut dalam satu transaksi. Tx: ${txHash.slice(0, 10)}...`,
           tone: 'info',
         })
       } catch (error) {

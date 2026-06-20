@@ -72,6 +72,15 @@ contract ElectionSpace {
         uint256 revealEndsAt,
         address actor
     );
+    event InitialConfigurationApplied(
+        uint256 indexed spaceId,
+        uint256 voterCount,
+        uint256 commitStartsAt,
+        uint256 commitEndsAt,
+        uint256 revealStartsAt,
+        uint256 revealEndsAt,
+        address actor
+    );
 
     error NotAuthorized();
     error NotRegistry();
@@ -96,7 +105,13 @@ contract ElectionSpace {
         uint256 _spaceId,
         uint256 _candidateCount,
         string memory _title,
-        string memory _metadataURI
+        string memory _metadataURI,
+        address _initialActor,
+        address[] memory _initialVoters,
+        uint256 _commitStartsAt,
+        uint256 _commitEndsAt,
+        uint256 _revealStartsAt,
+        uint256 _revealEndsAt
     ) {
         if (_registry == address(0) || _spaceAdmin == address(0)) {
             revert NotAuthorized();
@@ -112,6 +127,35 @@ contract ElectionSpace {
 
         currentPhase = Phase.Registration;
         status = ElectionStatus.Active;
+
+        if (_initialVoters.length > 0) {
+            _registerInitialVoters(_initialVoters, _initialActor);
+        }
+
+        if (
+            _commitStartsAt != 0 || _commitEndsAt != 0 || _revealStartsAt != 0
+                || _revealEndsAt != 0
+        ) {
+            _setPhaseSchedule(
+                _commitStartsAt,
+                _commitEndsAt,
+                _revealStartsAt,
+                _revealEndsAt,
+                _initialActor
+            );
+        }
+
+        if (_initialVoters.length > 0 || _commitStartsAt != 0) {
+            emit InitialConfigurationApplied(
+                spaceId,
+                _initialVoters.length,
+                commitStartsAt,
+                commitEndsAt,
+                revealStartsAt,
+                revealEndsAt,
+                _initialActor
+            );
+        }
     }
 
     modifier onlyRegistry() {
@@ -160,6 +204,16 @@ contract ElectionSpace {
         uint256 _revealStartsAt,
         uint256 _revealEndsAt
     ) external onlySpaceAdminOrSuperAdmin onlyActive onlyPhase(Phase.Registration) {
+        _setPhaseSchedule(_commitStartsAt, _commitEndsAt, _revealStartsAt, _revealEndsAt, msg.sender);
+    }
+
+    function _setPhaseSchedule(
+        uint256 _commitStartsAt,
+        uint256 _commitEndsAt,
+        uint256 _revealStartsAt,
+        uint256 _revealEndsAt,
+        address actor
+    ) internal {
         if (
             _commitStartsAt == 0 || _commitEndsAt <= _commitStartsAt
                 || _revealStartsAt < _commitEndsAt || _revealEndsAt <= _revealStartsAt
@@ -171,8 +225,19 @@ contract ElectionSpace {
         revealEndsAt = _revealEndsAt;
 
         emit PhaseScheduleUpdated(
-            spaceId, _commitStartsAt, _commitEndsAt, _revealStartsAt, _revealEndsAt, msg.sender
+            spaceId, _commitStartsAt, _commitEndsAt, _revealStartsAt, _revealEndsAt, actor
         );
+    }
+
+    function _registerInitialVoters(address[] memory voters, address actor) internal {
+        for (uint256 i = 0; i < voters.length; i++) {
+            address voter = voters[i];
+            if (voter == address(0)) revert InvalidVoter();
+            if (!isWhitelisted[voter]) {
+                isWhitelisted[voter] = true;
+                emit WhitelistUpdated(spaceId, voter, true, actor);
+            }
+        }
     }
 
     function phase() public view returns (Phase) {

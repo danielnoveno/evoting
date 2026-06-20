@@ -62,6 +62,16 @@ contract VoteChainRegistry {
         address owner,
         uint256 candidateCount
     );
+    event ElectionSpaceConfigured(
+        uint256 indexed spaceId,
+        address indexed space,
+        uint256 indexed proposalId,
+        uint256 voterCount,
+        uint256 commitStartsAt,
+        uint256 commitEndsAt,
+        uint256 revealStartsAt,
+        uint256 revealEndsAt
+    );
 
     error NotSuperAdmin();
     error NotRootSuperAdmin();
@@ -177,7 +187,13 @@ contract VoteChainRegistry {
             spaceId,
             proposal.candidateCount,
             proposal.title,
-            proposal.metadataURI
+            proposal.metadataURI,
+            msg.sender,
+            new address[](0),
+            0,
+            0,
+            0,
+            0
         );
         spaceAddress = address(space);
         spaceById[spaceId] = spaceAddress;
@@ -218,12 +234,86 @@ contract VoteChainRegistry {
         nextSpaceId += 1;
 
         ElectionSpace space = new ElectionSpace(
-            address(this), spaceAdmin, spaceId, candidateCount, title, metadataURI
+            address(this),
+            spaceAdmin,
+            spaceId,
+            candidateCount,
+            title,
+            metadataURI,
+            msg.sender,
+            new address[](0),
+            0,
+            0,
+            0,
+            0
         );
         spaceAddress = address(space);
         spaceById[spaceId] = spaceAddress;
 
         emit ElectionSpaceCreated(spaceId, spaceAddress, proposalId, spaceAdmin, candidateCount);
+    }
+
+    function createElectionForAdminWithConfig(
+        address spaceAdmin,
+        string calldata title,
+        string calldata metadataURI,
+        uint256 candidateCount,
+        address[] calldata initialVoters,
+        uint256 commitStartsAt,
+        uint256 commitEndsAt,
+        uint256 revealStartsAt,
+        uint256 revealEndsAt
+    ) external onlySuperAdmin returns (uint256 proposalId, uint256 spaceId, address spaceAddress) {
+        if (spaceAdmin == address(0)) revert InvalidAdmin();
+        if (candidateCount == 0) revert InvalidCandidateCount();
+
+        proposalId = nextProposalId;
+        nextProposalId += 1;
+
+        proposals[proposalId] = Proposal({
+            proposer: spaceAdmin,
+            candidateCount: candidateCount,
+            status: ProposalStatus.Deployed,
+            title: title,
+            metadataURI: metadataURI,
+            reviewer: msg.sender,
+            reviewedAt: block.timestamp
+        });
+
+        emit ProposalSubmitted(proposalId, spaceAdmin, candidateCount);
+        emit ProposalReviewed(proposalId, ProposalStatus.Approved, msg.sender);
+
+        spaceId = nextSpaceId;
+        nextSpaceId += 1;
+
+        ElectionSpace space = new ElectionSpace(
+            address(this),
+            spaceAdmin,
+            spaceId,
+            candidateCount,
+            title,
+            metadataURI,
+            msg.sender,
+            initialVoters,
+            commitStartsAt,
+            commitEndsAt,
+            revealStartsAt,
+            revealEndsAt
+        );
+        spaceAddress = address(space);
+        spaceById[spaceId] = spaceAddress;
+
+        emit ElectionSpaceCreated(spaceId, spaceAddress, proposalId, spaceAdmin, candidateCount);
+        emit ElectionSpaceConfigured(
+            spaceId,
+            spaceAddress,
+            proposalId,
+            initialVoters.length,
+            commitStartsAt,
+            commitEndsAt,
+            revealStartsAt,
+            revealEndsAt
+        );
     }
 
     function proposeSpaceUpdate(uint256 spaceId, string calldata title, string calldata metadataURI)
