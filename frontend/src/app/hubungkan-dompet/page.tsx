@@ -911,13 +911,35 @@ function ConnectWalletContent() {
                 Sesi Anda telah berakhir karena waktu aktif habis. Silakan masuk kembali untuk melanjutkan.
               </p>
 
-              <button
-                type="button"
-                onClick={() => setSessionTimeout(false)}
-                className="mt-5 w-full rounded-xl bg-slate-900 px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-slate-800"
-              >
-                Masuk Kembali
-              </button>
+              <div className="mt-5 space-y-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSessionTimeout(false)
+                    handleMicrosoftLogin()
+                  }}
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 text-[13px] font-semibold text-white transition hover:bg-slate-800"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 23 23" fill="none">
+                    <path d="M0 0H11V11H0V0Z" fill="currentColor"/>
+                    <path d="M12 0H23V11H12V0Z" fill="currentColor"/>
+                    <path d="M0 12H11V23H0V12Z" fill="currentColor"/>
+                    <path d="M12 12H23V23H12V12Z" fill="currentColor"/>
+                  </svg>
+                  Masuk dengan Microsoft SSO
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSessionTimeout(false)
+                    handleGoogleLogin()
+                  }}
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50"
+                >
+                  <img src="https://www.google.com/favicon.ico" className="h-4 w-4" alt="Google" />
+                  Masuk dengan Google
+                </button>
+              </div>
             </div>
           </div>
         ) : null}
