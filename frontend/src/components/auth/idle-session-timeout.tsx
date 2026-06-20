@@ -23,20 +23,20 @@ const CLOCK_CHECK_EVENTS = ['focus', 'pageshow'] as const
 function getRoleAwareLoginPath(pathname: string, role: string | null | undefined) {
   if (role === 'super_admin') {
     const redirectTarget = pathname.startsWith('/superadmin') ? pathname : '/superadmin'
-    return `/portal-admin?redirect=${encodeURIComponent(redirectTarget)}&reason=session-timeout`
+    return `/sesi-berakhir?redirect=${encodeURIComponent(redirectTarget)}`
   }
 
   if (role === 'admin') {
     const redirectTarget = pathname.startsWith('/admin') ? pathname : '/admin'
-    return `/hubungkan-dompet?activate=admin&redirect=${encodeURIComponent(redirectTarget)}&reason=session-timeout`
+    return `/sesi-berakhir?redirect=${encodeURIComponent(redirectTarget)}`
   }
 
-  if (pathname.startsWith('/superadmin')) return `/portal-admin?redirect=${encodeURIComponent(pathname)}&reason=session-timeout`
-  if (pathname.startsWith('/admin')) return `/hubungkan-dompet?activate=admin&redirect=${encodeURIComponent(pathname)}&reason=session-timeout`
-  if (pathname.startsWith('/portal-admin')) return '/portal-admin?redirect=%2Fsuperadmin&reason=session-timeout'
+  if (pathname.startsWith('/superadmin')) return `/sesi-berakhir?redirect=${encodeURIComponent(pathname)}`
+  if (pathname.startsWith('/admin')) return `/sesi-berakhir?redirect=${encodeURIComponent(pathname)}`
+  if (pathname.startsWith('/portal-admin')) return '/sesi-berakhir?redirect=%2Fsuperadmin'
 
   const redirectTarget = pathname.startsWith('/pemilih') ? pathname : '/pemilih'
-  return `/hubungkan-dompet?redirect=${encodeURIComponent(redirectTarget)}&reason=session-timeout`
+  return `/sesi-berakhir?redirect=${encodeURIComponent(redirectTarget)}`
 }
 
 export function IdleSessionTimeout() {
@@ -294,7 +294,7 @@ export function IdleSessionTimeout() {
         <div className="mt-6 flex justify-center">
           <button
             type="button"
-            onClick={handleForceLogout.bind(null, expiredTargetPath ?? (isAdmin ? '/portal-admin?reason=session-timeout' : '/hubungkan-dompet?reason=session-timeout'))}
+            onClick={handleForceLogout.bind(null, expiredTargetPath ?? '/sesi-berakhir?redirect=%2Fpemilih')}
             className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-6 text-[14px] font-semibold text-white transition hover:bg-slate-800"
           >
             <LogOut className="mr-2 h-4 w-4" />

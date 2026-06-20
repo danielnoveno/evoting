@@ -66,16 +66,8 @@ export async function updateSupabaseSession(request: NextRequest) {
 
     if (!session) {
       const requiredRole = getRequiredRole(request.nextUrl.pathname)
-      const redirectUrl = requiredRole === 'super_admin'
-        ? new URL('/portal-admin', request.url)
-        : new URL('/hubungkan-dompet', request.url)
-      if (requiredRole) {
-        redirectUrl.searchParams.set('redirect', getPathWithSearch(request))
-      }
-      if (requiredRole === 'admin') {
-        redirectUrl.searchParams.set('activate', 'admin')
-      }
-      redirectUrl.searchParams.set('reason', 'session-timeout')
+      const redirectUrl = new URL('/sesi-berakhir', request.url)
+      redirectUrl.searchParams.set('redirect', getPathWithSearch(request))
       // When redirecting, we MUST include the headers from our 'response' object 
       // which contains any newly set session cookies from a refresh.
       return NextResponse.redirect(redirectUrl, {
