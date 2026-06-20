@@ -1047,10 +1047,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             {nextPhaseLabel}
           </button>
         ) : null}
-        <button type="button" onClick={() => showToast({ tone: 'info', title: 'Edit Parameter', description: 'Parameter pemilihan hanya dapat diubah sebelum fase commit dimulai.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-500 px-5 text-[15px] font-medium text-white hover:bg-slate-600">
-          <Pencil className="h-4 w-4" />
-          Edit Parameter
-        </button>
         <button 
           type="button" 
           onClick={() => setSyncOnchainConfirmOpen(true)} 
