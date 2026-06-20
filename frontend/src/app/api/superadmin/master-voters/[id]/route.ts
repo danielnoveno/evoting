@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { jsonError, requireProfile } from '@/app/api/_lib/auth'
+import { logAudit, getActorInfo } from '@/lib/audit-logger'
 import type { Database } from '@/lib/supabase/database.types'
 
 export const runtime = 'nodejs'
@@ -105,6 +106,20 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 
   if (!data) return jsonError('Data voter tidak ditemukan.', 404)
+
+  // Log the update
+  const actor = await getActorInfo(auth.client)
+  await logAudit({
+    action_name: 'update_voter',
+    actor_wallet: actor.wallet,
+    actor_email: actor.email,
+    actor_role: actor.role,
+    entity_type: 'master_voter',
+    entity_id: params.id,
+    details: { nim, fullName, prodi, fakultas, angkatan, status },
+    related_tx_hash: null,
+    source: 'server_api',
+  })
 
   return NextResponse.json({ voter: mapVoter(data) })
 }

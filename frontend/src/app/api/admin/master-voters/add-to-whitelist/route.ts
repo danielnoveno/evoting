@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { ensureCanManageProposal, jsonError, requireProfile } from '@/app/api/_lib/auth'
+import { logAudit, getActorInfo } from '@/lib/audit-logger'
 
 export const runtime = 'nodejs'
 
@@ -75,5 +76,25 @@ export async function POST(request: NextRequest) {
   if (insertError) return jsonError('Gagal menambahkan pemilih ke whitelist. Periksa duplikasi.', 500)
 
   const addedSkipped = skipped + (votersWithWallet.length - newVoters.length)
+
+  // Log the action
+  const actor = await getActorInfo(auth.client)
+  await logAudit({
+    action_name: 'add_whitelist',
+    actor_wallet: actor.wallet,
+    actor_email: actor.email,
+    actor_role: actor.role,
+    entity_type: 'proposal_whitelist',
+    entity_id: proposalDraftId,
+    details: {
+      added: newVoters.length,
+      skipped: addedSkipped,
+      voterNames: newVoters.map((v) => v.full_name),
+      voterWallets: newVoters.map((v) => v.wallet_address),
+    },
+    related_tx_hash: null,
+    source: 'server_api',
+  })
+
   return NextResponse.json({ added: newVoters.length, skipped: addedSkipped })
 }

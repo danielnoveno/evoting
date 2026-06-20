@@ -1,6 +1,7 @@
 import { createHash } from 'crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
+import { logAudit } from '@/lib/audit-logger'
 
 export const runtime = 'nodejs'
 
@@ -102,6 +103,19 @@ export async function POST(request: NextRequest) {
       .update({ wallet_address: walletAddress, status: 'active' })
       .eq('email', activation.email.trim().toLowerCase())
   }
+
+  // Log the activation
+  await logAudit({
+    action_name: 'activate_account',
+    actor_wallet: walletAddress,
+    actor_email: activation.email,
+    actor_role: activation.role,
+    entity_type: 'activation_token',
+    entity_id: activation.id,
+    details: { role: activation.role, walletAddress },
+    related_tx_hash: null,
+    source: 'server_api',
+  })
 
   return NextResponse.json({
     success: true,

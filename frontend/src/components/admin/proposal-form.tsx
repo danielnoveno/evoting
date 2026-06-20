@@ -164,7 +164,12 @@ export function ProposalForm({
         !c.vision?.trim() ||
         (Array.isArray(c.mission) ? c.mission.length === 0 : !c.mission?.trim())
       )
-      return !hasIncomplete
+      if (hasIncomplete) return false
+      // Check for duplicate NPM among filled candidates
+      const studentIds = filled.map((c) => c.studentId?.trim()).filter(Boolean)
+      const hasDuplicate = studentIds.some((id, idx) => studentIds.indexOf(id) !== idx)
+      if (hasDuplicate) return false
+      return true
     }
     return true
   }
@@ -223,6 +228,15 @@ export function ProposalForm({
       nextErrors.candidateCount = 'Pastikan NPM, Visi, dan Misi setiap kandidat sudah diisi.'
     }
 
+    // Check for duplicate NPM among filled candidates
+    const filledStudentIds = filledCandidates
+      .map((c) => c.studentId?.trim())
+      .filter(Boolean)
+    const duplicateStudentId = filledStudentIds.find((id, idx) => filledStudentIds.indexOf(id) !== idx)
+    if (duplicateStudentId && !nextErrors.candidateCount) {
+      nextErrors.candidateCount = `NPM/NIM ${duplicateStudentId} sudah digunakan oleh kandidat lain dalam pemilihan yang sama.`
+    }
+
     if (!data.commitDate) nextErrors.commitDate = 'Wajib diisi.'
     if (!data.endedDate) nextErrors.endedDate = 'Wajib diisi.'
 
@@ -263,6 +277,7 @@ export function ProposalForm({
   const getValidationIssues = (data: ProposalFormData, nextErrors: ProposalFormErrors): ValidationIssue[] => {
     const issues: ValidationIssue[] = []
 
+    if (nextErrors.candidateCount) issues.push({ fieldKey: 'candidates', label: 'Kandidat', message: nextErrors.candidateCount })
     if (nextErrors.title) issues.push({ fieldKey: 'title', label: 'Nama Pemilihan', message: nextErrors.title })
     if (nextErrors.commitDate) issues.push({ fieldKey: 'commitDate', label: 'Mulai Pencoblosan', message: 'Tanggal dan jam mulai pencoblosan wajib diisi.' })
     if (nextErrors.endedDate) issues.push({ fieldKey: 'endedDate', label: 'Selesai Pemilihan', message: 'Tanggal dan jam selesai pemilihan wajib diisi.' })

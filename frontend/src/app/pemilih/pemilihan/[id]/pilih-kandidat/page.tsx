@@ -405,9 +405,17 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             <span className="inline-flex rounded bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-blue-400">
               STATUS SAAT INI
             </span>
-            <h1 className="mt-3 text-[26px] font-bold tracking-tight text-white md:text-[32px]">Saatnya Mencoblos</h1>
+            <h1 className="mt-3 text-[26px] font-bold tracking-tight text-white md:text-[32px]">
+              {voteBlockedReason
+                ? 'Belum Bisa Mencoblos'
+                : currentPhaseNumber === 1
+                  ? 'Saatnya Mencoblos'
+                  : 'Menunggu Jadwal'}
+            </h1>
             <p className="mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-slate-300">
-              Pilih satu kandidat lalu konfirmasi di dompet. Setelah itu selesai; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.
+              {voteBlockedReason
+                ? voteBlockedReason
+                : 'Pilih satu kandidat lalu konfirmasi di dompet. Setelah itu selesai; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.'}
             </p>
           </div>
 

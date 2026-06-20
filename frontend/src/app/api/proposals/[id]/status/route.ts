@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { ensureCanManageProposal, jsonError, requireProfile } from '@/app/api/_lib/auth'
+import { logAudit, getActorInfo } from '@/lib/audit-logger'
 import type { Database } from '@/lib/supabase/database.types'
 
 export const runtime = 'nodejs'
@@ -102,6 +103,28 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   if (error) return jsonError('Gagal memperbarui status proposal.', 500)
 
   const message = typeof body.message === 'string' ? body.message.trim() : null
+
+  // Log the status change
+  const actor = await getActorInfo(auth.client)
+  await logAudit({
+    action_name: status === 'deployed' ? 'deploy_space' : 'update_proposal',
+    actor_wallet: actor.wallet,
+    actor_email: actor.email,
+    actor_role: actor.role,
+    entity_type: 'proposal',
+    entity_id: id,
+    details: {
+      previousStatus: beforeRow?.status ?? null,
+      newStatus: status,
+      title: data.title,
+      txHash,
+      message: message ?? null,
+      deployedSpaceAddress: deployment ? (deployment as Record<string, unknown>).deployedSpaceAddress : null,
+    },
+    related_tx_hash: txHash,
+    source: 'server_api',
+  })
+
   const activityPayload = {
     proposalId: id,
     eventType: beforeRow?.status === 'revision_requested' && status === 'submitted' ? 'resubmitted' : status,

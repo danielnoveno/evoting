@@ -77,6 +77,15 @@ export function AdminCandidateFormView({
       nextErrors.identityNumber = 'Nomor identitas wajib diisi.'
     } else if (!/^\d{9,10}$/.test(idVal.trim())) {
       nextErrors.identityNumber = 'Nomor identitas harus berupa angka numerik 9 atau 10 digit.'
+    } else {
+      // Check for duplicate NPM among existing candidates in this election
+      const existingCandidates = election.detail.candidates
+      const duplicate = existingCandidates.find(
+        (c) => c.identityNumber === idVal.trim() && c.id !== candidateId
+      )
+      if (duplicate) {
+        nextErrors.identityNumber = `NPM/NIM ${idVal.trim()} sudah digunakan oleh kandidat "${duplicate.name}" dalam pemilihan ini.`
+      }
     }
 
     if (!visVal.trim()) {

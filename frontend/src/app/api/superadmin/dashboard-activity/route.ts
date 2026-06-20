@@ -72,7 +72,18 @@ const OPS_ACTION_LABELS: Record<string, string> = {
   remove_admin: 'Admin dihapus',
   update_proposal: 'Proposal diperbarui',
   deploy_proposal: 'Proposal di-deploy',
+  deploy_space: 'Ruang pemilihan di-deploy',
   create_proposal: 'Proposal baru dibuat',
+  add_whitelist: 'Whitelist ditambahkan',
+  remove_whitelist: 'Whitelist dihapus',
+  sync_whitelist: 'Whitelist disinkronisasi ke blockchain',
+  add_voter: 'Voter ditambahkan',
+  update_voter: 'Voter diperbarui',
+  delete_voter: 'Voter dihapus',
+  bulk_import_voters: 'Voter diimpor massal',
+  activate_account: 'Akun diaktivasi',
+  commit_vote: 'Suara committed',
+  reveal_vote: 'Suara direveal',
 }
 
 function formatActivity(row: ActivityRow) {

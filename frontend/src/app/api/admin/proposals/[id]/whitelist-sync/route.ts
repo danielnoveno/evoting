@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { ensureCanManageProposal, jsonError, requireProfile } from '@/app/api/_lib/auth'
+import { logAudit, getActorInfo } from '@/lib/audit-logger'
 
 export const runtime = 'nodejs'
 
@@ -30,5 +31,20 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     .in('wallet_address', Array.from(new Set(walletAddresses)))
 
   if (error) return jsonError('Gagal memperbarui status sinkronisasi whitelist.', 500)
+
+  // Log the action
+  const actor = await getActorInfo(auth.client)
+  await logAudit({
+    action_name: 'sync_whitelist',
+    actor_wallet: actor.wallet,
+    actor_email: actor.email,
+    actor_role: actor.role,
+    entity_type: 'proposal_whitelist',
+    entity_id: id,
+    details: { syncedCount: walletAddresses.length, txHash },
+    related_tx_hash: txHash,
+    source: 'server_api',
+  })
+
   return NextResponse.json({ ok: true })
 }
