@@ -147,11 +147,10 @@ export function ProposalForm({
   const canAdvanceStep = (step: number): boolean => {
     if (step === 0) {
       if (!formData.title.trim()) return false
-      if (!formData.commitDate || !formData.revealDate || !formData.endedDate) return false
+      if (!formData.commitDate || !formData.endedDate) return false
       const commitTime = new Date(formData.commitDate).getTime()
-      const revealTime = new Date(formData.revealDate).getTime()
       const endedTime = new Date(formData.endedDate).getTime()
-      if (revealTime <= commitTime || endedTime <= revealTime) return false
+      if (endedTime <= commitTime) return false
       return true
     }
     if (step === 1) {
@@ -222,22 +221,18 @@ export function ProposalForm({
     }
 
     if (!data.commitDate) nextErrors.commitDate = 'Wajib diisi.'
-    if (!data.revealDate) nextErrors.revealDate = 'Wajib diisi.'
     if (!data.endedDate) nextErrors.endedDate = 'Wajib diisi.'
 
-    if (data.commitDate && data.revealDate && data.endedDate) {
+    if (data.commitDate && data.endedDate) {
       const commitTime = new Date(data.commitDate).getTime()
-      const revealTime = new Date(data.revealDate).getTime()
       const endedTime = new Date(data.endedDate).getTime()
 
-      if (revealTime <= commitTime) {
-        nextErrors.dateRange = 'Reveal harus setelah Commit.'
-      } else if (endedTime <= revealTime) {
-        nextErrors.dateRange = 'Selesai harus setelah Reveal.'
+      if (endedTime <= commitTime) {
+        nextErrors.dateRange = 'Selesai harus setelah Mulai Pencoblosan.'
       } else {
         const minGap = MIN_GAP_MINUTES * 60 * 1000
-        if (revealTime - commitTime < minGap) {
-          nextErrors.dateRange = 'Jarak antar tahap minimal 1 menit.'
+        if (endedTime - commitTime < minGap) {
+          nextErrors.dateRange = 'Jarak antara mulai dan selesai minimal 1 menit.'
         }
       }
     }
@@ -267,7 +262,6 @@ export function ProposalForm({
 
     if (nextErrors.title) issues.push({ fieldKey: 'title', label: 'Nama Pemilihan', message: nextErrors.title })
     if (nextErrors.commitDate) issues.push({ fieldKey: 'commitDate', label: 'Mulai Pencoblosan', message: 'Tanggal dan jam mulai pencoblosan wajib diisi.' })
-    if (nextErrors.revealDate) issues.push({ fieldKey: 'revealDate', label: 'Mulai Konfirmasi Suara', message: 'Tanggal dan jam mulai konfirmasi suara wajib diisi.' })
     if (nextErrors.endedDate) issues.push({ fieldKey: 'endedDate', label: 'Selesai Pemilihan', message: 'Tanggal dan jam selesai pemilihan wajib diisi.' })
     if (nextErrors.dateRange) issues.push({ fieldKey: 'commitDate', label: 'Urutan Waktu', message: nextErrors.dateRange })
 
@@ -638,7 +632,9 @@ export function ProposalForm({
       bannerImagePath: bannerImagePath || null,
       candidateCount: candidateEntries.length,
       commitStartAt: new Date(formData.commitDate).toISOString(),
-      revealStartAt: new Date(formData.revealDate).toISOString(),
+      revealStartAt: new Date(
+        (new Date(formData.commitDate).getTime() + new Date(formData.endedDate).getTime()) / 2
+      ).toISOString(),
       endedAt: new Date(formData.endedDate).toISOString(),
       status: submitStatus,
       candidates: candidateEntries,
@@ -848,24 +844,18 @@ export function ProposalForm({
               <div>
                 <h2 className="text-[14px] font-bold uppercase tracking-widest">Jadwal Pemilihan</h2>
                 <p className="mt-2 text-[14px] leading-6 text-slate-500">
-                  Admin cukup mengatur kapan pemilih mulai mencoblos, kapan suara dikonfirmasi, dan kapan pemilihan selesai. Tahap persiapan/Registration berjalan otomatis di belakang layar untuk sinkronisasi daftar pemilih.
+                  Atur kapan pencoblosan dimulai dan kapan pemilihan selesai. Konfirmasi suara (reveal) akan dimulai otomatis di tengah jangka waktu tersebut.
                 </p>
               </div>
               <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-[13px] leading-6 text-blue-800">
-                Untuk uji coba cepat, jadwal boleh dibuat berdekatan. Contoh: pencoblosan mulai sekarang, konfirmasi suara 1 menit setelahnya, selesai 1 menit berikutnya.
+                Tahap konfirmasi suara (reveal) dihitung otomatis sebagai titik tengah antara mulai pencoblosan dan selesai pemilihan.
               </div>
-              <div className="grid sm:grid-cols-3 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <label className="block">
                   <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Pencoblosan <RequiredAsterisk /></span>
                   <input data-validation-field="commitDate" type="datetime-local" name="commitDate" value={formData.commitDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                   <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Pemilih mulai bisa memilih dan mengunci suara.</p>
                   {errors.commitDate && <p className="mt-1 text-[12px] text-red-500">{errors.commitDate}</p>}
-                </label>
-                <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Konfirmasi Suara <RequiredAsterisk /></span>
-                  <input data-validation-field="revealDate" type="datetime-local" name="revealDate" value={formData.revealDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-                  <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Pemilih mengesahkan suara yang sudah dikunci.</p>
-                  {errors.revealDate && <p className="mt-1 text-[12px] text-red-500">{errors.revealDate}</p>}
                 </label>
                 <label className="block">
                   <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Selesai Pemilihan <RequiredAsterisk /></span>
@@ -874,6 +864,16 @@ export function ProposalForm({
                   {errors.endedDate && <p className="mt-1 text-[12px] text-red-500">{errors.endedDate}</p>}
                 </label>
               </div>
+              {formData.commitDate && formData.endedDate && new Date(formData.endedDate).getTime() > new Date(formData.commitDate).getTime() && (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[13px] leading-6 text-slate-600">
+                  <span className="font-medium text-slate-700">Konfirmasi suara (reveal)</span> otomatis dimulai pada{' '}
+                  <span className="font-medium text-slate-900">
+                    {new Date(
+                      (new Date(formData.commitDate).getTime() + new Date(formData.endedDate).getTime()) / 2
+                    ).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              )}
               {errors.dateRange && <p className="text-red-500 text-[12px]">{errors.dateRange}</p>}
             </section>
           </div>
