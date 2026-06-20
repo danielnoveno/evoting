@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Camera, Copy, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Camera, ChevronDown, Copy, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
@@ -292,15 +292,26 @@ export function AdminCandidateFormView({
                 {errors.fullName && <p className="mt-2 text-[12px] text-red-600 font-medium">{errors.fullName}</p>}
               </div>
               <div>
-                <label htmlFor="cand-faculty" className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Fakultas / Prodi</label>
-                <input
-                  id="cand-faculty"
-                  type="text"
-                  placeholder="Masukkan fakultas atau program studi kandidat..."
-                  value={faculty}
-                  onChange={(event) => setFaculty(event.target.value)}
-                  className="h-14 w-full rounded-2xl border border-slate-200 bg-white px-5 text-[16px] text-slate-900 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-black focus:outline-none transition-all"
-                />
+                <label htmlFor="cand-faculty" className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Fakultas</label>
+                <div className="relative">
+                  <select
+                    id="cand-faculty"
+                    value={faculty}
+                    onChange={(event) => setFaculty(event.target.value)}
+                    className="h-14 w-full appearance-none rounded-2xl border border-slate-200 bg-white px-5 pr-10 text-[16px] text-slate-900 outline-none focus:ring-2 focus:ring-black focus:outline-none transition-all"
+                  >
+                    <option value="">Pilih fakultas...</option>
+                    <option value="FTI">Fakultas Teknologi dan Industri</option>
+                    <option value="FEB">Fakultas Ekonomi dan Bisnis</option>
+                    <option value="FH">Fakultas Hukum</option>
+                    <option value="FISIPOL">Fakultas Ilmu Sosial dan Ilmu Politik</option>
+                    <option value="FKIK">Fakultas Kedokteran dan Ilmu Kesehatan</option>
+                    <option value="FB">Fakultas Biologi</option>
+                    <option value="FPsi">Fakultas Psikologi</option>
+                    <option value="SPs">Sekolah Pascasarjana</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                </div>
               </div>
               <div>
                 <label htmlFor="cand-bio" className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{form.bioLabel}</label>
