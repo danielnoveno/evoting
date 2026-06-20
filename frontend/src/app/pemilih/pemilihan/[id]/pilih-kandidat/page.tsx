@@ -64,6 +64,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   } | null>(null)
   const [autoRevealQueueStatus, setAutoRevealQueueStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
   const [autoRevealQueueError, setAutoRevealQueueError] = useState<string | null>(null)
+  const [pendingCandidateAfterConnect, setPendingCandidateAfterConnect] = useState<string | null>(null)
 
   const election = findElection(store, params.id)
   const contractAddress = election?.deployedSpaceAddress ?? undefined
@@ -81,45 +82,23 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     phaseError,
     hasCommittedError,
     whitelistError,
-    isPhaseFetching,
-    isHasCommittedFetching,
-    isWhitelistedFetching,
   } = useElectionContract(contractAddress, { checks: ['phase', 'hasCommitted', 'isWhitelisted'] })
 
   const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
     ? Number(currentPhase)
     : null
   const isConnectedWalletProfileWallet = sameWalletAddress(address, store?.profile.wallet)
-  const isBlockchainLoading = isPhaseFetching || isWhitelistedFetching || isHasCommittedFetching
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
-  const isOnChainStatusReady = Boolean(contractAddress)
-    && Boolean(address)
-    && isConnectedWalletProfileWallet
-    && currentPhaseNumber !== null
-    && typeof isWhitelistedOnChain === 'boolean'
-  const canSubmitVote = Boolean(contractAddress)
-    && Boolean(address)
-    && isConnectedWalletProfileWallet
-    && isOnChainStatusReady
-    && currentPhaseNumber === 1
-    && isWhitelistedOnChain === true
-    && hasCommittedOnChain !== true
-    && !isWritePending
-    && !isConfirming
 
   const voteBlockedReason = !contractAddress
     ? 'Pemilihan ini belum memiliki smart contract aktif.'
-    : !address
-      ? 'Dompet digital belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum mencoblos.'
-    : store?.profile.wallet && !isConnectedWalletProfileWallet
+    : store?.profile.wallet && address && !isConnectedWalletProfileWallet
       ? `Dompet tersambung (${formatWallet(address)}) berbeda dari dompet akun ini (${formatWallet(store.profile.wallet)}).`
     : onChainStatusError
       ? 'Status blockchain belum terbaca. Coba muat ulang halaman sebelum mencoblos.'
-    : isBlockchainLoading || !isOnChainStatusReady
-      ? 'Sistem sedang memeriksa status blockchain dan whitelist pemilih.'
-    : currentPhaseNumber !== 1
+    : currentPhaseNumber !== null && currentPhaseNumber !== 1
       ? 'Pencoblosan belum dibuka atau sudah selesai.'
-    : isWhitelistedOnChain !== true
+    : isWhitelistedOnChain === false
       ? 'Dompet ini belum masuk daftar pemilih untuk pemilihan ini.'
     : hasCommittedOnChain === true
       ? 'Wallet ini sudah pernah mencoblos pada pemilihan ini.'
@@ -192,6 +171,14 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     return () => clearInterval(interval)
   }, [election?.deadlineIso])
 
+  useEffect(() => {
+    if (address && pendingCandidateAfterConnect && !isConnectPending) {
+      setCandidateToConfirm(pendingCandidateAfterConnect)
+      setConfirmOpen(true)
+      setPendingCandidateAfterConnect(null)
+    }
+  }, [address, pendingCandidateAfterConnect, isConnectPending])
+
   if (loading || !store) {
     return (
       <VoterShell>
@@ -222,33 +209,31 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   ]
 
   const handleSelectClick = (candidateId: string) => {
-    setCandidateToConfirm(candidateId)
-    setConfirmOpen(true)
-  }
-
-  const handleConnectWallet = () => {
-    const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
-    if (!connector) {
-      showToast({
-        title: 'Dompet belum siap',
-        description: 'Connector Base Account belum tersedia. Coba muat ulang halaman.',
-        tone: 'error',
-      })
+    if (!address) {
+      const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
+      if (!connector) {
+        showToast({ title: 'Dompet belum siap', description: 'Connector Base Account belum tersedia. Coba muat ulang halaman.', tone: 'error' })
+        return
+      }
+      setPendingCandidateAfterConnect(candidateId)
+      connect(
+        { connector },
+        {
+          onSuccess: () => {
+            setCandidateToConfirm(candidateId)
+            setConfirmOpen(true)
+            setPendingCandidateAfterConnect(null)
+          },
+          onError: (error) => {
+            showToast({ title: 'Gagal menyambungkan dompet', description: getWalletConnectionErrorMessage(error), tone: 'error' })
+            setPendingCandidateAfterConnect(null)
+          },
+        },
+      )
       return
     }
-
-    connect(
-      { connector },
-      {
-        onError: (error) => {
-          showToast({
-            title: 'Gagal menyambungkan dompet',
-            description: getWalletConnectionErrorMessage(error),
-            tone: 'error',
-          })
-        },
-      },
-    )
+    setCandidateToConfirm(candidateId)
+    setConfirmOpen(true)
   }
 
   const handleConfirm = async () => {
@@ -258,20 +243,38 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       const deployedSpaceAddress = election.deployedSpaceAddress ?? await fetchLatestContractAddress(election.id)
       const voterWallet = address
 
-      if (voteBlockedReason || !canSubmitVote) {
+      if (!voterWallet) {
         setConfirmOpen(false)
-        showToast({
-          title: 'Belum bisa mencoblos',
-          description: voteBlockedReason || 'Status pemilihan belum siap untuk mencoblos.',
-          tone: 'info',
-        })
+        const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
+        if (!connector) {
+          showToast({ title: 'Dompet belum siap', description: 'Connector Base Account belum tersedia. Coba muat ulang halaman.', tone: 'error' })
+          return
+        }
+        setPendingCandidateAfterConnect(candidateToConfirm)
+        connect(
+          { connector },
+          {
+            onSuccess: () => {
+              setCandidateToConfirm(candidateToConfirm)
+              setConfirmOpen(true)
+              setPendingCandidateAfterConnect(null)
+            },
+            onError: (error) => {
+              showToast({ title: 'Gagal menyambungkan dompet', description: getWalletConnectionErrorMessage(error), tone: 'error' })
+              setPendingCandidateAfterConnect(null)
+            },
+          },
+        )
         return
       }
 
-      if (!voterWallet) {
+      if (voteBlockedReason) {
         setConfirmOpen(false)
-        showToast({ title: 'Dompet belum tersambung', description: 'Sambungkan dompet yang tertaut ke akun ini sebelum mencoblos.', tone: 'info' })
-        router.push(`/hubungkan-dompet?redirect=${encodeURIComponent(`/pemilih/pemilihan/${election.id}/pilih-kandidat`)}`)
+        showToast({
+          title: 'Belum bisa mencoblos',
+          description: voteBlockedReason,
+          tone: 'info',
+        })
         return
       }
 
@@ -408,14 +411,20 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             <h1 className="mt-3 text-[26px] font-bold tracking-tight text-white md:text-[32px]">
               {voteBlockedReason
                 ? 'Belum Bisa Mencoblos'
-                : currentPhaseNumber === 1
-                  ? 'Saatnya Mencoblos'
-                  : 'Menunggu Jadwal'}
+                : !address
+                  ? 'Siapkan Dompet'
+                  : currentPhaseNumber === 1
+                    ? 'Saatnya Mencoblos'
+                    : 'Menunggu Jadwal'}
             </h1>
             <p className="mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-slate-300">
               {voteBlockedReason
                 ? voteBlockedReason
-                : 'Pilih satu kandidat lalu konfirmasi di dompet. Setelah itu selesai; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.'}
+                : !address
+                  ? 'Sambungkan dompet yang tertaut ke akun ini untuk mulai mencoblos. Kandidat bisa dilihat tanpa dompet.'
+                : currentPhaseNumber === 1
+                  ? 'Pilih satu kandidat lalu konfirmasi di dompet. Setelah itu selesai; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.'
+                  : 'Pencoblosan belum dimulai. Kamu bisa melihat kandidat terlebih dahulu, lalu coblos saat masa pencoblosan dibuka.'}
             </p>
           </div>
 
@@ -468,7 +477,17 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         </div>
       </section>
 
-      {(voteBlockedReason || writeError) ? (
+      {!address ? (
+        <section className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4 text-[13px] leading-7 text-blue-900">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+            <div>
+              <p className="font-semibold">Dompet belum tersambung</p>
+              <p className="mt-1">Klik tombol "Coblos Kandidat Ini" pada kandidat pilihanmu. Sistem akan otomatis meminta penyambungan dompet sebelum konfirmasi.</p>
+            </div>
+          </div>
+        </section>
+      ) : (voteBlockedReason || writeError) ? (
         <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-[13px] leading-7 text-amber-900">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
@@ -479,16 +498,6 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                   ? 'Transaksi belum berhasil diproses. Pastikan wallet siap dan pemilihan sudah berada pada masa pencoblosan.'
                   : voteBlockedReason}
               </p>
-              {!address ? (
-                <button
-                  type="button"
-                  onClick={handleConnectWallet}
-                  disabled={isConnectPending}
-                  className="mt-3 inline-flex h-9 items-center justify-center rounded-lg bg-[#0F172A] px-4 text-[12px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isConnectPending ? 'Menyambungkan...' : 'Sambungkan dompet'}
-                </button>
-              ) : null}
             </div>
           </div>
         </section>
@@ -556,7 +565,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 <button
                   type="button"
                   onClick={() => handleSelectClick(candidate.id)}
-                  disabled={!canSubmitVote || isWritePending || isConfirming}
+                  disabled={isWritePending || isConfirming || hasCommittedOnChain === true}
                   className="mt-4 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#0F172A] px-4 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label={`Pilih kandidat ${candidate.name}`}
                 >
@@ -564,6 +573,18 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Memproses...
+                    </>
+                  ) : isConnectPending && pendingCandidateAfterConnect === candidate.id ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Menyambungkan...
+                    </>
+                  ) : hasCommittedOnChain === true ? (
+                    'Sudah Mencoblos'
+                  ) : !address ? (
+                    <>
+                      Sambungkan Dompet & Coblos
+                      <ArrowRight className="h-4 w-4" />
                     </>
                   ) : (
                     <>
