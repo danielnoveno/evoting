@@ -90,7 +90,38 @@ export function useMasterVotersList() {
         .order('full_name', { ascending: true })
 
       if (error) throw new RepositoryError('Gagal memuat data master voter.')
-      return (data ?? []).map(mapRow)
+      const rows = (data ?? []) as MasterVoterRow[]
+
+      // Enrich: fill missing wallet_address from app_profiles
+      const missingWalletEmails = rows
+        .filter((r) => !r.wallet_address)
+        .map((r) => r.email.trim().toLowerCase())
+
+      if (missingWalletEmails.length > 0) {
+        const { data: profiles } = await client
+          .schema('app')
+          .from('app_profiles')
+          .select('email,wallet_address')
+          .in('email', missingWalletEmails)
+          .not('wallet_address', 'is', null)
+
+        if (profiles && profiles.length > 0) {
+          const walletMap = new Map<string, string>()
+          for (const p of profiles) {
+            if (p.email && p.wallet_address) {
+              walletMap.set(p.email.trim().toLowerCase(), p.wallet_address)
+            }
+          }
+          for (const row of rows) {
+            if (!row.wallet_address) {
+              const found = walletMap.get(row.email.trim().toLowerCase())
+              if (found) row.wallet_address = found
+            }
+          }
+        }
+      }
+
+      return rows.map(mapRow)
     },
     retry: false,
   })

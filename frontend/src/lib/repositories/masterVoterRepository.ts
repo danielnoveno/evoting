@@ -63,7 +63,38 @@ export async function listMasterVoters(filter?: MasterVoterFilter): Promise<Mast
   const { data, error } = await query
 
   if (error) throw new RepositoryError('Gagal memuat daftar master voter. Coba lagi.')
-  return (data ?? []).map(mapMasterVoterRow)
+  const rows = (data ?? []) as MasterVoterRow[]
+
+  // Enrich: fill missing wallet_address from app_profiles
+  const missingWalletEmails = rows
+    .filter((r) => !r.wallet_address)
+    .map((r) => r.email.trim().toLowerCase())
+
+  if (missingWalletEmails.length > 0) {
+    const { data: profiles } = await client
+      .schema('app')
+      .from('app_profiles')
+      .select('email,wallet_address')
+      .in('email', missingWalletEmails)
+      .not('wallet_address', 'is', null)
+
+    if (profiles && profiles.length > 0) {
+      const walletMap = new Map<string, string>()
+      for (const p of profiles) {
+        if (p.email && p.wallet_address) {
+          walletMap.set(p.email.trim().toLowerCase(), p.wallet_address)
+        }
+      }
+      for (const row of rows) {
+        if (!row.wallet_address) {
+          const found = walletMap.get(row.email.trim().toLowerCase())
+          if (found) row.wallet_address = found
+        }
+      }
+    }
+  }
+
+  return rows.map(mapMasterVoterRow)
 }
 
 export async function listMasterVoterProdiOptions(): Promise<string[]> {
