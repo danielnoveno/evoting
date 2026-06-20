@@ -97,6 +97,26 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     : currentPhaseNumber === 3 ? 'ended'
     : dbPhase
   const effectivePhaseNumber = effectivePhase === 'commit' ? 1 : effectivePhase === 'reveal' ? 2 : effectivePhase === 'ended' ? 3 : 0
+  const onChainPhaseLabel = currentPhaseNumber === 0
+    ? 'Persiapan'
+    : currentPhaseNumber === 1
+      ? 'Pencoblosan'
+      : currentPhaseNumber === 2
+        ? 'Konfirmasi Suara'
+        : currentPhaseNumber === 3
+          ? 'Selesai'
+          : 'belum terbaca'
+  const onChainCommitBlockedReason = !address
+    ? ''
+    : currentPhaseNumber === null
+      ? 'Status fase blockchain belum terbaca. Coba muat ulang halaman sebelum mencoblos.'
+    : currentPhaseNumber !== 1
+      ? `Jadwal aplikasi sudah masuk masa pencoblosan, tetapi fase blockchain masih ${onChainPhaseLabel}. Admin perlu sinkronkan jadwal ke blockchain terlebih dahulu.`
+    : isWhitelistedOnChain === false
+      ? 'Wallet ini belum masuk whitelist on-chain. Admin perlu sinkronkan daftar pemilih ke blockchain terlebih dahulu.'
+    : hasCommittedOnChain === true
+      ? 'Wallet ini sudah pernah mencoblos pada pemilihan ini.'
+      : ''
 
   const voteBlockedReason = !contractAddress
     ? 'Pemilihan ini belum memiliki smart contract aktif.'
@@ -110,10 +130,8 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         : effectivePhase === 'ended'
           ? 'Pemilihan ini sudah selesai.'
           : 'Pencoblosan belum dibuka atau sudah selesai.'
-    : isWhitelistedOnChain === false
-      ? 'Dompet ini belum masuk daftar pemilih untuk pemilihan ini.'
-    : hasCommittedOnChain === true
-      ? 'Wallet ini sudah pernah mencoblos pada pemilihan ini.'
+    : onChainCommitBlockedReason
+      ? onChainCommitBlockedReason
       : ''
 
   useEffect(() => {
