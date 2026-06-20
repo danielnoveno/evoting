@@ -483,7 +483,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
             <div>
               <p className="font-semibold">Dompet belum tersambung</p>
-              <p className="mt-1">Klik tombol "Coblos Kandidat Ini" pada kandidat pilihanmu. Sistem akan otomatis meminta penyambungan dompet sebelum konfirmasi.</p>
+              <p className="mt-1">Klik "Coblos Kandidat Ini" pada kandidat pilihanmu. Sistem akan meminta penyambungan dompet secara otomatis.</p>
             </div>
           </div>
         </section>
@@ -581,11 +581,6 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                     </>
                   ) : hasCommittedOnChain === true ? (
                     'Sudah Mencoblos'
-                  ) : !address ? (
-                    <>
-                      Sambungkan Dompet & Coblos
-                      <ArrowRight className="h-4 w-4" />
-                    </>
                   ) : (
                     <>
                       Coblos Kandidat Ini
