@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown, Ellipsis, CheckSquare2, X } from 'lucide-react'
-import { type HTMLAttributes, type ReactNode, type TdHTMLAttributes, useEffect, useRef, useState } from 'react'
+import { type HTMLAttributes, type ReactNode, type TdHTMLAttributes, useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 export function DataTableShell({ children, className = '' }: { children: ReactNode; className?: string }) {
@@ -224,10 +224,44 @@ export function SelectedCounter({
 }
 
 export function FloatingSelectionBar({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+  const [bounds, setBounds] = useState<{ left: number; width: number } | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const measure = useCallback(() => {
+    if (!containerRef.current) return
+    const parent = containerRef.current.parentElement
+    if (!parent) return
+    const rect = parent.getBoundingClientRect()
+    setBounds({ left: rect.left, width: rect.width })
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [mounted, measure])
+
+  if (!mounted) return null
+
   return (
-    <div className="flex justify-center py-4">
-      {children}
-    </div>
+    <>
+      <div ref={containerRef} className="hidden" aria-hidden="true" />
+      {createPortal(
+        <div
+          className="pointer-events-none fixed bottom-20 z-[90] flex justify-center px-4"
+          style={bounds ? { left: bounds.left, width: bounds.width } : { left: 0, right: 0 }}
+        >
+          {children}
+        </div>,
+        document.body,
+      )}
+    </>
   )
 }
 
