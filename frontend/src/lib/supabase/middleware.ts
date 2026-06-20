@@ -75,6 +75,7 @@ export async function updateSupabaseSession(request: NextRequest) {
       if (requiredRole === 'admin') {
         redirectUrl.searchParams.set('activate', 'admin')
       }
+      redirectUrl.searchParams.set('reason', 'session-timeout')
       // When redirecting, we MUST include the headers from our 'response' object 
       // which contains any newly set session cookies from a refresh.
       return NextResponse.redirect(redirectUrl, {
