@@ -498,10 +498,7 @@ export function SuperadminMasterVoterPage() {
                       <SortableTableHeader label="Program Studi" active={sortField === 'prodi'} direction={sortDirection} onClick={() => handleSort('prodi')} />
                     </DataTableHeaderCell>
                     <DataTableHeaderCell>
-                      <SortableTableHeader label="Status Aktivasi" active={sortField === 'status'} direction={sortDirection} onClick={() => handleSort('status')} />
-                    </DataTableHeaderCell>
-                    <DataTableHeaderCell>
-                      <SortableTableHeader label="Wallet" active={sortField === 'status'} direction={sortDirection} onClick={() => handleSort('status')} />
+                      <SortableTableHeader label="Status" active={sortField === 'status'} direction={sortDirection} onClick={() => handleSort('status')} />
                     </DataTableHeaderCell>
                     <DataTableHeaderCell className="text-center">Aksi</DataTableHeaderCell>
                   </DataTableHeaderRow>
@@ -510,7 +507,7 @@ export function SuperadminMasterVoterPage() {
                   {votersQuery.isLoading ? (
                     Array.from({ length: 3 }).map((_, i) => (
                       <DataTableRow key={`loading-${i}`} className="[&>td]:rounded-[20px] [&>td]:border [&>td]:border-slate-200 [&>td]:bg-white">
-                        <DataTableCell colSpan={7} className="px-6 py-5">
+                        <DataTableCell colSpan={6} className="px-6 py-5">
                           <div className="h-10 animate-pulse rounded-2xl bg-slate-100" />
                         </DataTableCell>
                       </DataTableRow>
@@ -547,17 +544,8 @@ export function SuperadminMasterVoterPage() {
                           </span>
                         </DataTableCell>
                         <DataTableCell>
-                          <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ${
-                            voter.status === 'active' ? 'bg-emerald-50 text-emerald-700' :
-                            voter.status === 'inactive' ? 'bg-red-50 text-red-700' :
-                            'bg-slate-100 text-slate-600'
-                          }`}>
-                            {voter.status === 'active' ? 'Aktif' : voter.status === 'inactive' ? 'Nonaktif' : 'Pending'}
-                          </span>
-                        </DataTableCell>
-                        <DataTableCell>
-                          <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ${voter.syncStatus === 'Tersinkronisasi' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'}`}>
-                            {voter.syncStatus}
+                          <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ${voter.walletAddress ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                            {voter.walletAddress ? 'Sudah ada address wallet' : 'Belum ada address wallet'}
                           </span>
                         </DataTableCell>
                         <DataTableCell className="text-center" onClick={(event) => event.stopPropagation()}>
@@ -580,7 +568,7 @@ export function SuperadminMasterVoterPage() {
                     ))
                   ) : (
                     <DataTableEmpty
-                      colSpan={7}
+                      colSpan={6}
                       title="Data Master Voter kosong"
                       description={searchTerm ? 'Tidak ada hasil pencarian yang cocok.' : 'Silakan gunakan tombol Impor Data Master via CSV di atas untuk memuat data dari database.'}
                     />
