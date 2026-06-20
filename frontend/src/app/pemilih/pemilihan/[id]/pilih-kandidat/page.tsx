@@ -90,14 +90,26 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const isConnectedWalletProfileWallet = sameWalletAddress(address, store?.profile.wallet)
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
 
+  const dbPhase = election?.phase ?? 'registration'
+  const effectivePhase: 'registration' | 'commit' | 'reveal' | 'ended' =
+    currentPhaseNumber === 1 ? 'commit'
+    : currentPhaseNumber === 2 ? 'reveal'
+    : currentPhaseNumber === 3 ? 'ended'
+    : dbPhase
+  const effectivePhaseNumber = effectivePhase === 'commit' ? 1 : effectivePhase === 'reveal' ? 2 : effectivePhase === 'ended' ? 3 : 0
+
   const voteBlockedReason = !contractAddress
     ? 'Pemilihan ini belum memiliki smart contract aktif.'
     : store?.profile.wallet && address && !isConnectedWalletProfileWallet
       ? `Dompet tersambung (${formatWallet(address)}) berbeda dari dompet akun ini (${formatWallet(store.profile.wallet)}).`
     : onChainStatusError
       ? 'Status blockchain belum terbaca. Coba muat ulang halaman sebelum mencoblos.'
-    : currentPhaseNumber !== null && currentPhaseNumber !== 1
-      ? 'Pencoblosan belum dibuka atau sudah selesai.'
+    : effectivePhaseNumber !== 1
+      ? effectivePhase === 'registration'
+        ? 'Pencoblosan belum dimulai. Mulai memilih saat jadwal yang ditentukan.'
+        : effectivePhase === 'ended'
+          ? 'Pemilihan ini sudah selesai.'
+          : 'Pencoblosan belum dibuka atau sudah selesai.'
     : isWhitelistedOnChain === false
       ? 'Dompet ini belum masuk daftar pemilih untuk pemilihan ini.'
     : hasCommittedOnChain === true
@@ -413,7 +425,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 ? 'Belum Bisa Mencoblos'
                 : !address
                   ? 'Siapkan Dompet'
-                  : currentPhaseNumber === 1
+                  : effectivePhaseNumber === 1
                     ? 'Saatnya Mencoblos'
                     : 'Menunggu Jadwal'}
             </h1>
@@ -422,7 +434,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 ? voteBlockedReason
                 : !address
                   ? 'Sambungkan dompet yang tertaut ke akun ini untuk mulai mencoblos. Kandidat bisa dilihat tanpa dompet.'
-                : currentPhaseNumber === 1
+                : effectivePhaseNumber === 1
                   ? 'Pilih satu kandidat lalu konfirmasi di dompet. Setelah itu selesai; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.'
                   : 'Pencoblosan belum dimulai. Kamu bisa melihat kandidat terlebih dahulu, lalu coblos saat masa pencoblosan dibuka.'}
             </p>
