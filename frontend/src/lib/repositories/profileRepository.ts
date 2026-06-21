@@ -231,7 +231,14 @@ export async function getCurrentProfile(): Promise<AppProfileRecord | null> {
     .maybeSingle()
 
   if (error) throw new RepositoryError('Gagal memuat profil. Coba lagi.')
-  return data ? mapProfileRow(data) : null
+
+  // Auth user exists but profile not found — database was reset but Supabase auth session is stale
+  if (!data) {
+    clearAllClientStorage()
+    return null
+  }
+
+  return mapProfileRow(data)
 }
 
 async function getCurrentProfileId(): Promise<string | null> {
