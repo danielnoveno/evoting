@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Copy, Loader2, Mail, Power, Search, UserPlus, ShieldAlert, CheckCircle2, Clock3, ChevronsUpDown, ChevronUp, ChevronDown } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Copy, Loader2, Mail, Power, Search, UserPlus, ShieldAlert, CheckCircle2, Clock3, ChevronsUpDown, ChevronUp, ChevronDown, Link } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -45,6 +45,9 @@ import { updateDirectoryRegistryStatus } from '@/lib/repositories/profileReposit
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { useCreateAdminInvite, useResendAdminInvite } from '@/hooks/use-admin-invite'
 import { profileQueryKeys, useCurrentProfile, useSuperadminAdminDirectory } from '@/hooks/use-profile'
+import { useSuperadminOnchainStatus } from '@/hooks/use-superadmin-onchain-status'
+import { useRegistryContract } from '@/hooks/use-registry-contract'
+import type { Address } from 'viem'
 
 type TabKey = 'daftar' | 'tambah'
 
@@ -84,19 +87,29 @@ function SuperadminManagementContent() {
   const [lastEmailError, setLastEmailError] = useState<string | null>(null)
   const [selectedEmails, setSelectedEmails] = useState<string[]>([])
   const [selectionBarDismissed, setSelectionBarDismissed] = useState(false)
-  const [bulkActionLoading, setBulkActionLoading] = useState<'send' | 'deactivate' | null>(null)
+  const [bulkActionLoading, setBulkActionLoading] = useState<'send' | 'deactivate' | 'onchain-register' | null>(null)
   const [sortField, setSortField] = useState<SortField | null>(null)
   const [sortDirection, setSortDirection] = useState<SortDirection>(null)
   const [bulkDeactivateDialogOpen, setBulkDeactivateDialogOpen] = useState(false)
+  const [onchainRegisterDialogOpen, setOnchainRegisterDialogOpen] = useState(false)
   const createAdminInviteMutation = useCreateAdminInvite()
   const resendInviteMutation = useResendAdminInvite()
   const currentProfileQuery = useCurrentProfile()
   const adminDirectoryQuery = useSuperadminAdminDirectory()
+  const { addSuperAdmin, userAddress, superAdminAddress, isWritePending } = useRegistryContract()
 
   const superadmins = useMemo(
     () => (adminDirectoryQuery.data ?? []).filter((admin) => admin.role === 'super_admin'),
     [adminDirectoryQuery.data],
   )
+
+  // Check on-chain status for all superadmin wallets
+  const superadminWallets = useMemo(
+    () => superadmins.map((admin) => admin.walletAddress || admin.profile?.walletAddress || '').filter(Boolean),
+    [superadmins],
+  )
+  const { statusMap: onchainStatusMap, isLoading: isOnchainStatusLoading } = useSuperadminOnchainStatus(superadminWallets)
+  const isRootSuperadminWallet = Boolean(userAddress && superAdminAddress && userAddress.toLowerCase() === String(superAdminAddress).toLowerCase())
   const isLoading = adminDirectoryQuery.isLoading
   const error = adminDirectoryQuery.error
 
@@ -271,6 +284,95 @@ function SuperadminManagementContent() {
         ? `${successCount} superadmin berhasil dinonaktifkan.`
         : `${successCount} berhasil, ${failedCount} gagal. Coba ulang untuk sisanya.`,
     })
+  }
+
+  const handleBulkRegisterOnchain = async () => {
+    if (!isRootSuperadminWallet) {
+      showToast({ tone: 'error', title: 'Butuh root superadmin', description: 'Hanya root superadmin on-chain yang dapat mendaftarkan superadmin baru.' })
+      setOnchainRegisterDialogOpen(false)
+      return
+    }
+
+    // Filter selected superadmins that have valid wallets and are NOT yet on-chain
+    const candidates = selectedSuperadmins.filter((admin) => {
+      const wallet = admin.walletAddress || admin.profile?.walletAddress || ''
+      return /^0x[a-fA-F0-9]{40}$/.test(wallet) && !onchainStatusMap.get(wallet.toLowerCase())
+    })
+
+    if (candidates.length === 0) {
+      showToast({ tone: 'info', title: 'Tidak ada yang perlu didaftarkan', description: 'Semua superadmin terpilih sudah terdaftar on-chain atau belum memiliki wallet valid.' })
+      setOnchainRegisterDialogOpen(false)
+      return
+    }
+
+    setBulkActionLoading('onchain-register')
+    setOnchainRegisterDialogOpen(false)
+    let successCount = 0
+    let failedCount = 0
+
+    for (const admin of candidates) {
+      const wallet = (admin.walletAddress || admin.profile?.walletAddress || '') as Address
+      try {
+        await addSuperAdmin(wallet)
+        successCount++
+      } catch {
+        failedCount++
+      }
+    }
+
+    await queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+    setBulkActionLoading(null)
+    setSelectedEmails([])
+
+    showToast({
+      tone: failedCount === 0 ? 'success' : 'info',
+      title: 'Pendaftaran on-chain diproses',
+      description: failedCount === 0
+        ? `${successCount} superadmin berhasil didaftarkan on-chain.`
+        : `${successCount} berhasil, ${failedCount} gagal. Coba ulang untuk sisanya.`,
+    })
+  }
+    if (!formData.name.trim() || !formData.email.trim() || !formData.walletAddress.trim()) {
+      showToast({ tone: 'error', title: 'Data belum lengkap', description: 'Lengkapi nama, email, dan wallet address.' })
+      return
+    }
+
+    if (!/^0x[a-fA-F0-9]{40}$/.test(formData.walletAddress)) {
+      showToast({ tone: 'error', title: 'Wallet tidak valid', description: 'Gunakan alamat wallet Ethereum (0x...) yang valid.' })
+      return
+    }
+
+    createAdminInviteMutation.mutate(
+      {
+        displayName: formData.name,
+        email: formData.email,
+        walletAddress: formData.walletAddress,
+        role: 'super_admin',
+      },
+      {
+        onSuccess: (invite) => {
+          if (invite.activationLink) setActivationLink(invite.activationLink)
+          setLastEmailStatus(invite.emailStatus ?? 'skipped')
+          setLastEmailError(invite.emailError ?? null)
+
+          const emailMsg = invite.emailStatus === 'sent'
+            ? 'Email aktivasi sudah dikirim.'
+            : invite.emailStatus === 'failed'
+              ? `Email gagal dikirim: ${invite.emailError ?? ''}`
+              : 'Link tersedia untuk disalin (email belum dikirim).'
+
+          showToast({
+            tone: invite.emailStatus === 'sent' ? 'success' : 'info',
+            title: 'Undangan Aktivasi Dibuat',
+            description: `${formData.name} — ${emailMsg}`,
+          })
+          setFormData(initialFormData)
+        },
+        onError: (err) => {
+          showToast({ tone: 'error', title: 'Undangan Gagal Dibuat', description: getRepositoryErrorMessage(err) })
+        },
+      },
+    )
   }
 
   const handleCreateSuperAdmin = () => {
@@ -450,6 +552,7 @@ function SuperadminManagementContent() {
                           <SortIcon field="status" />
                         </button>
                       </DataTableHeaderCell>
+                      <DataTableHeaderCell>Status On-Chain</DataTableHeaderCell>
                       <DataTableHeaderCell className="text-center">Aksi</DataTableHeaderCell>
                     </DataTableHeaderRow>
                   </DataTableHead>
@@ -457,7 +560,7 @@ function SuperadminManagementContent() {
                     {isLoading ? (
                       Array.from({ length: 3 }).map((_, i) => (
                         <DataTableRow key={i} className="[&>td]:rounded-[20px] [&>td]:border [&>td]:border-slate-200 [&>td]:bg-white">
-                          <DataTableCell colSpan={6}>
+                          <DataTableCell colSpan={7}>
                             <div className="h-10 animate-pulse rounded-2xl bg-slate-100" />
                           </DataTableCell>
                         </DataTableRow>
@@ -465,6 +568,8 @@ function SuperadminManagementContent() {
                     ) : paginatedSuperadmins.length > 0 ? paginatedSuperadmins.map((admin) => {
                       const isActive = Boolean(admin.profile) || admin.registryStatus === 'active'
                       const displayLabel = admin.displayName?.trim() || admin.profile?.displayName?.trim() || admin.email
+                      const wallet = admin.walletAddress || admin.profile?.walletAddress || ''
+                      const isOnchain = wallet ? onchainStatusMap.get(wallet.toLowerCase()) === true : false
 
                       return (
                         <DataTableRow
@@ -501,6 +606,20 @@ function SuperadminManagementContent() {
                               {isActive ? 'Super Admin Aktif' : 'Menunggu Aktivasi'}
                             </span>
                           </DataTableCell>
+                          <DataTableCell>
+                            {isOnchainLoading ? (
+                              <div className="h-5 w-16 animate-pulse rounded-full bg-slate-100" />
+                            ) : isOnchain ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-blue-600">
+                                <Link className="h-3 w-3" />
+                                On-Chain
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                                Belum Terdaftar
+                              </span>
+                            )}
+                          </DataTableCell>
                           <DataTableCell className="text-center" onClick={(event) => event.stopPropagation()}>
                             <RowActionMenu
                               buttonLabel={`Aksi untuk ${admin.displayName || admin.email}`}
@@ -531,7 +650,7 @@ function SuperadminManagementContent() {
                         </DataTableRow>
                       )
                     }) : (
-                      <DataTableEmpty colSpan={6} title="Belum ada superadmin lain" description="Hanya akun Anda yang terdaftar sebagai otoritas tertinggi saat ini." />
+                      <DataTableEmpty colSpan={7} title="Belum ada superadmin lain" description="Hanya akun Anda yang terdaftar sebagai otoritas tertinggi saat ini." />
                     )}
                   </DataTableBody>
                 </DataTable>
@@ -566,6 +685,17 @@ function SuperadminManagementContent() {
                           {bulkActionLoading === 'deactivate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
                           Nonaktifkan Akses
                         </button>
+                        {isRootSuperadminWallet && (
+                          <button
+                            type="button"
+                            onClick={() => setOnchainRegisterDialogOpen(true)}
+                            disabled={bulkActionLoading !== null || isWritePending}
+                            className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-blue-200 bg-blue-50 px-3.5 text-[13px] font-semibold text-blue-700 transition hover:bg-blue-100 disabled:opacity-50"
+                          >
+                            {bulkActionLoading === 'onchain-register' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link className="h-4 w-4" />}
+                            Daftarkan On-Chain
+                          </button>
+                        )}
                       </>
                     )}
                   />
@@ -682,6 +812,17 @@ function SuperadminManagementContent() {
         tone="default"
         onConfirm={() => { void handleBulkDeactivate() }}
         onCancel={() => setBulkDeactivateDialogOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={onchainRegisterDialogOpen}
+        title="Daftarkan superadmin on-chain?"
+        description="Superadmin terpilih yang memiliki wallet valid akan didaftarkan sebagai superadmin di smart contract. Transaksi akan dikirim satu per satu dan membutuhkan konfirmasi wallet."
+        confirmLabel="Ya, Daftarkan On-Chain"
+        cancelLabel="Batal"
+        tone="default"
+        onConfirm={() => { void handleBulkRegisterOnchain() }}
+        onCancel={() => setOnchainRegisterDialogOpen(false)}
       />
     </SuperadminShell>
   )
