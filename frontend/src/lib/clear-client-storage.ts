@@ -1,14 +1,18 @@
 'use client'
 
 /**
- * Clears all VoteChain-related client storage (localStorage, sessionStorage, cookies).
+ * Clears Votein + Supabase auth client storage (localStorage, sessionStorage, cookies).
  * Called on logout and when session is invalid after DB reset.
  */
 export function clearAllClientStorage() {
   if (typeof window === 'undefined') return
 
-  // ── localStorage: clear all VoteChain keys ──
-  const voteinPrefixes = [
+  // Supabase browser auth stores the access token in localStorage with `sb-...`.
+  // If this key survives after a Supabase DB reset, the app can keep reading an old session.
+  const storagePrefixes = [
+    'sb-',
+    'supabase-',
+    'supabase.',
     'votein:',
     'votein-',
     'voter:',
@@ -18,22 +22,23 @@ export function clearAllClientStorage() {
     'superadmin:',
   ]
 
+  // ── localStorage ──
   const keysToRemove: string[] = []
   for (let i = 0; i < window.localStorage.length; i++) {
     const key = window.localStorage.key(i)
     if (!key) continue
-    if (voteinPrefixes.some((prefix) => key.startsWith(prefix))) {
+    if (storagePrefixes.some((prefix) => key.startsWith(prefix))) {
       keysToRemove.push(key)
     }
   }
   keysToRemove.forEach((key) => window.localStorage.removeItem(key))
 
-  // ── sessionStorage: clear all VoteChain keys ──
+  // ── sessionStorage ──
   const sessionKeysToRemove: string[] = []
   for (let i = 0; i < window.sessionStorage.length; i++) {
     const key = window.sessionStorage.key(i)
     if (!key) continue
-    if (voteinPrefixes.some((prefix) => key.startsWith(prefix))) {
+    if (storagePrefixes.some((prefix) => key.startsWith(prefix))) {
       sessionKeysToRemove.push(key)
     }
   }
