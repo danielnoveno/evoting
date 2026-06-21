@@ -1234,15 +1234,17 @@ export function ProposalForm({
 
       {/* ── Navigation Buttons (stepper mode) ── */}
       {stepper && (
-        <div className="flex items-center justify-between pt-4">
-          <button
-            type="button"
-            onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
-            disabled={currentStep === 0}
-            className="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-[14px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Sebelumnya
-          </button>
+        <div className={`flex items-center pt-4 ${currentStep < STEP_LABELS.length - 1 ? 'justify-between' : 'justify-center'}`}>
+          {currentStep < STEP_LABELS.length - 1 && (
+            <button
+              type="button"
+              onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
+              disabled={currentStep === 0}
+              className="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-[14px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Sebelumnya
+            </button>
+          )}
           {currentStep < STEP_LABELS.length - 1 ? (
             <button
               type="button"
@@ -1271,7 +1273,7 @@ export function ProposalForm({
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="inline-flex h-12 items-center gap-2 rounded-2xl bg-black px-6 text-[14px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-12 items-center gap-2 rounded-2xl bg-black px-8 text-[14px] font-medium text-white transition hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save className="h-4 w-4" /> {isUploadingBannerImage ? 'Mengunggah banner...' : isUploadingCandidatePhotos ? 'Mengunggah foto...' : isUploadingDocument ? 'Mengunggah dokumen...' : saveProposalDraft.isPending ? 'Menyimpan...' : submitLabel}
             </button>
