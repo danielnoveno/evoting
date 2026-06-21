@@ -3,7 +3,6 @@
 import { notFound } from 'next/navigation'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { ProposalForm, ProposalFormData } from '@/components/admin/proposal-form'
-import { adminProposalContent } from '@/lib/admin-proposal-data'
 import { useProposalDraft } from '@/hooks/use-proposal-draft'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
@@ -19,7 +18,6 @@ function toDatetimeLocal(value: string | null, fallback: string) {
 }
 
 export default function AdminEditProposalPage({ params }: { params: { id: string } }) {
-  const proposal = adminProposalContent.proposals.find(p => p.id === params.id)
   const proposalQuery = useProposalDraft(params.id)
   const candidateQuery = useProposalCandidates(params.id)
   const whitelistQuery = useProposalWhitelistEntries(params.id)
@@ -34,20 +32,19 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
     )
   }
 
-  // Only call notFound if we are not loading, have no error, and both static and live data are missing
-  if (!proposalQuery.isError && !proposal && !proposalQuery.data) {
+  if (!proposalQuery.isError && !proposalQuery.data) {
     notFound()
   }
 
   const liveProposal = proposalQuery.data
 
   const initialData: Partial<ProposalFormData> = {
-    title: liveProposal?.title ?? proposal?.title ?? 'Proposal',
-    category: liveProposal?.organizationName ?? proposal?.category ?? 'Organisasi',
-    description: liveProposal?.description ?? `Deskripsi default untuk proposal ${liveProposal?.title ?? proposal?.title}.`,
+    title: liveProposal?.title ?? 'Proposal',
+    category: liveProposal?.organizationName ?? 'Organisasi',
+    description: liveProposal?.description ?? `Deskripsi default untuk proposal ${liveProposal?.title ?? 'proposal'}.`,
     bannerImagePath: liveProposal?.bannerImagePath ?? '',
     candidateCount: liveProposal?.candidateCount ?? 2,
-    voterCount: proposal ? parseInt(proposal.votersEstimate.replace(/,/g, ''), 10) || 0 : 0,
+    voterCount: 0,
     commitDate: toDatetimeLocal(liveProposal?.commitStartAt ?? null, '2026-06-12T09:00'),
     revealDate: toDatetimeLocal(liveProposal?.revealStartAt ?? null, '2026-06-19T09:00'),
     endedDate: toDatetimeLocal(liveProposal?.endedAt ?? null, '2026-06-26T09:00'),
@@ -68,7 +65,7 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
     <AdminShell>
       {proposalQuery.error ? (
         <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800" role="status">
-          {getRepositoryErrorMessage(proposalQuery.error, 'Proposal live belum tersedia. Menggunakan data transisi lokal untuk pengeditan.')}
+          {getRepositoryErrorMessage(proposalQuery.error, 'Proposal live belum tersedia.')}
         </div>
       ) : null}
       {candidateQuery.error || whitelistQuery.error ? (
@@ -80,11 +77,11 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
         proposalId={params.id}
         initialData={initialData}
         pageTitle="Edit Proposal"
-        pageDescription={`Perbarui parameter untuk proposal ${liveProposal?.title ?? proposal?.title}. Setelah disimpan, proposal akan kembali masuk antrean review superadmin.`}
+        pageDescription={`Perbarui parameter untuk proposal ${liveProposal?.title ?? 'proposal'}. Setelah disimpan, proposal akan kembali masuk antrean review superadmin.`}
         submitLabel="Ajukan Ulang"
         submitStatus="submitted"
         successMessageTitle="Proposal Diajukan Ulang"
-        successMessageDesc={`Proposal ${liveProposal?.title ?? proposal?.title} berhasil diperbarui dan menunggu review superadmin.`}
+        successMessageDesc={`Proposal ${liveProposal?.title ?? 'proposal'} berhasil diperbarui dan menunggu review superadmin.`}
       />
     </AdminShell>
   )

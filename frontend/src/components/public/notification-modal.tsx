@@ -113,6 +113,13 @@ export function NotificationModal({
         {notificationsEnabled && notificationQuery.isLoading ? (
           <div className="py-12 text-center text-[14px] text-slate-500">Memuat notifikasi dari Supabase...</div>
         ) : null}
+
+        {notificationsEnabled && notificationQuery.isError ? (
+          <div className="py-12 text-center">
+            <Bell className="mx-auto h-12 w-12 text-slate-200" />
+            <p className="mt-4 text-[14px] text-slate-500">Gagal memuat notifikasi. Coba lagi nanti.</p>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-6 border-t border-slate-100 pt-5">

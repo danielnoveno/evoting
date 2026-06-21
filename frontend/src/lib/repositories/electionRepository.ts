@@ -718,10 +718,16 @@ export async function listUserNotifications(profileId?: string, walletAddress?: 
 function mapNotificationRow(row: NotificationRow): NotificationJobRecord {
   const payload = asObject(row.payload)
   const tone = payload.type === 'success' || payload.type === 'warning' ? payload.type : 'info'
+  // DB trigger uses 'message', frontend uses 'description' — check both
+  const description = typeof payload.description === 'string'
+    ? payload.description
+    : typeof payload.message === 'string'
+      ? payload.message
+      : 'Notifikasi sistem tersedia.'
   return {
     id: row.id,
     title: typeof payload.title === 'string' ? payload.title : row.template_key,
-    description: typeof payload.description === 'string' ? payload.description : 'Notifikasi sistem tersedia.',
+    description,
     timeLabel: relativeTime(row.created_at),
     type: tone,
     link: typeof payload.link === 'string' ? payload.link : undefined,

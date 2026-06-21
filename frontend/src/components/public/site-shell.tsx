@@ -244,7 +244,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
             <button
               type="button"
               onClick={() => setNotifOpen(true)}
-              className="relative hidden h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 md:inline-flex"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
               aria-label="Notifikasi"
             >
               <Bell className="h-4 w-4" />

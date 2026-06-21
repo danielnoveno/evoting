@@ -5,6 +5,7 @@ import type { Database, Json } from '@/lib/supabase/database.types'
 import { getCurrentProfile } from '@/lib/repositories/profileRepository'
 import type { ProposalActivityRecord, ProposalCandidateRecord, ProposalDraftRecord, ProposalDraftUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
+import { insertNotification, notifySuperadmins, type NotificationPayload } from '@/lib/notification-helpers'
 
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 type ProposalCandidateRow = Database['app']['Tables']['proposal_candidates']['Row']
@@ -47,16 +48,7 @@ export interface ProposalStatusUpdateInput {
   message?: string | null
 }
 
-type NotificationPayload = {
-  proposalId: string
-  eventType: string
-  title: string
-  description: string
-  actorLabel?: string
-  message?: string | null
-  link?: string
-  type?: 'info' | 'success' | 'warning'
-}
+type LocalNotificationPayload = NotificationPayload & { proposalId: string }
 
 function mapProposalRow(row: ProposalRow): ProposalDraftRecord {
   return {
@@ -178,31 +170,6 @@ function activityDescriptionForStatus(status: ProposalStatus, message?: string |
     case 'draft':
     default: return 'Proposal diperbarui.'
   }
-}
-
-async function listSuperadminProfileIds(): Promise<string[]> {
-  const client = getSupabaseBrowserClient()
-  if (!client) return []
-  const { data, error } = await client.schema('app').from('app_profiles').select('id').eq('role', 'super_admin')
-  if (error) return []
-  return (data ?? []).map((row) => row.id)
-}
-
-async function insertNotification(targetProfileId: string | null, payload: NotificationPayload) {
-  const client = getSupabaseBrowserClient()
-  if (!client) return
-  await client.schema('app').from('notification_jobs').insert({
-    target_profile_id: targetProfileId,
-    channel: 'in_app',
-    template_key: 'proposal_activity',
-    status: 'queued',
-    payload,
-  })
-}
-
-async function notifySuperadmins(payload: NotificationPayload) {
-  const superadminIds = await listSuperadminProfileIds()
-  await Promise.all(superadminIds.map((id) => insertNotification(id, payload).catch(() => undefined)))
 }
 
 export async function listProposalActivities(proposalDraftId: string): Promise<ProposalActivityRecord[]> {
@@ -412,7 +379,7 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
   const proposal = mapProposalRow(data)
 
   if (input.status === 'submitted') {
-    const payload: NotificationPayload = {
+    const payload: LocalNotificationPayload = {
       proposalId: proposal.id,
       eventType: input.id ? 'resubmitted' : 'submitted',
       title: input.id ? 'Proposal diajukan ulang' : 'Proposal baru diajukan',
@@ -491,7 +458,7 @@ export async function updateProposalStatus(input: ProposalStatusUpdateInput): Pr
 
   const title = activityTitleForStatus(input.status)
   const description = activityDescriptionForStatus(input.status, input.message)
-  const activityPayload: NotificationPayload = {
+  const activityPayload: LocalNotificationPayload = {
     proposalId: input.id,
     eventType: beforeRow?.status === 'revision_requested' && input.status === 'submitted' ? 'resubmitted' : input.status,
     title: beforeRow?.status === 'revision_requested' && input.status === 'submitted' ? 'Proposal diajukan ulang' : title,
@@ -543,6 +510,18 @@ export async function updateProposalStatus(input: ProposalStatusUpdateInput): Pr
       }, { onConflict: 'tx_hash,action_type' })
 
     if (auditError) throw new RepositoryError('Pemilihan tersimpan, tetapi audit transaksi Supabase gagal diperbarui.')
+
+    // Notify admin that their proposal has been deployed
+    if (beforeRow?.created_by) {
+      void insertNotification(beforeRow.created_by, {
+        eventType: 'deployed',
+        title: 'Pemilihan berhasil di-deploy',
+        description: 'Proposal Anda sudah menjadi ruang pemilihan aktif di blockchain. Pemilih sekarang bisa melakukan pencoblosan.',
+        actorLabel: 'Superadmin',
+        link: `/admin/daftar-proposal/${input.id}`,
+        type: 'success',
+      }).catch(() => undefined)
+    }
   }
 
   return mapProposalRow(data)

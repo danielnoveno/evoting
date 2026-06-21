@@ -642,6 +642,14 @@ export function ProposalForm({
       }
     }
 
+    // Always merge picker selections AND text area entries (not mutually exclusive)
+    const textWallets = formData.whitelistWallets
+      .split('\n')
+      .map((wallet) => wallet.trim())
+      .filter((wallet) => wallet && isAddress(wallet))
+      .map((wallet) => wallet.toLowerCase())
+    const allWhitelistWallets = Array.from(new Set([...selectedWhitelistWallets, ...textWallets]))
+
     saveProposalDraft.mutate({
       id: proposalId,
       title: formData.title,
@@ -656,13 +664,9 @@ export function ProposalForm({
       endedAt: new Date(formData.endedDate).toISOString(),
       status: submitStatus,
       candidates: candidateEntries,
-      whitelistEntries: stepper && selectedWhitelistWallets.length > 0
-        ? selectedWhitelistWallets.map((wallet) => ({ walletAddress: wallet }))
-        : formData.whitelistWallets
-          .split('\n')
-          .map((wallet) => wallet.trim())
-          .filter((wallet) => wallet && isAddress(wallet))
-          .map((wallet) => ({ walletAddress: wallet.toLowerCase() }))
+      whitelistEntries: allWhitelistWallets.length > 0
+        ? allWhitelistWallets.map((wallet) => ({ walletAddress: wallet }))
+        : undefined,
     }, {
       onSuccess: async (proposal) => {
         clearDraft()
