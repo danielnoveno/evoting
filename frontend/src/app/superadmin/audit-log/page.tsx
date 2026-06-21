@@ -1,22 +1,38 @@
 'use client'
 
 import { ArrowUpDown, Copy, Download, ExternalLink, FileText, Filter, RefreshCcw, Search, Settings2, Vote } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ModalShell } from '@/components/ui/modal-shell'
 import { useToast } from '@/components/ui/toast-provider'
 import { SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
-import { superadminAuditLogData, type SuperadminAuditLogItem } from '@/lib/superadmin-data'
-import { useSuperadminAuditLogsStore } from '@/lib/superadmin-store'
+import { useAuthSession } from '@/hooks/use-auth-session'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
-function AuditIcon({ icon }: { icon: SuperadminAuditLogItem['icon'] }) {
+type AuditLogItem = {
+  id: string
+  block: string
+  eventLabel: string
+  title: string
+  timestamp: string
+  txHash: string
+  status: string
+  statusTone: 'verified' | 'syncing'
+  icon: 'proposal' | 'vote' | 'validator'
+  actorWallet?: string
+  actorEmail?: string
+  source?: string
+  metadata?: Record<string, unknown>
+  type?: 'tx' | 'ops'
+}
+
+function AuditIcon({ icon }: { icon: AuditLogItem['icon'] }) {
   if (icon === 'vote') return <Vote className="h-4 w-4" />
   if (icon === 'validator') return <Settings2 className="h-4 w-4" />
   return <FileText className="h-4 w-4" />
 }
 
-function AuditStatusBadge({ tone, status }: { tone: SuperadminAuditLogItem['statusTone']; status: string }) {
+function AuditStatusBadge({ tone, status }: { tone: AuditLogItem['statusTone']; status: string }) {
   return (
     <span className={tone === 'verified'
       ? 'inline-flex rounded-full bg-emerald-50 px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-emerald-600'
@@ -28,21 +44,51 @@ function AuditStatusBadge({ tone, status }: { tone: SuperadminAuditLogItem['stat
 
 export default function SuperadminAuditLogPage() {
   const { showToast } = useToast()
-  const { logs, setLogs } = useSuperadminAuditLogsStore()
+  const authSessionQuery = useAuthSession()
+  const [logs, setLogs] = useState<AuditLogItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<'semua' | 'verified' | 'syncing' | 'proposal' | 'vote' | 'validator'>('semua')
   const [sortOrder, setSortOrder] = useState<'terbaru' | 'terlama'>('terbaru')
-  const [visibleCount, setVisibleCount] = useState(4)
-  const [selectedLog, setSelectedLog] = useState<SuperadminAuditLogItem | null>(null)
+  const [visibleCount, setVisibleCount] = useState(10)
+  const [selectedLog, setSelectedLog] = useState<AuditLogItem | null>(null)
 
   const basescanTxUrl = (hash: string) => `https://sepolia.basescan.org/tx/${hash}`
+
+  const fetchLogs = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const token = authSessionQuery.data?.access_token
+      if (!token) return
+
+      const response = await fetch('/api/superadmin/audit-log?limit=100&days=30', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!response.ok) throw new Error('Gagal memuat audit log')
+
+      const data = await response.json()
+      setLogs(data.logs ?? [])
+    } catch (err) {
+      console.error('[audit-log] Fetch error:', err)
+      showToast({ tone: 'error', title: 'Gagal memuat audit log', description: 'Terjadi kesalahan saat mengambil data audit.' })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [authSessionQuery.data?.access_token, showToast])
+
+  useEffect(() => {
+    if (authSessionQuery.data?.access_token) {
+      fetchLogs()
+    }
+  }, [authSessionQuery.data?.access_token, fetchLogs])
 
   const copyText = async (value: string, label: string) => {
     await navigator.clipboard.writeText(value)
     showToast({ tone: 'success', title: `${label} disalin`, description: 'Nilai berhasil disimpan ke clipboard.' })
   }
 
-  const downloadLogProof = (log: SuperadminAuditLogItem) => {
+  const downloadLogProof = (log: AuditLogItem) => {
     const payload = {
       id: log.id,
       block: log.block,
@@ -96,8 +142,10 @@ export default function SuperadminAuditLogPage() {
       <ScrollReveal variant="fade-up" duration={800}>
         <section className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="w-full max-w-[720px]">
-          <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[54px]">{superadminAuditLogData.title}</h1>
-          <p className="mt-4 max-w-[760px] text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">{superadminAuditLogData.description}</p>
+          <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[54px]">Audit Log Transparansi</h1>
+          <p className="mt-4 max-w-[760px] text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
+            Setiap tindakan penting di platform dicatat secara permanen untuk kebutuhan audit. Data diambil langsung dari tx_audit_log dan ops_audit_log.
+          </p>
         </div>
 
         <div className="mt-2 flex flex-wrap gap-4 xl:mt-10">
@@ -105,22 +153,9 @@ export default function SuperadminAuditLogPage() {
             <Download className="h-4 w-4" />
             Unduh Laporan
           </SuperadminToolbarButton>
-          <button type="button" onClick={() => {
-            setLogs((current) => [{
-              id: `log-live-${Date.now()}`,
-              block: '#12050',
-              eventLabel: 'Validator Config',
-              title: 'Sinkronisasi validator baru pada klaster pusat',
-              timestamp: '2023-10-27 14:33:19 UTC',
-              txHash: '0xab2...77fe',
-              status: 'Syncing (1/3)',
-              statusTone: 'syncing',
-              icon: 'validator',
-            }, ...current])
-            showToast({ tone: 'success', title: 'Sinkronisasi ulang dipicu', description: 'Event audit terbaru berhasil ditambahkan ke daftar.' })
-          }} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-700 hover:bg-slate-200">
-            <RefreshCcw className="h-4 w-4" />
-            Sinkronisasi Ulang
+          <button type="button" onClick={() => fetchLogs()} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-700 hover:bg-slate-200">
+            <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? 'Memuat...' : 'Muat Ulang'}
           </button>
         </div>
       </section>
@@ -131,23 +166,23 @@ export default function SuperadminAuditLogPage() {
           <div className="h-1.5 w-full bg-emerald-500" />
           <div className="p-8">
             <div className="flex items-center gap-4">
-              <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-800">{superadminAuditLogData.summary.integrityLabel}</p>
+              <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-800">Integritas Sistem</p>
               <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-emerald-600">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                {superadminAuditLogData.summary.integrityStatus}
+                Aktif
               </span>
             </div>
-            <p className="mt-10 text-[60px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{superadminAuditLogData.summary.integrityValue}</p>
-            <p className="mt-3 text-[18px] text-slate-800">{superadminAuditLogData.summary.integrityNote}</p>
+            <p className="mt-10 text-[60px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{logs.length}</p>
+            <p className="mt-3 text-[18px] text-slate-800">Total event audit tercatat</p>
 
             <div className="mt-10">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Latest Proof ID</p>
-              <div className="mt-4 rounded-[4px] bg-slate-100 px-4 py-4 font-mono text-[15px] text-slate-700">{superadminAuditLogData.summary.latestProofId}</div>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Sumber Data</p>
+              <div className="mt-4 rounded-[4px] bg-slate-100 px-4 py-4 font-mono text-[15px] text-slate-700">tx_audit_log + ops_audit_log</div>
             </div>
 
             <div className="mt-8">
               <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Terakhir Diperbarui</p>
-              <p className="mt-3 text-[18px] font-medium text-slate-900">{superadminAuditLogData.summary.lastUpdated}</p>
+              <p className="mt-3 text-[18px] font-medium text-slate-900">{logs.length > 0 ? new Date(logs[0].timestamp).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' }) : '—'}</p>
             </div>
           </div>
         </section>
@@ -212,7 +247,13 @@ export default function SuperadminAuditLogPage() {
         </div>
 
           <div>
-            {visibleLogs.map((log) => (
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="border-b border-slate-100 px-6 py-6 lg:px-8">
+                  <div className="h-10 animate-pulse rounded-2xl bg-slate-100" />
+                </div>
+              ))
+            ) : visibleLogs.length > 0 ? visibleLogs.map((log) => (
             <article key={log.id} className="grid gap-5 border-b border-slate-100 px-6 py-6 transition-all duration-200 hover:bg-slate-50 hover:pl-7 lg:grid-cols-[220px_minmax(0,1fr)_300px_220px] lg:items-center lg:px-8 lg:hover:px-[2.25rem]">
               <div className="flex items-center gap-4">
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-800">
@@ -228,20 +269,27 @@ export default function SuperadminAuditLogPage() {
                 <button type="button" onClick={() => setSelectedLog(log)} className="text-left">
                   <p className="text-[18px] font-medium leading-8 text-slate-900 hover:text-slate-700">{log.title}</p>
                 </button>
-                <p className="mt-2 font-mono text-[13px] text-slate-500">Timestamp: {log.timestamp}</p>
+                <p className="mt-2 font-mono text-[13px] text-slate-500">Timestamp: {new Date(log.timestamp).toLocaleString('id-ID')}</p>
+                {log.actorWallet && (
+                  <p className="mt-1 font-mono text-[12px] text-slate-400">Actor: {log.actorWallet.slice(0, 6)}...{log.actorWallet.slice(-4)}</p>
+                )}
               </div>
 
               <div className="flex items-center gap-3 lg:justify-end">
-                <div className="rounded-[4px] border-l-4 border-black bg-slate-100 px-4 py-3 font-mono text-[14px] text-slate-800">
-                  <p className="text-[12px] uppercase tracking-[0.08em] text-slate-500">TX:</p>
-                  <p className="mt-1">{log.txHash}</p>
-                </div>
-                <button type="button" onClick={() => copyText(log.txHash, 'Transaction hash')} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200" aria-label="Salin transaction hash">
-                  <Copy className="h-4 w-4" />
-                </button>
-                <a href={basescanTxUrl(log.txHash)} target="_blank" rel="noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200" aria-label="Buka di Basescan">
-                  <ExternalLink className="h-4 w-4" />
-                </a>
+                {log.txHash && log.txHash !== '—' && (
+                  <>
+                    <div className="rounded-[4px] border-l-4 border-black bg-slate-100 px-4 py-3 font-mono text-[14px] text-slate-800">
+                      <p className="text-[12px] uppercase tracking-[0.08em] text-slate-500">TX:</p>
+                      <p className="mt-1">{log.txHash.length > 16 ? `${log.txHash.slice(0, 10)}...${log.txHash.slice(-6)}` : log.txHash}</p>
+                    </div>
+                    <button type="button" onClick={() => copyText(log.txHash, 'Transaction hash')} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200" aria-label="Salin transaction hash">
+                      <Copy className="h-4 w-4" />
+                    </button>
+                    <a href={basescanTxUrl(log.txHash)} target="_blank" rel="noreferrer" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200" aria-label="Buka di Basescan">
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </>
+                )}
                 <button type="button" onClick={() => downloadLogProof(log)} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-700 hover:bg-slate-200">
                   <Download className="mr-2 h-4 w-4" />
                   JSON
@@ -252,7 +300,11 @@ export default function SuperadminAuditLogPage() {
                 <AuditStatusBadge tone={log.statusTone} status={log.status} />
               </div>
             </article>
-          ))}
+            )) : (
+              <div className="px-8 py-12 text-center">
+                <p className="text-[14px] text-slate-500">Belum ada data audit log.</p>
+              </div>
+            )}
         </div>
 
         <div className="px-8 py-6 text-center">
@@ -301,7 +353,7 @@ export default function SuperadminAuditLogPage() {
               </div>
               <div className="rounded-[20px] bg-slate-100 px-4 py-4">
                 <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Timestamp</p>
-                <p className="mt-2 font-mono text-[15px] text-slate-900">{selectedLog.timestamp}</p>
+                <p className="mt-2 font-mono text-[15px] text-slate-900">{new Date(selectedLog.timestamp).toLocaleString('id-ID')}</p>
               </div>
               <div className="rounded-[20px] bg-slate-100 px-4 py-4">
                 <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Status</p>
@@ -309,6 +361,18 @@ export default function SuperadminAuditLogPage() {
                   <AuditStatusBadge tone={selectedLog.statusTone} status={selectedLog.status} />
                 </div>
               </div>
+              {selectedLog.actorWallet && (
+                <div className="rounded-[20px] bg-slate-100 px-4 py-4 sm:col-span-2">
+                  <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Actor Wallet</p>
+                  <p className="mt-2 font-mono text-[14px] break-all text-slate-900">{selectedLog.actorWallet}</p>
+                </div>
+              )}
+              {selectedLog.source && (
+                <div className="rounded-[20px] bg-slate-100 px-4 py-4">
+                  <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">Sumber</p>
+                  <p className="mt-2 text-[14px] text-slate-900">{selectedLog.source === 'server_api' ? 'Server API' : 'Frontend'}</p>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">

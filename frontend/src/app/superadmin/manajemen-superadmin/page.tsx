@@ -111,6 +111,50 @@ function SuperadminManagementContent() {
   const isLoading = adminDirectoryQuery.isLoading
   const error = adminDirectoryQuery.error
 
+  // Auto-register superadmin baru yang belum terdaftar on-chain
+  const unregisteredSuperadmins = useMemo(() => {
+    if (!isRootSuperadminWallet || isOnchainStatusLoading) return []
+    return superadmins.filter((admin) => {
+      const wallet = admin.walletAddress || admin.profile?.walletAddress || ''
+      return /^0x[a-fA-F0-9]{40}$/.test(wallet) && !onchainStatusMap.get(wallet.toLowerCase())
+    })
+  }, [superadmins, onchainStatusMap, isRootSuperadminWallet, isOnchainStatusLoading])
+
+  useEffect(() => {
+    if (unregisteredSuperadmins.length === 0 || isWritePending) return
+
+    // Auto-register semua superadmin yang belum terdaftar on-chain
+    const registerAll = async () => {
+      let successCount = 0
+      let failedCount = 0
+
+      for (const admin of unregisteredSuperadmins) {
+        const wallet = (admin.walletAddress || admin.profile?.walletAddress || '') as Address
+        try {
+          await addSuperAdmin(wallet)
+          successCount++
+        } catch {
+          failedCount++
+        }
+      }
+
+      if (successCount > 0) {
+        await queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
+        showToast({
+          tone: failedCount === 0 ? 'success' : 'info',
+          title: 'Auto-Register On-Chain',
+          description: failedCount === 0
+            ? `${successCount} superadmin baru otomatis didaftarkan on-chain.`
+            : `${successCount} berhasil, ${failedCount} gagal. Coba ulang manual untuk sisanya.`,
+        })
+      }
+    }
+
+    // Delay sedikit agar UI stabil
+    const timer = setTimeout(registerAll, 2000)
+    return () => clearTimeout(timer)
+  }, [unregisteredSuperadmins, addSuperAdmin, queryClient, showToast, isWritePending])
+
   useEffect(() => {
     const tab = searchParams.get('tab')
     setActiveTab(tab === 'tambah' ? 'tambah' : 'daftar')
