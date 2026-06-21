@@ -4,23 +4,33 @@ import React, { useEffect, useState } from 'react'
 import { Joyride, EventData, STATUS, Step } from 'react-joyride'
 import { usePathname } from 'next/navigation'
 import { HelpCircle, PlayCircle, X } from 'lucide-react'
+import { useAuthSession } from '@/hooks/use-auth-session'
 
 interface OnboardingTourProps {
   forceStart?: boolean
   onComplete?: () => void
 }
 
-const TOUR_STORAGE_KEY = 'votein-admin-onboarding-completed'
+const TOUR_STORAGE_PREFIX = 'votein-admin-onboarding-completed'
+
+function getTourStorageKey(email: string | null | undefined): string {
+  const normalized = email?.trim().toLowerCase() ?? 'anonymous'
+  return `${TOUR_STORAGE_PREFIX}:${normalized}`
+}
 
 export function OnboardingTour({ forceStart = false, onComplete }: OnboardingTourProps) {
   const pathname = usePathname()
+  const authSessionQuery = useAuthSession()
   const [run, setRun] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
+  const userEmail = authSessionQuery.data?.user?.email
+
   useEffect(() => {
     setMounted(true)
-    const isCompleted = localStorage.getItem(TOUR_STORAGE_KEY)
+    const storageKey = getTourStorageKey(userEmail)
+    const isCompleted = localStorage.getItem(storageKey)
 
     // Auto-start ONLY on dashboard (/admin) if not completed
     const shouldAutoStart = !isCompleted && pathname === '/admin'
@@ -30,7 +40,7 @@ export function OnboardingTour({ forceStart = false, onComplete }: OnboardingTou
       const timer = setTimeout(() => setRun(true), 1500)
       return () => clearTimeout(timer)
     }
-  }, [forceStart, pathname])
+  }, [forceStart, pathname, userEmail])
 
   const handleJoyrideCallback = (data: EventData) => {
     const { status } = data
@@ -38,7 +48,8 @@ export function OnboardingTour({ forceStart = false, onComplete }: OnboardingTou
 
     if (finishedStatuses.includes(status)) {
       setRun(false)
-      localStorage.setItem(TOUR_STORAGE_KEY, 'true')
+      const storageKey = getTourStorageKey(userEmail)
+      localStorage.setItem(storageKey, 'true')
       if (onComplete) onComplete()
     }
   }
