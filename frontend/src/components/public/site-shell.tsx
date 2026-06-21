@@ -10,6 +10,7 @@ import { NotificationModal } from './notification-modal'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
 import { useAuthSession, useLogoutSession } from '@/hooks/use-auth-session'
 import { useCurrentProfile } from '@/hooks/use-profile'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { AppRole } from '@/lib/repositories/types'
 import type { LucideIcon } from 'lucide-react'
 
@@ -110,6 +111,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
   const [auditOpen, setAuditOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
   const [navbarAddressWidth, setNavbarAddressWidth] = useState(0)
   const [mobileAddressWidth, setMobileAddressWidth] = useState(0)
   const { hasUnread } = useNotificationBadge()
@@ -371,11 +373,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
                           type="button"
                           onClick={() => {
                             setProfileOpen(false)
-                            logoutSession.mutate(undefined, {
-                              onSettled: () => {
-                                router.push('/')
-                              },
-                            })
+                            setLogoutConfirmOpen(true)
                           }}
                           className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-[13px] text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
                         >
@@ -471,6 +469,22 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
           </div>
         </nav>
       ) : null}
+
+      <ConfirmDialog
+        open={logoutConfirmOpen}
+        title="Keluar Sesi?"
+        description="Anda akan keluar dari sesi saat ini dan kembali ke halaman utama."
+        confirmLabel="Ya, Keluar"
+        onCancel={() => setLogoutConfirmOpen(false)}
+        onConfirm={() => {
+          setLogoutConfirmOpen(false)
+          logoutSession.mutate(undefined, {
+            onSettled: () => {
+              router.push('/')
+            },
+          })
+        }}
+      />
     </AppNavbar>
   )
 }

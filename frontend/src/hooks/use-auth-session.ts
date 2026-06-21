@@ -6,6 +6,7 @@ import { getCurrentSession, signInWithEmailPassword, signOutCurrentSession, sign
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { getPublicAppOrigin } from '@/lib/supabase/config'
 import { clearManualLogoutMarker, markManualLogoutStarted } from '@/lib/auth-session-events'
+import { clearAllClientStorage } from '@/lib/clear-client-storage'
 
 export const authSessionQueryKey = ['auth', 'session'] as const
 
@@ -117,6 +118,7 @@ export function useLogoutSession() {
     mutationFn: signOutCurrentSession,
     onMutate: async () => {
       markManualLogoutStarted()
+      clearAllClientStorage()
       await queryClient.cancelQueries({ queryKey: authSessionQueryKey })
       await queryClient.cancelQueries({ queryKey: ['profile'] })
       queryClient.setQueryData(authSessionQueryKey, null)

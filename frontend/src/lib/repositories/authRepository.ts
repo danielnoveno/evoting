@@ -2,6 +2,7 @@
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { RepositoryError } from '@/lib/repositories/errors'
+import { clearAllClientStorage } from '@/lib/clear-client-storage'
 
 type AuthErrorLike = {
   status?: number
@@ -35,6 +36,7 @@ async function clearLocalAuthSession() {
   if (!client) return
 
   await client.auth.signOut({ scope: 'local' }).catch(() => undefined)
+  clearAllClientStorage()
 }
 
 export async function getCurrentSession() {

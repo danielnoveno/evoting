@@ -332,48 +332,6 @@ function SuperadminManagementContent() {
         : `${successCount} berhasil, ${failedCount} gagal. Coba ulang untuk sisanya.`,
     })
   }
-    if (!formData.name.trim() || !formData.email.trim() || !formData.walletAddress.trim()) {
-      showToast({ tone: 'error', title: 'Data belum lengkap', description: 'Lengkapi nama, email, dan wallet address.' })
-      return
-    }
-
-    if (!/^0x[a-fA-F0-9]{40}$/.test(formData.walletAddress)) {
-      showToast({ tone: 'error', title: 'Wallet tidak valid', description: 'Gunakan alamat wallet Ethereum (0x...) yang valid.' })
-      return
-    }
-
-    createAdminInviteMutation.mutate(
-      {
-        displayName: formData.name,
-        email: formData.email,
-        walletAddress: formData.walletAddress,
-        role: 'super_admin',
-      },
-      {
-        onSuccess: (invite) => {
-          if (invite.activationLink) setActivationLink(invite.activationLink)
-          setLastEmailStatus(invite.emailStatus ?? 'skipped')
-          setLastEmailError(invite.emailError ?? null)
-
-          const emailMsg = invite.emailStatus === 'sent'
-            ? 'Email aktivasi sudah dikirim.'
-            : invite.emailStatus === 'failed'
-              ? `Email gagal dikirim: ${invite.emailError ?? ''}`
-              : 'Link tersedia untuk disalin (email belum dikirim).'
-
-          showToast({
-            tone: invite.emailStatus === 'sent' ? 'success' : 'info',
-            title: 'Undangan Aktivasi Dibuat',
-            description: `${formData.name} — ${emailMsg}`,
-          })
-          setFormData(initialFormData)
-        },
-        onError: (err) => {
-          showToast({ tone: 'error', title: 'Undangan Gagal Dibuat', description: getRepositoryErrorMessage(err) })
-        },
-      },
-    )
-  }
 
   const handleCreateSuperAdmin = () => {
     if (!formData.name.trim() || !formData.email.trim() || !formData.walletAddress.trim()) {
@@ -607,7 +565,7 @@ function SuperadminManagementContent() {
                             </span>
                           </DataTableCell>
                           <DataTableCell>
-                            {isOnchainLoading ? (
+                            {isOnchainStatusLoading ? (
                               <div className="h-5 w-16 animate-pulse rounded-full bg-slate-100" />
                             ) : isOnchain ? (
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-blue-600">

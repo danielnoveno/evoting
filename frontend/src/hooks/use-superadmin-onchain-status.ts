@@ -4,8 +4,9 @@ import { useMemo } from 'react'
 import { useReadContracts } from 'wagmi'
 import { REGISTRY_ADDRESS } from '@/hooks/use-registry-contract'
 import VoteChainRegistryArtifact from '@/lib/abi/VoteChainRegistry.json'
+import type { Abi, Address } from 'viem'
 
-const registryAbi = VoteChainRegistryArtifact.abi
+const registryAbi = VoteChainRegistryArtifact.abi as Abi
 
 /**
  * Checks on-chain isSuperAdmin status for a list of wallet addresses.
@@ -18,10 +19,10 @@ export function useSuperadminOnchainStatus(walletAddresses: string[]) {
       .map((addr) => addr.toLowerCase())
 
     return validAddresses.map((addr) => ({
-      address: REGISTRY_ADDRESS as `0x${string}`,
+      address: REGISTRY_ADDRESS as Address,
       abi: registryAbi,
       functionName: 'isSuperAdmin' as const,
-      args: [addr as `0x${string}`],
+      args: [addr as Address],
     }))
   }, [walletAddresses])
 

@@ -5,6 +5,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import type { Database } from '@/lib/supabase/database.types'
 import type { AdminDirectoryRecord, AdminRegistryInput, AdminRegistryRecord, AdminSpaceAccessRecord, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
+import { clearAllClientStorage } from '@/lib/clear-client-storage'
 
 type ProfileRow = Database['app']['Tables']['app_profiles']['Row']
 type AdminRegistryRow = Database['app']['Tables']['admin_registry']['Row']
@@ -47,6 +48,7 @@ async function clearLocalAuthSession() {
   if (!client) return
 
   await client.auth.signOut({ scope: 'local' }).catch(() => undefined)
+  clearAllClientStorage()
 }
 
 function isUniqueConstraintError(error: unknown, fieldName: string): boolean {
