@@ -116,9 +116,16 @@ export async function updateSupabaseSession(request: NextRequest) {
           && adminRegistry.status !== 'active'
 
         if (hasPendingAdminInvite) {
+          if (adminRegistry.assigned_role === 'super_admin') {
+            // Superadmin langsung ke /portal-admin
+            const portalUrl = new URL('/portal-admin', request.url)
+            portalUrl.searchParams.set('redirect', '/superadmin')
+            return NextResponse.redirect(portalUrl, { headers: response.headers })
+          }
+          // Admin organisasi ke /hubungkan-dompet
           const activationUrl = new URL('/hubungkan-dompet', request.url)
           activationUrl.searchParams.set('activate', 'admin')
-          activationUrl.searchParams.set('redirect', adminRegistry.assigned_role === 'super_admin' ? '/portal-admin' : '/admin')
+          activationUrl.searchParams.set('redirect', '/admin')
           return NextResponse.redirect(activationUrl, { headers: response.headers })
         }
       }

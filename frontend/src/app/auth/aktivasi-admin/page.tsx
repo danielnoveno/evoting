@@ -70,14 +70,23 @@ function ActivationContent() {
     showToast({
       tone: 'success',
       title: 'Identitas Terverifikasi',
-      description: 'Lanjutkan dengan menghubungkan Smart Wallet admin organisasi.',
+      description: 'Lanjutkan dengan menghubungkan dompet digital.',
     })
     setRedirectModal(getActivationRedirectModalContent(isSuperAdmin))
-    const redirect = isSuperAdmin ? '/portal-admin' : '/admin'
-    const nextParams = new URLSearchParams({ activate: 'admin', token: inviteToken, redirect })
-    redirectTimerRef.current = window.setTimeout(() => {
-      router.replace(`/hubungkan-dompet?${nextParams.toString()}`)
-    }, 1200)
+
+    if (isSuperAdmin) {
+      // Superadmin langsung ke /portal-admin untuk wallet binding
+      const nextParams = new URLSearchParams({ token: inviteToken, redirect: '/superadmin' })
+      redirectTimerRef.current = window.setTimeout(() => {
+        router.replace(`/portal-admin?${nextParams.toString()}`)
+      }, 1200)
+    } else {
+      // Admin tetap ke /hubungkan-dompet
+      const nextParams = new URLSearchParams({ activate: 'admin', token: inviteToken, redirect: '/admin' })
+      redirectTimerRef.current = window.setTimeout(() => {
+        router.replace(`/hubungkan-dompet?${nextParams.toString()}`)
+      }, 1200)
+    }
   }, [inviteToken, isSuperAdmin, router, showToast])
 
   // Auto-continue trigger — SSO verifies identity; wallet binding performs final activation.

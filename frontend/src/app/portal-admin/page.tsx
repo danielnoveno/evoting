@@ -147,6 +147,7 @@ function PortalAdminContent() {
   const authSession = authSessionQuery.data
   const currentProfile = currentProfileQuery.data
   const requestedRedirect = safeInternalPath(searchParams.get('redirect'), '/superadmin')
+  const activationToken = searchParams.get('token')?.trim() ?? ''
   const connectedWalletProfile = connectedWalletProfileQuery.data
   const isWalletBound = sameWalletAddress(currentProfile?.walletAddress, address)
   const accountHasDifferentWallet = Boolean(address && currentProfile?.walletAddress && !isWalletBound)
@@ -230,6 +231,7 @@ function PortalAdminContent() {
         email: authSession.user.email,
         displayName: authSession.user.user_metadata?.full_name || authSession.user.user_metadata?.name || 'Administrator',
         roleHint: 'admin-activation',
+        activationToken: activationToken || undefined,
       },
       {
         onSuccess: () => {

@@ -82,9 +82,17 @@ export async function GET(request: NextRequest) {
           }
 
           if (registry.status !== 'active') {
+            if (registry.assigned_role === 'super_admin') {
+              // Superadmin langsung ke /portal-admin
+              const portalUrl = new URL('/portal-admin', request.url)
+              portalUrl.searchParams.set('redirect', '/superadmin')
+              portalUrl.searchParams.set('authError', 'admin_pending')
+              return NextResponse.redirect(portalUrl)
+            }
+            // Admin organisasi ke /hubungkan-dompet
             const pendingUrl = new URL('/hubungkan-dompet', request.url)
             pendingUrl.searchParams.set('activate', 'admin')
-            pendingUrl.searchParams.set('redirect', registry.assigned_role === 'super_admin' ? '/portal-admin' : '/admin')
+            pendingUrl.searchParams.set('redirect', '/admin')
             pendingUrl.searchParams.set('authError', 'admin_pending')
             return NextResponse.redirect(pendingUrl)
           }

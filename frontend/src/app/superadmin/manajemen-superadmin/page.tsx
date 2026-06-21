@@ -1,23 +1,22 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Copy, Loader2, Mail, Power, Search, UserPlus, ShieldAlert, CheckCircle2, Clock3, ChevronsUpDown, ChevronUp, ChevronDown, Link } from 'lucide-react'
+import { Copy, Loader2, Mail, Power, Search, UserPlus, CheckCircle2, Clock3, ChevronsUpDown, ChevronUp, ChevronDown, Link } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
 import {
   SuperadminFieldLabel,
   SuperadminAvatar,
-  SuperadminEmptyState,
   SuperadminFilterChip,
   SuperadminShell,
   SuperadminStatusBadge,
   SuperadminTabButton,
-  SuperadminTableRowLink,
   SuperadminTextInput,
   SuperadminToolbarButton,
   SuperadminSectionHeading,
 } from '@/components/superadmin/superadmin-shell'
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
+import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
@@ -57,7 +56,6 @@ type SortDirection = 'asc' | 'desc' | null
 const initialFormData = {
   name: '',
   email: '',
-  walletAddress: '',
 }
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20] as const
@@ -334,13 +332,13 @@ function SuperadminManagementContent() {
   }
 
   const handleCreateSuperAdmin = () => {
-    if (!formData.name.trim() || !formData.email.trim() || !formData.walletAddress.trim()) {
-      showToast({ tone: 'error', title: 'Data belum lengkap', description: 'Lengkapi nama, email, dan wallet address.' })
+    if (!formData.name.trim() || !formData.email.trim()) {
+      showToast({ tone: 'error', title: 'Data belum lengkap', description: 'Lengkapi nama dan email institusi superadmin.' })
       return
     }
 
-    if (!/^0x[a-fA-F0-9]{40}$/.test(formData.walletAddress)) {
-      showToast({ tone: 'error', title: 'Wallet tidak valid', description: 'Gunakan alamat wallet Ethereum (0x...) yang valid.' })
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      showToast({ tone: 'error', title: 'Email belum valid', description: 'Gunakan email institusi yang valid untuk superadmin baru.' })
       return
     }
 
@@ -348,7 +346,6 @@ function SuperadminManagementContent() {
       {
         displayName: formData.name,
         email: formData.email,
-        walletAddress: formData.walletAddress,
         role: 'super_admin',
       },
       {
@@ -381,22 +378,18 @@ function SuperadminManagementContent() {
     <SuperadminShell>
       <SuperadminOnboardingTour />
       <ScrollReveal variant="fade-up" duration={800}>
-        <section className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[44px]">Manajemen Superadmin</h1>
-            <p className="mt-3 text-[16px] leading-8 text-slate-800 max-w-[760px]">
-              Kelola otoritas tertinggi platform. Superadmin memiliki akses penuh untuk menyetujui proposal dan melakukan tindakan darurat pada blockchain.
-            </p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            {activeTab === 'daftar' && (
+        <AppPageHeader
+          title="Manajemen Superadmin"
+          description="Kelola otoritas tertinggi platform. Superadmin memiliki akses penuh untuk menyetujui proposal dan melakukan tindakan darurat pada blockchain."
+          rightContent={
+            activeTab === 'daftar' ? (
               <SuperadminToolbarButton variant="primary" onClick={() => updateTab('tambah')}>
                 <UserPlus className="h-4 w-4" />
                 Tambah Superadmin
               </SuperadminToolbarButton>
-            )}
-          </div>
-        </section>
+            ) : undefined
+          }
+        />
 
         <div className="mt-10 flex items-end justify-between border-b border-slate-200">
           <div className="flex items-center gap-8">
@@ -674,17 +667,42 @@ function SuperadminManagementContent() {
         <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 space-y-6">
           <AppSectionCard>
             <SuperadminSectionHeading
-              title="Identitas Superadmin Baru"
-              description="Superadmin baru akan membuat password sendiri melalui link aktivasi. Wallet harus sama saat validasi akses pertama."
+              title="Identitas Superadmin"
+              description="Superadmin baru akan membuat akun sendiri melalui link aktivasi. Wallet akan disambungkan saat pertama kali login."
             />
+            <div className="mt-8 grid gap-5 xl:grid-cols-2">
+              <label className="block">
+                <SuperadminFieldLabel required>Nama Lengkap</SuperadminFieldLabel>
+                <SuperadminTextInput
+                  value={formData.name}
+                  onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
+                  placeholder="Masukkan nama lengkap"
+                />
+              </label>
 
+              <label className="block">
+                <SuperadminFieldLabel required>Email Institusi</SuperadminFieldLabel>
+                <SuperadminTextInput
+                  value={formData.email}
+                  onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
+                  placeholder="admin.tu@uajy.ac.id"
+                />
+              </label>
+            </div>
+          </AppSectionCard>
+
+          <AppSectionCard>
+            <SuperadminSectionHeading
+              title="Aktivasi Akun"
+              description="Superadmin akan menerima email undangan untuk membuat akun, verifikasi SSO, dan menyambungkan dompet digital."
+            />
             {activationLink && (
-              <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                 <p className="text-[12px] font-semibold text-emerald-700">Link aktivasi siap digunakan</p>
-                <p className="mt-2 text-[12px] leading-5 text-emerald-700">
+                <p className="mt-1 text-[12px] leading-5 text-emerald-700">
                   {lastEmailStatus === 'sent'
                     ? 'Email aktivasi sudah dikirim ke email superadmin baru.'
-                    : 'Kirimkan link ini ke email superadmin baru. Jika email tidak terkirim, salin link dan kirim manual.'}
+                    : 'Kirimkan link ini ke superadmin baru. Jika email tidak terkirim, salin link dan kirim manual.'}
                 </p>
                 {lastEmailStatus === 'failed' && (
                   <p className="mt-2 text-[12px] leading-5 text-red-600 font-semibold">
@@ -711,53 +729,21 @@ function SuperadminManagementContent() {
                 </div>
               </div>
             )}
+          </AppSectionCard>
 
-            <div className="mt-8 grid gap-5 xl:grid-cols-2">
-              <label className="block">
-                <SuperadminFieldLabel required>Nama Lengkap</SuperadminFieldLabel>
-                <SuperadminTextInput
-                  value={formData.name}
-                  onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
-                  placeholder="Masukkan nama lengkap"
-                />
-              </label>
-
-              <label className="block">
-               <SuperadminFieldLabel required>Email Institusi</SuperadminFieldLabel>
-                <SuperadminTextInput
-                  value={formData.email}
-                  onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
-                  placeholder="admin.tu@uajy.ac.id"
-                />
-              </label>
-
-              <label className="block xl:col-span-2">
-                <SuperadminFieldLabel>Wallet Address (On-Chain Identity)</SuperadminFieldLabel>
-                <SuperadminTextInput
-                  value={formData.walletAddress}
-                  onChange={(event) => setFormData((current) => ({ ...current, walletAddress: event.target.value }))}
-                  placeholder="0x..."
-                />
-                <p className="mt-2 text-[12px] text-slate-500 italic">
-                   * Alamat ini akan digunakan untuk menandatangani transaksi blockchain penting.
-                 </p>
-               </label>
-             </div>
-           </AppSectionCard>
-
-           <section className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-             <button
-                type="button"
-                onClick={() => updateTab('daftar')}
-                className="inline-flex h-12 items-center justify-center rounded-2xl px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-100"
-              >
-                Batal
-              </button>
-              <SuperadminToolbarButton variant="primary" onClick={handleCreateSuperAdmin} disabled={createAdminInviteMutation.isPending}>
-                {createAdminInviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {createAdminInviteMutation.isPending ? 'Menyiapkan Undangan' : 'Kirim Undangan Otoritas'}
-              </SuperadminToolbarButton>
-            </section>
+          <section className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => updateTab('daftar')}
+              className="inline-flex h-12 items-center justify-center rounded-2xl px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-100"
+            >
+              Batal
+            </button>
+            <SuperadminToolbarButton variant="primary" onClick={handleCreateSuperAdmin} disabled={createAdminInviteMutation.isPending}>
+              {createAdminInviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {createAdminInviteMutation.isPending ? 'Menyiapkan Undangan' : 'Kirim Undangan Otoritas'}
+            </SuperadminToolbarButton>
+          </section>
         </StaggerContainer>
       )}
 

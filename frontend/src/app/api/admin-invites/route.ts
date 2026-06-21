@@ -164,7 +164,6 @@ export async function POST(request: NextRequest) {
   const accessScope = payload.accessScope === 'specific' ? 'specific' as const : 'all' as const
 
   if (!organizationName || !email) return jsonError('Nama dan email wajib diisi.', 400)
-  if (assignedRole === 'super_admin' && !walletAddress) return jsonError('Wallet address wajib diisi untuk superadmin.', 400)
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError('Format email institusi tidak valid.', 400)
   if (walletAddress && !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) return jsonError('Wallet address tidak valid.', 400)
 
@@ -192,7 +191,7 @@ export async function POST(request: NextRequest) {
     access_scope: accessScope,
     status: 'pending',
     description: assignedRole === 'super_admin'
-      ? 'Undangan superadmin dari portal utama admin.'
+      ? 'Undangan superadmin dari portal utama. Wallet akan disambungkan saat aktivasi.'
       : 'Undangan admin organisasi.',
     activation_token_hash: tokenHash,
     activation_sent_at: new Date().toISOString(),
