@@ -29,19 +29,21 @@ function getReadIds(): Set<string> {
 }
 
 export function useNotificationBadge() {
-  const { data: profile } = useCurrentProfile()
+  const { data: profile, isLoading: profileLoading } = useCurrentProfile()
   const [unreadCount, setUnreadCount] = useState(0)
   const notificationsEnabled = areNotificationsEnabled()
 
   const isPersonal = !!profile
+  const profileId = profile?.id
+  const walletAddress = profile?.walletAddress
 
   const { data: notifications } = useQuery({
+    // Include profile ID in query key so refetch happens on login/logout
     queryKey: isPersonal
-      ? ['user-notifications-page']
+      ? ['user-notifications-page', profileId, walletAddress]
       : ['public-notifications-page'],
     queryFn: async () => {
-      if (isPersonal) {
-        // Authenticated: use /api/notifications/list with Bearer token
+      if (isPersonal && profileId) {
         const client = getSupabaseBrowserClient()
         const token = client ? (await client.auth.getSession()).data.session?.access_token : null
         const res = await fetch('/api/notifications/list', {
@@ -51,16 +53,19 @@ export function useNotificationBadge() {
         const payload = await res.json()
         return (payload.notifications ?? []) as NotificationItem[]
       } else {
-        // Public: use /api/notifications/public (no auth needed)
         const res = await fetch('/api/notifications/public')
         if (!res.ok) return []
         const payload = await res.json()
         return (payload.notifications ?? []) as NotificationItem[]
       }
     },
-    enabled: notificationsEnabled,
+    // Only enable when: notifications enabled AND (profile loaded OR public visitor)
+    enabled: notificationsEnabled && (isPersonal ? !!profileId : !profileLoading),
+    staleTime: 0,
     retry: false,
     refetchInterval: 60000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 
   useEffect(() => {
