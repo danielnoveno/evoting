@@ -138,7 +138,6 @@ export const adminElectionFilters: Array<{ key: 'semua' | AdminElectionStatus; l
 export const adminElectionDetailTabs = [
   { id: 'kandidat', label: 'Kandidat' },
   { id: 'whitelist', label: 'Daftar Pemilih' },
-  { id: 'parameter', label: 'Jadwal & Fase' },
   { id: 'realtime', label: 'Hasil & Audit' },
 ] as const
 

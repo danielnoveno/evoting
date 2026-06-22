@@ -73,12 +73,6 @@ function getWalletConnectionErrorMessage(error: unknown) {
   return 'Dompet admin belum berhasil tersambung. Sambungkan ulang Base Account sebelum mengirim transaksi.'
 }
 
-function toUnixSeconds(value: string | null | undefined) {
-  if (!value) return null
-  const time = new Date(value).getTime()
-  return Number.isFinite(time) ? BigInt(Math.floor(time / 1000)) : null
-}
-
 export function AdminElectionDetailView({ election, activeTab }: { election: AdminElectionRecord; activeTab: AdminElectionDetailTabId }) {
   const canAddCandidate = election.status === 'aktif'
   const { showToast } = useToast()
@@ -91,7 +85,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   
   const { 
     registerVoters, 
-    transitionToNextPhase,
     isWritePending, 
     isConfirming, 
     isConfirmed, 
@@ -99,9 +92,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     writeError,
     resetWrite,
     currentPhase: onChainPhase,
-    commitStartsAt,
-    revealStartsAt,
-    setPhaseScheduleAsync,
     refetchPhase
   } = useElectionContract(isAddressValid ? deployedAddress : undefined)
 
@@ -120,7 +110,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const [uploadFileName, setUploadFileName] = useState('daftar-pemilih.csv')
   const [uploadCsvContent, setUploadCsvContent] = useState('')
   const [syncOnchainConfirmOpen, setSyncOnchainConfirmOpen] = useState(false)
-  const [nextPhaseConfirmOpen, setNextPhaseConfirmOpen] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncMode, setSyncMode] = useState<'manual' | 'auto' | null>(null)
   const [whitelistSearch, setWhitelistSearch] = useState('')
@@ -138,7 +127,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const pendingSyncAddressesRef = useRef<string[]>([])
   const syncInFlightKeyRef = useRef<string | null>(null)
   const lastAutoSyncKeyRef = useRef<string | null>(null)
-  const scheduleAutoActivationAttemptedRef = useRef<string | null>(null)
 
   const normalizeWhitelistAddresses = (addresses: string[]) => {
     return Array.from(new Set(
@@ -159,20 +147,9 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     'Pemilih mengesahkan suara yang sudah dikunci. Di kontrak, tahap ini tetap disebut Reveal.',
     'Pemilihan selesai. Hasil dapat diaudit setelah suara yang sah dikonfirmasi.',
   ] as const
-  const phaseActionLabels = ['Buka Pencoblosan', 'Buka Konfirmasi Suara', 'Akhiri Pemilihan'] as const
   const onChainPhaseLabel = onChainPhaseNumber !== null && phaseLabels[onChainPhaseNumber]
     ? phaseLabels[onChainPhaseNumber]
     : 'Belum terbaca'
-  const onChainPhaseDescription = onChainPhaseNumber !== null && phaseDescriptions[onChainPhaseNumber]
-    ? phaseDescriptions[onChainPhaseNumber]
-    : 'Status tahap on-chain belum terbaca. Tunggu koneksi Base Sepolia merespons sebelum mengubah fase.'
-  const nextPhaseLabel = onChainPhaseNumber !== null && onChainPhaseNumber >= 0 && onChainPhaseNumber < phaseActionLabels.length
-    ? phaseActionLabels[onChainPhaseNumber]
-    : 'Buka Fase Berikutnya'
-  const canAdvancePhase = isAddressValid && onChainPhaseNumber !== null && onChainPhaseNumber >= 0 && onChainPhaseNumber < 3
-  const hasOnChainSchedule = typeof commitStartsAt === 'bigint' && commitStartsAt > BigInt(0)
-  const onChainRevealStartsAt = typeof revealStartsAt === 'bigint' ? revealStartsAt : null
-  const canActivateAutomaticSchedule = isAddressValid && !hasOnChainSchedule && Boolean(election.schedule?.commitStartAt && election.schedule?.revealStartAt && election.schedule?.endedAt)
   const getUnsyncedValidAddresses = (extraAddresses: string[] = []) => normalizeWhitelistAddresses([
     ...(whitelistQuery.data ?? [])
       .filter((record) => record.syncStatus !== 'synced' && record.validationStatus === 'valid')
@@ -331,20 +308,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       }
     }
   }, [isConfirmed, txHash, isSyncing, election.id, whitelistQuery.data, updateWhitelistSyncStatus, showToast, resetWrite])
-
-  // Track transaction success for phase transition
-  useEffect(() => {
-    if (isConfirmed && txHash && nextPhaseConfirmOpen) {
-      setNextPhaseConfirmOpen(false)
-      resetWrite()
-      void refetchPhase()
-      showToast({
-        tone: 'success',
-        title: 'Fase Diperbarui',
-        description: 'Fase pemilihan berhasil diubah di blockchain.',
-      })
-    }
-  }, [isConfirmed, txHash, nextPhaseConfirmOpen, showToast, resetWrite, refetchPhase])
 
   // Handle Error
   useEffect(() => {
@@ -609,84 +572,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const handleConfirmSyncOnchain = () => {
     startWhitelistSync(getUnsyncedValidAddresses(), 'manual')
   }
-
-  const handleConfirmNextPhase = () => {
-    if (!canAdvancePhase || isWritePending || isConfirming) return
-    if (!isConnected) {
-      requestWalletConnection('Dompet admin sudah tersambung. Klik lagi tombol buka fase untuk mengirim transaksi on-chain.')
-      setNextPhaseConfirmOpen(false)
-      return
-    }
-    transitionToNextPhase()
-  }
-
-  const handleActivateAutomaticSchedule = async () => {
-    if (!canActivateAutomaticSchedule || isWritePending || isConfirming) return
-    if (!isConnected) {
-      return
-    }
-
-    const commitStart = toUnixSeconds(election.schedule?.commitStartAt)
-    const revealStart = toUnixSeconds(election.schedule?.revealStartAt)
-    const revealEnd = toUnixSeconds(election.schedule?.endedAt)
-
-    if (!commitStart || !revealStart || !revealEnd || commitStart >= revealStart || revealStart >= revealEnd) {
-      showToast({
-        tone: 'error',
-        title: 'Jadwal Tidak Valid',
-        description: 'Pastikan jadwal pencoblosan, mulai perhitungan, dan selesai sudah berurutan.',
-      })
-      return
-    }
-
-    try {
-      await setPhaseScheduleAsync(deployedAddress, commitStart, revealStart, revealStart, revealEnd)
-      await refetchPhase()
-      showToast({
-        tone: 'success',
-        title: 'Jadwal Otomatis Aktif',
-        description: 'Fase on-chain akan mengikuti jadwal proposal: pencoblosan sebagai Commit dan perhitungan sebagai Reveal.',
-      })
-
-      // Public notification: election schedule is now active
-      const electionLink = deployedAddress ? `/pemilihan/${deployedAddress}/hasil` : '/pemilihan'
-      fetch('/api/notifications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'public',
-          payload: {
-            title: 'Jadwal pemilihan diaktifkan',
-            description: `Pemilihan "${election.title}" telah mengaktifkan jadwal fase. Pencoblosan dimulai ${new Date(Number(commitStart) * 1000).toLocaleDateString('id-ID')}.`,
-            type: 'info',
-            link: electionLink,
-          },
-        }),
-      }).catch(() => {})
-    } catch (error) {
-      showToast({
-        tone: 'error',
-        title: 'Gagal Mengaktifkan Jadwal',
-        description: error instanceof Error ? error.message : 'Transaksi jadwal otomatis belum berhasil.',
-      })
-    }
-  }
-
-  useEffect(() => {
-    if (!canActivateAutomaticSchedule || !isConnected || isWritePending || isConfirming) return
-
-    const scheduleKey = [
-      election.id,
-      election.schedule?.commitStartAt,
-      election.schedule?.revealStartAt,
-      election.schedule?.endedAt,
-    ].join('|')
-
-    if (scheduleAutoActivationAttemptedRef.current === scheduleKey) return
-    scheduleAutoActivationAttemptedRef.current = scheduleKey
-    void handleActivateAutomaticSchedule()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canActivateAutomaticSchedule, isConnected, isWritePending, isConfirming, election.id, election.schedule?.commitStartAt, election.schedule?.revealStartAt, election.schedule?.endedAt])
 
   const handleOpenImportFile = (filePath: string) => {
 
@@ -1026,186 +911,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     </section>
   )
 
-  const renderParameterTab = () => (
-    <section className="mt-8 space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        {!isConnected ? (
-          <button
-            type="button"
-            onClick={() => requestWalletConnection('Dompet admin sudah tersambung. Setelah ini Anda bisa mengirim transaksi fase atau sinkronisasi on-chain.')}
-            disabled={isConnectPending}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0F172A] px-5 text-[15px] font-medium text-white hover:bg-[#1E293B] disabled:opacity-50"
-          >
-            {isConnectPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
-            {isConnectPending ? 'Menyambungkan...' : 'Sambungkan Dompet Admin'}
-          </button>
-        ) : null}
-        <button type="button" onClick={() => showToast({ tone: 'info', title: 'Log Audit', description: 'Fitur log audit akan tersedia pada versi produksi.' })} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-700 hover:bg-slate-200">
-          <ListChecks className="h-4 w-4" />
-          Lihat Log Audit
-        </button>
-        {isAddressValid && hasOnChainSchedule ? (
-          <div className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 px-5 text-[13px] font-medium text-emerald-800">
-            Fase otomatis aktif{onChainRevealStartsAt ? ` · Reveal ${new Date(Number(onChainRevealStartsAt) * 1000).toLocaleDateString('id-ID')}` : ''}
-          </div>
-        ) : isAddressValid && canActivateAutomaticSchedule ? (
-          <div className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-blue-200 bg-blue-50 px-5 text-[13px] font-medium text-blue-800">
-            Jadwal otomatis disiapkan sistem{isConnected ? ' · menunggu konfirmasi dompet' : ''}
-          </div>
-        ) : isAddressValid && !election.schedule?.commitStartAt ? (
-          <button 
-            type="button" 
-            onClick={() => setNextPhaseConfirmOpen(true)} 
-            disabled={isWritePending || isConfirming || !canAdvancePhase}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-[15px] font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${(isWritePending || isConfirming) ? 'animate-spin' : ''}`} />
-            {nextPhaseLabel}
-          </button>
-        ) : null}
-        <button 
-          type="button" 
-          onClick={() => setSyncOnchainConfirmOpen(true)} 
-          disabled={isWritePending || isConfirming}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 text-[15px] font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
-          <Link2 className="h-4 w-4" />
-          Sinkronisasi ke Blockchain
-        </button>
-      </div>
-
-      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.45fr)_420px]">
-        <article className="rounded-[30px] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-[20px] font-semibold text-slate-900">{election.detail.parameterVoting.phaseTitle}</h2>
-              <p className="mt-3 text-[15px] text-slate-500">{election.detail.parameterVoting.phaseDescription}</p>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 text-slate-400">
-              <CalendarDays className="h-6 w-6" />
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-[22px] border border-blue-100 bg-blue-50 p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">Tahap On-Chain Aktif</p>
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-[28px] font-semibold tracking-[-0.03em] text-slate-900">{onChainPhaseLabel}</p>
-                <p className="mt-2 max-w-[620px] text-[14px] leading-6 text-slate-600">{onChainPhaseDescription}</p>
-              </div>
-              {isAddressValid ? (
-                <p className="shrink-0 rounded-full bg-white px-4 py-2 font-mono text-[12px] text-slate-600">{deployedAddress}</p>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-4 lg:grid-cols-2">
-            <div>
-              <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-black text-white">
-                  <ShieldCheck className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-600">Fase 01</p>
-                  <h3 className="mt-1 text-[18px] font-semibold text-slate-900">{election.detail.parameterVoting.phaseOne.label}</h3>
-                </div>
-              </div>
-              <div className="mt-4 rounded-[20px] bg-slate-100 p-4 text-[15px] text-slate-700">
-                <div className="flex items-center justify-between gap-4 py-2"><span>Mulai</span><span className="font-mono">{election.detail.parameterVoting.phaseOne.start}</span></div>
-                <div className="flex items-center justify-between gap-4 py-2"><span>Selesai</span><span className="font-mono">{election.detail.parameterVoting.phaseOne.end}</span></div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-slate-100 text-slate-500">
-                  <ShieldCheck className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Fase 02</p>
-                  <h3 className="mt-1 text-[18px] font-semibold text-slate-400">{election.detail.parameterVoting.phaseTwo.label}</h3>
-                </div>
-              </div>
-              <div className="mt-4 rounded-[20px] bg-slate-100 p-4 text-[15px] text-slate-700">
-                <div className="flex items-center justify-between gap-4 py-2"><span>Mulai</span><span className="font-mono">{election.detail.parameterVoting.phaseTwo.start}</span></div>
-                <div className="flex items-center justify-between gap-4 py-2"><span>Selesai</span><span className="font-mono">{election.detail.parameterVoting.phaseTwo.end}</span></div>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article className="rounded-[30px] bg-slate-100 p-6">
-          <h2 className="text-[20px] font-semibold text-slate-900">Aturan Konsensus</h2>
-          <div className="mt-8 space-y-8">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Metode Hitung</p>
-              <p className="mt-3 text-[18px] font-semibold text-slate-900">{election.detail.parameterVoting.consensus.method}</p>
-            </div>
-            <div>
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Kuorum Minimum</p>
-                  <p className="mt-3 text-[18px] font-semibold text-slate-900">{election.detail.parameterVoting.consensus.quorum}</p>
-                </div>
-              </div>
-              <div className="mt-4 h-2 rounded-full bg-white">
-                <div className={`h-2 rounded-full bg-black ${election.detail.parameterVoting.consensus.quorumProgressWidthClassName}`} />
-              </div>
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Protection</p>
-              <p className="mt-3 text-[18px] font-semibold text-slate-900">{election.detail.parameterVoting.consensus.protectionTitle}</p>
-              <p className="mt-2 text-[14px] leading-7 text-slate-500">{election.detail.parameterVoting.consensus.protectionDescription}</p>
-            </div>
-          </div>
-        </article>
-      </div>
-
-      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-        <article className="rounded-[30px] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
-          <h2 className="text-[20px] font-semibold text-slate-900">Detail Kontrak</h2>
-          <div className="mt-8 space-y-4">
-            <div className="rounded-[20px] border-l-4 border-l-black bg-slate-100 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Alamat Kontrak</p>
-              <p className="mt-3 font-mono text-[14px] break-all text-slate-700">{election.detail.parameterVoting.contract.address}</p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-[20px] bg-slate-100 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Jaringan</p>
-                <p className="mt-3 text-[18px] font-semibold text-slate-900">{election.detail.parameterVoting.contract.network}</p>
-              </div>
-              <div className="rounded-[20px] bg-slate-100 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Protocol Version</p>
-                <p className="mt-3 text-[18px] font-semibold text-slate-900">{election.detail.parameterVoting.contract.version}</p>
-              </div>
-            </div>
-            <div className="rounded-[20px] bg-slate-100 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Current Blockchain Hash</p>
-              <p className="mt-3 font-mono text-[13px] break-all text-slate-700">{election.detail.parameterVoting.contract.currentHash}</p>
-            </div>
-          </div>
-        </article>
-
-        <article className="rounded-[30px] bg-[#161b33] p-6 text-white">
-          <h2 className="text-[20px] font-semibold text-white">{election.detail.parameterVoting.privacy.headline}</h2>
-          <div className="mt-8 space-y-8">
-            {election.detail.parameterVoting.privacy.items.map((item) => (
-              <div key={item.title}>
-                <h3 className="text-[18px] font-semibold text-white">{item.title}</h3>
-                <p className="mt-3 text-[14px] leading-7 text-slate-300">{item.description}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-10 border-t border-white/10 pt-6">
-            <button type="button" onClick={() => showToast({ tone: 'info', title: 'Verifikasi Privasi', description: 'Audit privasi end-to-end akan tersedia pada versi produksi.' })} className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-white text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-900 hover:bg-slate-50">
-              {election.detail.parameterVoting.privacy.ctaLabel}
-            </button>
-          </div>
-        </article>
-      </div>
-    </section>
-  )
-
   const renderRealtimeTab = () => {
     const indexerData = resultsQuery.data
     const totalVoters = parseInt(election.detail.realtime.totalTarget) || 100
@@ -1409,6 +1114,27 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
               {election.periodLabel}
             </span>
           </div>
+          {/* Fase & Kontrak — info ringkas dari on-chain */}
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-[13px]">
+            {isAddressValid && (
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-slate-600">
+                <Link2 className="h-3.5 w-3.5" />
+                {deployedAddress.slice(0, 10)}…{deployedAddress.slice(-8)}
+              </span>
+            )}
+            {isAddressValid && (
+              <span className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-medium ${
+                isRegistrationPhaseOnChain
+                  ? 'bg-blue-50 text-blue-700'
+                  : onChainPhaseNumber === 3
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'bg-amber-50 text-amber-700'
+              }`}>
+                <ShieldCheck className="h-3.5 w-3.5" />
+                {onChainPhaseLabel}
+              </span>
+            )}
+          </div>
         </div>
 
         {activeTab === 'kandidat' ? (
@@ -1442,7 +1168,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
       {activeTab === 'kandidat' ? renderCandidateTab() : null}
       {activeTab === 'whitelist' ? renderWhitelistTab() : null}
-      {activeTab === 'parameter' ? renderParameterTab() : null}
       {activeTab === 'realtime' ? renderRealtimeTab() : null}
       </ScrollReveal>
 
@@ -1568,19 +1293,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           }
         }}
         onConfirm={handleConfirmSyncOnchain}
-      />
-
-      <ConfirmDialog
-        open={nextPhaseConfirmOpen}
-        title={`${nextPhaseLabel}?`}
-        description={`Tahap on-chain saat ini adalah ${onChainPhaseLabel}. Aksi ini mengirim transaksi admin untuk memajukan tahap kontrak satu langkah dan tidak dapat dimundurkan. Pastikan daftar pemilih sudah sinkron sebelum membuka pencoblosan.`}
-        confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Lanjutkan"}
-        onCancel={() => {
-          if (!isWritePending && !isConfirming) {
-            setNextPhaseConfirmOpen(false)
-          }
-        }}
-        onConfirm={handleConfirmNextPhase}
       />
 
       <PilihDariMasterVoterModal
