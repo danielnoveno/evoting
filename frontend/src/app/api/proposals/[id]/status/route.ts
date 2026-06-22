@@ -130,7 +130,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     eventType: beforeRow?.status === 'revision_requested' && status === 'submitted' ? 'resubmitted' : status,
     title: beforeRow?.status === 'revision_requested' && status === 'submitted' ? 'Proposal diajukan ulang' : activityTitleForStatus(status),
     description: activityDescriptionForStatus(status, message),
-    actorLabel: ['revision_requested', 'approved', 'rejected', 'deployed'].includes(status) ? 'Superadmin' : 'Admin Organisasi',
+    actorLabel: auth.profile.display_name || auth.profile.email || (['revision_requested', 'approved', 'rejected', 'deployed'].includes(status) ? 'Superadmin' : 'Admin Organisasi'),
     message,
     link: status === 'revision_requested' ? `/admin/daftar-proposal/${id}` : `/superadmin/manajemen-proposal/${id}`,
     type: status === 'revision_requested' ? 'warning' : status === 'rejected' || status === 'archived' ? 'info' : 'success',

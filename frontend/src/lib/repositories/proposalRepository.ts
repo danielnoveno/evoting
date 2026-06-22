@@ -5,7 +5,7 @@ import type { Database, Json } from '@/lib/supabase/database.types'
 import { getCurrentProfile } from '@/lib/repositories/profileRepository'
 import type { ProposalActivityRecord, ProposalCandidateRecord, ProposalDraftRecord, ProposalDraftUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
-import { insertNotification, notifySuperadmins, type NotificationPayload } from '@/lib/notification-helpers'
+import { type NotificationPayload } from '@/lib/notification-helpers'
 
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 type ProposalCandidateRow = Database['app']['Tables']['proposal_candidates']['Row']
@@ -379,17 +379,51 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
   const proposal = mapProposalRow(data)
 
   if (input.status === 'submitted') {
-    const payload: LocalNotificationPayload = {
+    const actorName = profile.displayName || profile.email || 'Admin Organisasi'
+    const proposalPayload = {
       proposalId: proposal.id,
       eventType: input.id ? 'resubmitted' : 'submitted',
       title: input.id ? 'Proposal diajukan ulang' : 'Proposal baru diajukan',
       description: `${proposal.title} menunggu review superadmin.`,
-      actorLabel: 'Admin Organisasi',
+      actorLabel: actorName,
       link: `/superadmin/manajemen-proposal/${proposal.id}`,
       type: 'info',
     }
-    void notifySuperadmins(payload).catch(() => undefined)
-    void insertNotification(proposal.createdBy, { ...payload, title: 'Proposal berhasil dikirim', description: `${proposal.title} sudah masuk antrean review superadmin.`, link: `/admin/daftar-proposal/${proposal.id}`, type: 'success' }).catch(() => undefined)
+
+    // Notify superadmins via server-side API (bypasses RLS)
+    const notifySuperadminsServer = async () => {
+      try {
+        const res = await fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(await client.auth.getSession()).data.session?.access_token}` },
+          body: JSON.stringify({ mode: 'superadmins', payload: proposalPayload }),
+        })
+        if (!res.ok) console.warn('[notification] Superadmin notify failed:', await res.text())
+      } catch (e) {
+        console.warn('[notification] Superadmin notify error:', e)
+      }
+    }
+
+    // Notify the admin who created the proposal
+    const notifyAdminServer = async () => {
+      try {
+        const res = await fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(await client.auth.getSession()).data.session?.access_token}` },
+          body: JSON.stringify({
+            mode: 'target',
+            targetProfileId: proposal.createdBy,
+            payload: { ...proposalPayload, title: 'Proposal berhasil dikirim', description: `${proposal.title} sudah masuk antrean review superadmin.`, link: `/admin/daftar-proposal/${proposal.id}`, type: 'success' },
+          }),
+        })
+        if (!res.ok) console.warn('[notification] Admin notify failed:', await res.text())
+      } catch (e) {
+        console.warn('[notification] Admin notify error:', e)
+      }
+    }
+
+    void notifySuperadminsServer()
+    void notifyAdminServer()
   }
 
   return proposal
@@ -456,6 +490,9 @@ export async function updateProposalStatus(input: ProposalStatusUpdateInput): Pr
 
   if (error) throw new RepositoryError('Gagal memperbarui status proposal. Coba lagi.')
 
+  // Get current profile for actor label in SSR path
+  const currentProfile = await getCurrentProfile().catch(() => null)
+
   const title = activityTitleForStatus(input.status)
   const description = activityDescriptionForStatus(input.status, input.message)
   const activityPayload: LocalNotificationPayload = {
@@ -463,14 +500,31 @@ export async function updateProposalStatus(input: ProposalStatusUpdateInput): Pr
     eventType: beforeRow?.status === 'revision_requested' && input.status === 'submitted' ? 'resubmitted' : input.status,
     title: beforeRow?.status === 'revision_requested' && input.status === 'submitted' ? 'Proposal diajukan ulang' : title,
     description,
-    actorLabel: input.status === 'revision_requested' || input.status === 'approved' || input.status === 'rejected' || input.status === 'deployed' ? 'Superadmin' : 'Admin Organisasi',
+    actorLabel: input.status === 'revision_requested' || input.status === 'approved' || input.status === 'rejected' || input.status === 'deployed' ? 'Superadmin' : (currentProfile?.displayName || currentProfile?.email || 'Admin Organisasi'),
     message: input.message?.trim() || null,
     link: input.status === 'revision_requested' ? `/admin/daftar-proposal/${input.id}` : `/superadmin/manajemen-proposal/${input.id}`,
     type: input.status === 'revision_requested' ? 'warning' : input.status === 'rejected' || input.status === 'archived' ? 'info' : 'success',
   }
 
-  if (input.status === 'submitted') void notifySuperadmins(activityPayload).catch(() => undefined)
-  if (beforeRow?.created_by) void insertNotification(beforeRow.created_by, { ...activityPayload, link: `/admin/daftar-proposal/${input.id}` }).catch(() => undefined)
+  // SSR path notifications — delegate to server-side API
+  const ssrNotify = async () => {
+    try {
+      const { data: sessionData } = await client.auth.getSession()
+      const token = sessionData.session?.access_token
+      if (!token) return
+      const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+
+      if (input.status === 'submitted') {
+        await fetch('/api/notifications', { method: 'POST', headers, body: JSON.stringify({ mode: 'superadmins', payload: activityPayload }) })
+      }
+      if (beforeRow?.created_by) {
+        await fetch('/api/notifications', { method: 'POST', headers, body: JSON.stringify({ mode: 'target', targetProfileId: beforeRow.created_by, payload: { ...activityPayload, link: `/admin/daftar-proposal/${input.id}` } }) })
+      }
+    } catch (e) {
+      console.warn('[notification] SSR notify error:', e)
+    }
+  }
+  void ssrNotify()
 
   if (input.deployment) {
     const { error: mapError } = await client
@@ -511,16 +565,32 @@ export async function updateProposalStatus(input: ProposalStatusUpdateInput): Pr
 
     if (auditError) throw new RepositoryError('Pemilihan tersimpan, tetapi audit transaksi Supabase gagal diperbarui.')
 
-    // Notify admin that their proposal has been deployed
+    // Notify admin that their proposal has been deployed (via API)
     if (beforeRow?.created_by) {
-      void insertNotification(beforeRow.created_by, {
-        eventType: 'deployed',
-        title: 'Pemilihan berhasil di-deploy',
-        description: 'Proposal Anda sudah menjadi ruang pemilihan aktif di blockchain. Pemilih sekarang bisa melakukan pencoblosan.',
-        actorLabel: 'Superadmin',
-        link: `/admin/daftar-proposal/${input.id}`,
-        type: 'success',
-      }).catch(() => undefined)
+      try {
+        const { data: sessionData } = await client.auth.getSession()
+        const token = sessionData.session?.access_token
+        if (token) {
+          await fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              mode: 'target',
+              targetProfileId: beforeRow.created_by,
+              payload: {
+                eventType: 'deployed',
+                title: 'Pemilihan berhasil di-deploy',
+                description: 'Proposal Anda sudah menjadi ruang pemilihan aktif di blockchain. Pemilih sekarang bisa melakukan pencoblosan.',
+                actorLabel: 'Superadmin',
+                link: `/admin/daftar-proposal/${input.id}`,
+                type: 'success',
+              },
+            }),
+          })
+        }
+      } catch (e) {
+        console.warn('[notification] Deploy notify error:', e)
+      }
     }
   }
 
