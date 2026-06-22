@@ -96,8 +96,9 @@ export function PemilihanSections() {
               >
                 <article className="public-card flex h-full flex-col overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:border-slate-300">
                   {item.bannerImagePath && (
-                    <div className="h-48 w-full overflow-hidden border-b border-slate-100">
+                    <div className="relative h-48 w-full overflow-hidden border-b border-slate-100">
                       <img src={item.bannerImagePath} alt="" className="h-full w-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-900/20 to-transparent" />
                     </div>
                   )}
                   <div className="flex flex-col flex-1 p-7">
@@ -157,8 +158,9 @@ export function PemilihanSections() {
               >
                 <article className="public-card flex h-full flex-col overflow-hidden">
                   {item.bannerImagePath && (
-                    <div className="h-40 w-full overflow-hidden border-b border-slate-100">
+                    <div className="relative h-40 w-full overflow-hidden border-b border-slate-100">
                       <img src={item.bannerImagePath} alt="" className="h-full w-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-900/20 to-transparent" />
                     </div>
                   )}
                   <div className="flex flex-col flex-1 p-7">
