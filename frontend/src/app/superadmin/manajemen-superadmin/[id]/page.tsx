@@ -31,7 +31,7 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
   const deleteAdminMutation = useDeleteAdminRegistry()
   const resetPasswordMutation = useResetPassword()
   const resendInviteMutation = useResendAdminInvite()
-  const { addSuperAdmin, removeSuperAdmin, userAddress, superAdminAddress, registryAddress, isWritePending } = useRegistryContract()
+  const { addSuperAdmin, removeSuperAdmin, userAddress, isSuperAdmin, registryAddress, isWritePending } = useRegistryContract()
 
   const [activationLink, setActivationLink] = useState('')
   const [lastEmailStatus, setLastEmailStatus] = useState<'sent' | 'failed' | null>(null)
@@ -51,7 +51,7 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
   const isActive = directoryRecord?.profile || directoryRecord?.registryStatus === 'active'
   const candidateWallet = seedRecord?.blockchainIdentity ?? ''
   const hasValidCandidateWallet = /^0x[a-fA-F0-9]{40}$/.test(candidateWallet)
-  const isRootSuperadminWallet = Boolean(userAddress && superAdminAddress && userAddress.toLowerCase() === String(superAdminAddress).toLowerCase())
+  const isSuperadminWallet = Boolean(isSuperAdmin)
 
   const handleOnchainSuperadminAction = async (action: 'add' | 'remove') => {
     if (!hasValidCandidateWallet) {
@@ -59,8 +59,8 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
       return
     }
 
-    if (!isRootSuperadminWallet) {
-      showToast({ tone: 'error', title: 'Butuh root superadmin', description: 'Hanya root superadmin on-chain yang dapat menambah atau mencabut superadmin fakultas.' })
+    if (!isSuperadminWallet) {
+      showToast({ tone: 'error', title: 'Butuh superadmin', description: 'Hanya superadmin on-chain yang dapat menambah atau mencabut superadmin fakultas.' })
       return
     }
 
@@ -274,7 +274,7 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
                 <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-blue-700">Registry On-Chain</p>
                 <p className="mt-2 break-all font-mono text-[12px] text-blue-900">{registryAddress}</p>
                 <p className="mt-4 text-[14px] leading-6 text-blue-800">
-                  Root superadmin on-chain: <span className="font-mono">{superAdminAddress ? String(superAdminAddress) : 'Memuat...'}</span>
+                  Wallet kamu: <span className="font-mono">{userAddress ? String(userAddress) : 'Memuat...'}</span>
                 </p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <button
@@ -296,8 +296,8 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
                     Cabut On-Chain
                   </button>
                 </div>
-                {!isRootSuperadminWallet ? (
-                  <p className="mt-3 text-[12px] leading-5 text-blue-800">Sambungkan root superadmin wallet untuk mengubah daftar superadmin on-chain.</p>
+                {!isSuperadminWallet ? (
+                  <p className="mt-3 text-[12px] leading-5 text-blue-800">Sambungkan wallet superadmin untuk mengubah daftar superadmin on-chain.</p>
                 ) : null}
               </div>
 

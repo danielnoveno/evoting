@@ -94,7 +94,7 @@ function SuperadminManagementContent() {
   const resendInviteMutation = useResendAdminInvite()
   const currentProfileQuery = useCurrentProfile()
   const adminDirectoryQuery = useSuperadminAdminDirectory()
-  const { addSuperAdmin, userAddress, superAdminAddress, isWritePending } = useRegistryContract()
+  const { addSuperAdmin, userAddress, isSuperAdmin, isWritePending } = useRegistryContract()
 
   const superadmins = useMemo(
     () => (adminDirectoryQuery.data ?? []).filter((admin) => admin.role === 'super_admin'),
@@ -107,18 +107,18 @@ function SuperadminManagementContent() {
     [superadmins],
   )
   const { statusMap: onchainStatusMap, isLoading: isOnchainStatusLoading } = useSuperadminOnchainStatus(superadminWallets)
-  const isRootSuperadminWallet = Boolean(userAddress && superAdminAddress && userAddress.toLowerCase() === String(superAdminAddress).toLowerCase())
+  const isSuperadminWallet = Boolean(isSuperAdmin)
   const isLoading = adminDirectoryQuery.isLoading
   const error = adminDirectoryQuery.error
 
   // Auto-register superadmin baru yang belum terdaftar on-chain
   const unregisteredSuperadmins = useMemo(() => {
-    if (!isRootSuperadminWallet || isOnchainStatusLoading) return []
+    if (!isSuperadminWallet || isOnchainStatusLoading) return []
     return superadmins.filter((admin) => {
       const wallet = admin.walletAddress || admin.profile?.walletAddress || ''
       return /^0x[a-fA-F0-9]{40}$/.test(wallet) && !onchainStatusMap.get(wallet.toLowerCase())
     })
-  }, [superadmins, onchainStatusMap, isRootSuperadminWallet, isOnchainStatusLoading])
+  }, [superadmins, onchainStatusMap, isSuperadminWallet, isOnchainStatusLoading])
 
   useEffect(() => {
     if (unregisteredSuperadmins.length === 0 || isWritePending) return
@@ -329,8 +329,8 @@ function SuperadminManagementContent() {
   }
 
   const handleBulkRegisterOnchain = async () => {
-    if (!isRootSuperadminWallet) {
-      showToast({ tone: 'error', title: 'Butuh root superadmin', description: 'Hanya root superadmin on-chain yang dapat mendaftarkan superadmin baru.' })
+    if (!isSuperadminWallet) {
+      showToast({ tone: 'error', title: 'Butuh superadmin', description: 'Hanya superadmin on-chain yang dapat mendaftarkan superadmin baru.' })
       setOnchainRegisterDialogOpen(false)
       return
     }
@@ -680,7 +680,7 @@ function SuperadminManagementContent() {
                           {bulkActionLoading === 'deactivate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
                           Nonaktifkan Akses
                         </button>
-                        {isRootSuperadminWallet && (
+                        {isSuperadminWallet && (
                           <button
                             type="button"
                             onClick={() => setOnchainRegisterDialogOpen(true)}

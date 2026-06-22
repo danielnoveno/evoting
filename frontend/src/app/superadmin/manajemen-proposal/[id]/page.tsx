@@ -562,7 +562,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               <div className="mt-2 space-y-1 text-[13px] leading-6">
                 <p>Wallet transaksi tersambung: <span className="font-mono">{userAddress}</span></p>
                 <p>Registry yang dibaca frontend: <span className="font-mono">{registryAddress}</span></p>
-                <p>Superadmin on-chain di registry ini: <span className="font-mono">{superAdminAddress ? String(superAdminAddress) : 'Memuat...'}</span></p>
+                <p>Root superadmin on-chain: <span className="font-mono">{superAdminAddress ? String(superAdminAddress) : 'Memuat...'}</span></p>
               </div>
               {isSuperAdmin === false ? (
                 <p className="mt-3 text-[13px] leading-6 text-red-800">
