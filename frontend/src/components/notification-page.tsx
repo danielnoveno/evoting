@@ -26,6 +26,7 @@ import {
   markNotificationsUnread,
 } from '@/lib/notification-store'
 import { useToast } from '@/components/ui/toast-provider'
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
 interface NotificationItem {
   id: string
@@ -70,7 +71,11 @@ export function NotificationPage({
   const { data, isLoading, isError } = useQuery({
     queryKey: ['user-notifications-page'],
     queryFn: async () => {
-      const res = await fetch('/api/notifications/list')
+      const client = getSupabaseBrowserClient()
+      const token = client ? (await client.auth.getSession()).data.session?.access_token : null
+      const res = await fetch('/api/notifications/list', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       if (!res.ok) throw new Error('Gagal memuat notifikasi')
       const payload = await res.json()
       return payload.notifications as NotificationItem[]
@@ -119,9 +124,14 @@ export function NotificationPage({
 
   const handleBulkDelete = useCallback(async () => {
     try {
+      const client = getSupabaseBrowserClient()
+      const token = client ? (await client.auth.getSession()).data.session?.access_token : null
       const res = await fetch('/api/notifications/delete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ ids: [...selected] }),
       })
       if (!res.ok) throw new Error('Gagal menghapus notifikasi')
