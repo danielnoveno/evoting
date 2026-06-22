@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, Database, FileCheck2, LayoutGrid, ShieldAlert, ShieldUser, Vote, ScrollText } from 'lucide-react'
+import { ArrowLeft, Bell, Database, FileCheck2, LayoutGrid, ShieldAlert, ShieldUser, Vote, ScrollText } from 'lucide-react'
 import Link from 'next/link'
 import { type InputHTMLAttributes, ReactNode, type SelectHTMLAttributes } from 'react'
 import { RoleGate } from '@/components/auth/role-gate'
@@ -20,6 +20,7 @@ export function SuperadminShell({ children }: { children: ReactNode }) {
     { href: '/superadmin/manajemen-admin', label: t.sidebar.admin, icon: ShieldUser },
     { href: '/superadmin/manajemen-pemilihan', label: t.sidebar.election, icon: Vote },
     { href: '/superadmin/manajemen-proposal', label: t.sidebar.proposal, icon: FileCheck2 },
+    { href: '/superadmin/notifikasi', label: 'Notifikasi', icon: Bell },
     { href: '/superadmin/audit-log', label: t.sidebar.audit, icon: ScrollText },
     { href: '/superadmin/data-voter', label: t.sidebar.voter, icon: Database },
     { href: '/superadmin/risk-activity', label: t.sidebar.risk, icon: ShieldAlert },
