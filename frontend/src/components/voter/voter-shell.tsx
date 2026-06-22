@@ -39,7 +39,6 @@ export function VoterShell({ children }: { children: ReactNode }) {
   const sidebarItems = [
     { href: '/pemilih', label: t.sidebar.dashboard, icon: Home },
     { href: '/pemilih/bukti-saya', label: t.sidebar.voter_history, icon: ShieldCheck },
-    { href: '/pemilih/notifikasi', label: 'Notifikasi', icon: Bell },
     { href: '/pemilih/bantuan', label: t.sidebar.help, icon: CircleHelp },
   ] as const
 

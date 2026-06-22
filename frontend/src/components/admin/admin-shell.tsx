@@ -1,6 +1,6 @@
 'use client'
 
-import { CircleHelp, FileText, Gauge, LayoutGrid, Bell, type LucideIcon } from 'lucide-react'
+import { CircleHelp, FileText, Gauge, LayoutGrid, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import { ReactNode } from 'react'
 import { RoleGate } from '@/components/auth/role-gate'
@@ -24,7 +24,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
     { href: '/admin', label: t.sidebar.dashboard, icon: LayoutGrid },
     { href: '/admin/manajemen-pemilihan', label: t.sidebar.election, icon: Gauge },
     { href: '/admin/daftar-proposal', label: t.sidebar.proposal, icon: FileText },
-    { href: '/admin/notifikasi', label: 'Notifikasi', icon: Bell },
     { href: '/admin/bantuan', label: t.sidebar.help, icon: CircleHelp },
   ]
 
