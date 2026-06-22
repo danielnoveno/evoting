@@ -117,6 +117,40 @@ export async function POST(request: NextRequest) {
     source: 'server_api',
   })
 
+  // Send notification to superadmins about voter activation
+  if (activation.role === 'voter') {
+    try {
+      const { data: superadmins } = await client
+        .schema('app')
+        .from('app_profiles')
+        .select('id')
+        .eq('role', 'super_admin')
+
+      if (superadmins && superadmins.length > 0) {
+        const notificationPayload = {
+          eventType: 'voter_activated',
+          title: 'Pemilih berhasil diaktivasi',
+          description: `${activation.email} telah mengaktifkan akun dan menyambungkan wallet untuk pemilihan.`,
+          actorLabel: activation.email,
+          link: '/superadmin/data-voter',
+          type: 'success' as const,
+        }
+
+        const notificationRows = superadmins.map((sa: { id: string }) => ({
+          target_profile_id: sa.id,
+          channel: 'in_app',
+          template_key: 'proposal_activity',
+          status: 'sent',
+          payload: notificationPayload,
+        }))
+
+        await client.schema('app').from('notification_jobs').insert(notificationRows)
+      }
+    } catch (notifError) {
+      console.warn('[Voter Claim] Failed to send activation notification:', notifError)
+    }
+  }
+
   return NextResponse.json({
     success: true,
     email: activation.email,

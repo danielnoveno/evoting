@@ -122,6 +122,39 @@ export async function POST(request: NextRequest) {
     return jsonError(`Undangan aktif, tetapi profil admin belum tersimpan: ${profileError.message}. Hubungi superadmin.`, 500)
   }
 
+  // Send notification to all superadmins about new activation
+  try {
+    const { data: superadmins } = await client
+      .schema('app')
+      .from('app_profiles')
+      .select('id')
+      .eq('role', 'super_admin')
+
+    if (superadmins && superadmins.length > 0) {
+      const roleLabel = invite.assigned_role === 'super_admin' ? 'Superadmin' : 'Admin Organisasi'
+      const notificationPayload = {
+        eventType: 'account_activated',
+        title: `${roleLabel} berhasil diaktivasi`,
+        description: `${invite.email}${invite.organization_name ? ` (${invite.organization_name})` : ''} telah mengaktifkan akun dan menyambungkan wallet.`,
+        actorLabel: invite.email,
+        link: invite.assigned_role === 'super_admin' ? '/superadmin/manajemen-superadmin' : '/superadmin/manajemen-admin',
+        type: 'success' as const,
+      }
+
+      const notificationRows = superadmins.map((sa: { id: string }) => ({
+        target_profile_id: sa.id,
+        channel: 'in_app',
+        template_key: 'proposal_activity',
+        status: 'sent',
+        payload: notificationPayload,
+      }))
+
+      await client.schema('app').from('notification_jobs').insert(notificationRows)
+    }
+  } catch (notifError) {
+    console.warn('[Admin Claim] Failed to send activation notification:', notifError)
+  }
+
   return NextResponse.json({
     success: true,
     email: invite.email,

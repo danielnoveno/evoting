@@ -110,6 +110,8 @@ export function SuperadminMasterVoterPage() {
   const [sortField, setSortField] = useState<SortField | null>(null)
   const [sortDirection, setSortDirection] = useState<TableSortDirection>(null)
   const [deleteSelectedDialogOpen, setDeleteSelectedDialogOpen] = useState(false)
+  const [deleteSingleDialogOpen, setDeleteSingleDialogOpen] = useState(false)
+  const [voterToDelete, setVoterToDelete] = useState<MasterVoter | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -287,6 +289,20 @@ export function SuperadminMasterVoterPage() {
         setSelectedVoterIds([])
         setDeleteSelectedDialogOpen(false)
         showToast({ tone: 'success', title: 'Voter terpilih dihapus', description: `${count} data voter berhasil dihapus dari data master.` })
+      },
+      onError: (error) => {
+        showToast({ tone: 'error', title: 'Gagal menghapus', description: error.message })
+      },
+    })
+  }
+
+  const handleSingleDelete = () => {
+    if (!voterToDelete) return
+    deleteVoterMutation.mutate(voterToDelete.id, {
+      onSuccess: () => {
+        setVoterToDelete(null)
+        setDeleteSingleDialogOpen(false)
+        showToast({ tone: 'success', title: 'Voter dihapus', description: `${voterToDelete.fullName} berhasil dihapus dari data master.` })
       },
       onError: (error) => {
         showToast({ tone: 'error', title: 'Gagal menghapus', description: error.message })
@@ -561,6 +577,19 @@ export function SuperadminMasterVoterPage() {
                               className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                             >
                               <Pencil className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Hapus ${voter.fullName}`}
+                              title="Hapus voter"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setVoterToDelete(voter)
+                                setDeleteSingleDialogOpen(true)
+                              }}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-red-500 transition hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </DataTableCell>
@@ -845,6 +874,17 @@ export function SuperadminMasterVoterPage() {
         tone="danger"
         onConfirm={handleBulkDeleteSelected}
         onCancel={() => setDeleteSelectedDialogOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={deleteSingleDialogOpen}
+        title="Hapus voter ini?"
+        description={`Tindakan ini akan menghapus ${voterToDelete?.fullName ?? ''} (${voterToDelete?.nim ?? ''}) dari database master.`}
+        confirmLabel={deleteVoterMutation.isPending ? 'Menghapus...' : 'Ya, Hapus'}
+        cancelLabel="Batal"
+        tone="danger"
+        onConfirm={handleSingleDelete}
+        onCancel={() => { setDeleteSingleDialogOpen(false); setVoterToDelete(null) }}
       />
     </SuperadminShell>
   )
