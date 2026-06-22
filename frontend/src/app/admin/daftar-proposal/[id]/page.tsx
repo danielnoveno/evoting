@@ -1,6 +1,8 @@
 'use client'
 
 import { notFound, useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { AlertTriangle } from 'lucide-react'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { ProposalForm, ProposalFormData } from '@/components/admin/proposal-form'
 import { useProposalActivities, useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
@@ -16,6 +18,25 @@ function toDatetimeLocal(value: string | null, fallback: string) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
+const REVISION_POPUP_DISMISSED_KEY = 'votein_revision_dismissed'
+
+function getDismissedSet(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = localStorage.getItem(REVISION_POPUP_DISMISSED_KEY)
+    if (!raw) return new Set()
+    return new Set(JSON.parse(raw) as string[])
+  } catch {
+    return new Set()
+  }
+}
+
+function markDismissed(proposalId: string) {
+  const s = getDismissedSet()
+  s.add(proposalId)
+  localStorage.setItem(REVISION_POPUP_DISMISSED_KEY, JSON.stringify([...s]))
+}
+
 export default function AdminDetailProposalPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { showToast } = useToast()
@@ -26,6 +47,24 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
   const updateStatus = useUpdateProposalStatus()
   const liveProposal = proposalQuery.data
   const latestRevisionMessage = (activitiesQuery.data ?? []).find((activity) => activity.eventType === 'revision_requested')?.message
+  const [showRevisionPopup, setShowRevisionPopup] = useState(false)
+
+  // Show popup when proposal has revision_requested and message exists
+  useEffect(() => {
+    if (
+      liveProposal?.status === 'revision_requested' &&
+      latestRevisionMessage &&
+      !getDismissedSet().has(params.id)
+    ) {
+      setShowRevisionPopup(true)
+    }
+  }, [liveProposal?.status, latestRevisionMessage, params.id])
+
+  const handleDismissRevisionPopup = () => {
+    markDismissed(params.id)
+    setShowRevisionPopup(false)
+  }
+
   if (!liveProposal && !proposalQuery.isLoading) notFound()
 
   const initialData: Partial<ProposalFormData> = {
@@ -72,6 +111,33 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
 
   return (
     <AdminShell>
+      {/* Revision popup modal */}
+      {showRevisionPopup && latestRevisionMessage && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 px-4">
+          <button type="button" aria-label="Tutup" className="absolute inset-0" onClick={handleDismissRevisionPopup} />
+          <div className="relative w-full max-w-[480px] rounded-xl border border-amber-200 bg-white p-6 shadow-lg">
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-[16px] font-semibold text-slate-900">Pesan Revisi dari Superadmin</h2>
+                <p className="mt-3 text-[14px] leading-7 text-slate-700">{latestRevisionMessage}</p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={handleDismissRevisionPopup}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-5 text-[13px] font-medium text-white hover:bg-[#1E293B]"
+              >
+                Mengerti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ProposalForm
         initialData={initialData}
         isReadOnly={true}

@@ -7,6 +7,7 @@ export function ConfirmDialog({
   confirmLabel = 'Konfirmasi',
   cancelLabel = 'Batal',
   tone = 'default',
+  disabled = false,
   onConfirm,
   onCancel,
 }: {
@@ -16,6 +17,7 @@ export function ConfirmDialog({
   confirmLabel?: string
   cancelLabel?: string
   tone?: 'default' | 'danger'
+  disabled?: boolean
   onConfirm: () => void
   onCancel: () => void
 }) {
@@ -34,9 +36,10 @@ export function ConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
+            disabled={disabled}
             className={tone === 'danger'
-              ? 'inline-flex h-10 items-center justify-center rounded-md border border-red-200 bg-white px-4 text-[13px] font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2'
-              : 'inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2'}
+              ? 'inline-flex h-10 items-center justify-center rounded-md border border-red-200 bg-white px-4 text-[13px] font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40'
+              : 'inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40'}
           >
             {confirmLabel}
           </button>

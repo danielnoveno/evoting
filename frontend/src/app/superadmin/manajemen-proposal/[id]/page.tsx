@@ -329,6 +329,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         ? { title: 'Minta revisi proposal ini?', confirmLabel: 'Kirim Permintaan Revisi' }
         : { title: 'Tolak permanen proposal ini?', confirmLabel: 'Tolak Proposal' }
 
+  const isNoteRequired = decisionType === 'revise'
+  const canConfirm = !isNoteRequired || note.trim().length > 0
+
   const readinessScore = proposal.objectives.filter((item) => item.tone === 'success').length
   const totalChecks = proposal.objectives.length
 
@@ -922,7 +925,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             </div>
 
             <div className="mt-6 border-t border-slate-100 pt-6">
-              <label className="block text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">{decisionType === 'revise' ? 'Pesan Revisi untuk Admin (Opsional)' : 'Catatan Internal (Opsional)'}</label>
+              <label className="block text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">{decisionType === 'revise' ? 'Pesan Revisi untuk Admin (Wajib)' : 'Catatan Internal (Opsional)'}</label>
               <textarea
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
@@ -930,6 +933,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                 className="mt-3 h-32 w-full rounded-[20px] bg-slate-100 px-4 py-3 text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
               />
               {decisionType === 'revise' ? <p className="mt-2 text-[12px] leading-5 text-slate-500">Pesan ini akan tampil untuk admin organisasi dan tercatat di riwayat aktivitas proposal.</p> : null}
+              {decisionType === 'revise' && note.trim().length === 0 ? <p className="mt-1 text-[12px] leading-5 text-red-500">Pesan revisi wajib diisi.</p> : null}
             </div>
           </section>
 
@@ -1008,6 +1012,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         description={note.trim() ? `Pesan: ${note}` : decisionType === 'approve' || decisionType === 'deploy' ? 'Superadmin akan membayar gas fee untuk deploy pemilihan ke Base Sepolia.' : 'Status proposal akan diperbarui di Supabase untuk ditindaklanjuti admin.'}
         confirmLabel={decisionMeta.confirmLabel}
         tone={decisionType === 'reject' ? 'danger' : 'default'}
+        disabled={!canConfirm}
         onCancel={() => {
           setDecisionType(null)
           resetWrite()
