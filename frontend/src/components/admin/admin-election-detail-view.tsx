@@ -653,7 +653,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mode: 'superadmins',
+          mode: 'public',
           payload: {
             title: 'Jadwal pemilihan diaktifkan',
             description: `Pemilihan "${election.title}" telah mengaktifkan jadwal fase. Pencoblosan dimulai ${new Date(Number(commitStart) * 1000).toLocaleDateString('id-ID')}.`,

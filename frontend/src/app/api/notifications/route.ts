@@ -117,5 +117,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, inserted: rows.length })
   }
 
-  return NextResponse.json({ error: `Mode "${mode}" tidak dikenali.` }, { status: 400 })
+  if (mode === 'public') {
+    // Public broadcast notification — no target, visible to all visitors
+    const { error: insertError } = await client
+      .schema('app')
+      .from('notification_jobs')
+      .insert({
+        channel: 'in_app',
+        template_key: 'public_election',
+        status: 'sent',
+        payload: body.payload,
+      })
+
+    if (insertError) return NextResponse.json({ error: 'Gagal menyimpan notifikasi publik.' }, { status: 500 })
+    return NextResponse.json({ ok: true, inserted: 1 })
+  }
+
+  return NextResponse.json({ error: `Mode "${mode}" tidak dikenali.`, modes: ['superadmins', 'target', 'batch', 'public'] }, { status: 400 })
 }
