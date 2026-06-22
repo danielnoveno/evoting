@@ -94,7 +94,7 @@ function SuperadminManagementContent() {
   const resendInviteMutation = useResendAdminInvite()
   const currentProfileQuery = useCurrentProfile()
   const adminDirectoryQuery = useSuperadminAdminDirectory()
-  const { addSuperAdmin, userAddress, isSuperAdmin, isWritePending } = useRegistryContract()
+  const { addSuperAdmin, userAddress, isSuperAdmin, isSuperAdminLoading, isWritePending } = useRegistryContract()
 
   const superadmins = useMemo(
     () => (adminDirectoryQuery.data ?? []).filter((admin) => admin.role === 'super_admin'),
@@ -329,8 +329,13 @@ function SuperadminManagementContent() {
   }
 
   const handleBulkRegisterOnchain = async () => {
+    if (isSuperAdminLoading) {
+      showToast({ tone: 'info', title: 'Memuat status superadmin', description: 'Tunggu sebentar hingga status on-chain terbaca, lalu coba lagi.' })
+      setOnchainRegisterDialogOpen(false)
+      return
+    }
     if (!isSuperadminWallet) {
-      showToast({ tone: 'error', title: 'Butuh superadmin', description: 'Hanya superadmin on-chain yang dapat mendaftarkan superadmin baru.' })
+      showToast({ tone: 'error', title: 'Bukan superadmin', description: `Wallet terhubung (${userAddress ? userAddress.slice(0,6) + '...' + userAddress.slice(-4) : 'tidak terdeteksi'}) belum terdaftar sebagai superadmin.` })
       setOnchainRegisterDialogOpen(false)
       return
     }

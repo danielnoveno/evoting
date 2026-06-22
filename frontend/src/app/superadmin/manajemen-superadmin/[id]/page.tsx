@@ -31,7 +31,7 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
   const deleteAdminMutation = useDeleteAdminRegistry()
   const resetPasswordMutation = useResetPassword()
   const resendInviteMutation = useResendAdminInvite()
-  const { addSuperAdmin, removeSuperAdmin, userAddress, isSuperAdmin, registryAddress, isWritePending } = useRegistryContract()
+  const { addSuperAdmin, removeSuperAdmin, userAddress, isSuperAdmin, isSuperAdminLoading, registryAddress, isWritePending } = useRegistryContract()
 
   const [activationLink, setActivationLink] = useState('')
   const [lastEmailStatus, setLastEmailStatus] = useState<'sent' | 'failed' | null>(null)
@@ -51,7 +51,7 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
   const isActive = directoryRecord?.profile || directoryRecord?.registryStatus === 'active'
   const candidateWallet = seedRecord?.blockchainIdentity ?? ''
   const hasValidCandidateWallet = /^0x[a-fA-F0-9]{40}$/.test(candidateWallet)
-  const isSuperadminWallet = Boolean(isSuperAdmin)
+  const isSuperadminWallet = isSuperAdmin === true
 
   const handleOnchainSuperadminAction = async (action: 'add' | 'remove') => {
     if (!hasValidCandidateWallet) {
@@ -59,8 +59,13 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
       return
     }
 
+    if (isSuperAdminLoading) {
+      showToast({ tone: 'info', title: 'Memuat status superadmin', description: 'Tunggu sebentar hingga status on-chain terbaca, lalu coba lagi.' })
+      return
+    }
+
     if (!isSuperadminWallet) {
-      showToast({ tone: 'error', title: 'Butuh superadmin', description: 'Hanya superadmin on-chain yang dapat menambah atau mencabut superadmin fakultas.' })
+      showToast({ tone: 'error', title: 'Bukan superadmin', description: `Wallet terhubung (${userAddress ? userAddress.slice(0,6) + '...' + userAddress.slice(-4) : 'tidak terdeteksi'}) belum terdaftar sebagai superadmin di contract ${registryAddress?.slice(0,6)}...${registryAddress?.slice(-4)}.` })
       return
     }
 
@@ -273,8 +278,18 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
               <div className="rounded-[24px] border border-blue-100 bg-blue-50 p-6">
                 <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-blue-700">Registry On-Chain</p>
                 <p className="mt-2 break-all font-mono text-[12px] text-blue-900">{registryAddress}</p>
-                <p className="mt-4 text-[14px] leading-6 text-blue-800">
+                <p className="mt-3 text-[14px] leading-6 text-blue-800">
                   Wallet kamu: <span className="font-mono">{userAddress ? String(userAddress) : 'Memuat...'}</span>
+                </p>
+                <p className="mt-1 text-[14px] leading-6 text-blue-800">
+                  Status superadmin on-chain:{' '}
+                  {isSuperAdminLoading ? (
+                    <span className="text-blue-500">Memuat...</span>
+                  ) : isSuperAdmin === true ? (
+                    <span className="font-semibold text-emerald-700">Terdaftar</span>
+                  ) : (
+                    <span className="font-semibold text-red-700">Tidak terdaftar</span>
+                  )}
                 </p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <button
