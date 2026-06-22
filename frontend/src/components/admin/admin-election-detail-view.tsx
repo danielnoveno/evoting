@@ -649,6 +649,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       })
 
       // Public notification: election schedule is now active
+      const electionLink = deployedAddress ? `/pemilihan/${deployedAddress}/hasil` : '/pemilihan'
       fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -658,7 +659,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             title: 'Jadwal pemilihan diaktifkan',
             description: `Pemilihan "${election.title}" telah mengaktifkan jadwal fase. Pencoblosan dimulai ${new Date(Number(commitStart) * 1000).toLocaleDateString('id-ID')}.`,
             type: 'info',
-            link: '/pemilihan',
+            link: electionLink,
           },
         }),
       }).catch(() => {})

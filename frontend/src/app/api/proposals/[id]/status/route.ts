@@ -142,6 +142,8 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
   // Public notification for deployed elections — visible to all visitors
   if (status === 'deployed' && data.title) {
+    const spaceAddress = data.deployed_space_address
+    const electionLink = spaceAddress ? `/pemilihan/${spaceAddress}/hasil` : '/pemilihan'
     try {
       await auth.client.schema('app').from('notification_jobs').insert({
         channel: 'in_app',
@@ -151,7 +153,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
           title: 'Pemilihan baru tersedia',
           description: `Pemilihan "${data.title}" telah dibuka. Anda bisa melihat detail dan berpartisipasi.`,
           type: 'success',
-          link: '/pemilihan',
+          link: electionLink,
         },
       }).throwOnError()
     } catch {
