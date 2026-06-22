@@ -29,7 +29,8 @@ export function getPublicAppOrigin(fallbackOrigin?: string) {
 }
 
 export function areNotificationsEnabled() {
-  return process.env.NEXT_PUBLIC_ENABLE_NOTIFICATIONS === 'true'
+  // Default aktif — set NEXT_PUBLIC_ENABLE_NOTIFICATIONS=false untuk nonaktifkan
+  return process.env.NEXT_PUBLIC_ENABLE_NOTIFICATIONS !== 'false'
 }
 
 export function getSupabaseServerConfig() {
