@@ -2,66 +2,74 @@
 
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { listPublicNotifications, listUserNotifications } from '@/lib/repositories/electionRepository'
 import { areNotificationsEnabled } from '@/lib/supabase/config'
 import { useCurrentProfile } from '@/hooks/use-profile'
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
-const STORAGE_KEY = 'votein_last_notif_seen'
+const STORAGE_KEY = 'votein_notif_read_ids'
+
+interface NotificationItem {
+  id: string
+  title: string
+  description: string
+  type: 'info' | 'success' | 'warning'
+  link?: string | null
+  actorLabel?: string | null
+  createdAt: string
+}
+
+function getReadIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return new Set()
+    return new Set(JSON.parse(raw) as string[])
+  } catch {
+    return new Set()
+  }
+}
 
 export function useNotificationBadge() {
   const { data: profile } = useCurrentProfile()
-  const [hasUnread, setHasUnread] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const notificationsEnabled = areNotificationsEnabled()
 
-  const isPersonal = !!profile
   const { data: notifications } = useQuery({
-    queryKey: isPersonal ? ['user', 'notifications', profile.id, profile.walletAddress] : ['public', 'notifications'],
-    queryFn: () => isPersonal 
-      ? listUserNotifications(profile.id, profile.walletAddress)
-      : listPublicNotifications(),
-    enabled: notificationsEnabled,
+    queryKey: ['user-notifications-page'],
+    queryFn: async () => {
+      const client = getSupabaseBrowserClient()
+      const token = client ? (await client.auth.getSession()).data.session?.access_token : null
+      const res = await fetch('/api/notifications/list', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) return []
+      const payload = await res.json()
+      return (payload.notifications ?? []) as NotificationItem[]
+    },
+    enabled: notificationsEnabled && !!profile,
     retry: false,
-    refetchInterval: 60000, // Check every minute
+    refetchInterval: 60000,
   })
 
   useEffect(() => {
     if (!notifications || notifications.length === 0) {
-      setHasUnread(false)
       setUnreadCount(0)
+      updateFaviconBadge(false)
       return
     }
 
-    const latestId = notifications[0].id
-    const lastSeenId = localStorage.getItem(STORAGE_KEY)
-    
-    const isNew = latestId !== lastSeenId
-    setHasUnread(isNew)
-
-    // Count unread: all notifications newer than the last seen one
-    if (isNew && lastSeenId) {
-      const lastSeenIdx = notifications.findIndex((n) => n.id === lastSeenId)
-      setUnreadCount(lastSeenIdx >= 0 ? lastSeenIdx : notifications.length)
-    } else if (isNew) {
-      setUnreadCount(notifications.length)
-    } else {
-      setUnreadCount(0)
-    }
-
-    updateFaviconBadge(isNew)
+    const readIds = getReadIds()
+    const count = notifications.filter((n) => !readIds.has(n.id)).length
+    setUnreadCount(count)
+    updateFaviconBadge(count > 0)
   }, [notifications])
 
   const markAsRead = () => {
-    if (!notificationsEnabled) return
-    if (notifications && notifications.length > 0) {
-      localStorage.setItem(STORAGE_KEY, notifications[0].id)
-      setHasUnread(false)
-      setUnreadCount(0)
-      updateFaviconBadge(false)
-    }
+    setUnreadCount(0)
+    updateFaviconBadge(false)
   }
 
-  return { hasUnread, unreadCount, markAsRead }
+  return { hasUnread: unreadCount > 0, unreadCount, markAsRead }
 }
 
 function updateFaviconBadge(hasBadge: boolean) {
@@ -89,18 +97,17 @@ function updateFaviconBadge(hasBadge: boolean) {
     ctx.clearRect(0, 0, 64, 64)
     ctx.drawImage(img, 0, 0, 64, 64)
 
-    // Draw red dot badge
-    ctx.fillStyle = '#ef4444' // slate-500 red
+    ctx.fillStyle = '#ef4444'
     ctx.strokeStyle = '#ffffff'
     ctx.lineWidth = 4
-    
+
     ctx.beginPath()
     ctx.arc(50, 14, 10, 0, 2 * Math.PI)
     ctx.fill()
     ctx.stroke()
 
     favicon.href = canvas.toDataURL('image/png')
-    
+
     if (!document.title.startsWith('● ')) {
       document.title = '● ' + document.title
     }
