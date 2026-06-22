@@ -240,7 +240,7 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
               <CopyCheck className="h-4 w-4" />
             </button>
             <Link
-              href={profile ? (profile.role === 'voter' ? '/pemilih/notifikasi' : `/${profile.role === 'super_admin' ? 'superadmin' : profile.role}/notifikasi`) : '#'}
+              href={profile ? (profile.role === 'voter' ? '/pemilih/notifikasi' : `/${profile.role === 'super_admin' ? 'superadmin' : profile.role}/notifikasi`) : '/notifikasi'}
               className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
               aria-label="Notifikasi"
             >

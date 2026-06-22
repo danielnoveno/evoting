@@ -6,7 +6,7 @@ import { areNotificationsEnabled } from '@/lib/supabase/config'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
-const STORAGE_KEY = 'votein_notif_read_ids'
+const READ_STORAGE_KEY = 'votein_notif_read_ids'
 
 interface NotificationItem {
   id: string
@@ -14,14 +14,13 @@ interface NotificationItem {
   description: string
   type: 'info' | 'success' | 'warning'
   link?: string | null
-  actorLabel?: string | null
   createdAt: string
 }
 
 function getReadIds(): Set<string> {
   if (typeof window === 'undefined') return new Set()
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(READ_STORAGE_KEY)
     if (!raw) return new Set()
     return new Set(JSON.parse(raw) as string[])
   } catch {
@@ -34,19 +33,32 @@ export function useNotificationBadge() {
   const [unreadCount, setUnreadCount] = useState(0)
   const notificationsEnabled = areNotificationsEnabled()
 
+  const isPersonal = !!profile
+
   const { data: notifications } = useQuery({
-    queryKey: ['user-notifications-page'],
+    queryKey: isPersonal
+      ? ['user-notifications-page']
+      : ['public-notifications-page'],
     queryFn: async () => {
-      const client = getSupabaseBrowserClient()
-      const token = client ? (await client.auth.getSession()).data.session?.access_token : null
-      const res = await fetch('/api/notifications/list', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      })
-      if (!res.ok) return []
-      const payload = await res.json()
-      return (payload.notifications ?? []) as NotificationItem[]
+      if (isPersonal) {
+        // Authenticated: use /api/notifications/list with Bearer token
+        const client = getSupabaseBrowserClient()
+        const token = client ? (await client.auth.getSession()).data.session?.access_token : null
+        const res = await fetch('/api/notifications/list', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+        if (!res.ok) return []
+        const payload = await res.json()
+        return (payload.notifications ?? []) as NotificationItem[]
+      } else {
+        // Public: use /api/notifications/public (no auth needed)
+        const res = await fetch('/api/notifications/public')
+        if (!res.ok) return []
+        const payload = await res.json()
+        return (payload.notifications ?? []) as NotificationItem[]
+      }
     },
-    enabled: notificationsEnabled && !!profile,
+    enabled: notificationsEnabled,
     retry: false,
     refetchInterval: 60000,
   })

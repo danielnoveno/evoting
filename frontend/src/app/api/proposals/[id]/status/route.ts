@@ -140,6 +140,25 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     await auth.client.from('notification_jobs').insert({ target_profile_id: beforeRow.created_by, channel: 'in_app', template_key: 'proposal_activity', status: 'queued', payload: activityPayload }).throwOnError()
   }
 
+  // Public notification for deployed elections — visible to all visitors
+  if (status === 'deployed' && data.title) {
+    try {
+      await auth.client.from('notification_jobs').insert({
+        channel: 'in_app',
+        template_key: 'public_election',
+        status: 'sent',
+        payload: {
+          title: 'Pemilihan baru tersedia',
+          description: `Pemilihan "${data.title}" telah dibuka. Anda bisa melihat detail dan berpartisipasi.`,
+          type: 'success',
+          link: '/pemilihan',
+        },
+      })
+    } catch {
+      // fire-and-forget: public notification failure should not block the status update
+    }
+  }
+
   if (deployment) {
     const registryAddress = typeof deployment.registryAddress === 'string' ? deployment.registryAddress : ''
     const ownerWallet = typeof deployment.ownerWallet === 'string' ? deployment.ownerWallet : ''

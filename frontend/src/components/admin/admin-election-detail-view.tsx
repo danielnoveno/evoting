@@ -647,6 +647,21 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         title: 'Jadwal Otomatis Aktif',
         description: 'Fase on-chain akan mengikuti jadwal proposal: pencoblosan sebagai Commit dan perhitungan sebagai Reveal.',
       })
+
+      // Public notification: election schedule is now active
+      fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'superadmins',
+          payload: {
+            title: 'Jadwal pemilihan diaktifkan',
+            description: `Pemilihan "${election.title}" telah mengaktifkan jadwal fase. Pencoblosan dimulai ${new Date(Number(commitStart) * 1000).toLocaleDateString('id-ID')}.`,
+            type: 'info',
+            link: '/pemilihan',
+          },
+        }),
+      }).catch(() => {})
     } catch (error) {
       showToast({
         tone: 'error',
