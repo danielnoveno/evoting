@@ -105,14 +105,14 @@ contract VoteChainRegistry {
         _;
     }
 
-    function addSuperAdmin(address admin) external onlyRootSuperAdmin {
+    function addSuperAdmin(address admin) external onlySuperAdmin {
         if (admin == address(0)) revert InvalidAdmin();
 
         superAdmins[admin] = true;
         emit SuperAdminUpserted(admin, true, msg.sender);
     }
 
-    function removeSuperAdmin(address admin) external onlyRootSuperAdmin {
+    function removeSuperAdmin(address admin) external onlySuperAdmin {
         if (admin == address(0) || admin == superAdmin) revert InvalidAdmin();
 
         superAdmins[admin] = false;
