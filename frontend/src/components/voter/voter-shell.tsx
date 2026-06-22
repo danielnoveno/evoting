@@ -13,7 +13,6 @@ import { CommandPalette } from '@/components/ui/command-palette'
 import { formatWallet, useVoterStore } from '@/lib/voter-store'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { useLogoutSession } from '@/hooks/use-auth-session'
-import { NotificationModal } from '@/components/public/notification-modal'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
 import { OnboardingTour } from './onboarding-tour'
 import { useLanguage } from '@/lib/contexts/language-context'
@@ -24,7 +23,6 @@ export function VoterShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const [notifOpen, setNotifOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const { showToast } = useToast()
@@ -32,7 +30,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
   const { sidebarWidthClass } = useSidebarLayout(collapsed)
   const { data: currentProfile } = useCurrentProfile()
   const logoutSession = useLogoutSession()
-  const { hasUnread } = useNotificationBadge()
+  const { hasUnread, unreadCount } = useNotificationBadge()
   const { t, locale } = useLanguage()
 
   // Tampilkan toast selamat datang sekali per sesi login
@@ -149,15 +147,18 @@ export function VoterShell({ children }: { children: ReactNode }) {
                   )}
                 </div>
 
-                <button type="button" onClick={() => setNotifOpen(true)} className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2" aria-label="Notifikasi pemilih">
+                <Link
+                  href="/pemilih/notifikasi"
+                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
+                  aria-label="Notifikasi pemilih"
+                >
                   <Bell className="h-4 w-4" />
-                  {hasUnread && (
-                    <span className="absolute right-2 top-2 flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                      {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
-                </button>
+                </Link>
                 <Link
                   href="/pemilih/profil"
                   className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border transition ${
@@ -202,13 +203,6 @@ export function VoterShell({ children }: { children: ReactNode }) {
         confirmLabel={t.header.logout}
         onCancel={() => setLogoutConfirmOpen(false)}
         onConfirm={handleConfirmLogout}
-      />
-
-      <NotificationModal 
-        open={notifOpen} 
-        onClose={() => setNotifOpen(false)} 
-        profileId={currentProfile?.id}
-        walletAddress={currentProfile?.walletAddress}
       />
 
       <CommandPalette role="voter" open={searchOpen} onOpenChange={setSearchOpen} />

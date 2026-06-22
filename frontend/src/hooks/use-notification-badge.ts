@@ -11,6 +11,7 @@ const STORAGE_KEY = 'votein_last_notif_seen'
 export function useNotificationBadge() {
   const { data: profile } = useCurrentProfile()
   const [hasUnread, setHasUnread] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const notificationsEnabled = areNotificationsEnabled()
 
   const isPersonal = !!profile
@@ -27,6 +28,7 @@ export function useNotificationBadge() {
   useEffect(() => {
     if (!notifications || notifications.length === 0) {
       setHasUnread(false)
+      setUnreadCount(0)
       return
     }
 
@@ -35,6 +37,17 @@ export function useNotificationBadge() {
     
     const isNew = latestId !== lastSeenId
     setHasUnread(isNew)
+
+    // Count unread: all notifications newer than the last seen one
+    if (isNew && lastSeenId) {
+      const lastSeenIdx = notifications.findIndex((n) => n.id === lastSeenId)
+      setUnreadCount(lastSeenIdx >= 0 ? lastSeenIdx : notifications.length)
+    } else if (isNew) {
+      setUnreadCount(notifications.length)
+    } else {
+      setUnreadCount(0)
+    }
+
     updateFaviconBadge(isNew)
   }, [notifications])
 
@@ -43,11 +56,12 @@ export function useNotificationBadge() {
     if (notifications && notifications.length > 0) {
       localStorage.setItem(STORAGE_KEY, notifications[0].id)
       setHasUnread(false)
+      setUnreadCount(0)
       updateFaviconBadge(false)
     }
   }
 
-  return { hasUnread, markAsRead }
+  return { hasUnread, unreadCount, markAsRead }
 }
 
 function updateFaviconBadge(hasBadge: boolean) {

@@ -6,7 +6,6 @@ import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { AppNavbar, AppFooter } from '@/components/ui/app-bar'
 import { AuditShortcutModal } from './audit-shortcut-modal'
-import { NotificationModal } from './notification-modal'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
 import { useAuthSession, useLogoutSession } from '@/hooks/use-auth-session'
 import { useCurrentProfile } from '@/hooks/use-profile'
@@ -109,12 +108,11 @@ function getRoleMenuItems(role: AppRole): RoleMenuItem[] {
 export function PublicNavbar({ activePath, minimal = false }: { activePath: string; minimal?: boolean }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [auditOpen, setAuditOpen] = useState(false)
-  const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
   const [navbarAddressWidth, setNavbarAddressWidth] = useState(0)
   const [mobileAddressWidth, setMobileAddressWidth] = useState(0)
-  const { hasUnread } = useNotificationBadge()
+  const { hasUnread, unreadCount } = useNotificationBadge()
   const authSession = useAuthSession()
   const currentProfile = useCurrentProfile()
   const pathname = usePathname()
@@ -241,20 +239,18 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
             >
               <CopyCheck className="h-4 w-4" />
             </button>
-            <button
-              type="button"
-              onClick={() => setNotifOpen(true)}
+            <Link
+              href={profile ? (profile.role === 'voter' ? '/pemilih/notifikasi' : `/${profile.role === 'super_admin' ? 'superadmin' : profile.role}/notifikasi`) : '#'}
               className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
               aria-label="Notifikasi"
             >
               <Bell className="h-4 w-4" />
-              {hasUnread && (
-                <span className="absolute right-2 top-2 flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
-            </button>
+            </Link>
             {authLoading ? (
               <div className="hidden h-10 w-[220px] animate-pulse rounded-xl border border-slate-200 bg-slate-100 md:block" />
             ) : profileReady ? (
@@ -417,12 +413,6 @@ export function PublicNavbar({ activePath, minimal = false }: { activePath: stri
       </div>
 
       <AuditShortcutModal open={auditOpen} onClose={() => setAuditOpen(false)} />
-      <NotificationModal
-        open={notifOpen}
-        onClose={() => setNotifOpen(false)}
-        profileId={profile?.id}
-        walletAddress={profile?.walletAddress}
-      />
 
       {/* Mobile navigation menu */}
       {!minimal && mobileOpen ? (
