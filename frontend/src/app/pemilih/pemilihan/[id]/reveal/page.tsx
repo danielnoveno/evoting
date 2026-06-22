@@ -56,7 +56,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         tone: 'success',
       })
       actions.revealVote(params.id, {
-        txHash: hash,
+        txHash: receipt.transactionHash,
         blockNumber: Number(receipt.blockNumber),
         gasUsed: Number(receipt.gasUsed),
         createdAt: new Date().toISOString(),

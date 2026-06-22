@@ -100,7 +100,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         tone: 'success',
       })
       actions.commitVote(params.id, savedCommitment?.commitment, {
-        txHash: hash,
+        txHash: receipt.transactionHash,
         blockNumber: Number(receipt.blockNumber),
         gasUsed: Number(receipt.gasUsed),
         createdAt: new Date().toISOString(),
@@ -164,7 +164,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     ?? null
 
   const commitProof = election.commitProof || (isConfirmed && hash && receipt ? {
-    txHash: hash,
+    txHash: receipt.transactionHash,
     blockNumber: Number(receipt.blockNumber),
     gasUsed: Number(receipt.gasUsed),
     createdAt: new Date().toISOString(),

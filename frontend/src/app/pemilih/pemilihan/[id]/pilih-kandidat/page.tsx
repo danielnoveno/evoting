@@ -138,7 +138,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     if (!isConfirmed || !hash || !receipt || !pendingCommit) return
 
     const proof = {
-      txHash: hash,
+      txHash: receipt.transactionHash,
       blockNumber: Number(receipt.blockNumber),
       gasUsed: Number(receipt.gasUsed),
       createdAt: new Date().toISOString(),
@@ -359,7 +359,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const formatTimeVal = (val: number) => String(val).padStart(2, '0')
   const committedCandidate = election.candidates.find((candidate) => candidate.id === (pendingCommit?.candidateUuid ?? election.committedCandidateId ?? election.selectedCandidateId))
   const commitProof = election.commitProof || (isConfirmed && hash && receipt ? {
-    txHash: hash,
+    txHash: receipt.transactionHash,
     blockNumber: Number(receipt.blockNumber),
     gasUsed: Number(receipt.gasUsed),
     createdAt: new Date().toISOString(),

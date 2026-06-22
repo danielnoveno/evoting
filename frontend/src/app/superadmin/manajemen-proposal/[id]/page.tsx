@@ -245,14 +245,14 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       updateStatus.mutate({ 
         id: params.id, 
         status: 'deployed', 
-        txHash: hash,
+        txHash: receipt.transactionHash,
         onchainProposalId: deployment.proposalId,
         deployment: {
           deployedSpaceId: deployment.spaceId,
           deployedSpaceAddress: deployment.spaceAddress,
           ownerWallet,
           registryAddress: REGISTRY_ADDRESS,
-          deploymentTxHash: hash,
+          deploymentTxHash: receipt.transactionHash,
           blockNumber: receipt.blockNumber ? Number(receipt.blockNumber) : null,
           actorWallet: userAddress ?? null,
         },
@@ -268,7 +268,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               try {
                 await updateWhitelistSyncStatus({
                   proposalDraftId: params.id,
-                  txHash: hash,
+                  txHash: receipt.transactionHash,
                   walletAddresses: initialWhitelistWallets,
                 })
               } catch (error) {
