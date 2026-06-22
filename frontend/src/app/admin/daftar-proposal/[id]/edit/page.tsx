@@ -1,11 +1,14 @@
 'use client'
 
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { ProposalForm, ProposalFormData } from '@/components/admin/proposal-form'
 import { useProposalDraft } from '@/hooks/use-proposal-draft'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
+
+const READ_ONLY_STATUSES = ['approved', 'deployed', 'archived'] as const
 
 function toDatetimeLocal(value: string | null, fallback: string) {
   if (!value) return fallback
@@ -37,6 +40,31 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
   }
 
   const liveProposal = proposalQuery.data
+
+  // Guard: deployed/approved/archived proposals cannot be edited
+  if (liveProposal && READ_ONLY_STATUSES.includes(liveProposal.status as typeof READ_ONLY_STATUSES[number])) {
+    return (
+      <AdminShell>
+        <div className="flex min-h-[400px] flex-col items-center justify-center text-center">
+          <div className="rounded-[28px] border border-slate-200 bg-white p-10 shadow-sm">
+            <h1 className="text-[24px] font-semibold text-slate-900">Proposal Tidak Bisa Diedit</h1>
+            <p className="mt-3 max-w-md text-[14px] leading-7 text-slate-500">
+              Proposal ini sudah {liveProposal.status === 'deployed' ? 'dideploy' : liveProposal.status === 'approved' ? 'disetujui' : 'dibatalkan'} dan tidak dapat diubah lagi. 
+              {liveProposal.status === 'deployed' ? ' Pemilihan yang sudah aktif di blockchain harus tetap konsisten.' : ''}
+            </p>
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <Link href={`/admin/daftar-proposal/${params.id}`} className="inline-flex h-11 items-center justify-center rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
+                Lihat Detail
+              </Link>
+              <Link href="/admin/daftar-proposal" className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-700 hover:bg-slate-200">
+                Kembali
+              </Link>
+            </div>
+          </div>
+        </div>
+      </AdminShell>
+    )
+  }
 
   const initialData: Partial<ProposalFormData> = {
     title: liveProposal?.title ?? 'Proposal',

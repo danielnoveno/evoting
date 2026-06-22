@@ -209,13 +209,15 @@ export default function AdminProposalPage() {
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center justify-center gap-3">
-                        <Link 
-                          href={`/admin/daftar-proposal/${row.id}/edit`} 
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-slate-400 hover:text-slate-900 transition-colors p-2 rounded-lg hover:bg-slate-100"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Link>
+                        {row.status === 'DRAF' || row.status === 'PERLU REVISI' ? (
+                          <Link 
+                            href={`/admin/daftar-proposal/${row.id}/edit`} 
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-slate-400 hover:text-slate-900 transition-colors p-2 rounded-lg hover:bg-slate-100"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                        ) : null}
                         <Link 
                           href={`/admin/daftar-proposal/${row.id}`} 
                           onClick={(e) => e.stopPropagation()}

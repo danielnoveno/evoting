@@ -276,6 +276,23 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
   const profile = await getCurrentProfile()
   if (!profile) throw new RepositoryError('Sesi admin belum aktif untuk menyimpan proposal.')
 
+  // Guard: prevent editing proposals that are already deployed, approved, or archived
+  if (input.id) {
+    const { data: existing } = await client
+      .schema('app')
+      .from('proposal_drafts')
+      .select('status')
+      .eq('id', input.id)
+      .single()
+
+    if (existing && ['approved', 'deployed', 'archived'].includes(existing.status)) {
+      const statusLabel = existing.status === 'deployed' ? 'dideploy'
+        : existing.status === 'approved' ? 'disetujui'
+        : 'dibatalkan'
+      throw new RepositoryError(`Proposal sudah ${statusLabel} dan tidak dapat diubah lagi.`)
+    }
+  }
+
   const basePayload = {
     title: input.title,
     organization_name: input.organizationName ?? null,

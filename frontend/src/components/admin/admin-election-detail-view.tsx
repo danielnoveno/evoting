@@ -74,7 +74,6 @@ function getWalletConnectionErrorMessage(error: unknown) {
 }
 
 export function AdminElectionDetailView({ election, activeTab }: { election: AdminElectionRecord; activeTab: AdminElectionDetailTabId }) {
-  const canAddCandidate = election.status === 'aktif'
   const { showToast } = useToast()
   const { isConnected } = useAccount()
   const { connect, connectors, isPending: isConnectPending } = useConnect()
@@ -140,6 +139,12 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     ? Number(onChainPhase)
     : null
   const isRegistrationPhaseOnChain = onChainPhaseNumber === 0
+  // Candidates are editable only during registration phase (phase 0).
+  // Once voting starts (phase > 0), candidates are locked to maintain consistency.
+  const canAddCandidate = election.status === 'aktif' && isRegistrationPhaseOnChain
+  // Whitelist can be modified only during registration phase (phase 0).
+  // Once voting starts, changing the voter list would be inconsistent.
+  const canManageWhitelist = election.status === 'aktif' && isRegistrationPhaseOnChain
   const phaseLabels = ['Persiapan', 'Pencoblosan', 'Konfirmasi Suara', 'Selesai'] as const
   const phaseDescriptions = [
     'Tahap internal sebelum pemilih mencoblos. Gunakan tahap ini untuk memastikan daftar pemilih sudah tersinkron ke kontrak.',
@@ -642,9 +647,11 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                   <CirclePlus className="h-8 w-8" />
                 </div>
-                <h2 className="mt-8 text-[28px] font-semibold text-slate-500">Tambah Kandidat Dinonaktifkan</h2>
-                <p className="mt-3 max-w-[260px] text-[15px] leading-8 text-slate-400">
-                  Kandidat tidak dapat ditambahkan lagi karena pemilihan ini sudah selesai.
+                <h2 className="mt-8 text-[28px] font-semibold text-slate-500">Kandidat Dikunci</h2>
+                <p className="mt-3 max-w-[280px] text-[15px] leading-8 text-slate-400">
+                  {election.status !== 'aktif'
+                    ? 'Pemilihan ini sudah selesai. Kandidat tidak dapat diubah.'
+                    : 'Pencoblosan sudah dimulai di blockchain. Kandidat tidak dapat diubah untuk menjaga konsistensi data on-chain.'}
                 </p>
               </div>
             </div>
@@ -694,6 +701,12 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
   const renderWhitelistTab = () => (
     <section className="mt-8 space-y-8">
+      {!canManageWhitelist && isAddressValid ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-[13px] leading-7 text-amber-800">
+          <p className="font-semibold">Whitelist dikunci</p>
+          <p className="mt-1">Pencoblosan sudah dimulai di blockchain. Daftar pemilih tidak dapat diubah untuk menjaga konsistensi data on-chain.</p>
+        </div>
+      ) : null}
       <div className="grid gap-6 xl:grid-cols-3">
         <article className="rounded-[28px] border border-slate-200 bg-white p-6 xl:col-span-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total Pemilih</p>
@@ -742,7 +755,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
               <button
                 type="button"
                 onClick={() => setSyncOnchainConfirmOpen(true)}
-                disabled={isWritePending || isConfirming || isSyncing || updateWhitelistSyncStatus.isPending || unsyncedValidAddresses.length === 0}
+                disabled={!canManageWhitelist || isWritePending || isConfirming || isSyncing || updateWhitelistSyncStatus.isPending || unsyncedValidAddresses.length === 0}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 text-[13px] font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {(isWritePending || isConfirming || isSyncing) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
@@ -812,7 +825,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                       <button
                         type="button"
                         onClick={() => handleDeleteWhitelistEntry(record.id, record.wallet, record.isFallback)}
-                        disabled={deleteWhitelistEntry.isPending}
+                        disabled={!canManageWhitelist || deleteWhitelistEntry.isPending}
                         className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-50"
                         aria-label={`Hapus pemilih ${record.wallet}`}
                       >
@@ -845,17 +858,17 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
               <p className="mt-3 max-w-[300px] text-[15px] leading-7 text-slate-500">Unggah berkas atau pilih dari data master voter untuk mendaftarkan identitas digital pemilih.</p>
             </div>
             <div className="flex flex-col gap-2">
-              <button type="button" onClick={() => setMasterVoterModalOpen(true)} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 text-[14px] font-medium text-white hover:bg-slate-800">
+              <button type="button" onClick={() => setMasterVoterModalOpen(true)} disabled={!canManageWhitelist} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 text-[14px] font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
                 <Users className="h-4 w-4" />
                 Pilih dari Master Voter
               </button>
-              <button type="button" onClick={() => setManualWhitelistOpen(true)} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
+              <button type="button" onClick={() => setManualWhitelistOpen(true)} disabled={!canManageWhitelist} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50">
                 <CirclePlus className="h-4 w-4" />
                 Tambah Manual
               </button>
             </div>
           </div>
-          <button type="button" onClick={() => setUploadModalOpen(true)} className="mt-8 block w-full rounded-[28px] border border-dashed border-slate-300 p-8 text-center hover:border-slate-400">
+          <button type="button" onClick={() => setUploadModalOpen(true)} disabled={!canManageWhitelist} className="mt-8 block w-full rounded-[28px] border border-dashed border-slate-300 p-8 text-center hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-700">
               <Upload className="h-7 w-7" />
             </div>
