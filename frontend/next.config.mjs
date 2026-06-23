@@ -12,7 +12,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "font-src 'self' data: *.vercel.com *.gstatic.com vercel.live k2mkucxia43oc7fa.public.blob.vercel-storage.com;",
+            value: "font-src 'self' data: *.gstatic.com *.netlify.app;",
           },
         ],
       },
