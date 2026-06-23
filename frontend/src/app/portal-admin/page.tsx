@@ -325,7 +325,7 @@ function PortalAdminContent() {
                       <ShieldCheck className="h-4 w-4 text-emerald-400" />
                     </div>
                     <div>
-                      <h3 className="text-[13px] font-semibold">Portal Superadmin</h3>
+                      <h3 className="text-[13px] font-semibold">Update Portal Superadmin</h3>
                       <p className="text-[11px] text-slate-400">Verifikasi SSO dan wallet</p>
                     </div>
                   </div>
