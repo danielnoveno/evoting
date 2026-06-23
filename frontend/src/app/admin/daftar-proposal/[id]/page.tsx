@@ -1,8 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { notFound, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Pencil } from 'lucide-react'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { ProposalForm, ProposalFormData } from '@/components/admin/proposal-form'
 import { useProposalActivities, useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
@@ -145,14 +146,23 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
         pageDescription="Tinjau parameter proposal. Deploy blockchain dilakukan oleh superadmin saat proposal disetujui."
         extraActions={
           (liveProposal?.status === 'draft' || liveProposal?.status === 'revision_requested') && (
-            <button
-              onClick={handleSubmitForReview}
-              disabled={updateStatus.isPending}
-              className="inline-flex h-12 items-center gap-2 rounded-2xl bg-blue-600 px-6 text-white hover:bg-blue-700"
-            >
-              <Send className="h-4 w-4" />
-              Ajukan ke Superadmin
-            </button>
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/admin/daftar-proposal/${params.id}/edit`}
+                className="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 text-[14px] font-medium text-slate-700 hover:bg-slate-50"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Link>
+              <button
+                onClick={handleSubmitForReview}
+                disabled={updateStatus.isPending}
+                className="inline-flex h-12 items-center gap-2 rounded-2xl bg-blue-600 px-6 text-white hover:bg-blue-700"
+              >
+                <Send className="h-4 w-4" />
+                Ajukan ke Superadmin
+              </button>
+            </div>
           )
         }
       />
