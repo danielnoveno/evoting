@@ -121,7 +121,7 @@ export function ProposalForm({
     whitelistWallets: initialData?.whitelistWallets || '',
   })
   const draftKey = proposalId ? `proposal-edit-${proposalId}` : 'proposal-create'
-  const { clearDraft } = useFormDraft(draftKey, formData, setFormData)
+  const { clearDraft } = useFormDraft(draftKey, formData, setFormData, !proposalId)
   const [errors, setErrors] = useState<ProposalFormErrors>({})
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([])
   const isSubmitting = saveProposalDraft.isPending || isUploadingDocument || isUploadingCandidatePhotos || isUploadingBannerImage
