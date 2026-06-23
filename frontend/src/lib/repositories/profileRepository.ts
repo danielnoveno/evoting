@@ -5,6 +5,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import type { Database } from '@/lib/supabase/database.types'
 import type { AdminDirectoryRecord, AdminRegistryInput, AdminRegistryRecord, AdminSpaceAccessRecord, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
+import { clearLocalAuthSession, isInvalidStoredSession, sameWalletAddress } from './helpers'
 
 type ProfileRow = Database['app']['Tables']['app_profiles']['Row']
 type AdminRegistryRow = Database['app']['Tables']['admin_registry']['Row']
@@ -29,35 +30,10 @@ function getSupabaseErrorLike(error: unknown): SupabaseErrorLike {
   }
 }
 
-function isInvalidStoredSession(error: unknown): boolean {
-  const { status, message } = getSupabaseErrorLike(error)
-  const normalizedMessage = message?.toLowerCase() ?? ''
-
-  return status === 401
-    || status === 403
-    || normalizedMessage.includes('jwt')
-    || normalizedMessage.includes('session')
-    || normalizedMessage.includes('expired')
-    || normalizedMessage.includes('invalid')
-    || normalizedMessage.includes('not found')
-}
-
-async function clearLocalAuthSession() {
-  const client = getSupabaseBrowserClient()
-  if (!client) return
-
-  await client.auth.signOut({ scope: 'local' }).catch(() => undefined)
-}
-
 function isUniqueConstraintError(error: unknown, fieldName: string): boolean {
   const { code, message, details } = getSupabaseErrorLike(error)
   const joined = `${message ?? ''} ${details ?? ''}`.toLowerCase()
   return code === '23505' && joined.includes(fieldName.toLowerCase())
-}
-
-function sameWalletAddress(left: string | null | undefined, right: string | null | undefined): boolean {
-  if (!left || !right) return false
-  return left.trim().toLowerCase() === right.trim().toLowerCase()
 }
 
 function normalizeEmail(email: string): string {

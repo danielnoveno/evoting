@@ -9,7 +9,8 @@ import { ScrollReveal } from '@/components/public/parallax'
 import { useCandidateAssetUpload } from '@/hooks/use-candidate-asset-upload'
 import { useFormDraft } from '@/hooks/use-form-draft'
 import { useMasterVoters, useMasterVoterProdiOptions } from '@/hooks/use-master-voters'
-import { useSaveProposalDraft } from '@/hooks/use-save-proposal-draft'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { saveProposalDraft as saveProposalDraftFn } from '@/lib/repositories/proposalRepository'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { uploadProposalDocument } from '@/lib/repositories/proposalDocumentRepository'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -83,7 +84,17 @@ export function ProposalForm({
 }: ProposalFormProps) {
   const router = useRouter()
   const { showToast } = useToast()
-  const saveProposalDraft = useSaveProposalDraft()
+  const queryClient = useQueryClient()
+  const saveProposalDraft = useMutation({
+    mutationFn: saveProposalDraftFn,
+    onSuccess: (proposal) => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'proposal-drafts'] })
+      void queryClient.invalidateQueries({ queryKey: ['superadmin', 'all-proposals'] })
+      void queryClient.invalidateQueries({ queryKey: ['proposal-draft', proposal.id] })
+      void queryClient.invalidateQueries({ queryKey: ['proposal-candidates', proposal.id] })
+      void queryClient.invalidateQueries({ queryKey: ['proposal-whitelist', proposal.id] })
+    },
+  })
   const uploadCandidateAsset = useCandidateAssetUpload()
   const [supportingDocument, setSupportingDocument] = useState<File | null>(null)
   const [bannerImageFile, setBannerImageFile] = useState<File | null>(null)

@@ -2,15 +2,12 @@ import { createHash, randomBytes } from 'crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import { sendAdminActivationEmail } from '@/lib/email/send'
+import { isRecord } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status })
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }
 
 function normalizeEmail(email: string) {

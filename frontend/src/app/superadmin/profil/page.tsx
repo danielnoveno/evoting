@@ -7,8 +7,7 @@ import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton, Supera
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { useToast } from '@/components/ui/toast-provider'
 import { ModalShell } from '@/components/ui/modal-shell'
-import { superadminPlatformData } from '@/lib/superadmin-data'
-import { useSuperadminPlatformStore } from '@/lib/superadmin-store'
+import { superadminPlatformData, type SuperadminPlatformSession } from '@/lib/superadmin-data'
 import { useCurrentProfile, useSaveCurrentProfile } from '@/hooks/use-profile'
 import { getAdminInitials } from '@/lib/superadmin-admin-mapper'
 import { useProfileImageUpload } from '@/hooks/use-profile-upload'
@@ -22,7 +21,17 @@ import { isAddress, type Address } from 'viem'
 export default function SuperadminProfilePage() {
   const { showToast } = useToast()
   const { address: connectedWallet, isConnected, isReconnecting, chainId } = useAccount()
-  const { platform, setPlatform } = useSuperadminPlatformStore()
+  const [platform, setPlatform] = useState<{
+    platformName: string
+    defaultLanguage: string
+    sessions: SuperadminPlatformSession[]
+    twoFactorEnabled: boolean
+  }>({
+    platformName: superadminPlatformData.system.platformName,
+    defaultLanguage: superadminPlatformData.system.defaultLanguage,
+    sessions: [],
+    twoFactorEnabled: false,
+  })
   const { data: profile, isLoading: isProfileLoading } = useCurrentProfile()
   const profileWalletAddress = profile?.walletAddress?.trim()
   const savedProfileWallet = profileWalletAddress && isAddress(profileWalletAddress)

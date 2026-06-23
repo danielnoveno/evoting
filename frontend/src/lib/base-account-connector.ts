@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { ChainNotConfiguredError, createConnector } from '@wagmi/core'
 import { getAddress, numberToHex, SwitchChainError, UserRejectedRequestError } from 'viem'
+import { asStringArray } from './repositories/helpers'
 
 type BaseAccountParameters = {
   appName: string
@@ -14,10 +15,6 @@ type WalletConnectResponse = {
     capabilities?: Record<string, unknown>
   }>
   chainIds: string[]
-}
-
-function asStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 }
 
 function getErrorMessage(error: unknown) {

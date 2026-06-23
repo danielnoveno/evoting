@@ -127,8 +127,6 @@ export type AdminElectionRecord = {
   }
 }
 
-export const adminElectionData: AdminElectionRecord[] = []
-
 export const adminElectionFilters: Array<{ key: 'semua' | AdminElectionStatus; label: string }> = [
   { key: 'semua', label: 'Semua' },
   { key: 'aktif', label: 'Aktif' },
@@ -142,14 +140,3 @@ export const adminElectionDetailTabs = [
 ] as const
 
 export type AdminElectionDetailTabId = (typeof adminElectionDetailTabs)[number]['id']
-
-export function getAdminElectionById(_id: string): AdminElectionRecord | null {
-  return null
-}
-
-export function getAdminElectionCandidateById(
-  _electionId: string,
-  _candidateId: string,
-): AdminElectionRecord['detail']['candidates'][number] | null {
-  return null
-}

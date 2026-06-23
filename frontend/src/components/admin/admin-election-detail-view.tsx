@@ -3,6 +3,7 @@
 import { ArrowLeft, CalendarDays, CirclePlus, Download, FileText, Link2, ListChecks, Loader2, Pencil, RefreshCw, Share2, ShieldCheck, Trash2, Upload, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ModalShell } from '@/components/ui/modal-shell'
@@ -10,14 +11,13 @@ import { useToast } from '@/components/ui/toast-provider'
 import { adminElectionDetailTabs, AdminElectionDetailTabId, AdminElectionRecord } from '@/lib/admin-election-data'
 import { ScrollReveal } from '@/components/public/parallax'
 import { useCreateWhitelistEntriesBulk, useCreateWhitelistEntry, useDeleteWhitelistEntry, useUpdateWhitelistSyncStatus, useWhitelistEntries } from '@/hooks/use-whitelist-status'
-import { useWhitelistImportJobs } from '@/hooks/use-whitelist-import-jobs'
+import { listWhitelistImportJobs } from '@/lib/repositories/whitelistRepository'
 import { useWhitelistImportSignedUrl } from '@/hooks/use-whitelist-import-file'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { countInvalidWhitelistCsvRows, parseWhitelistCsv } from '@/lib/whitelist-csv'
 import { useProposalCandidates } from '@/hooks/use-proposal-relations'
 import { useElectionContract } from '@/hooks/use-election-contract'
-import { useElectionResults } from '@/hooks/use-election-results'
-import { useElectionAuditLogs } from '@/hooks/use-election-audit-logs'
+import { getElectionResultsFromIndexer, listPonderAuditLogs } from '@/lib/repositories/electionRepository'
 import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { PilihDariMasterVoterModal } from '@/components/admin/pilih-dari-master-voter-modal'
@@ -95,8 +95,20 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   } = useElectionContract(isAddressValid ? deployedAddress : undefined)
 
   // Indexer Hooks
-  const resultsQuery = useElectionResults(isAddressValid ? deployedAddress : undefined)
-  const auditLogsQuery = useElectionAuditLogs(isAddressValid ? deployedAddress : undefined)
+  const resultsQuery = useQuery({
+    queryKey: ['election', 'results', isAddressValid ? deployedAddress : 'unknown'],
+    queryFn: () => getElectionResultsFromIndexer(deployedAddress!),
+    enabled: Boolean(isAddressValid && deployedAddress && deployedAddress.startsWith('0x')),
+    refetchInterval: 1000 * 10,
+    retry: false,
+  })
+  const auditLogsQuery = useQuery({
+    queryKey: ['election', 'audit-logs', isAddressValid ? deployedAddress : 'unknown', 6],
+    queryFn: () => listPonderAuditLogs(deployedAddress!, 6),
+    enabled: Boolean(isAddressValid && deployedAddress && deployedAddress.startsWith('0x')),
+    refetchInterval: 1000 * 15,
+    retry: false,
+  })
 
   const [candidates, setCandidates] = useState(election.detail.candidates)
   const [candidateToDelete, setCandidateToDelete] = useState<{ id: string; name: string } | null>(null)
@@ -118,7 +130,12 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const deleteWhitelistEntry = useDeleteWhitelistEntry(election.id)
   const createWhitelistEntriesBulk = useCreateWhitelistEntriesBulk(election.id)
   const updateWhitelistSyncStatus = useUpdateWhitelistSyncStatus(election.id)
-  const whitelistImportJobsQuery = useWhitelistImportJobs(election.id)
+  const whitelistImportJobsQuery = useQuery({
+    queryKey: ['whitelist-import-jobs', election.id ?? 'unknown'],
+    queryFn: () => listWhitelistImportJobs(election.id ?? ''),
+    enabled: Boolean(election.id),
+    retry: false,
+  })
   const whitelistImportSignedUrl = useWhitelistImportSignedUrl()
   const candidatesQuery = useProposalCandidates(election.id)
 

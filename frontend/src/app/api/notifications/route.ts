@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import { requireProfile } from '@/app/api/_lib/auth'
+import { isRecord } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
 
@@ -26,10 +27,6 @@ interface NotifyBatchPayload {
 }
 
 type RequestBody = NotifyAllSuperadminsPayload | NotifyTargetPayload | NotifyBatchPayload
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 
 export async function POST(request: NextRequest) {
   const auth = await requireProfile(request, ['admin', 'super_admin'])

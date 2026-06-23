@@ -11,10 +11,7 @@ import { clearVoteCommitment, loadVoteCommitment } from '@/lib/vote-commitment-s
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
 import { useAccount } from 'wagmi'
-
-function sameWalletAddress(left: string | null | undefined, right: string | null | undefined) {
-  return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase())
-}
+import { sameWalletAddress } from '@/lib/repositories/helpers'
 
 export default function VoterRevealPage({ params }: { params: { id: string } }) {
   const { store, loading: storeLoading, actions } = useVoterStore()

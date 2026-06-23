@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { ensureCanManageProposal, jsonError, requireProfile } from '@/app/api/_lib/auth'
 import { logAudit, getActorInfo } from '@/lib/audit-logger'
 import type { Database } from '@/lib/supabase/database.types'
+import { isRecord } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
 
@@ -9,10 +10,6 @@ type ProposalStatus = Database['app']['Tables']['proposal_drafts']['Row']['statu
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 
 const VALID_STATUSES: ProposalStatus[] = ['draft', 'submitted', 'revision_requested', 'approved', 'rejected', 'deployed', 'archived']
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 
 function mapProposalRow(row: ProposalRow) {
   return {

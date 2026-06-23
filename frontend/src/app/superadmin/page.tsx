@@ -9,8 +9,8 @@ import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tou
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { superadminDashboardData } from '@/lib/superadmin-data'
-import { useSuperadminAdminsStore, useSuperadminElectionsStore, useSuperadminProposalsStore, useSuperadminRiskAlertsStore } from '@/lib/superadmin-store'
+import { superadminDashboardData, type SuperadminAdminRecord, type SuperadminProposalRecord } from '@/lib/superadmin-data'
+import { useSuperadminElectionsStore, useSuperadminRiskAlertsStore } from '@/lib/superadmin-store'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
 type DashboardMetrics = {
@@ -147,9 +147,9 @@ function formatRelativeTime(timestamp: string): string {
 
 export default function SuperadminDashboardPage() {
   const router = useRouter()
-  const { admins } = useSuperadminAdminsStore()
+  const [admins] = useState<SuperadminAdminRecord[]>([])
   const { elections } = useSuperadminElectionsStore()
-  const { proposals } = useSuperadminProposalsStore()
+  const [proposals] = useState<SuperadminProposalRecord[]>([])
   const { alerts } = useSuperadminRiskAlertsStore()
 
   const dashboardMetrics = useQuery({

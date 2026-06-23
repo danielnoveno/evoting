@@ -15,6 +15,7 @@ import {
   SuperadminToolbarButton,
 } from '@/components/superadmin/superadmin-shell'
 import { useMasterVoterDetail, useUpdateMasterVoter, type MasterVoter } from '@/hooks/use-master-voters-admin'
+import { getInitials } from '@/lib/repositories/helpers'
 
 const PRODI_OPTIONS = [
   'Informatika',
@@ -38,16 +39,6 @@ type FormState = {
   fakultas: string
   angkatan: string
   status: MasterVoter['status']
-}
-
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase() || 'VT'
 }
 
 function getStatusLabel(status: MasterVoter['status']) {

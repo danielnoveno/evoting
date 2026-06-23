@@ -47,6 +47,7 @@ import { profileQueryKeys, useCurrentProfile, useSuperadminAdminDirectory } from
 import { useSuperadminOnchainStatus } from '@/hooks/use-superadmin-onchain-status'
 import { useRegistryContract } from '@/hooks/use-registry-contract'
 import type { Address } from 'viem'
+import { getInitials } from '@/lib/repositories/helpers'
 
 type TabKey = 'daftar' | 'tambah'
 
@@ -59,16 +60,6 @@ const initialFormData = {
 }
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20] as const
-
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase() || 'SA'
-}
 
 function SuperadminManagementContent() {
   const router = useRouter()

@@ -12,10 +12,7 @@ import { loadVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
-
-function sameWalletAddress(left: string | null | undefined, right: string | null | undefined) {
-  return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase())
-}
+import { sameWalletAddress } from '@/lib/repositories/helpers'
 
 function DetailRow({
   icon: Icon,

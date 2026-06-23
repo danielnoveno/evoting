@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { ScrollReveal } from '@/components/public/parallax'
-import { useWhitelistImportJobDetail } from '@/hooks/use-whitelist-import-job-detail'
-import { useWhitelistImportJobEntries } from '@/hooks/use-whitelist-import-job-entries'
+import { useQuery } from '@tanstack/react-query'
+import { getWhitelistImportJob, listWhitelistEntriesByJobId } from '@/lib/repositories/whitelistRepository'
 import { useWhitelistImportSignedUrl } from '@/hooks/use-whitelist-import-file'
 import { useToast } from '@/components/ui/toast-provider'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
@@ -33,8 +33,18 @@ export function AdminImportJobDetailView({
 }) {
   const { showToast } = useToast()
   const [search, setSearch] = useState('')
-  const jobQuery = useWhitelistImportJobDetail(jobId)
-  const entriesQuery = useWhitelistImportJobEntries(jobId)
+  const jobQuery = useQuery({
+    queryKey: ['whitelist-import-job-detail', jobId ?? 'unknown'],
+    queryFn: () => getWhitelistImportJob(jobId ?? ''),
+    enabled: Boolean(jobId),
+    retry: false,
+  })
+  const entriesQuery = useQuery({
+    queryKey: ['whitelist-import-job-entries', jobId ?? 'unknown'],
+    queryFn: () => listWhitelistEntriesByJobId(jobId ?? ''),
+    enabled: Boolean(jobId),
+    retry: false,
+  })
   const signedUrlMutation = useWhitelistImportSignedUrl()
 
   const handleOpenImportFile = () => {

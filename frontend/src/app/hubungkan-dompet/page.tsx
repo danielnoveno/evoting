@@ -29,11 +29,7 @@ import Link from 'next/link'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { WalletAddress } from '@/components/ui/wallet-address'
 import { AuthSuccessRedirectModal } from '@/components/auth/auth-success-redirect-modal'
-
-function sameWalletAddress(left: string | null | undefined, right: string | null | undefined): boolean {
-  if (!left || !right) return false
-  return left.trim().toLowerCase() === right.trim().toLowerCase()
-}
+import { sameWalletAddress } from '@/lib/repositories/helpers'
 
 function resolveRedirectTarget(redirectParam: string | null, activationContext: 'admin' | 'voter') {
   if (redirectParam?.startsWith('/auth/aktivasi-admin')) return '/admin'

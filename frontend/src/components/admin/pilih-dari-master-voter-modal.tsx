@@ -7,6 +7,7 @@ import { useMasterVoters, useMasterVoterProdiOptions, useAddMasterVoterToWhiteli
 import { useToast } from '@/components/ui/toast-provider'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import type { MasterVoterRecord } from '@/lib/repositories/types'
+import { getInitials } from '@/lib/repositories/helpers'
 
 interface PilihDariMasterVoterModalProps {
   open: boolean
@@ -112,10 +113,6 @@ export function PilihDariMasterVoterModal({ open, onClose, proposalDraftId, exis
     setSearchTerm('')
     setFilterProdi('')
     onClose()
-  }
-
-  function getInitials(name: string) {
-    return name.split(' ').filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || 'VT'
   }
 
   return (

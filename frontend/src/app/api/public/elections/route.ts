@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
-import type { Database, Json } from '@/lib/supabase/database.types'
+import type { Database } from '@/lib/supabase/database.types'
+import { asStringArray, formatDateTimeLabel } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
 
@@ -10,18 +11,6 @@ type WhitelistRow = Database['app']['Tables']['proposal_whitelist_entries']['Row
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status })
-}
-
-function asStringArray(value: Json): string[] {
-  if (!Array.isArray(value)) return []
-  return value.filter((item): item is string => typeof item === 'string')
-}
-
-function formatDateTimeLabel(value: string | null): string {
-  if (!value) return 'Jadwal belum diatur'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Jadwal belum diatur'
-  return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
 }
 
 function resolvePhase(row: ProposalRow) {

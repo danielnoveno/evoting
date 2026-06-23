@@ -4,16 +4,13 @@ import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia } from 'viem/chains'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import ElectionSpaceArtifact from '@/lib/abi/ElectionSpace.json'
+import { isRecord } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status })
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function getRpcUrl() {

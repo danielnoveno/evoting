@@ -2,6 +2,7 @@
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { RepositoryError } from '@/lib/repositories/errors'
+import { isRecord } from '@/lib/repositories/helpers'
 
 export type AdminInvitePreview = {
   email: string
@@ -38,10 +39,6 @@ export type ActivateAdminInviteResult = {
   email: string
   displayName: string | null
   role: 'admin' | 'super_admin'
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }
 
 async function readApiError(response: Response, fallback: string): Promise<RepositoryError> {

@@ -5,8 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { areNotificationsEnabled } from '@/lib/supabase/config'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
-
-const READ_STORAGE_KEY = 'votein_notif_read_ids'
+import { getReadNotificationIds } from '@/lib/notification-store'
 
 interface NotificationItem {
   id: string
@@ -15,17 +14,6 @@ interface NotificationItem {
   type: 'info' | 'success' | 'warning'
   link?: string | null
   createdAt: string
-}
-
-function getReadIds(): Set<string> {
-  if (typeof window === 'undefined') return new Set()
-  try {
-    const raw = localStorage.getItem(READ_STORAGE_KEY)
-    if (!raw) return new Set()
-    return new Set(JSON.parse(raw) as string[])
-  } catch {
-    return new Set()
-  }
 }
 
 export function useNotificationBadge() {
@@ -38,7 +26,6 @@ export function useNotificationBadge() {
   const walletAddress = profile?.walletAddress
 
   const { data: notifications } = useQuery({
-    // Include profile ID in query key so refetch happens on login/logout
     queryKey: isPersonal
       ? ['user-notifications-page', profileId, walletAddress]
       : ['public-notifications-page'],
@@ -59,7 +46,6 @@ export function useNotificationBadge() {
         return (payload.notifications ?? []) as NotificationItem[]
       }
     },
-    // Only enable when: notifications enabled AND (profile loaded OR public visitor)
     enabled: notificationsEnabled && (isPersonal ? !!profileId : !profileLoading),
     staleTime: 0,
     retry: false,
@@ -75,7 +61,7 @@ export function useNotificationBadge() {
       return
     }
 
-    const readIds = getReadIds()
+    const readIds = new Set(getReadNotificationIds())
     const count = notifications.filter((n) => !readIds.has(n.id)).length
     setUnreadCount(count)
     updateFaviconBadge(count > 0)

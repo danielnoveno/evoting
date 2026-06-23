@@ -14,7 +14,8 @@ import {
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { useProposalActivities, useProposalDraft, useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
-import { useProposalDocuments } from '@/hooks/use-proposal-documents'
+import { useQuery } from '@tanstack/react-query'
+import { listProposalDocuments } from '@/lib/repositories/proposalDocumentRepository'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { REGISTRY_ADDRESS, useRegistryContract } from '@/hooks/use-registry-contract'
 import { createProposalDocumentPreviewUrl, createProposalDocumentSignedUrl } from '@/lib/repositories/proposalDocumentRepository'
@@ -72,7 +73,12 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const { connect, connectors, isPending: isConnectPending } = useConnect()
   const { disconnect } = useDisconnect()
   const proposalQuery = useProposalDraft(params.id)
-  const proposalDocumentsQuery = useProposalDocuments(params.id)
+  const proposalDocumentsQuery = useQuery({
+    queryKey: ['proposal-documents', params.id ?? 'unknown'],
+    queryFn: () => listProposalDocuments(params.id ?? ''),
+    enabled: Boolean(params.id),
+    retry: false,
+  })
   const proposalCandidatesQuery = useProposalCandidates(params.id)
   const proposalWhitelistQuery = useProposalWhitelistEntries(params.id)
   const proposalActivitiesQuery = useProposalActivities(params.id)

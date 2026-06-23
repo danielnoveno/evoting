@@ -13,6 +13,7 @@ import type {
   TxAuditLogRecord,
   VoterOnchainProofRecord,
 } from '@/lib/repositories/types'
+import { asStringArray, formatDateTimeLabel, isRecord } from './helpers'
 
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 type CandidateRow = Database['app']['Tables']['proposal_candidates']['Row']
@@ -30,28 +31,6 @@ function isMissingNotificationBackend(error: { code?: string; message?: string; 
 
 function asObject(value: Json): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function asStringArray(value: Json): string[] {
-  if (!Array.isArray(value)) return []
-  return value.filter((item): item is string => typeof item === 'string')
-}
-
-function formatDateTimeLabel(value: string | null): string {
-  if (!value) return 'Jadwal belum diatur'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Jadwal belum diatur'
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
 }
 
 function resolvePhase(row: ProposalRow): PublicElectionPhase {

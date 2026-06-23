@@ -1,12 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { ensureCanManageProposal, jsonError, requireProfile } from '@/app/api/_lib/auth'
 import { logAudit, getActorInfo } from '@/lib/audit-logger'
+import { isRecord } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 
 export async function POST(request: NextRequest) {
   const auth = await requireProfile(request, ['admin', 'super_admin'])

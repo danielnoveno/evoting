@@ -1,9 +1,9 @@
 export type SuperadminStatus = 'Aktif' | 'Menunggu' | 'Nonaktif'
-export type SuperadminProposalStatus = 'Menunggu Review' | 'Disetujui' | 'Perlu Revisi' | 'Berjalan'
+type SuperadminProposalStatus = 'Menunggu Review' | 'Disetujui' | 'Perlu Revisi' | 'Berjalan'
 export type SuperadminElectionState = 'Aktif' | 'Selesai' | 'Ditangguhkan'
 
-export interface SuperadminMetric { id: string; label: string; value: string; delta: string; hint: string; tone?: 'default' | 'warning' }
-export interface SuperadminActivity { id: string; title: string; description: string; time: string; tone: 'success' | 'info' | 'warning' }
+interface SuperadminMetric { id: string; label: string; value: string; delta: string; hint: string; tone?: 'default' | 'warning' }
+interface SuperadminActivity { id: string; title: string; description: string; time: string; tone: 'success' | 'info' | 'warning' }
 export interface SuperadminAdminRecord {
   id: string
   initials: string
@@ -80,10 +80,6 @@ export const superadminDashboardData = {
   blockchainStatus: { title: 'Status Blockchain', description: 'Menunggu data indexer.', hash: 'Belum tersedia', status: 'Menunggu data Supabase' },
 }
 
-export const superadminAdmins: SuperadminAdminRecord[] = []
-export const superadminElections: SuperadminElectionRecord[] = []
-export const superadminProposals: SuperadminProposalRecord[] = []
-
 export const superadminAdminStatuses = ['Semua Status', 'Aktif', 'Menunggu', 'Nonaktif'] as const
 export const superadminAdminTabs = [
   { key: 'daftar', label: 'Daftar Admin' },
@@ -111,9 +107,9 @@ export const superadminPlatformData = {
   sessions: [] satisfies SuperadminPlatformSession[],
 }
 
-export const superadminProposalDetails: Record<string, SuperadminProposalDetail> = {}
+const superadminProposalDetails: Record<string, SuperadminProposalDetail> = {}
 
-export const superadminAuditLogData = {
+const superadminAuditLogData = {
   title: 'Audit Log',
   description: 'Log audit akan tampil setelah ada transaksi atau operasi backend yang tercatat.',
   summary: {

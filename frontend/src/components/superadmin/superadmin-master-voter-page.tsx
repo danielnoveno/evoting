@@ -26,7 +26,8 @@ import {
   type TableSortDirection,
 } from '@/components/ui/data-table'
 import { useToast } from '@/components/ui/toast-provider'
-import { useSendVoterActivationEmails } from '@/hooks/use-voter-activation'
+import { useMutation } from '@tanstack/react-query'
+import { sendVoterActivationEmails } from '@/lib/repositories/voterActivationRepository'
 import {
   useMasterVotersList,
   useAddMasterVoter,
@@ -35,6 +36,7 @@ import {
   useBulkInsertMasterVoters,
   type MasterVoter,
 } from '@/hooks/use-master-voters-admin'
+import { getInitials } from '@/lib/repositories/helpers'
 
 const MASTER_VOTER_CSV_HEADERS = ['nim', 'nama', 'email', 'fakultas'] as const
 const PAGE_SIZE_OPTIONS = [5, 10, 20] as const
@@ -47,16 +49,6 @@ const initialFormData = {
   name: '',
   email: '',
   faculty: '',
-}
-
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase() || 'VT'
 }
 
 const PRODI_OPTIONS = [
@@ -78,7 +70,7 @@ export function SuperadminMasterVoterPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { showToast } = useToast()
-  const sendVoterActivationEmailsMutation = useSendVoterActivationEmails()
+  const sendVoterActivationEmailsMutation = useMutation({ mutationFn: sendVoterActivationEmails })
 
   // Supabase hooks
   const votersQuery = useMasterVotersList()

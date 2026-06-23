@@ -27,6 +27,7 @@ import {
 } from '@/lib/notification-store'
 import { useToast } from '@/components/ui/toast-provider'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
+import { timeAgo } from '@/lib/repositories/helpers'
 
 interface NotificationItem {
   id: string
@@ -36,19 +37,6 @@ interface NotificationItem {
   link?: string | null
   actorLabel?: string | null
   createdAt: string
-}
-
-function timeAgo(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diffMs = now - then
-  const minutes = Math.floor(diffMs / 60000)
-  if (minutes < 1) return 'Baru saja'
-  if (minutes < 60) return `${minutes} menit lalu`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} jam lalu`
-  const days = Math.floor(hours / 24)
-  return `${days} hari lalu`
 }
 
 export function NotificationPage({

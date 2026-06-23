@@ -1,6 +1,7 @@
 import { createHash } from 'crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
+import { isRecord, sameWalletAddress } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
 
@@ -18,16 +19,8 @@ function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status })
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
 function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
-}
-
-function sameWalletAddress(left: string | null | undefined, right: string | null | undefined): boolean {
-  return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase())
 }
 
 export async function POST(request: NextRequest) {

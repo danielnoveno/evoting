@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { jsonError, requireProfile } from '@/app/api/_lib/auth'
 import { logAudit, getActorInfo } from '@/lib/audit-logger'
 import type { Database } from '@/lib/supabase/database.types'
+import { isRecord } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
 
@@ -22,10 +23,6 @@ function mapVoter(row: MasterVoterRow) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }
 
 function cleanText(value: unknown) {

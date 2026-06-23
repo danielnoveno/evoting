@@ -8,9 +8,9 @@ export type AdminModuleKey =
   | 'hasil'
   | 'tambah'
 
-export type ElectionVariant = 'active' | 'draft' | 'final'
+type ElectionVariant = 'active' | 'draft' | 'final'
 
-export type ElectionIconKey = 'briefcase' | 'document' | 'shield'
+type ElectionIconKey = 'briefcase' | 'document' | 'shield'
 
 type SidebarIconKey = 'layout-grid' | 'gauge' | 'file-text' | 'circle-help'
 
@@ -244,7 +244,7 @@ export const adminDashboardContent: AdminDashboardContent = {
   },
 }
 
-export const adminElectionManagementContent: AdminElectionManagementContent = {
+const adminElectionManagementContent: AdminElectionManagementContent = {
   header: {
     title: 'Manajemen Pemilihan',
     description: 'Kelola dan pantau seluruh ruang pemilihan dari data Supabase.',

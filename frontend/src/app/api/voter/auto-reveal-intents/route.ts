@@ -1,11 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { requireProfile, jsonError } from '@/app/api/_lib/auth'
+import { isRecord } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 
 function isHex32(value: string) {
   return /^0x[a-fA-F0-9]{64}$/.test(value)

@@ -16,6 +16,7 @@ import { backendRuntimeConfig } from '@/lib/supabase/config'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
 import { queueAutoRevealIntent } from '@/lib/auto-reveal-intents'
+import { sameWalletAddress } from '@/lib/repositories/helpers'
 
 async function fetchLatestContractAddress(electionId: string): Promise<string | null> {
   try {
@@ -31,10 +32,6 @@ async function fetchLatestContractAddress(electionId: string): Promise<string | 
   } catch {
     return null
   }
-}
-
-function sameWalletAddress(left: string | null | undefined, right: string | null | undefined) {
-  return Boolean(left && right && left.trim().toLowerCase() === right.trim().toLowerCase())
 }
 
 function getWalletConnectionErrorMessage(error: unknown) {

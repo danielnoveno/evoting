@@ -2,40 +2,7 @@
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { RepositoryError } from '@/lib/repositories/errors'
-
-type AuthErrorLike = {
-  status?: number
-  message?: string
-}
-
-function getAuthErrorLike(error: unknown): AuthErrorLike {
-  if (typeof error !== 'object' || error === null) return {}
-  const record = error as Record<string, unknown>
-  return {
-    status: typeof record.status === 'number' ? record.status : undefined,
-    message: typeof record.message === 'string' ? record.message : undefined,
-  }
-}
-
-function isInvalidStoredSession(error: unknown): boolean {
-  const { status, message } = getAuthErrorLike(error)
-  const normalizedMessage = message?.toLowerCase() ?? ''
-
-  return status === 401
-    || status === 403
-    || normalizedMessage.includes('jwt')
-    || normalizedMessage.includes('session')
-    || normalizedMessage.includes('expired')
-    || normalizedMessage.includes('invalid')
-    || normalizedMessage.includes('not found')
-}
-
-async function clearLocalAuthSession() {
-  const client = getSupabaseBrowserClient()
-  if (!client) return
-
-  await client.auth.signOut({ scope: 'local' }).catch(() => undefined)
-}
+import { clearLocalAuthSession, isInvalidStoredSession } from './helpers'
 
 export async function getCurrentSession() {
   const client = getSupabaseBrowserClient()

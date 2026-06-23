@@ -2,6 +2,7 @@
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { RepositoryError } from '@/lib/repositories/errors'
+import { isRecord } from '@/lib/repositories/helpers'
 
 type SendVoterActivationEmailInput = {
   recipients: Array<{
@@ -20,10 +21,6 @@ export type SendVoterActivationEmailResult = {
     success: false
     error?: string
   }>
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }
 
 export async function sendVoterActivationEmails(input: SendVoterActivationEmailInput): Promise<SendVoterActivationEmailResult> {

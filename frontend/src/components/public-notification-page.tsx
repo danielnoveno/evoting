@@ -20,6 +20,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { isNotificationRead, markNotificationRead, markNotificationsRead, markNotificationsUnread } from '@/lib/notification-store'
+import { timeAgo } from '@/lib/repositories/helpers'
 
 interface NotificationItem {
   id: string
@@ -28,19 +29,6 @@ interface NotificationItem {
   type: 'info' | 'success' | 'warning'
   link?: string | null
   createdAt: string
-}
-
-function timeAgo(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diffMs = now - then
-  const minutes = Math.floor(diffMs / 60000)
-  if (minutes < 1) return 'Baru saja'
-  if (minutes < 60) return `${minutes} menit lalu`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} jam lalu`
-  const days = Math.floor(hours / 24)
-  return `${days} hari lalu`
 }
 
 /**

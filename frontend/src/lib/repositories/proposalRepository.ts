@@ -1,22 +1,18 @@
 'use client'
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
-import type { Database, Json } from '@/lib/supabase/database.types'
+import type { Database } from '@/lib/supabase/database.types'
 import { getCurrentProfile } from '@/lib/repositories/profileRepository'
 import type { ProposalActivityRecord, ProposalCandidateRecord, ProposalDraftRecord, ProposalDraftUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
 import { type NotificationPayload } from '@/lib/notification-helpers'
+import { asStringArray } from './helpers'
 
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 type ProposalCandidateRow = Database['app']['Tables']['proposal_candidates']['Row']
 type ProposalStatus = Database['app']['Tables']['proposal_drafts']['Row']['status']
 type ProfileRow = Database['app']['Tables']['app_profiles']['Row']
 type AdminRegistryRow = Database['app']['Tables']['admin_registry']['Row']
-
-function asStringArray(value: Json): string[] {
-  if (!Array.isArray(value)) return []
-  return value.filter((item): item is string => typeof item === 'string')
-}
 
 function normalizeMission(value: string | string[] | null | undefined): string[] {
   if (Array.isArray(value)) {

@@ -130,7 +130,7 @@ export function buildVoterActivationEmail(params: {
 /**
  * @deprecated Use buildAdminActivationEmail instead
  */
-export function buildSuperadminActivationEmail(params: {
+function buildSuperadminActivationEmail(params: {
   displayName: string
   email: string
   activationLink: string
