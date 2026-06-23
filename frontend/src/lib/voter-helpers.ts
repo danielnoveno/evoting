@@ -1,5 +1,3 @@
-// ponytail: extracted pure utility functions from voter-store.ts
-// These are stateless helpers — no localStorage, no React hooks.
 
 import type { VoterElection, VoterElectionPhase, VoterElectionViewState, VoterLogItem, VoterStore } from './voter-store'
 

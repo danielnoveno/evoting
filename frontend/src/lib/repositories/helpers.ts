@@ -1,5 +1,3 @@
-// ponytail: shared repository helpers — deduplicated from multiple copies
-
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
 /** Format date for UI labels (e.g., "23 Jun 2026, 14:30") */

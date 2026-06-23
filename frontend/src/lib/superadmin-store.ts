@@ -8,9 +8,6 @@ import {
 import { timeAgo } from '@/lib/repositories/helpers'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
-// ponytail: removed localStorage layer — React Query handles caching.
-// These hooks are now pure in-memory state for optimistic updates.
-
 export function useSuperadminElectionsStore() {
   const [elections, setElections] = useState<SuperadminElectionRecord[]>([])
   return { elections, setElections }
