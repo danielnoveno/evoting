@@ -45,3 +45,6 @@ AGENTS.local.md
 .docs/ponytail/
 .vercel
 .env*
+
+# Local Netlify folder
+.netlify
