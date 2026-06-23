@@ -3,6 +3,8 @@ import { ensureCanManageProposal, jsonError, requireProfile } from '@/app/api/_l
 import { logAudit, getActorInfo } from '@/lib/audit-logger'
 import type { Database } from '@/lib/supabase/database.types'
 import { isRecord } from '@/lib/repositories/helpers'
+import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
+import { sendVoterWhitelistEmail } from '@/lib/email/send'
 
 export const runtime = 'nodejs'
 
@@ -155,6 +157,54 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       }).throwOnError()
     } catch {
       // fire-and-forget: public notification failure should not block the status update
+    }
+
+    // Email notification to all whitelisted voters
+    try {
+      const serviceClient = getSupabaseServiceRoleClient()
+      if (serviceClient) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://votein-evoting.vercel.app'
+        const commitDate = data.commit_start_at ? new Date(data.commit_start_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'
+        const revealDate = data.reveal_start_at ? new Date(data.reveal_start_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'
+
+        const { data: whitelistEntries } = await serviceClient
+          .schema('app')
+          .from('proposal_whitelist_entries')
+          .select('wallet_address')
+          .eq('proposal_draft_id', id)
+          .eq('validation_status', 'valid')
+
+        if (whitelistEntries && whitelistEntries.length > 0) {
+          const walletAddresses = whitelistEntries
+            .map((e) => e.wallet_address?.toLowerCase())
+            .filter(Boolean) as string[]
+
+          const { data: voters } = await serviceClient
+            .schema('app')
+            .from('master_voters')
+            .select('email, full_name, wallet_address')
+            .in('wallet_address', walletAddresses)
+            .eq('status', 'active')
+
+          if (voters && voters.length > 0) {
+            for (const voter of voters) {
+              if (!voter.email) continue
+              // fire-and-forget: email failure should not block status update
+              sendVoterWhitelistEmail({
+                email: voter.email,
+                voterName: voter.full_name || 'Pemilih',
+                electionTitle: data.title,
+                electionDescription: data.description || '',
+                commitDate,
+                revealDate,
+                siteUrl,
+              }).catch(() => {})
+            }
+          }
+        }
+      }
+    } catch {
+      // fire-and-forget: email failure should not block the status update
     }
   }
 

@@ -6,6 +6,7 @@ import {
   buildCommitReminderEmail,
   buildElectionResultsEmail,
   buildPhaseChangeEmail,
+  buildVoterWhitelistEmail,
 } from '@/lib/email/templates'
 
 export interface SendActivationEmailResult {
@@ -216,5 +217,36 @@ export async function sendPhaseChangeEmail(params: {
   } catch (err) {
     console.error('[Email] Failed to send phase change email:', err)
     return { success: false, error: err instanceof Error ? err.message : 'Gagal mengirim email notifikasi fase.' }
+  }
+}
+
+export async function sendVoterWhitelistEmail(params: {
+  email: string
+  voterName: string
+  electionTitle: string
+  electionDescription: string
+  commitDate: string
+  revealDate: string
+  siteUrl: string
+}): Promise<SendActivationEmailResult> {
+  const setup = createTransporter()
+  if (!setup) {
+    return { success: false, error: 'Konfigurasi SMTP (Gmail) belum lengkap.' }
+  }
+
+  const { subject, html } = buildVoterWhitelistEmail(params)
+
+  try {
+    const info = await setup.transporter.sendMail({
+      from: setup.from,
+      to: params.email,
+      subject,
+      html,
+    })
+    console.log('[Email] Voter whitelist notification sent:', info.messageId)
+    return { success: true, emailId: info.messageId }
+  } catch (err) {
+    console.error('[Email] Failed to send voter whitelist email:', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Gagal mengirim email pemberitahuan pemilih.' }
   }
 }

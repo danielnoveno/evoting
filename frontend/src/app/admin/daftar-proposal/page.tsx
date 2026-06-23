@@ -209,7 +209,7 @@ export default function AdminProposalPage() {
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center justify-center gap-3">
-                        {row.status === 'DRAF' || row.status === 'PERLU REVISI' ? (
+                        {row.status === 'DRAF' || row.status === 'MENUNGGU REVIEW' || row.status === 'PERLU REVISI' ? (
                           <Link 
                             href={`/admin/daftar-proposal/${row.id}/edit`} 
                             onClick={(e) => e.stopPropagation()}
