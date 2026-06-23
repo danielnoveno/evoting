@@ -1,11 +1,31 @@
 import nodemailer from 'nodemailer'
 import { getSmtpConfig } from '@/lib/email/smtp'
-import { buildAdminActivationEmail, buildVoterActivationEmail } from '@/lib/email/templates'
+import {
+  buildAdminActivationEmail,
+  buildVoterActivationEmail,
+  buildCommitReminderEmail,
+  buildElectionResultsEmail,
+  buildPhaseChangeEmail,
+} from '@/lib/email/templates'
 
 export interface SendActivationEmailResult {
   success: boolean
   emailId?: string
   error?: string
+}
+
+function createTransporter() {
+  const config = getSmtpConfig()
+  if (!config) return null
+  return {
+    transporter: nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.port === 465,
+      auth: { user: config.user, pass: config.pass },
+    }),
+    from: `"${config.fromName}" <${config.fromEmail}>`,
+  }
 }
 
 export async function sendAdminActivationEmail(params: {
@@ -106,4 +126,95 @@ export async function sendSuperadminActivationEmail(params: {
   activationLink: string
 }): Promise<SendActivationEmailResult> {
   return sendAdminActivationEmail({ ...params, role: 'super_admin' })
+}
+
+// ─── Election Notification Emails ────────────────────────────────────────────
+
+export async function sendCommitReminderEmail(params: {
+  email: string
+  voterName: string
+  electionTitle: string
+  commitEndsAt: string
+  siteUrl: string
+}): Promise<SendActivationEmailResult> {
+  const setup = createTransporter()
+  if (!setup) {
+    return { success: false, error: 'Konfigurasi SMTP (Gmail) belum lengkap.' }
+  }
+
+  const { subject, html } = buildCommitReminderEmail(params)
+
+  try {
+    const info = await setup.transporter.sendMail({
+      from: setup.from,
+      to: params.email,
+      subject,
+      html,
+    })
+    console.log('[Email] Commit reminder sent:', info.messageId)
+    return { success: true, emailId: info.messageId }
+  } catch (err) {
+    console.error('[Email] Failed to send commit reminder:', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Gagal mengirim email pengingat commit.' }
+  }
+}
+
+export async function sendElectionResultsEmail(params: {
+  email: string
+  voterName: string
+  electionTitle: string
+  winnerName: string
+  totalVotes: number
+  candidates: Array<{ name: string; voteCount: number; percentage: string }>
+  siteUrl: string
+}): Promise<SendActivationEmailResult> {
+  const setup = createTransporter()
+  if (!setup) {
+    return { success: false, error: 'Konfigurasi SMTP (Gmail) belum lengkap.' }
+  }
+
+  const { subject, html } = buildElectionResultsEmail(params)
+
+  try {
+    const info = await setup.transporter.sendMail({
+      from: setup.from,
+      to: params.email,
+      subject,
+      html,
+    })
+    console.log('[Email] Election results sent:', info.messageId)
+    return { success: true, emailId: info.messageId }
+  } catch (err) {
+    console.error('[Email] Failed to send election results:', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Gagal mengirim email hasil pemilihan.' }
+  }
+}
+
+export async function sendPhaseChangeEmail(params: {
+  email: string
+  adminName: string
+  electionTitle: string
+  newPhase: string
+  siteUrl: string
+}): Promise<SendActivationEmailResult> {
+  const setup = createTransporter()
+  if (!setup) {
+    return { success: false, error: 'Konfigurasi SMTP (Gmail) belum lengkap.' }
+  }
+
+  const { subject, html } = buildPhaseChangeEmail(params)
+
+  try {
+    const info = await setup.transporter.sendMail({
+      from: setup.from,
+      to: params.email,
+      subject,
+      html,
+    })
+    console.log('[Email] Phase change notification sent:', info.messageId)
+    return { success: true, emailId: info.messageId }
+  } catch (err) {
+    console.error('[Email] Failed to send phase change email:', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Gagal mengirim email notifikasi fase.' }
+  }
 }
