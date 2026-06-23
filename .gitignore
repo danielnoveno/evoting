@@ -43,3 +43,5 @@ opencode.json
 AGENTS.local.md
 # Ponytail (lazy senior dev plugin)
 .docs/ponytail/
+.vercel
+.env*
