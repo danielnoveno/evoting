@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
   // ponytail: trailingSlash helps cPanel/Apache serve index.html for sub-routes
   trailingSlash: true,
   async headers() {
