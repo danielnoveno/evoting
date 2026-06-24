@@ -48,3 +48,6 @@ AGENTS.local.md
 
 # Local Netlify folder
 .netlify
+
+# cPanel deploy (sensitive: env files + guide with credentials)
+deploy/
