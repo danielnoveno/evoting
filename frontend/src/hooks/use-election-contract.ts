@@ -201,12 +201,15 @@ export function useElectionContract(address?: string, options: UseElectionContra
 
   const registerVoters = (voters: string[]) => {
     if (!address) return
+    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
     writeContract({
       address: address as `0x${string}`,
       abi: electionSpaceAbi,
       chainId: baseSepolia.id,
       functionName: 'registerVoters',
       args: [voters],
+      // @ts-ignore - capabilities EIP-5792
+      capabilities,
     })
   }
 
@@ -215,12 +218,15 @@ export function useElectionContract(address?: string, options: UseElectionContra
     if (voters.length === 0) throw new Error('Daftar wallet whitelist kosong.')
     if (!publicClient) throw new Error('Koneksi Base Sepolia belum siap.')
 
+    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
     const txHash = await writeContractAsync({
       address: targetAddress as `0x${string}`,
       abi: electionSpaceAbi,
       chainId: baseSepolia.id,
       functionName: 'registerVoters',
       args: [voters],
+      // @ts-ignore - capabilities EIP-5792
+      capabilities,
     })
     await publicClient.waitForTransactionReceipt({ hash: txHash })
     return txHash
@@ -236,12 +242,15 @@ export function useElectionContract(address?: string, options: UseElectionContra
     if (!targetAddress) throw new Error('Alamat kontrak pemilihan belum tersedia.')
     if (!publicClient) throw new Error('Koneksi Base Sepolia belum siap.')
 
+    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
     const txHash = await writeContractAsync({
       address: targetAddress as `0x${string}`,
       abi: electionSpaceAbi,
       chainId: baseSepolia.id,
       functionName: 'setPhaseSchedule',
       args: [commitStartsAt, commitEndsAt, revealStartsAt, revealEndsAt],
+      // @ts-ignore - capabilities EIP-5792
+      capabilities,
     })
     await publicClient.waitForTransactionReceipt({ hash: txHash })
     return txHash
@@ -249,11 +258,14 @@ export function useElectionContract(address?: string, options: UseElectionContra
 
   const transitionToNextPhase = () => {
     if (!address) return
+    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
     writeContract({
       address: address as `0x${string}`,
       abi: electionSpaceAbi,
       chainId: baseSepolia.id,
       functionName: 'transitionToNextPhase',
+      // @ts-ignore - capabilities EIP-5792
+      capabilities,
     })
   }
 

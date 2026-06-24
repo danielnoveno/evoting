@@ -3,6 +3,7 @@
 import { useCallback } from 'react'
 import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
 import { decodeEventLog, type Address, type Log } from 'viem'
+import { PAYMASTER_URL } from '@/lib/wagmi'
 import VoteChainRegistryArtifact from '@/lib/abi/VoteChainRegistry.json'
 
 const registryAbi = VoteChainRegistryArtifact.abi
@@ -59,20 +60,26 @@ export function useRegistryContract() {
 
   // Write functions
   const reviewProposal = (proposalId: number, approve: boolean) => {
+    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
     writeContract({
       address: REGISTRY_ADDRESS as `0x${string}`,
       abi: registryAbi,
       functionName: 'reviewProposal',
       args: [BigInt(proposalId), approve],
+      // @ts-ignore - capabilities EIP-5792
+      capabilities,
     })
   }
 
   const createElection = (proposalId: number) => {
+    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
     writeContract({
       address: REGISTRY_ADDRESS as `0x${string}`,
       abi: registryAbi,
       functionName: 'createElectionFromProposal',
       args: [BigInt(proposalId)],
+      // @ts-ignore - capabilities EIP-5792
+      capabilities,
     })
   }
 
@@ -82,11 +89,14 @@ export function useRegistryContract() {
     metadataURI: string,
     candidateCount: number
   ) => {
+    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
     return writeContractAsync({
       address: REGISTRY_ADDRESS as Address,
       abi: registryAbi,
       functionName: 'createElectionForAdmin',
       args: [spaceAdmin, title, metadataURI, BigInt(candidateCount)],
+      // @ts-ignore - capabilities EIP-5792
+      capabilities,
     })
   }, [writeContractAsync])
 
@@ -101,6 +111,7 @@ export function useRegistryContract() {
     revealStartsAt: bigint,
     revealEndsAt: bigint,
   ) => {
+    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
     return writeContractAsync({
       address: REGISTRY_ADDRESS as Address,
       abi: registryAbi,
@@ -116,24 +127,32 @@ export function useRegistryContract() {
         revealStartsAt,
         revealEndsAt,
       ],
+      // @ts-ignore - capabilities EIP-5792
+      capabilities,
     })
   }, [writeContractAsync])
 
   const addSuperAdmin = useCallback((admin: Address) => {
+    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
     return writeContractAsync({
       address: REGISTRY_ADDRESS as Address,
       abi: registryAbi,
       functionName: 'addSuperAdmin',
       args: [admin],
+      // @ts-ignore - capabilities EIP-5792
+      capabilities,
     })
   }, [writeContractAsync])
 
   const removeSuperAdmin = useCallback((admin: Address) => {
+    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
     return writeContractAsync({
       address: REGISTRY_ADDRESS as Address,
       abi: registryAbi,
       functionName: 'removeSuperAdmin',
       args: [admin],
+      // @ts-ignore - capabilities EIP-5792
+      capabilities,
     })
   }, [writeContractAsync])
 
@@ -170,11 +189,14 @@ export function useRegistryContract() {
     metadataURI: string,
     candidateCount: number,
   ) => {
+    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
     writeContract({
       address: REGISTRY_ADDRESS as `0x${string}`,
       abi: registryAbi,
       functionName: 'submitProposal',
       args: [title, metadataURI, BigInt(candidateCount)],
+      // @ts-ignore - capabilities EIP-5792
+      capabilities,
     })
   }
 
