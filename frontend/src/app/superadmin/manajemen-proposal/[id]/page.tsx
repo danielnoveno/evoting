@@ -651,6 +651,47 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         </section>
       </ScrollReveal>
 
+      <ScrollReveal variant="fade-up" delay={140} duration={800}>
+        <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-7">
+          <div className="flex items-center gap-3">
+            <CalendarDays className="h-5 w-5 text-slate-700" />
+            <h2 className="text-[20px] font-semibold text-slate-900">Jadwal Pemilihan</h2>
+          </div>
+          <p className="mt-2 text-[14px] leading-6 text-slate-600">
+            Tiga fase pemilihan dihitung otomatis dari dua tanggal yang diatur admin.
+          </p>
+          {liveProposal?.commitStartAt || liveProposal?.revealStartAt || liveProposal?.endedAt ? (
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-600">Mulai Pencoblosan</p>
+                <p className="mt-2 text-[15px] font-semibold text-blue-900">
+                  {liveProposal?.commitStartAt ? new Date(liveProposal.commitStartAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+                </p>
+                <p className="mt-1 text-[12px] text-blue-700">Fase Commit dimulai</p>
+              </div>
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-600">Mulai Konfirmasi</p>
+                <p className="mt-2 text-[15px] font-semibold text-amber-900">
+                  {liveProposal?.revealStartAt ? new Date(liveProposal.revealStartAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+                </p>
+                <p className="mt-1 text-[12px] text-amber-700">Fase Reveal (otomatis)</p>
+              </div>
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-600">Selesai Pemilihan</p>
+                <p className="mt-2 text-[15px] font-semibold text-emerald-900">
+                  {liveProposal?.endedAt ? new Date(liveProposal.endedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+                </p>
+                <p className="mt-1 text-[12px] text-emerald-700">Hasil dihitung, email terkirim</p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-6">
+              <SuperadminEmptyState title="Jadwal belum diatur" description="Admin belum mengisi jadwal pemilihan saat membuat proposal." />
+            </div>
+          )}
+        </section>
+      </ScrollReveal>
+
       <ScrollReveal variant="fade-up" delay={150} duration={800}>
         <section className="mt-8 rounded-[32px] border border-slate-200 bg-white p-7">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

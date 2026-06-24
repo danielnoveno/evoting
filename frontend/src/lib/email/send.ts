@@ -7,6 +7,7 @@ import {
   buildElectionResultsEmail,
   buildPhaseChangeEmail,
   buildVoterWhitelistEmail,
+  buildProposalSubmittedEmail,
 } from '@/lib/email/templates'
 
 export interface SendActivationEmailResult {
@@ -248,5 +249,45 @@ export async function sendVoterWhitelistEmail(params: {
   } catch (err) {
     console.error('[Email] Failed to send voter whitelist email:', err)
     return { success: false, error: err instanceof Error ? err.message : 'Gagal mengirim email pemberitahuan pemilih.' }
+  }
+}
+
+// ─── Proposal Submission Notification ────────────────────────────────────────
+
+export async function sendProposalSubmittedEmail(params: {
+  email: string
+  adminName: string
+  proposalTitle: string
+  organizationName: string
+  isResubmission: boolean
+  proposalLink: string
+}): Promise<SendActivationEmailResult> {
+  const config = getSmtpConfig()
+  if (!config) {
+    console.warn('[Email] SMTP is not configured. Proposal notification skipped.')
+    return { success: false, error: 'Konfigurasi SMTP (Gmail) belum lengkap.' }
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.port === 465,
+    auth: { user: config.user, pass: config.pass },
+  })
+
+  const { subject, html } = buildProposalSubmittedEmail(params)
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"${config.fromName}" <${config.fromEmail}>`,
+      to: params.email,
+      subject,
+      html,
+    })
+    console.log('[Email] Proposal submission notification sent:', info.messageId)
+    return { success: true, emailId: info.messageId }
+  } catch (err) {
+    console.error('[Email] Failed to send proposal notification:', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Gagal mengirim email notifikasi proposal.' }
   }
 }

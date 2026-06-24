@@ -4,7 +4,7 @@ import { logAudit, getActorInfo } from '@/lib/audit-logger'
 import type { Database } from '@/lib/supabase/database.types'
 import { isRecord } from '@/lib/repositories/helpers'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
-import { sendVoterWhitelistEmail } from '@/lib/email/send'
+import { sendVoterWhitelistEmail, sendProposalSubmittedEmail } from '@/lib/email/send'
 
 export const runtime = 'nodejs'
 
@@ -137,6 +137,42 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
   if (beforeRow?.created_by) {
     await auth.client.from('notification_jobs').insert({ target_profile_id: beforeRow.created_by, channel: 'in_app', template_key: 'proposal_activity', status: 'queued', payload: activityPayload }).throwOnError()
+  }
+
+  // Email notification to superadmins when proposal is submitted or resubmitted
+  if (status === 'submitted') {
+    try {
+      const serviceClient = getSupabaseServiceRoleClient()
+      if (serviceClient && data.title) {
+        const isResubmission = beforeRow?.status === 'revision_requested'
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://e-votein.netlify.app'
+        const proposalLink = `${siteUrl}/superadmin/manajemen-proposal/${id}`
+
+        // Get all superadmin emails
+        const { data: superadmins } = await serviceClient
+          .schema('app')
+          .from('app_profiles')
+          .select('email, display_name')
+          .eq('role', 'super_admin')
+          .not('email', 'is', null)
+
+        if (superadmins && superadmins.length > 0) {
+          for (const admin of superadmins) {
+            if (!admin.email) continue
+            sendProposalSubmittedEmail({
+              email: admin.email,
+              adminName: auth.profile.display_name || auth.profile.email || 'Admin',
+              proposalTitle: data.title,
+              organizationName: data.organization_name || 'Organisasi',
+              isResubmission,
+              proposalLink,
+            }).catch(() => {})
+          }
+        }
+      }
+    } catch {
+      // fire-and-forget
+    }
   }
 
   // Public notification for deployed elections — visible to all visitors
