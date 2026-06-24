@@ -11,13 +11,11 @@ const STORAGE_PREFIX = 'votein:form-draft:'
  * @param key - Unique identifier for this form (e.g. "proposal-create", "candidate-edit-123")
  * @param state - The current form state object
  * @param setState - The state setter function
- * @param clearOnMount - If true, clear any existing draft on mount (use for create forms)
  */
 export function useFormDraft<T extends object>(
   key: string,
   state: T,
   setState: React.Dispatch<React.SetStateAction<T>>,
-  clearOnMount = false,
 ) {
   const storageKey = `${STORAGE_PREFIX}${key}`
   const skipNextSaveRef = useRef(false)
@@ -25,11 +23,6 @@ export function useFormDraft<T extends object>(
   // Restore from localStorage on mount
   useEffect(() => {
     try {
-      if (clearOnMount) {
-        // Create forms: always start fresh, remove any stale draft
-        localStorage.removeItem(storageKey)
-        return
-      }
       const raw = localStorage.getItem(storageKey)
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<T>

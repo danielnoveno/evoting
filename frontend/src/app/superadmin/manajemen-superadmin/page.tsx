@@ -43,6 +43,7 @@ import { superadminAdminStatuses } from '@/lib/superadmin-data'
 import { updateDirectoryRegistryStatus } from '@/lib/repositories/profileRepository'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { useCreateAdminInvite, useResendAdminInvite } from '@/hooks/use-admin-invite'
+import { useFormDraft } from '@/hooks/use-form-draft'
 import { profileQueryKeys, useCurrentProfile, useSuperadminAdminDirectory } from '@/hooks/use-profile'
 import { useSuperadminOnchainStatus } from '@/hooks/use-superadmin-onchain-status'
 import { useRegistryContract } from '@/hooks/use-registry-contract'
@@ -71,6 +72,7 @@ function SuperadminManagementContent() {
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10)
   const [currentPage, setCurrentPage] = useState(1)
   const [formData, setFormData] = useState(initialFormData)
+  const { clearDraft: clearSuperadminDraft } = useFormDraft('superadmin-create', formData, setFormData)
   const [activationLink, setActivationLink] = useState('')
   const [lastEmailStatus, setLastEmailStatus] = useState<'sent' | 'skipped' | 'failed' | null>(null)
   const [lastEmailError, setLastEmailError] = useState<string | null>(null)
@@ -406,6 +408,7 @@ function SuperadminManagementContent() {
             description: `${formData.name} — ${emailMsg}`,
           })
           setFormData(initialFormData)
+          clearSuperadminDraft()
         },
         onError: (err) => {
           showToast({ tone: 'error', title: 'Undangan Gagal Dibuat', description: getRepositoryErrorMessage(err) })

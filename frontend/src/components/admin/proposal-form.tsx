@@ -132,7 +132,7 @@ export function ProposalForm({
     whitelistWallets: initialData?.whitelistWallets || '',
   })
   const draftKey = proposalId ? `proposal-edit-${proposalId}` : 'proposal-create'
-  const { clearDraft } = useFormDraft(draftKey, formData, setFormData, !proposalId)
+  const { clearDraft } = useFormDraft(draftKey, formData, setFormData)
   const [errors, setErrors] = useState<ProposalFormErrors>({})
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([])
   const isSubmitting = saveProposalDraft.isPending || isUploadingDocument || isUploadingCandidatePhotos || isUploadingBannerImage
@@ -727,14 +727,7 @@ export function ProposalForm({
           </div>
           <p className="mt-4 text-slate-800">{pageDescription}</p>
         </div>
-        <div className="flex items-center gap-3">
-          {extraActions}
-          {!isReadOnly && (!stepper || currentStep === STEP_LABELS.length - 1) && (
-            <button onClick={handleSubmit} disabled={isSubmitting} className="inline-flex h-12 items-center gap-2 rounded-2xl bg-black px-6 text-white disabled:cursor-not-allowed disabled:opacity-60">
-              <Save className="h-4 w-4" /> {isUploadingBannerImage ? 'Mengunggah banner...' : isUploadingCandidatePhotos ? 'Mengunggah foto...' : isUploadingDocument ? 'Mengunggah dokumen...' : saveProposalDraft.isPending ? 'Menyimpan...' : submitLabel}
-            </button>
-          )}
-        </div>
+        {extraActions ? <div className="flex items-center gap-3">{extraActions}</div> : null}
       </div>
 
       {/* ── Step Indicator (stepper mode) ── */}
