@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import { sendCommitReminderEmail, sendElectionResultsEmail } from '@/lib/email/send'
+import { fetchVoteCountsViaAlchemy, fetchCandidateCountViaAlchemy, isAlchemyConfigured } from '@/lib/alchemy-rpc'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -205,38 +206,67 @@ async function processElectionResults(
 
   if (!elections || elections.length === 0) return { processed: 0, sent: 0, lookbackMinutes }
 
+  // Try Ponder GraphQL first, fallback to Alchemy RPC
   const graphqlUrl = getPonderGraphqlUrl()
-  if (!graphqlUrl) return { processed: 0, sent: 0, error: 'Ponder GraphQL URL belum dikonfigurasi.' }
 
   let sent = 0
   for (const election of elections) {
     // Dedup: skip if already sent within the same window
     if (await wasRecentlySent(client, 'election_results', election.id, lookbackMinutes * 60 * 1000)) continue
 
-    // Fetch vote results from Ponder indexer
     const addr = election.deployed_space_address!
-    const response = await fetch(graphqlUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: `
-          query ElectionResults($addresses: [String]) {
-            elections(where: { id_in: $addresses }, limit: 1) {
-              items { id totalCommitted totalRevealed }
-            }
-            candidateResults(where: { spaceAddress_in: $addresses }, orderBy: "candidateId", orderDirection: "asc", limit: 100) {
-              items { candidateId voteCount }
-            }
-          }
-        `,
-        variables: { addresses: [addr, addr.toLowerCase()] },
-      }),
-    })
 
-    if (!response.ok) continue
+    // Get candidate count from Supabase
+    const { data: candidates } = await client
+      .schema('app')
+      .from('proposal_candidates')
+      .select('candidate_local_id, full_name')
+      .eq('proposal_draft_id', election.id)
+      .order('sort_order')
 
-    const gqlPayload = await response.json()
-    const candidateResults = gqlPayload?.data?.candidateResults?.items ?? []
+    if (!candidates || candidates.length === 0) continue
+
+    let candidateResults: Array<{ candidateId: number; voteCount: number }> = []
+    let dataSource = ''
+
+    // 1. Try Ponder GraphQL
+    if (graphqlUrl) {
+      try {
+        const response = await fetch(graphqlUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `
+              query ElectionResults($addresses: [String]) {
+                candidateResults(where: { spaceAddress_in: $addresses }, orderBy: "candidateId", orderDirection: "asc", limit: 100) {
+                  items { candidateId voteCount }
+                }
+              }
+            `,
+            variables: { addresses: [addr, addr.toLowerCase()] },
+          }),
+        })
+
+        if (response.ok) {
+          const gqlPayload = await response.json()
+          candidateResults = gqlPayload?.data?.candidateResults?.items ?? []
+          if (candidateResults.length > 0) dataSource = 'ponder'
+        }
+      } catch {
+        // Ponder failed, try Alchemy
+      }
+    }
+
+    // 2. Fallback: Alchemy RPC (direct contract read)
+    if (candidateResults.length === 0 && isAlchemyConfigured()) {
+      try {
+        candidateResults = await fetchVoteCountsViaAlchemy(addr, candidates.length)
+        if (candidateResults.length > 0) dataSource = 'alchemy'
+      } catch (err) {
+        console.error('[Cron] Alchemy RPC fallback failed:', err)
+      }
+    }
+
     if (candidateResults.length === 0) continue
 
     const totalVotes = candidateResults.reduce(
@@ -245,16 +275,8 @@ async function processElectionResults(
     )
     if (totalVotes === 0) continue
 
-    // Get candidate names
-    const { data: candidates } = await client
-      .schema('app')
-      .from('proposal_candidates')
-      .select('candidate_local_id, full_name')
-      .eq('proposal_draft_id', election.id)
-      .order('sort_order')
-
     const nameMap = new Map(
-      (candidates ?? []).map((c) => [c.candidate_local_id, c.full_name]),
+      candidates.map((c) => [c.candidate_local_id, c.full_name]),
     )
 
     const sortedResults = candidateResults
@@ -312,6 +334,7 @@ async function processElectionResults(
       winnerName,
       totalVotes,
       sentToCount: batchSent,
+      dataSource,
     })
   }
 
