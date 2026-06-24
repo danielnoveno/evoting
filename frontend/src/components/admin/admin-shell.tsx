@@ -140,13 +140,3 @@ export function AdminFilterPill({ active, children, onClick }: { active?: boolea
     </button>
   )
 }
-
-export function AdminElectionCard({ children, dashed = false, onClick }: { children: ReactNode; dashed?: boolean; onClick?: () => void }) {
-  return (
-    <article className={dashed
-      ? 'overflow-hidden h-auto min-h-[388px] rounded-[28px] border border-dashed border-slate-300 bg-white px-6 pb-8 pt-6 2xl:h-[388px]'
-      : `overflow-hidden h-auto min-h-[388px] rounded-[28px] border bg-white px-6 pb-8 pt-6 2xl:h-[388px] ${onClick ? 'cursor-pointer border-slate-200 transition-all duration-150 hover:-translate-y-px hover:border-slate-300' : 'border-slate-200'}`} onClick={onClick}>
-      {children}
-    </article>
-  )
-}

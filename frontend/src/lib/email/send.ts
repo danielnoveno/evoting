@@ -5,7 +5,6 @@ import {
   buildVoterActivationEmail,
   buildCommitReminderEmail,
   buildElectionResultsEmail,
-  buildPhaseChangeEmail,
   buildVoterWhitelistEmail,
   buildProposalSubmittedEmail,
 } from '@/lib/email/templates'
@@ -119,17 +118,6 @@ export async function sendVoterActivationEmail(params: {
   }
 }
 
-/**
- * @deprecated Use sendAdminActivationEmail instead
- */
-export async function sendSuperadminActivationEmail(params: {
-  displayName: string
-  email: string
-  activationLink: string
-}): Promise<SendActivationEmailResult> {
-  return sendAdminActivationEmail({ ...params, role: 'super_admin' })
-}
-
 // ─── Election Notification Emails ────────────────────────────────────────────
 
 export async function sendCommitReminderEmail(params: {
@@ -189,35 +177,6 @@ export async function sendElectionResultsEmail(params: {
   } catch (err) {
     console.error('[Email] Failed to send election results:', err)
     return { success: false, error: err instanceof Error ? err.message : 'Gagal mengirim email hasil pemilihan.' }
-  }
-}
-
-export async function sendPhaseChangeEmail(params: {
-  email: string
-  adminName: string
-  electionTitle: string
-  newPhase: string
-  siteUrl: string
-}): Promise<SendActivationEmailResult> {
-  const setup = createTransporter()
-  if (!setup) {
-    return { success: false, error: 'Konfigurasi SMTP (Gmail) belum lengkap.' }
-  }
-
-  const { subject, html } = buildPhaseChangeEmail(params)
-
-  try {
-    const info = await setup.transporter.sendMail({
-      from: setup.from,
-      to: params.email,
-      subject,
-      html,
-    })
-    console.log('[Email] Phase change notification sent:', info.messageId)
-    return { success: true, emailId: info.messageId }
-  } catch (err) {
-    console.error('[Email] Failed to send phase change email:', err)
-    return { success: false, error: err instanceof Error ? err.message : 'Gagal mengirim email notifikasi fase.' }
   }
 }
 

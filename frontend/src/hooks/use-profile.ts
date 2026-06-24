@@ -1,6 +1,5 @@
 'use client'
 
-import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { bindCurrentUserWallet, createAdminRegistry, deleteAdminRegistry, getCurrentProfile, getProfileByWalletAddress, listAdminDirectory, updateAdminRegistry, upsertCurrentProfile } from '@/lib/repositories/profileRepository'
 import type { AdminRegistryInput, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
@@ -76,17 +75,6 @@ export function useDeleteAdminRegistry() {
       void queryClient.invalidateQueries({ queryKey: ['profile'] })
     },
   })
-}
-
-export function useResolvedProfile(walletAddress: string | null | undefined, fallback: AppProfileRecord | null = null) {
-  const query = useProfileByWallet(walletAddress)
-
-  const resolvedProfile = useMemo(() => query.data ?? fallback, [fallback, query.data])
-
-  return {
-    ...query,
-    resolvedProfile,
-  }
 }
 
 export function useSaveCurrentProfile() {

@@ -144,19 +144,6 @@ export function SuperadminInteractiveCard({
   )
 }
 
-export function SuperadminBreadcrumbs({ items }: { items: Array<{ label: string }> }) {
-  return (
-    <div className="mb-4 flex flex-wrap items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-400">
-      {items.map((item, index) => (
-        <div key={`${item.label}-${index}`} className="inline-flex items-center gap-2">
-          {index > 0 ? <span className="text-slate-300">/</span> : null}
-          <span>{item.label}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 export function SuperadminEmptyState({
   title,
   description,

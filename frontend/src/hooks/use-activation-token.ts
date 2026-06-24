@@ -24,7 +24,7 @@ async function fetchActivationTokenPreview(token: string): Promise<ActivationTok
   return response.json()
 }
 
-export const activationTokenQueryKeys = {
+const activationTokenQueryKeys = {
   preview: (token: string) => ['activation-token', 'preview', token] as const,
 }
 

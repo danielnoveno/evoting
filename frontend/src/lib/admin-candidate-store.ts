@@ -13,7 +13,7 @@ export type StoredCandidate = {
 
 const keyForElection = (electionId: string) => `votein_admin_candidates_${electionId}`
 
-export function loadStoredCandidates(electionId: string): StoredCandidate[] {
+function loadStoredCandidates(electionId: string): StoredCandidate[] {
   if (typeof window === 'undefined') return []
   const raw = window.localStorage.getItem(keyForElection(electionId))
   if (!raw) return []
@@ -24,7 +24,7 @@ export function loadStoredCandidates(electionId: string): StoredCandidate[] {
   }
 }
 
-export function saveStoredCandidates(electionId: string, candidates: StoredCandidate[]) {
+function saveStoredCandidates(electionId: string, candidates: StoredCandidate[]) {
   if (typeof window === 'undefined') return
   window.localStorage.setItem(keyForElection(electionId), JSON.stringify(candidates))
 }

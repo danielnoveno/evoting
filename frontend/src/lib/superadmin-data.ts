@@ -48,7 +48,6 @@ export interface SuperadminRiskAlert {
   status: 'active' | 'resolved' | 'blocked';
 }
 export interface SuperadminPlatformSession { id: string; device: string; meta: string; status: string }
-export interface SuperadminAuditLogItem { id: string; block: string; eventLabel: string; title: string; timestamp: string; txHash: string; status: string; statusTone: 'verified' | 'syncing'; icon: 'proposal' | 'vote' | 'validator' }
 
 export const superadminShellContent = {
   headerLabel: 'Dashboard super admin',
@@ -105,24 +104,4 @@ export const superadminPlatformData = {
   blockchain: { network: 'Base Sepolia', networkStatus: 'Menunggu konfigurasi', ownerAddress: 'Belum tersedia', gasLimit: '0' },
   system: { platformName: 'Votein', defaultLanguage: 'id-ID', uploadNote: 'Data konfigurasi backend belum tersedia.' },
   sessions: [] satisfies SuperadminPlatformSession[],
-}
-
-const superadminProposalDetails: Record<string, SuperadminProposalDetail> = {}
-
-const superadminAuditLogData = {
-  title: 'Audit Log',
-  description: 'Log audit akan tampil setelah ada transaksi atau operasi backend yang tercatat.',
-  summary: {
-    integrityLabel: 'Integritas',
-    integrityStatus: 'Menunggu data',
-    integrityValue: '0%',
-    integrityNote: 'Belum ada bukti audit.',
-    latestProofId: 'Belum tersedia',
-    lastUpdated: '-',
-    activeNodes: '0 node',
-    averageLatency: '0 ms',
-    blockTime: '0 s',
-  },
-  filters: ['Semua', 'Proposal', 'Vote', 'Validator'] as const,
-  logs: [] satisfies SuperadminAuditLogItem[],
 }

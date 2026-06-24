@@ -1,4 +1,5 @@
 import type { ProposalDraftRecord, ProposalListItem, ProposalListStatus } from '@/lib/repositories/types'
+import { shortenHash } from '@/lib/voter-helpers'
 
 function formatDateLabel(value: string | null): string {
   if (!value) return 'Tanggal belum diatur'
@@ -30,11 +31,6 @@ function mapStatus(status: ProposalDraftRecord['status']): ProposalListStatus {
     default:
       return 'DRAF'
   }
-}
-
-function shortenHash(hash: string | null): string {
-  if (!hash) return 'Belum di-hash'
-  return `${hash.slice(0, 5)}...${hash.slice(-4)}`
 }
 
 export function mapProposalDraftToListItem(item: ProposalDraftRecord): ProposalListItem {

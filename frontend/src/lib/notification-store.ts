@@ -47,29 +47,8 @@ export function markNotificationsRead(ids: string[]) {
   saveReadSet(s)
 }
 
-/** Mark a single notification as unread */
-export function markNotificationUnread(id: string) {
-  const s = getReadSet()
-  s.delete(id)
-  saveReadSet(s)
-}
-
 /** Mark multiple notifications as unread */
 export function markNotificationsUnread(ids: string[]) {
-  const s = getReadSet()
-  ids.forEach((id) => s.delete(id))
-  saveReadSet(s)
-}
-
-/** Mark all given notifications as read */
-export function markAllRead(ids: string[]) {
-  const s = getReadSet()
-  ids.forEach((id) => s.add(id))
-  saveReadSet(s)
-}
-
-/** Mark all given notifications as unread */
-export function markAllUnread(ids: string[]) {
   const s = getReadSet()
   ids.forEach((id) => s.delete(id))
   saveReadSet(s)

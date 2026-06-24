@@ -6,11 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ScrollReveal, ParallaxLayer, FloatingShape, StaggerContainer } from '@/components/public/parallax'
 import { listPublicElections } from '@/lib/repositories/electionRepository'
 import type { PublicElectionRecord } from '@/lib/repositories/types'
-
-function shortenHash(hash: string | null) {
-  if (!hash) return 'Belum tersedia'
-  return `${hash.slice(0, 6)} ... ${hash.slice(-4)}`
-}
+import { shortenHash } from '@/lib/voter-helpers'
 
 function formatFinishedDate(value: string | null) {
   if (!value) return 'Tanggal selesai belum diatur'

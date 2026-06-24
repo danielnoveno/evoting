@@ -34,6 +34,11 @@ export function formatWallet(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
+export function shortenHash(hash: string | null | undefined): string {
+  if (!hash) return 'Belum tersedia'
+  return `${hash.slice(0, 6)}...${hash.slice(-4)}`
+}
+
 export function getPhaseLabel(phase: VoterElectionPhase) {
   if (phase === 'registration') return 'Persiapan'
   if (phase === 'commit') return 'Tahap Memilih'

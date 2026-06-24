@@ -45,18 +45,6 @@ export function AuthTitle({ title, body }: { title: string; body?: string }) {
   )
 }
 
-export function AuthNotice() {
-  return (
-    <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-[12px] leading-6 text-slate-800">
-      <div className="text-center">
-        <p>
-          Pratinjau ini membantu meninjau alur antarmuka voting sebelum integrasi blockchain penuh diaktifkan.
-        </p>
-      </div>
-    </div>
-  )
-}
-
 type AuthFieldProps = {
   label: string
   error?: string

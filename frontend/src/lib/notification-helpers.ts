@@ -33,25 +33,6 @@ export async function insertNotification(targetProfileId: string | null, payload
 }
 
 /**
- * Insert a public broadcast notification (no target profile).
- * Used for system-wide announcements (e.g. phase changes).
- */
-export async function insertPublicNotification(payload: NotificationPayload) {
-  const client = getSupabaseBrowserClient()
-  if (!client) return
-  try {
-    await client.schema('app').from('notification_jobs').insert({
-      channel: 'in_app',
-      template_key: 'proposal_activity',
-      status: 'sent',
-      payload,
-    })
-  } catch (error) {
-    console.warn('[notification] Failed to insert public notification:', error)
-  }
-}
-
-/**
  * Notify all superadmins with an in-app notification.
  */
 export async function notifySuperadmins(payload: NotificationPayload) {
@@ -64,15 +45,4 @@ export async function notifySuperadmins(payload: NotificationPayload) {
   } catch (error) {
     console.warn('[notification] Failed to notify superadmins:', error)
   }
-}
-
-/**
- * Notify a voter about their commit/reveal action.
- * The notification goes to the voter's own profile.
- */
-export async function notifyVoter(
-  profileId: string,
-  payload: NotificationPayload,
-) {
-  await insertNotification(profileId, payload)
 }

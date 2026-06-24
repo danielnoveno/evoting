@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  claimAdminInvite,
   createAdminInvite,
   getAdminInvitePreview,
   resendAdminInvite,
@@ -10,7 +9,7 @@ import {
 } from '@/lib/repositories/adminInviteRepository'
 import { profileQueryKeys } from '@/hooks/use-profile'
 
-export const adminInviteQueryKeys = {
+const adminInviteQueryKeys = {
   preview: (token: string) => ['admin-invite', 'preview', token] as const,
 }
 
@@ -49,16 +48,4 @@ export function useResendAdminInvite() {
   })
 }
 
-export function useClaimAdminInvite() {
-  const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: (token: string) => claimAdminInvite(token),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['admin-invite'] })
-      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.current })
-      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.adminDirectory })
-      void queryClient.invalidateQueries({ queryKey: profileQueryKeys.superadmins })
-    },
-  })
-}

@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ScrollReveal, ParallaxLayer, FloatingShape, StaggerContainer } from '@/components/public/parallax'
 import { AsciiBackground } from '@/components/public/ascii-background'
 import { listLatestAuditLogs } from '@/lib/repositories/electionRepository'
+import { shortenHash } from '@/lib/voter-helpers'
 
 /* ─────────────────────────────────────────────
    Hero Section
@@ -110,10 +111,6 @@ export function HeroSection() {
 /* ─────────────────────────────────────────────
    Infrastructure Section
    ───────────────────────────────────────────── */
-function shortenHash(hash: string) {
-  return `${hash.slice(0, 6)}...${hash.slice(-4)}`
-}
-
 function auditActionLabel(actionType: string) {
   if (actionType === 'commit_vote') return 'Commit suara'
   if (actionType === 'reveal_vote') return 'Reveal suara'

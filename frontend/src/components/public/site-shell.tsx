@@ -514,15 +514,6 @@ export function SectionTitle({ title, body }: { title: string; body: string }) {
   )
 }
 
-export function BasescanLink({ href, label = 'Lihat di Basescan' }: { href: string; label?: string }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[13px] font-medium text-blue-700 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2">
-      {label}
-      <ExternalLink className="h-4 w-4" />
-    </a>
-  )
-}
-
 export function PublicElectionBackLink({ href = '/pemilihan', label = 'Kembali ke daftar pemilihan' }: { href?: string; label?: string }) {
   return (
     <Link href={href} className="inline-flex items-center gap-2 text-[14px] font-medium text-slate-800 transition-colors hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">

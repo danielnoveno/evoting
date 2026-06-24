@@ -12,8 +12,3 @@ export function getSmtpConfig() {
 
   return { host, port, user, pass, fromEmail, fromName }
 }
-
-export function isSmtpConfigured() {
-  const config = getSmtpConfig()
-  return config !== null
-}

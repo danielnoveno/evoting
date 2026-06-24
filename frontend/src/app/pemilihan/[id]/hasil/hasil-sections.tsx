@@ -5,10 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { PublicElectionBackLink } from '@/components/public/site-shell'
 import { ScrollReveal, ParallaxLayer, FloatingShape, StaggerContainer } from '@/components/public/parallax'
 import { getPublicElectionById, getPublicElectionResults, listLatestAuditLogs } from '@/lib/repositories/electionRepository'
-
-function shortenHash(hash: string) {
-  return `${hash.slice(0, 6)} ... ${hash.slice(-4)}`
-}
+import { shortenHash } from '@/lib/voter-helpers'
 
 function actionLabel(actionType: string) {
   if (actionType === 'reveal_vote') return 'Reveal Suara'
