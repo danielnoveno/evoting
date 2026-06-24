@@ -41,8 +41,3 @@ export function upsertStoredCandidate(electionId: string, candidate: StoredCandi
 
   saveStoredCandidates(electionId, candidates)
 }
-
-export function deleteStoredCandidate(electionId: string, candidateId: string) {
-  const candidates = loadStoredCandidates(electionId).filter((item) => item.id !== candidateId)
-  saveStoredCandidates(electionId, candidates)
-}

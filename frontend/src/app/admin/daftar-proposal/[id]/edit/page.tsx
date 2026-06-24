@@ -73,9 +73,9 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
     bannerImagePath: liveProposal?.bannerImagePath ?? '',
     candidateCount: liveProposal?.candidateCount ?? 2,
     voterCount: 0,
-    commitDate: toDatetimeLocal(liveProposal?.commitStartAt ?? null, '2026-06-12T09:00'),
-    revealDate: toDatetimeLocal(liveProposal?.revealStartAt ?? null, '2026-06-19T09:00'),
-    endedDate: toDatetimeLocal(liveProposal?.endedAt ?? null, '2026-06-26T09:00'),
+    commitDate: toDatetimeLocal(liveProposal?.commitStartAt ?? null, ''),
+    revealDate: toDatetimeLocal(liveProposal?.revealStartAt ?? null, ''),
+    endedDate: toDatetimeLocal(liveProposal?.endedAt ?? null, ''),
     candidateEntries: candidateQuery.data?.map((candidate) => ({
       name: candidate.fullName,
       studentId: candidate.studentId ?? '',

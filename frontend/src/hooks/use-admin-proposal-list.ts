@@ -8,6 +8,7 @@ import type { AdminElectionRecord } from '@/lib/admin-election-data'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { RepositoryError } from '@/lib/repositories/errors'
 import type { Database } from '@/lib/supabase/database.types'
+import { getInitials } from '@/lib/repositories/helpers'
 
 type ProposalDraft = NonNullable<Awaited<ReturnType<typeof listProposalDrafts>>>[number]
 type WhitelistRow = Pick<Database['app']['Tables']['proposal_whitelist_entries']['Row'], 'id' | 'proposal_draft_id' | 'wallet_address' | 'voter_name'>
@@ -83,19 +84,6 @@ function makeEmptyDetail(p: ProposalDraft, voterTarget: string): AdminElectionRe
       breadcrumbParent: 'Manajemen Pemilihan', breadcrumbCurrent: 'Kandidat', title: 'Kandidat', description: 'Data kandidat tersimpan di Supabase.', uploadLabel: 'Unggah foto', uploadHint: 'Opsional', uploadSupport: 'JPG, PNG', identityLabel: 'ID/NPM', identityPlaceholder: 'Masukkan ID kandidat', hashPreviewLabel: 'Hash belum tersedia', fullNameLabel: 'Nama lengkap', fullNamePlaceholder: 'Masukkan nama lengkap', bioLabel: 'Bio', bioPlaceholder: 'Tulis bio singkat', visionLabel: 'Visi', visionPlaceholder: 'Tulis visi', missionLabel: 'Misi', missionPlaceholder: 'Tulis misi', validationTitle: 'Validasi Supabase', validationDescription: 'Data akan divalidasi saat disimpan.', validationStatus: 'Menunggu input',
     },
   }
-}
-
-function getInitials(name: string | null, wallet: string) {
-  const source = name?.trim() || wallet
-  if (source.startsWith('0x')) return source.slice(2, 4).toUpperCase()
-
-  return source
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase() || 'VT'
 }
 
 async function listProposalDraftsWithWhitelist() {

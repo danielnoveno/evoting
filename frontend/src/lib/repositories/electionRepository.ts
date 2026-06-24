@@ -13,7 +13,8 @@ import type {
   TxAuditLogRecord,
   VoterOnchainProofRecord,
 } from '@/lib/repositories/types'
-import { asStringArray, formatDateTimeLabel, isRecord } from './helpers'
+import { asStringArray, isRecord } from './helpers'
+import { formatDateTime } from '@/lib/voter-helpers'
 
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 type CandidateRow = Database['app']['Tables']['proposal_candidates']['Row']
@@ -54,10 +55,10 @@ function phaseLabel(phase: PublicElectionPhase): string {
 }
 
 function deadlineLabel(row: ProposalRow, phase: PublicElectionPhase): string {
-  if (phase === 'commit') return `Batas memilih ${formatDateTimeLabel(row.reveal_start_at)}`
-  if (phase === 'reveal') return `Batas konfirmasi ${formatDateTimeLabel(row.ended_at)}`
-  if (phase === 'registration') return `Mulai memilih ${formatDateTimeLabel(row.commit_start_at)}`
-  return row.ended_at ? `Selesai ${formatDateTimeLabel(row.ended_at)}` : 'Selesai'
+  if (phase === 'commit') return `Batas memilih ${formatDateTime(row.reveal_start_at)}`
+  if (phase === 'reveal') return `Batas konfirmasi ${formatDateTime(row.ended_at)}`
+  if (phase === 'registration') return `Mulai memilih ${formatDateTime(row.commit_start_at)}`
+  return row.ended_at ? `Selesai ${formatDateTime(row.ended_at)}` : 'Selesai'
 }
 
 function mapCandidate(row: CandidateRow): PublicElectionCandidateRecord {

@@ -267,18 +267,6 @@ export function buildVoterWhitelistEmail(params: {
   return { subject, html }
 }
 
-/**
- * @deprecated Use buildAdminActivationEmail instead
- */
-function buildSuperadminActivationEmail(params: {
-  displayName: string
-  email: string
-  activationLink: string
-  expiresInDays: number
-}) {
-  return buildAdminActivationEmail({ ...params, role: 'super_admin' })
-}
-
 // ─── Election Notification Templates ─────────────────────────────────────────
 
 export function buildCommitReminderEmail(params: {

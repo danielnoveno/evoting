@@ -1,19 +1,5 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
-/** Format date for UI labels (e.g., "23 Jun 2026, 14:30") */
-export function formatDateTimeLabel(value: string | null): string {
-  if (!value) return 'Jadwal belum diatur'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Jadwal belum diatur'
-  return new Intl.DateTimeFormat('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
-}
-
 /** Coerce JSON value to string array */
 export function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []
@@ -31,9 +17,13 @@ export function sameWalletAddress(left: string | null | undefined, right: string
   return left.toLowerCase() === right.toLowerCase()
 }
 
-/** Extract initials from a name (max 2 chars, uppercase) */
-export function getInitials(name: string): string {
-  return name
+/** Extract initials from a name or wallet address (max 2 chars, uppercase) */
+export function getInitials(name: string | null, wallet?: string): string {
+  const source = name?.trim() || wallet || ''
+  if (!source) return 'VT'
+  if (source.startsWith('0x')) return source.slice(2, 4).toUpperCase()
+
+  return source
     .split(' ')
     .filter(Boolean)
     .map((part) => part[0])

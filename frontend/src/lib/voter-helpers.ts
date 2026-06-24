@@ -7,14 +7,17 @@ export function basescanTxUrl(hash: string) {
   return `${BASESCAN_ROOT}/tx/${hash}`
 }
 
-export function formatDateTime(value: string) {
+export function formatDateTime(value: string | null): string {
+  if (!value) return 'Jadwal belum diatur'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Jadwal belum diatur'
   return new Intl.DateTimeFormat('id-ID', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(value))
+  }).format(date)
 }
 
 export function formatDateShort(value: string) {
@@ -64,7 +67,7 @@ export function getElectionViewState(election: VoterElection): VoterElectionView
   const hasCommitted = Boolean(election.commitProof && election.committedCandidateId)
   const hasRevealed = Boolean(election.revealProof)
   const canCommit = election.phase === 'commit' && !hasCommitted
-  const canReveal = false
+  const canReveal = election.phase === 'reveal' && hasCommitted && !hasRevealed
   const canViewResults = election.phase === 'ended' || election.phase === 'reveal' || hasRevealed
 
   if (canCommit) return { hasCommitted, hasRevealed, canCommit, canReveal, canViewResults, nextAction: 'commit' }

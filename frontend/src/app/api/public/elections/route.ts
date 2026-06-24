@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/supabase/database.types'
-import { asStringArray, formatDateTimeLabel } from '@/lib/repositories/helpers'
+import { asStringArray } from '@/lib/repositories/helpers'
+import { formatDateTime } from '@/lib/voter-helpers'
 
 export const runtime = 'nodejs'
 
@@ -33,10 +34,10 @@ function phaseLabel(phase: string): string {
 }
 
 function deadlineLabel(row: ProposalRow, phase: string): string {
-  if (phase === 'commit') return `Batas memilih ${formatDateTimeLabel(row.reveal_start_at)}`
-  if (phase === 'reveal') return `Batas konfirmasi ${formatDateTimeLabel(row.ended_at)}`
-  if (phase === 'registration') return `Mulai memilih ${formatDateTimeLabel(row.commit_start_at)}`
-  return row.ended_at ? `Selesai ${formatDateTimeLabel(row.ended_at)}` : 'Selesai'
+  if (phase === 'commit') return `Batas memilih ${formatDateTime(row.reveal_start_at)}`
+  if (phase === 'reveal') return `Batas konfirmasi ${formatDateTime(row.ended_at)}`
+  if (phase === 'registration') return `Mulai memilih ${formatDateTime(row.commit_start_at)}`
+  return row.ended_at ? `Selesai ${formatDateTime(row.ended_at)}` : 'Selesai'
 }
 
 function mapElection(row: ProposalRow, candidates: CandidateRow[], whitelistRows: WhitelistRow[]) {

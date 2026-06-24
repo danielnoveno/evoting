@@ -8,6 +8,7 @@ import { SuperadminShell, SuperadminToolbarButton } from '@/components/superadmi
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { useAuthSession } from '@/hooks/use-auth-session'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
+import { basescanTxUrl } from '@/lib/voter-helpers'
 
 type AuditLogItem = {
   id: string
@@ -52,8 +53,6 @@ export default function SuperadminAuditLogPage() {
   const [sortOrder, setSortOrder] = useState<'terbaru' | 'terlama'>('terbaru')
   const [visibleCount, setVisibleCount] = useState(10)
   const [selectedLog, setSelectedLog] = useState<AuditLogItem | null>(null)
-
-  const basescanTxUrl = (hash: string) => `https://sepolia.basescan.org/tx/${hash}`
 
   const fetchLogs = useCallback(async () => {
     setIsLoading(true)
