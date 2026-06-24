@@ -145,7 +145,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       const serviceClient = getSupabaseServiceRoleClient()
       if (serviceClient && data.title) {
         const isResubmission = beforeRow?.status === 'revision_requested'
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://e-votein.netlify.app'
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://votein.biz.id'
         const proposalLink = `${siteUrl}/superadmin/manajemen-proposal/${id}`
 
         // Get all superadmin emails

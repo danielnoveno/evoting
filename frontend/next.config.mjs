@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // ponytail: trailingSlash helps cPanel/Apache serve index.html for sub-routes
+  trailingSlash: true,
   async headers() {
     return [
       {
@@ -12,7 +14,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "font-src 'self' data: *.gstatic.com *.netlify.app;",
+            value: "font-src 'self' data: *.gstatic.com; style-src 'self' 'unsafe-inline';",
           },
         ],
       },
