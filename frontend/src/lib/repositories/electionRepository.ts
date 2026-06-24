@@ -231,6 +231,7 @@ function mapElection(row: ProposalRow, candidates: CandidateRow[], whitelistRows
     phaseLabel: phaseLabel(phase),
     deadlineLabel: deadlineLabel(row, phase),
     commitStartAt: row.commit_start_at,
+    registrationStartAt: row.registration_start_at,
     revealStartAt: row.reveal_start_at,
     endedAt: row.ended_at,
     candidateCount: row.candidate_count,

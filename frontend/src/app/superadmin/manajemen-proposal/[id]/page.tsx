@@ -441,6 +441,18 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           return
         }
 
+        // Check if any dates are in the past
+        const now = Math.floor(Date.now() / 1000)
+        if (commitStartsAt < now || revealStartsAt < now || revealEndsAt < now) {
+          showToast({
+            title: 'Jadwal sudah lewat',
+            description: 'Salah satu atau lebih tanggal pemilihan sudah lewat dari waktu sekarang. Admin harus memperbarui jadwal terlebih dahulu.',
+            tone: 'error',
+          })
+          setPendingOnchainDecision(null)
+          return
+        }
+
         const txHash = await createElectionForAdminWithConfig(
           liveProposal.createdByWalletAddress as Address,
           liveProposal.title,
@@ -658,8 +670,24 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             <h2 className="text-[20px] font-semibold text-slate-900">Jadwal Pemilihan</h2>
           </div>
           <p className="mt-2 text-[14px] leading-6 text-slate-600">
-            Tiga fase pemilihan dihitung otomatis dari dua tanggal yang diatur admin.
+            Tiga fase pemilihan dihitung otomatis dari tanggal yang diatur admin.
           </p>
+
+          {/* Warning if any dates are in the past */}
+          {liveProposal?.status !== 'deployed' && (() => {
+            const now = Date.now()
+            const pastDates: string[] = []
+            if (liveProposal?.registrationStartAt && new Date(liveProposal.registrationStartAt).getTime() < now) pastDates.push('Mulai Persiapan')
+            if (liveProposal?.commitStartAt && new Date(liveProposal.commitStartAt).getTime() < now) pastDates.push('Mulai Pencoblosan')
+            if (liveProposal?.endedAt && new Date(liveProposal.endedAt).getTime() < now) pastDates.push('Selesai Pemilihan')
+            if (pastDates.length === 0) return null
+            return (
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] leading-6 text-amber-800">
+                <span className="font-semibold">Peringatan:</span> {pastDates.join(', ')} sudah lewat dari waktu sekarang. Proposal harus memperbarui jadwal sebelum dapat dideploy.
+              </div>
+            )
+          })()}
+
           {liveProposal?.commitStartAt || liveProposal?.revealStartAt || liveProposal?.endedAt ? (
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">

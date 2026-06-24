@@ -91,6 +91,7 @@ export interface ProposalDraftRecord {
   deployedSpaceId: number | null
   deployedSpaceAddress: string | null
   commitStartAt: string | null
+  registrationStartAt: string | null
   revealStartAt: string | null
   endedAt: string | null
   createdAt: string
@@ -140,6 +141,7 @@ export interface PublicElectionRecord {
   phaseLabel: string
   deadlineLabel: string
   commitStartAt: string | null
+  registrationStartAt: string | null
   revealStartAt: string | null
   endedAt: string | null
   candidateCount: number
@@ -220,6 +222,7 @@ export interface ProposalDraftUpsertInput {
   description?: string | null
   bannerImagePath?: string | null
   candidateCount: number
+  registrationStartAt?: string | null
   commitStartAt?: string | null
   revealStartAt?: string | null
   endedAt?: string | null

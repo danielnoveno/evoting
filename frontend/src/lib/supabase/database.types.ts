@@ -206,6 +206,7 @@ export type Database = {
           deployed_space_id: number | null
           deployed_space_address: string | null
           commit_start_at: string | null
+          registration_start_at: string | null
           reveal_start_at: string | null
           ended_at: string | null
           created_at: string
@@ -230,6 +231,7 @@ export type Database = {
           deployed_space_id?: number | null
           deployed_space_address?: string | null
           commit_start_at?: string | null
+          registration_start_at?: string | null
           reveal_start_at?: string | null
           ended_at?: string | null
           created_at?: string
@@ -254,6 +256,7 @@ export type Database = {
           deployed_space_id?: number | null
           deployed_space_address?: string | null
           commit_start_at?: string | null
+          registration_start_at?: string | null
           reveal_start_at?: string | null
           ended_at?: string | null
           created_at?: string

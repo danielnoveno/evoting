@@ -25,6 +25,7 @@ export interface ProposalFormData {
   bannerImagePath: string
   candidateCount: number
   voterCount: number
+  registrationDate: string
   commitDate: string
   revealDate: string
   endedDate: string
@@ -43,7 +44,7 @@ const EMPTY_CANDIDATE: ProposalCandidateInput = {
   avatarPath: '',
 }
 
-type ProposalFormErrors = Partial<Record<'title' | 'candidateCount' | 'voterCount' | 'commitDate' | 'revealDate' | 'endedDate' | 'dateRange', string>>
+type ProposalFormErrors = Partial<Record<'title' | 'candidateCount' | 'voterCount' | 'registrationDate' | 'commitDate' | 'revealDate' | 'endedDate' | 'dateRange', string>>
 type ValidationIssue = {
   fieldKey: string
   label: string
@@ -125,6 +126,7 @@ export function ProposalForm({
     bannerImagePath: initialData?.bannerImagePath || '',
     candidateCount: initialData?.candidateCount ?? 2,
     voterCount: initialData?.voterCount ?? 0,
+    registrationDate: initialData?.registrationDate || '',
     commitDate: initialData?.commitDate || '',
     revealDate: initialData?.revealDate || '',
     endedDate: initialData?.endedDate || '',
@@ -206,6 +208,7 @@ export function ProposalForm({
         bannerImagePath: initialData.bannerImagePath || '',
         candidateCount: initialData.candidateCount ?? 2,
         voterCount: initialData.voterCount ?? 0,
+        registrationDate: initialData.registrationDate || '',
         commitDate: initialData.commitDate || '',
         revealDate: initialData.revealDate || '',
         endedDate: initialData.endedDate || '',
@@ -248,8 +251,17 @@ export function ProposalForm({
       nextErrors.candidateCount = `NPM/NIM ${duplicateStudentId} sudah digunakan oleh kandidat lain dalam pemilihan yang sama.`
     }
 
+    if (!data.registrationDate) nextErrors.registrationDate = 'Wajib diisi.'
     if (!data.commitDate) nextErrors.commitDate = 'Wajib diisi.'
     if (!data.endedDate) nextErrors.endedDate = 'Wajib diisi.'
+
+    if (data.registrationDate && data.commitDate) {
+      const registrationTime = new Date(data.registrationDate).getTime()
+      const commitTime = new Date(data.commitDate).getTime()
+      if (registrationTime >= commitTime) {
+        nextErrors.dateRange = 'Mulai Persiapan harus sebelum Mulai Pencoblosan.'
+      }
+    }
 
     if (data.commitDate && data.endedDate) {
       const commitTime = new Date(data.commitDate).getTime()
@@ -290,6 +302,7 @@ export function ProposalForm({
 
     if (nextErrors.candidateCount) issues.push({ fieldKey: 'candidates', label: 'Kandidat', message: nextErrors.candidateCount })
     if (nextErrors.title) issues.push({ fieldKey: 'title', label: 'Nama Pemilihan', message: nextErrors.title })
+    if (nextErrors.registrationDate) issues.push({ fieldKey: 'registrationDate', label: 'Mulai Persiapan', message: 'Tanggal dan jam mulai persiapan wajib diisi.' })
     if (nextErrors.commitDate) issues.push({ fieldKey: 'commitDate', label: 'Mulai Pencoblosan', message: 'Tanggal dan jam mulai pencoblosan wajib diisi.' })
     if (nextErrors.endedDate) issues.push({ fieldKey: 'endedDate', label: 'Selesai Pemilihan', message: 'Tanggal dan jam selesai pemilihan wajib diisi.' })
     if (nextErrors.dateRange) issues.push({ fieldKey: 'commitDate', label: 'Urutan Waktu', message: nextErrors.dateRange })
@@ -668,6 +681,7 @@ export function ProposalForm({
       description: formData.description,
       bannerImagePath: bannerImagePath || null,
       candidateCount: candidateEntries.length,
+      registrationStartAt: formData.registrationDate ? new Date(formData.registrationDate).toISOString() : null,
       commitStartAt: new Date(formData.commitDate).toISOString(),
       revealStartAt: new Date(
         (new Date(formData.commitDate).getTime() + new Date(formData.endedDate).getTime()) / 2
@@ -871,13 +885,19 @@ export function ProposalForm({
               <div>
                 <h2 className="text-[14px] font-bold uppercase tracking-widest">Jadwal Pemilihan</h2>
                 <p className="mt-2 text-[14px] leading-6 text-slate-500">
-                  Atur kapan pencoblosan dimulai dan kapan pemilihan selesai. Konfirmasi suara (reveal) akan dimulai otomatis di tengah jangka waktu tersebut.
+                  Atur kapan persiapan dimulai, kapan pencoblosan dimulai, dan kapan pemilihan selesai. Konfirmasi suara (reveal) akan dimulai otomatis di tengah jangka waktu pencoblosan.
                 </p>
               </div>
               <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-[13px] leading-6 text-blue-800">
-                Tahap konfirmasi suara (reveal) dihitung otomatis sebagai titik tengah antara mulai pencoblosan dan selesai pemilihan.
+                Tahap persiapan (registration) adalah waktu untuk menyiapkan daftar pemilih sebelum pencoblosan dibuka. Tahap konfirmasi suara (reveal) dihitung otomatis sebagai titik tengah antara mulai pencoblosan dan selesai pemilihan.
               </div>
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-3 gap-4">
+                <label className="block">
+                  <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Persiapan <RequiredAsterisk /></span>
+                  <input data-validation-field="registrationDate" type="datetime-local" name="registrationDate" value={formData.registrationDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Admin mulai menyiapkan daftar pemilih (whitelist).</p>
+                  {errors.registrationDate && <p className="mt-1 text-[12px] text-red-500">{errors.registrationDate}</p>}
+                </label>
                 <label className="block">
                   <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Pencoblosan <RequiredAsterisk /></span>
                   <input data-validation-field="commitDate" type="datetime-local" name="commitDate" value={formData.commitDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />

@@ -121,6 +121,7 @@ create table if not exists app.proposal_drafts (
   deployment_tx_hash text,
   deployed_space_id bigint,
   deployed_space_address text,
+  registration_start_at timestamptz,
   commit_start_at timestamptz,
   reveal_start_at timestamptz,
   ended_at timestamptz,
