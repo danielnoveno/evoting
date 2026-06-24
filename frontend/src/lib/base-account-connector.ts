@@ -141,9 +141,9 @@ export function baseAccountConnector(parameters: BaseAccountParameters) {
 
     async getProvider() {
       if (!walletProvider) {
-        // Guard: beberapa ekstensi wallet browser mendefinisikan window.ethereum sebagai
-        // a read-only getter. Base Account SDK's requestProvider tries to SET
-        // it, which throws TypeError. Make it writable before SDK loads.
+        // Guard: ekstensi wallet (MetaMask, dll) define window.ethereum sebagai
+        // read-only getter. Base Account SDK coba overwrite → TypeError.
+        // Proxy approach: intercept write ke window.ethereum supaya SDK gak crash.
         if (typeof window !== 'undefined' && window.ethereum) {
           try {
             Object.defineProperty(window, 'ethereum', {
@@ -152,7 +152,18 @@ export function baseAccountConnector(parameters: BaseAccountParameters) {
               configurable: true,
             })
           } catch {
-            // Already configurable or non-redefinable — proceed anyway
+            // Non-configurable — use proxy to absorb SDK's write attempt
+            // ponytail: keeps extension's provider intact, SDK silently falls through
+            const existing = window.ethereum
+            try {
+              Object.defineProperty(window, 'ethereum', {
+                get() { return existing },
+                set() { /* silently ignore SDK's overwrite attempt */ },
+                configurable: true,
+              })
+            } catch {
+              // Completely locked — nothing we can do, SDK will log but app continues
+            }
           }
         }
 
