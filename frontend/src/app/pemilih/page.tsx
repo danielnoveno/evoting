@@ -77,20 +77,25 @@ function FeaturedHeroCard({ election }: { election: VoterElection }) {
   const action = resolveElectionAction(election)
   const viewState = getElectionViewState(election)
   const isUpcoming = viewState.nextAction === 'wait'
-  const label = isUpcoming
-    ? 'Acara Pemilihan Mendatang'
-    : election.phase === 'reveal'
-      ? 'Fase Penghitungan Suara'
-      : election.phase === 'ended'
-        ? 'Pemilihan Selesai'
-        : 'Pemilihan Sedang Berlangsung'
-  const countdownLabel = isUpcoming
-    ? 'Hitung mundur ke pembukaan suara:'
-    : election.phase === 'reveal'
-      ? 'Batas penghitungan suara:'
-      : election.phase === 'ended'
-        ? 'Pemilihan telah selesai:'
-        : 'Sisa waktu memilih:'
+  const alreadyVoted = viewState.hasCommitted && election.phase === 'registration'
+  const label = alreadyVoted
+    ? 'Suara Sudah Tercatat'
+    : isUpcoming
+      ? 'Acara Pemilihan Mendatang'
+      : election.phase === 'reveal'
+        ? 'Fase Penghitungan Suara'
+        : election.phase === 'ended'
+          ? 'Pemilihan Selesai'
+          : 'Pemilihan Sedang Berlangsung'
+  const countdownLabel = alreadyVoted
+    ? 'Menunggu pembukaan fase berikutnya:'
+    : isUpcoming
+      ? 'Hitung mundur ke pembukaan suara:'
+      : election.phase === 'reveal'
+        ? 'Batas penghitungan suara:'
+        : election.phase === 'ended'
+          ? 'Pemilihan telah selesai:'
+          : 'Sisa waktu memilih:'
   const dateLabel = isUpcoming ? 'Waktu Mulai' : election.phase === 'ended' ? 'Selesai Pada' : 'Batas Waktu'
 
   return (
@@ -110,7 +115,7 @@ function FeaturedHeroCard({ election }: { election: VoterElection }) {
         <div className="min-w-0 flex-1">
           <p className="text-[16px] font-semibold uppercase tracking-[0.04em] text-white md:text-[18px]">{label}</p>
           <h2 className="mt-3 text-[44px] font-semibold leading-none tracking-[-0.05em] text-white md:text-[60px]">{election.title}</h2>
-          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-slate-200">{election.summary}</p>
+          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-slate-200">{alreadyVoted ? 'Pilihanmu sudah dikunci di blockchain. Menunggu waktu penghitungan dibuka oleh sistem.' : election.summary}</p>
 
           <div className="mt-6 grid gap-2 text-[14px] leading-7 text-slate-100">
             <p>
@@ -130,7 +135,11 @@ function FeaturedHeroCard({ election }: { election: VoterElection }) {
             <CountdownTile label="Menit" value={countdown.minutes} />
             <CountdownTile label="Detik" value={countdown.seconds} />
           </div>
-          {isUpcoming ? (
+          {alreadyVoted ? (
+            <div className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-emerald-300/40 bg-emerald-500/10 px-5 text-[13px] font-semibold text-emerald-200">
+              ✓ Suara Sudah Dicoblos
+            </div>
+          ) : isUpcoming ? (
             <button type="button" disabled className="mt-5 inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-md border border-amber-300/60 bg-white/5 px-5 text-[13px] font-semibold text-amber-100">
               Belum Dibuka
             </button>
