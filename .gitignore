@@ -6,15 +6,20 @@ node_modules/
 
 # Environment (keep .env.example tracked)
 .env
-.env*
+.env.local
+.env.development
+.env.staging
+.env.production
 !.env.example
+!.env.production.example
 
 # Foundry / Contracts
 contracts/cache/
 contracts/out/
 
-# Deploy
-deploy/
+# Deploy artifacts (not scripts)
+deploy/scripts/logs/
+deploy/backups/
 .netlify
 .vercel
 

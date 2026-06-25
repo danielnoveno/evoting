@@ -1,0 +1,43 @@
+module.exports = {
+  apps: [
+    {
+      name: 'votein-frontend',
+      script: 'npm',
+      args: 'start',
+      cwd: '/home/voteinbi/app/frontend',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000,
+      },
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      error_file: '/home/voteinbi/backups/logs/frontend-error.log',
+      out_file: '/home/voteinbi/backups/logs/frontend-out.log',
+      merge_logs: true,
+    },
+    {
+      name: 'votein-indexer',
+      script: 'npm',
+      args: 'start',
+      cwd: '/home/voteinbi/app/indexer',
+      env: {
+        NODE_ENV: 'production',
+      },
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '512M',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      error_file: '/home/voteinbi/backups/logs/indexer-error.log',
+      out_file: '/home/voteinbi/backups/logs/indexer-out.log',
+      merge_logs: true,
+      restart_delay: 5000,
+      max_restarts: 10,
+    },
+  ],
+};
