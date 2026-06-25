@@ -85,79 +85,83 @@ async function requireSuperadmin(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireSuperadmin(request)
-  if (auth.error) return auth.error
-  if (!auth.client || !auth.profileId) return jsonError('Sesi superadmin tidak dapat diverifikasi.', 401)
-
-  let payload: unknown
   try {
-    payload = await request.json()
-  } catch {
-    return jsonError('Format permintaan tidak valid.', 400)
-  }
+    const auth = await requireSuperadmin(request)
+    if (auth.error) return auth.error
+    if (!auth.client || !auth.profileId) return jsonError('Sesi superadmin tidak dapat diverifikasi.', 401)
 
-  if (!isRecord(payload)) return jsonError('Data undangan tidak valid.', 400)
+    let payload: unknown
+    try {
+      payload = await request.json()
+    } catch {
+      return jsonError('Format permintaan tidak valid.', 400)
+    }
 
-  const email = typeof payload.email === 'string' ? normalizeEmail(payload.email) : ''
-  if (!email) return jsonError('Email wajib diisi.', 400)
+    if (!isRecord(payload)) return jsonError('Data undangan tidak valid.', 400)
 
-  const { data: invite, error: fetchError } = await auth.client
-    .from('admin_registry')
-    .select('email,assigned_role,organization_name,wallet_address,activation_token_hash,activation_expires_at,activation_accepted_at,status')
-    .eq('email', email)
-    .maybeSingle()
+    const email = typeof payload.email === 'string' ? normalizeEmail(payload.email) : ''
+    if (!email) return jsonError('Email wajib diisi.', 400)
 
-  if (fetchError) return jsonError(`Gagal memeriksa undangan: ${fetchError.message}`, 500)
-  if (!invite) return jsonError('Undangan tidak ditemukan untuk email ini.', 404)
-  if (invite.status === 'inactive') return jsonError('Undangan sudah dinonaktifkan.', 410)
-  if (invite.status === 'active' || invite.activation_accepted_at) {
-    return jsonError('Akun ini sudah aktif. Gunakan login biasa atau kirim reset password, bukan email aktivasi.', 409)
-  }
+    const { data: invite, error: fetchError } = await auth.client
+      .from('admin_registry')
+      .select('email,assigned_role,organization_name,wallet_address,activation_token_hash,activation_expires_at,activation_accepted_at,status')
+      .eq('email', email)
+      .maybeSingle()
 
-  // Generate new token & expiry
-  const newToken = createActivationToken()
-  const newTokenHash = hashToken(newToken)
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString()
+    if (fetchError) return jsonError(`Gagal memeriksa undangan: ${fetchError.message}`, 500)
+    if (!invite) return jsonError('Undangan tidak ditemukan untuk email ini.', 404)
+    if (invite.status === 'inactive') return jsonError('Undangan sudah dinonaktifkan.', 410)
+    if (invite.status === 'active' || invite.activation_accepted_at) {
+      return jsonError('Akun ini sudah aktif. Gunakan login biasa atau kirim reset password, bukan email aktivasi.', 409)
+    }
 
-  const updatePayload: Record<string, unknown> = {
-    activation_sent_at: new Date().toISOString(),
-    activation_expires_at: expiresAt,
-    updated_by: auth.profileId,
-  }
+    // Generate new token & expiry
+    const newToken = createActivationToken()
+    const newTokenHash = hashToken(newToken)
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString()
 
-  if (invite.assigned_role === 'super_admin' || !invite.activation_accepted_at) {
-    updatePayload.activation_token_hash = newTokenHash
-    updatePayload.activation_accepted_at = null
-  }
+    const updatePayload: Record<string, unknown> = {
+      activation_sent_at: new Date().toISOString(),
+      activation_expires_at: expiresAt,
+      updated_by: auth.profileId,
+    }
 
-  const { error: updateError } = await auth.client
-    .from('admin_registry')
-    .update(updatePayload)
-    .eq('email', email)
+    if (invite.assigned_role === 'super_admin' || !invite.activation_accepted_at) {
+      updatePayload.activation_token_hash = newTokenHash
+      updatePayload.activation_accepted_at = null
+    }
 
-  if (updateError) return jsonError(`Gagal memperbarui undangan: ${updateError.message}`, 500)
+    const { error: updateError } = await auth.client
+      .from('admin_registry')
+      .update(updatePayload)
+      .eq('email', email)
 
+    if (updateError) return jsonError(`Gagal memperbarui undangan: ${updateError.message}`, 500)
 
-  const activationLink = createActivationLink(request, newToken)
+    const activationLink = createActivationLink(request, newToken)
 
-  const emailResult = await sendAdminActivationEmail({
-    displayName: invite.organization_name ?? email.split('@')[0],
-    email: invite.email,
-    activationLink,
-    role: invite.assigned_role,
-  })
+    const emailResult = await sendAdminActivationEmail({
+      displayName: invite.organization_name ?? email.split('@')[0],
+      email: invite.email,
+      activationLink,
+      role: invite.assigned_role,
+    })
 
-  if (!emailResult.success) {
+    if (!emailResult.success) {
+      return NextResponse.json({
+        activationLink,
+        emailStatus: 'failed',
+        emailError: emailResult.error ?? 'Email gagal dikirim.',
+      })
+    }
+
     return NextResponse.json({
       activationLink,
-      emailStatus: 'failed',
-      emailError: emailResult.error ?? 'Email gagal dikirim.',
+      emailStatus: 'sent',
+      emailId: emailResult.emailId,
     })
+  } catch (err) {
+    console.error('[Admin Resend] Unhandled error:', err)
+    return jsonError('Terjadi kesalahan internal saat mengirim ulang undangan.', 500)
   }
-
-  return NextResponse.json({
-    activationLink,
-    emailStatus: 'sent',
-    emailId: emailResult.emailId,
-  })
 }
