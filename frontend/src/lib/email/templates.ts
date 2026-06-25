@@ -19,7 +19,7 @@ export function buildAdminActivationEmail(params: {
       <div style="margin-bottom:24px;">
         <div style="margin-bottom:24px;">
           <img
-            src="https://votein-evoting.vercel.app/favicon.png"
+            src="https://e-votein.netlify.app/favicon.png"
             alt="Votein"
             width="44"
             height="44"
@@ -89,7 +89,7 @@ export function buildProposalSubmittedEmail(params: {
     <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:28px;">
       <div style="margin-bottom:24px;">
         <img
-          src="https://votein-evoting.vercel.app/favicon.png"
+          src="https://e-votein.netlify.app/favicon.png"
           alt="Votein"
           width="44"
           height="44"
@@ -151,7 +151,7 @@ export function buildVoterActivationEmail(params: {
     <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:28px;">
       <div style="margin-bottom:24px;">
         <img
-          src="https://votein-evoting.vercel.app/favicon.png"
+          src="https://e-votein.netlify.app/favicon.png"
           alt="Votein"
           width="44"
           height="44"
@@ -214,7 +214,7 @@ export function buildVoterWhitelistEmail(params: {
     <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:28px;">
       <div style="margin-bottom:24px;">
         <img
-          src="https://votein-evoting.vercel.app/favicon.png"
+          src="https://e-votein.netlify.app/favicon.png"
           alt="Votein"
           width="44"
           height="44"
@@ -283,7 +283,7 @@ export function buildCommitReminderEmail(params: {
     <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:28px;">
       <div style="margin-bottom:24px;">
         <img
-          src="https://votein-evoting.vercel.app/favicon.png"
+          src="https://e-votein.netlify.app/favicon.png"
           alt="Votein"
           width="44"
           height="44"
@@ -357,7 +357,7 @@ export function buildElectionResultsEmail(params: {
     <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:28px;">
       <div style="margin-bottom:24px;">
         <img
-          src="https://votein-evoting.vercel.app/favicon.png"
+          src="https://e-votein.netlify.app/favicon.png"
           alt="Votein"
           width="44"
           height="44"
@@ -430,7 +430,7 @@ export function buildPhaseChangeEmail(params: {
     <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:28px;">
       <div style="margin-bottom:24px;">
         <img
-          src="https://votein-evoting.vercel.app/favicon.png"
+          src="https://e-votein.netlify.app/favicon.png"
           alt="Votein"
           width="44"
           height="44"
@@ -482,7 +482,7 @@ export function buildDeadlineReminderEmail(params: {
     <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:28px;">
       <div style="margin-bottom:24px;">
         <img
-          src="https://votein-evoting.vercel.app/favicon.png"
+          src="https://e-votein.netlify.app/favicon.png"
           alt="Votein"
           width="44"
           height="44"
@@ -559,7 +559,7 @@ export function buildProposalStatusEmail(params: {
   <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
     <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:28px;">
       <div style="margin-bottom:24px;">
-        <img src="https://votein-evoting.vercel.app/favicon.png" alt="Votein" width="44" height="44" style="display:block;width:44px;height:44px;border-radius:12px;background:#0F172A;" />
+        <img src="https://e-votein.netlify.app/favicon.png" alt="Votein" width="44" height="44" style="display:block;width:44px;height:44px;border-radius:12px;background:#0F172A;" />
       </div>
       <p style="margin:0 0 8px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#94A3B8;">Status Proposal</p>
       ${statusBanner}
