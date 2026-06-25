@@ -145,6 +145,11 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
     detail.contractUrl = `https://sepolia.basescan.org/address/${proposalQuery.data.deployedSpaceAddress}`
   }
 
+  // Override endLabel with actual schedule if available
+  const schedule = proposalQuery.data
+    ? { commitStartAt: proposalQuery.data.commitStartAt, revealStartAt: proposalQuery.data.revealStartAt, endedAt: proposalQuery.data.endedAt }
+    : null
+
   return (
     <SuperadminShell>
       <ScrollReveal variant="fade-up" duration={800}>
@@ -166,7 +171,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
             <SuperadminStatusBadge status={election.status} />
             <div className={`flex items-center gap-2 ${getElectionStatusColor(election.status)}`}>
               <CalendarDays className="h-4 w-4" />
-              <span className="text-slate-800">{detail.endLabel}</span>
+              <span className="text-slate-800">{schedule?.endedAt ? `Berakhir ${new Date(schedule.endedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : detail.endLabel}</span>
             </div>
           </>
         )}
@@ -236,6 +241,46 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
           <p className="mt-4 text-[15px] font-medium text-emerald-600">{detail.blockSyncLabel}</p>
         </article>
       </StaggerContainer>
+
+      {schedule && (schedule.commitStartAt || schedule.revealStartAt || schedule.endedAt) && (
+        <ScrollReveal variant="fade-up" delay={100} duration={600}>
+          <div className="mt-6 rounded-[24px] border border-slate-200 bg-white p-6">
+            <div className="flex items-center gap-3">
+              <CalendarDays className="h-5 w-5 text-slate-700" />
+              <h2 className="text-[18px] font-semibold text-slate-900">Jadwal Pemilihan</h2>
+            </div>
+            <div className="mt-5 grid gap-4 sm:grid-cols-3">
+              {schedule.commitStartAt && (
+                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-600">Mulai Pencoblosan</p>
+                  <p className="mt-2 text-[15px] font-semibold text-blue-900">
+                    {new Date(schedule.commitStartAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  <p className="mt-1 text-[12px] text-blue-700">Fase Commit dimulai</p>
+                </div>
+              )}
+              {schedule.revealStartAt && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-600">Mulai Konfirmasi</p>
+                  <p className="mt-2 text-[15px] font-semibold text-amber-900">
+                    {new Date(schedule.revealStartAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  <p className="mt-1 text-[12px] text-amber-700">Fase Reveal (otomatis)</p>
+                </div>
+              )}
+              {schedule.endedAt && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-600">Selesai Pemilihan</p>
+                  <p className="mt-2 text-[15px] font-semibold text-emerald-900">
+                    {new Date(schedule.endedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  <p className="mt-1 text-[12px] text-emerald-700">Hasil dihitung</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </ScrollReveal>
+      )}
 
       <ScrollReveal variant="fade-up" delay={200} duration={800}>
         <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(360px,0.85fr)]">

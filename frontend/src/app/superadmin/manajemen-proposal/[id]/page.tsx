@@ -574,7 +574,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         </section>
       )}
 
-      {isConnected && userAddress ? (
+      {isConnected && userAddress && proposal.badge !== 'Berjalan' && proposal.badge !== 'Selesai' ? (
         <section className={`mt-6 rounded-2xl border p-5 ${isSuperAdmin === false ? 'border-red-200 bg-red-50 text-red-900' : 'border-slate-200 bg-white text-slate-800'}`}>
           <div className="flex items-start gap-3">
             {isSuperAdmin === true ? <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" /> : <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />}
@@ -956,6 +956,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         </div>
 
         <div className="space-y-6 xl:sticky xl:top-6 xl:self-start">
+          {proposal.badge !== 'Berjalan' && proposal.badge !== 'Selesai' && (
           <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Aksi Review</p>
             <div className="mt-6 space-y-3">
@@ -1011,6 +1012,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               {decisionType === 'revise' && note.trim().length === 0 ? <p className="mt-1 text-[12px] leading-5 text-red-500">Pesan revisi wajib diisi.</p> : null}
             </div>
           </section>
+          )}
 
           <SuperadminSectionCard className="border border-slate-200 bg-white">
             <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Profil Risiko</p>
