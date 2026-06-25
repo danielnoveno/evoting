@@ -1,3 +1,23 @@
 {
-    "livePreview.defaultPreviewPath": "/.docs/low-fi-design/index.html"
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/contracts/cache": true,
+    "**/contracts/out": true,
+    "**/contracts/broadcast": true,
+    "**/.gemini": true,
+    "**/.opencode": true,
+    "**/.vercel": true,
+    "**/.netlify": true,
+    "**/.env*": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/contracts/lib": true,
+    "**/contracts/broadcast": true,
+    "**/contracts/cache": true
+  }
 }

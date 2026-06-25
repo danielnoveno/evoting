@@ -1,31 +1,32 @@
-# Ignore build artifacts
+# Build artifacts
 build/
 dist/
 node_modules/
+.next/
+
+# Environment (keep .env.example tracked)
 .env
-.env.local
-.vscode/
-.idea/
-*.log
-*.tmp
-*.swp
-*.bak
-.history
-.tmp
-# Ignore docs folder
-.docs
-# Ignore low-fi prototype folder
-lowfi-html/
+.env*
+!.env.example
+
 # Foundry / Contracts
 contracts/cache/
 contracts/out/
-# Frontend build
-frontend/.next/
+
+# Deploy
+deploy/
+.netlify
+.vercel
+
+# Supabase CLI temp
+supabase/.temp/
+
 # AI / Agent tool configs (local dev only)
 .opencode/
 opencode.json
 .gemini
-.gemini/
+.vscode/
+.idea/
 .cursor/
 .cursorrules
 .copilot/
@@ -40,16 +41,15 @@ opencode.json
 .windsurfrules
 .aider*
 AGENTS.local.md
-# Ponytail (lazy senior dev plugin)
+
+# Docs (kept separately)
+.docs
 .docs/ponytail/
-.vercel
-.env*
 
-# Local Netlify folder
-.netlify
-
-# Deploy configs
-deploy/
-
-# Supabase CLI temp
-supabase/.temp/
+# Misc
+*.log
+*.tmp
+*.swp
+*.bak
+.history
+.lowfi-html/
