@@ -1,10 +1,18 @@
-// ponytail: minimal eth_call helper for reading vote counts via Alchemy RPC.
+// ponytail: minimal eth_call helper for reading vote counts from ElectionSpace contract.
 // No viem/wagmi dependency — raw JSON-RPC only.
+// Falls back to public Base Sepolia RPCs when Alchemy key is not configured.
 
-function getAlchemyRpcUrl(): string | null {
+const PUBLIC_RPC_URLS = [
+  'https://base-sepolia-rpc.publicnode.com',
+  'https://sepolia.base.org',
+  'https://rpc.ankr.com/base_sepolia',
+]
+
+function getRpcUrl(): string | null {
   const key = process.env.ALCHEMY_API_KEY?.trim()
-  if (!key) return null
-  return `https://base-sepolia.g.alchemy.com/v2/${key}`
+  if (key) return `https://base-sepolia.g.alchemy.com/v2/${key}`
+  // ponytail: pick first public RPC. Add retry logic if rate-limited.
+  return PUBLIC_RPC_URLS[0]
 }
 
 function encodeUint256(value: number): string {
@@ -21,29 +29,42 @@ const FUNC_CANDIDATE_COUNT = '0x18d12e06'
 const FUNC_VOTE_COUNT = '0x6817c76c'
 
 async function ethCall(rpcUrl: string, to: string, data: string): Promise<string> {
-  const response = await fetch(rpcUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'eth_call',
-      params: [{ to, data }, 'latest'],
-    }),
-  })
+  // ponytail: try each public RPC in order, skip on failure
+  const rpcUrls = [rpcUrl, ...PUBLIC_RPC_URLS.filter((url) => url !== rpcUrl)]
+  let lastError = ''
 
-  if (!response.ok) throw new Error(`Alchemy RPC failed: ${response.status}`)
-  const payload = await response.json()
-  if (payload.error) throw new Error(`Alchemy RPC error: ${payload.error.message}`)
-  return payload.result
+  for (const url of rpcUrls) {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_call',
+          params: [{ to, data }, 'latest'],
+        }),
+      })
+
+      if (!response.ok) { lastError = `RPC ${response.status}`; continue }
+      const payload = await response.json()
+      if (payload.error) { lastError = payload.error.message; continue }
+      if (!payload.result) { lastError = 'empty result'; continue }
+      return payload.result
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : 'network error'
+    }
+  }
+
+  throw new Error(`RPC gagal: ${lastError}`)
 }
 
 export async function fetchVoteCountsViaAlchemy(
   spaceAddress: string,
   candidateCount: number,
 ): Promise<Array<{ candidateId: number; voteCount: number }>> {
-  const rpcUrl = getAlchemyRpcUrl()
-  if (!rpcUrl) throw new Error('ALCHEMY_API_KEY belum dikonfigurasi.')
+  const rpcUrl = getRpcUrl()
+  if (!rpcUrl) throw new Error('RPC Base Sepolia tidak tersedia.')
 
   const results: Array<{ candidateId: number; voteCount: number }> = []
 
@@ -57,13 +78,22 @@ export async function fetchVoteCountsViaAlchemy(
 }
 
 export async function fetchCandidateCountViaAlchemy(spaceAddress: string): Promise<number> {
-  const rpcUrl = getAlchemyRpcUrl()
-  if (!rpcUrl) throw new Error('ALCHEMY_API_KEY belum dikonfigurasi.')
+  const rpcUrl = getRpcUrl()
+  if (!rpcUrl) throw new Error('RPC Base Sepolia tidak tersedia.')
 
   const result = await ethCall(rpcUrl, spaceAddress, FUNC_CANDIDATE_COUNT)
   return decodeUint256(result)
 }
 
 export function isAlchemyConfigured(): boolean {
-  return getAlchemyRpcUrl() !== null
+  return getRpcUrl() !== null
+}
+
+/** Fetch candidateCount + all voteCounts in a single call. */
+export async function fetchElectionResultsFromChain(spaceAddress: string) {
+  const candidateCount = await fetchCandidateCountViaAlchemy(spaceAddress)
+  if (candidateCount === 0) return { totalRevealed: 0, candidateResults: [] as Array<{ candidateId: number; voteCount: number }> }
+  const candidateResults = await fetchVoteCountsViaAlchemy(spaceAddress, candidateCount)
+  const totalRevealed = candidateResults.reduce((sum, r) => sum + r.voteCount, 0)
+  return { totalRevealed, candidateResults }
 }

@@ -386,9 +386,22 @@ export async function getPublicElectionById(id: string): Promise<PublicElectionR
 }
 
 export async function getPublicElectionResults(spaceAddress?: string | null): Promise<PublicElectionResultRecord | null> {
+  if (!spaceAddress) return null
   const graphqlUrl = getPonderGraphqlUrl()
-  if (!graphqlUrl || !spaceAddress) return null
 
+  // ponytail: if Ponder is configured, try it first; fall back to direct chain read
+  if (graphqlUrl) {
+    try {
+      return await fetchPonderResults(graphqlUrl, spaceAddress)
+    } catch {
+      // ponytail: Ponder failed, fall through to chain reader
+    }
+  }
+
+  return fetchChainResults(spaceAddress)
+}
+
+async function fetchPonderResults(graphqlUrl: string, spaceAddress: string): Promise<PublicElectionResultRecord | null> {
   const addressVariants = Array.from(new Set([spaceAddress, spaceAddress.toLowerCase()]))
   const response = await fetch(graphqlUrl, {
     method: 'POST',
@@ -442,6 +455,37 @@ export async function getPublicElectionResults(spaceAddress?: string | null): Pr
     totalRevealed: electionItem?.totalRevealed ?? candidateResults.reduce((total, item) => total + item.voteCount, 0),
     lastUpdatedBlock: electionItem ? asFiniteNumber(electionItem.lastUpdatedBlock) || null : null,
     candidateResults,
+  }
+}
+
+async function fetchChainResults(spaceAddress: string): Promise<PublicElectionResultRecord | null> {
+  // ponytail: client routes through API, server calls directly
+  const url = typeof window !== 'undefined'
+    ? `/api/election/results/${spaceAddress}`
+    : null
+
+  if (!url) return null
+
+  const response = await fetch(url, { cache: 'no-store' })
+  if (!response.ok) return null
+
+  const data: unknown = await response.json()
+  if (!data || typeof data !== 'object') return null
+  const d = data as Record<string, unknown>
+
+  return {
+    spaceAddress: (d.spaceAddress as string) ?? spaceAddress,
+    totalCommitted: (d.totalCommitted as number) ?? 0,
+    totalRevealed: (d.totalRevealed as number) ?? 0,
+    lastUpdatedBlock: (d.lastUpdatedBlock as number) ?? null,
+    candidateResults: Array.isArray(d.candidateResults)
+      ? d.candidateResults.map((r: Record<string, unknown>) => ({
+          candidateId: Number(r.candidateId) || 0,
+          voteCount: Number(r.voteCount) || 0,
+          lastRevealTx: (r.lastRevealTx as string) ?? null,
+          lastUpdatedBlock: (r.lastUpdatedBlock as number) ?? null,
+        }))
+      : [],
   }
 }
 
