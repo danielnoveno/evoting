@@ -51,6 +51,14 @@ type ValidationIssue = {
   message: string
 }
 
+// ponytail: generate min datetime once on mount — re-render-safe because the
+// browser's datetime-local picker already prevents selecting earlier times
+// at the native level; the JS check is a safety net for programmatic submits.
+function toDatetimeLocalString(date: Date): string {
+  const pad = (num: number) => String(num).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
 const MIN_GAP_MINUTES = 1
 const MAX_SUPPORTING_DOCUMENT_SIZE = 10 * 1024 * 1024
 const MAX_CANDIDATE_PHOTO_SIZE = 5 * 1024 * 1024
@@ -137,6 +145,7 @@ export function ProposalForm({
   const { clearDraft } = useFormDraft(draftKey, formData, setFormData)
   const [errors, setErrors] = useState<ProposalFormErrors>({})
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([])
+  const [nowString] = useState(() => toDatetimeLocalString(new Date()))
   const isSubmitting = saveProposalDraft.isPending || isUploadingDocument || isUploadingCandidatePhotos || isUploadingBannerImage
 
   const whitelistLines = formData.whitelistWallets
@@ -255,6 +264,18 @@ export function ProposalForm({
     if (!data.commitDate) nextErrors.commitDate = 'Wajib diisi.'
     if (!data.endedDate) nextErrors.endedDate = 'Wajib diisi.'
 
+    // Reject past dates (safety net behind the HTML min attribute)
+    const nowTs = Date.now()
+    if (data.registrationDate && new Date(data.registrationDate).getTime() < nowTs) {
+      nextErrors.registrationDate = 'Tanggal dan jam tidak boleh di masa lampau.'
+    }
+    if (data.commitDate && new Date(data.commitDate).getTime() < nowTs) {
+      nextErrors.commitDate = 'Tanggal dan jam tidak boleh di masa lampau.'
+    }
+    if (data.endedDate && new Date(data.endedDate).getTime() < nowTs) {
+      nextErrors.endedDate = 'Tanggal dan jam tidak boleh di masa lampau.'
+    }
+
     if (data.registrationDate && data.commitDate) {
       const registrationTime = new Date(data.registrationDate).getTime()
       const commitTime = new Date(data.commitDate).getTime()
@@ -302,9 +323,9 @@ export function ProposalForm({
 
     if (nextErrors.candidateCount) issues.push({ fieldKey: 'candidates', label: 'Kandidat', message: nextErrors.candidateCount })
     if (nextErrors.title) issues.push({ fieldKey: 'title', label: 'Nama Pemilihan', message: nextErrors.title })
-    if (nextErrors.registrationDate) issues.push({ fieldKey: 'registrationDate', label: 'Mulai Persiapan', message: 'Tanggal dan jam mulai persiapan wajib diisi.' })
-    if (nextErrors.commitDate) issues.push({ fieldKey: 'commitDate', label: 'Mulai Pencoblosan', message: 'Tanggal dan jam mulai pencoblosan wajib diisi.' })
-    if (nextErrors.endedDate) issues.push({ fieldKey: 'endedDate', label: 'Selesai Pemilihan', message: 'Tanggal dan jam selesai pemilihan wajib diisi.' })
+    if (nextErrors.registrationDate) issues.push({ fieldKey: 'registrationDate', label: 'Mulai Persiapan', message: nextErrors.registrationDate })
+    if (nextErrors.commitDate) issues.push({ fieldKey: 'commitDate', label: 'Mulai Pencoblosan', message: nextErrors.commitDate })
+    if (nextErrors.endedDate) issues.push({ fieldKey: 'endedDate', label: 'Selesai Pemilihan', message: nextErrors.endedDate })
     if (nextErrors.dateRange) issues.push({ fieldKey: 'commitDate', label: 'Urutan Waktu', message: nextErrors.dateRange })
 
     data.candidateEntries.forEach((candidate, index) => {
@@ -894,19 +915,19 @@ export function ProposalForm({
               <div className="grid sm:grid-cols-3 gap-4">
                 <label className="block">
                   <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Persiapan <RequiredAsterisk /></span>
-                  <input data-validation-field="registrationDate" type="datetime-local" name="registrationDate" value={formData.registrationDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  <input data-validation-field="registrationDate" type="datetime-local" name="registrationDate" value={formData.registrationDate} onChange={handleChange} disabled={isReadOnly} min={nowString} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                   <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Admin mulai menyiapkan daftar pemilih (whitelist).</p>
                   {errors.registrationDate && <p className="mt-1 text-[12px] text-red-500">{errors.registrationDate}</p>}
                 </label>
                 <label className="block">
                   <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Pencoblosan <RequiredAsterisk /></span>
-                  <input data-validation-field="commitDate" type="datetime-local" name="commitDate" value={formData.commitDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  <input data-validation-field="commitDate" type="datetime-local" name="commitDate" value={formData.commitDate} onChange={handleChange} disabled={isReadOnly} min={nowString} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                   <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Pemilih mulai bisa memilih dan mengunci suara.</p>
                   {errors.commitDate && <p className="mt-1 text-[12px] text-red-500">{errors.commitDate}</p>}
                 </label>
                 <label className="block">
                   <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Selesai Pemilihan <RequiredAsterisk /></span>
-                  <input data-validation-field="endedDate" type="datetime-local" name="endedDate" value={formData.endedDate} onChange={handleChange} disabled={isReadOnly} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  <input data-validation-field="endedDate" type="datetime-local" name="endedDate" value={formData.endedDate} onChange={handleChange} disabled={isReadOnly} min={nowString} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
                   <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Hasil akhir ditutup dan siap diaudit.</p>
                   {errors.endedDate && <p className="mt-1 text-[12px] text-red-500">{errors.endedDate}</p>}
                 </label>
@@ -1258,6 +1279,20 @@ export function ProposalForm({
             )}
           </div>
         </section>
+      )}
+
+      {/* ── Submit Button (non-stepper mode, e.g. edit page) ── */}
+      {!stepper && !isReadOnly && (
+        <div className="flex justify-center pt-6">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="inline-flex h-12 items-center gap-2 rounded-2xl bg-black px-8 text-[14px] font-medium text-white transition hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Save className="h-4 w-4" /> {isUploadingBannerImage ? 'Mengunggah banner...' : isUploadingCandidatePhotos ? 'Mengunggah foto...' : isUploadingDocument ? 'Mengunggah dokumen...' : saveProposalDraft.isPending ? 'Menyimpan...' : submitLabel}
+          </button>
+        </div>
       )}
 
       {/* ── Navigation Buttons (stepper mode) ── */}
