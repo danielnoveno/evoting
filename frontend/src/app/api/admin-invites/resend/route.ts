@@ -108,7 +108,10 @@ export async function POST(request: NextRequest) {
       .eq('email', email)
       .maybeSingle()
 
-    if (fetchError) return jsonError(`Gagal memeriksa undangan: ${fetchError.message}`, 500)
+    if (fetchError) {
+      console.error('[Admin Resend] Invite fetch error:', fetchError.message, fetchError.code, fetchError.details)
+      return jsonError(`Gagal memeriksa undangan: ${fetchError.message}`, 500)
+    }
     if (!invite) return jsonError('Undangan tidak ditemukan untuk email ini.', 404)
     if (invite.status === 'inactive') return jsonError('Undangan sudah dinonaktifkan.', 410)
     if (invite.status === 'active' || invite.activation_accepted_at) {
@@ -136,7 +139,10 @@ export async function POST(request: NextRequest) {
       .update(updatePayload)
       .eq('email', email)
 
-    if (updateError) return jsonError(`Gagal memperbarui undangan: ${updateError.message}`, 500)
+    if (updateError) {
+      console.error('[Admin Resend] Invite update error:', updateError.message, updateError.code, updateError.details)
+      return jsonError(`Gagal memperbarui undangan: ${updateError.message}`, 500)
+    }
 
     const activationLink = createActivationLink(request, newToken)
 
@@ -161,7 +167,8 @@ export async function POST(request: NextRequest) {
       emailId: emailResult.emailId,
     })
   } catch (err) {
-    console.error('[Admin Resend] Unhandled error:', err)
-    return jsonError('Terjadi kesalahan internal saat mengirim ulang undangan.', 500)
+    const detail = err instanceof Error ? err.message : String(err)
+    console.error('[Admin Resend] Unhandled error:', detail, err)
+    return jsonError(`Terjadi kesalahan internal: ${detail}`, 500)
   }
 }
