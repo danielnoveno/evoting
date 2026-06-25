@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
+  images: {
+    unoptimized: true,
+  },
   reactStrictMode: true,
   async headers() {
     return [
@@ -9,10 +13,6 @@ const nextConfig = {
           {
             key: 'Cross-Origin-Opener-Policy',
             value: 'same-origin-allow-popups',
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: "font-src 'self' data: *.gstatic.com *.netlify.app;",
           },
         ],
       },
