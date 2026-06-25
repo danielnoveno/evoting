@@ -73,6 +73,7 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
     bannerImagePath: liveProposal?.bannerImagePath ?? '',
     candidateCount: liveProposal?.candidateCount ?? 2,
     voterCount: 0,
+    registrationDate: toDatetimeLocal(liveProposal?.registrationStartAt ?? null, ''),
     commitDate: toDatetimeLocal(liveProposal?.commitStartAt ?? null, ''),
     revealDate: toDatetimeLocal(liveProposal?.revealStartAt ?? null, ''),
     endedDate: toDatetimeLocal(liveProposal?.endedAt ?? null, ''),

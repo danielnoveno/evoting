@@ -98,6 +98,7 @@ export type Database = {
           assigned_role: 'admin' | 'super_admin'
           organization_name: string | null
           access_scope: 'all' | 'specific'
+          faculty: string | null
           status: 'pending' | 'active' | 'inactive'
           description: string | null
           wallet_address: string | null
@@ -115,6 +116,7 @@ export type Database = {
           assigned_role?: 'admin' | 'super_admin'
           organization_name?: string | null
           access_scope?: 'all' | 'specific'
+          faculty?: string | null
           status?: 'pending' | 'active' | 'inactive'
           description?: string | null
           wallet_address?: string | null
@@ -132,6 +134,7 @@ export type Database = {
           assigned_role?: 'admin' | 'super_admin'
           organization_name?: string | null
           access_scope?: 'all' | 'specific'
+          faculty?: string | null
           status?: 'pending' | 'active' | 'inactive'
           description?: string | null
           wallet_address?: string | null
@@ -197,6 +200,7 @@ export type Database = {
           theme_color: string
           rules_text: string | null
           candidate_count: number
+          faculty: string | null
           status: 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived'
           metadata_version: number
           onchain_proposal_id: number | null
@@ -222,6 +226,7 @@ export type Database = {
           theme_color?: string
           rules_text?: string | null
           candidate_count?: number
+          faculty?: string | null
           status?: 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived'
           metadata_version?: number
           onchain_proposal_id?: number | null
@@ -247,6 +252,7 @@ export type Database = {
           theme_color?: string
           rules_text?: string | null
           candidate_count?: number
+          faculty?: string | null
           status?: 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived'
           metadata_version?: number
           onchain_proposal_id?: number | null

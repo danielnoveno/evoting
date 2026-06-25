@@ -296,6 +296,7 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
     description: input.description ?? null,
     banner_image_path: input.bannerImagePath ?? null,
     candidate_count: input.candidateCount,
+    faculty: input.faculty ?? null,
     registration_start_at: input.registrationStartAt ?? null,
     commit_start_at: input.commitStartAt ?? null,
     reveal_start_at: input.revealStartAt ?? null,
@@ -439,6 +440,20 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
 
     void notifySuperadminsServer()
     void notifyAdminServer()
+
+    // Send email notification to superadmins (fire-and-forget)
+    const sendEmailToSuperadmins = async () => {
+      try {
+        await fetch('/api/proposals/submit-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ proposalId: proposal.id, faculty: input.faculty || '' }),
+        })
+      } catch {
+        // ponytail: email failure should not block proposal submission
+      }
+    }
+    void sendEmailToSuperadmins()
   }
 
   return proposal

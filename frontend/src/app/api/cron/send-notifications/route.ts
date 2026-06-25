@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
-import { sendCommitReminderEmail, sendElectionResultsEmail } from '@/lib/email/send'
+import { sendCommitReminderEmail, sendElectionResultsEmail, sendDeadlineReminderEmail } from '@/lib/email/send'
 import { fetchVoteCountsViaAlchemy, fetchCandidateCountViaAlchemy, isAlchemyConfigured } from '@/lib/alchemy-rpc'
 
 export const runtime = 'nodejs'
@@ -50,6 +50,10 @@ function getCommitReminderWindowMinutes() {
 
 function getResultsLookbackMinutes() {
   return envMinutes('RESULTS_LOOKBACK_MINUTES', 60)
+}
+
+function getDeadlineReminderWindowMinutes() {
+  return envMinutes('DEADLINE_REMINDER_WINDOW_MINUTES', 60)
 }
 
 // ─── Deduplication ───────────────────────────────────────────────────────────
@@ -175,6 +179,96 @@ async function processCommitReminders(
 
     sent += batchSent
     await markSent(client, 'commit_reminder', election.id, {
+      electionTitle: election.title,
+      sentToCount: batchSent,
+    })
+  }
+
+  return { processed: elections.length, sent }
+}
+
+// ─── Deadline Reminder (N min before commit ENDS / reveal STARTS) ──────────
+
+async function processDeadlineReminders(
+  client: NonNullable<ReturnType<typeof getSupabaseServiceRoleClient>>,
+  siteUrl: string,
+) {
+  const windowMinutes = getDeadlineReminderWindowMinutes()
+  const now = new Date()
+  const windowEnd = new Date(now.getTime() + windowMinutes * 60 * 1000)
+
+  // Elections where reveal_start_at (commit deadline) is within the next N minutes
+  const { data: elections } = await client
+    .schema('app')
+    .from('proposal_drafts')
+    .select('id, title, reveal_start_at, deployed_space_address')
+    .eq('status', 'deployed')
+    .not('reveal_start_at', 'is', null)
+    .not('deployed_space_address', 'is', null)
+    .gt('reveal_start_at', now.toISOString())
+    .lte('reveal_start_at', windowEnd.toISOString())
+
+  if (!elections || elections.length === 0) return { processed: 0, sent: 0, windowMinutes }
+
+  let sent = 0
+  for (const election of elections) {
+    if (await wasRecentlySent(client, 'deadline_reminder', election.id, windowMinutes * 60 * 1000)) continue
+
+    const commitEndsAt = toDatetimeLocal(election.reveal_start_at)
+
+    const { data: whitelistEntries } = await client
+      .schema('app')
+      .from('proposal_whitelist_entries')
+      .select('wallet_address')
+      .eq('proposal_draft_id', election.id)
+      .eq('validation_status', 'valid')
+
+    if (!whitelistEntries || whitelistEntries.length === 0) continue
+
+    const walletAddresses = whitelistEntries
+      .map((e) => e.wallet_address?.toLowerCase())
+      .filter(Boolean) as string[]
+
+    // Find wallets that have already committed
+    const { data: committedWallets } = await client
+      .schema('app')
+      .from('tx_audit_log')
+      .select('wallet_address')
+      .eq('proposal_draft_id', election.id)
+      .eq('action_type', 'commit_vote')
+      .eq('status', 'success')
+
+    const committedSet = new Set(
+      (committedWallets ?? []).map((r) => r.wallet_address?.toLowerCase()).filter(Boolean),
+    )
+
+    const uncommittedWallets = walletAddresses.filter((w) => !committedSet.has(w))
+    if (uncommittedWallets.length === 0) continue
+
+    const { data: voters } = await client
+      .schema('app')
+      .from('master_voters')
+      .select('email, full_name, wallet_address')
+      .in('wallet_address', uncommittedWallets)
+      .eq('status', 'active')
+
+    if (!voters || voters.length === 0) continue
+
+    let batchSent = 0
+    for (const voter of voters) {
+      if (!voter.email) continue
+      const result = await sendDeadlineReminderEmail({
+        email: voter.email,
+        voterName: voter.full_name || 'Pemilih',
+        electionTitle: election.title,
+        commitEndsAt,
+        siteUrl,
+      })
+      if (result.success) batchSent++
+    }
+
+    sent += batchSent
+    await markSent(client, 'deadline_reminder', election.id, {
       electionTitle: election.title,
       sentToCount: batchSent,
     })
@@ -355,7 +449,7 @@ export async function POST(request: NextRequest) {
   const siteUrl = getSiteUrl()
   const results: Record<string, unknown> = {}
 
-  // 1. Commit reminders (30 min before commit ends)
+  // 1. Commit reminders (N min before commit starts)
   try {
     results.commitReminders = await processCommitReminders(client, siteUrl)
   } catch (err) {
@@ -363,7 +457,15 @@ export async function POST(request: NextRequest) {
     results.commitReminders = { error: err instanceof Error ? err.message : 'Unknown error' }
   }
 
-  // 2. Election results (after ended)
+  // 2. Deadline reminders (N min before commit ends / reveal starts)
+  try {
+    results.deadlineReminders = await processDeadlineReminders(client, siteUrl)
+  } catch (err) {
+    console.error('[Cron] Deadline reminder error:', err)
+    results.deadlineReminders = { error: err instanceof Error ? err.message : 'Unknown error' }
+  }
+
+  // 3. Election results (after ended)
   try {
     results.electionResults = await processElectionResults(client, siteUrl)
   } catch (err) {

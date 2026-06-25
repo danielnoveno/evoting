@@ -69,6 +69,9 @@ export function useMicrosoftCampusLogin() {
         provider: 'azure',
         options: {
           scopes: 'openid profile email',
+          queryParams: {
+            prompt: 'select_account',
+          },
           redirectTo: `${appOrigin}/auth/callback${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`,
         }
       })

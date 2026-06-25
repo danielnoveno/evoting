@@ -20,7 +20,6 @@ type ModerationDetail = {
   totalVotesDelta: string
   verificationNote: string
   participationValue: string
-  participationTarget: string
   participationNote: string
   phaseTitle: string
   nextPhase: string
@@ -67,7 +66,6 @@ function getFallbackDetail(title: string, code: string): ModerationDetail {
     totalVotesDelta: '+0%',
     verificationNote: 'Verifikasi on-chain: menunggu data',
     participationValue: '0%',
-    participationTarget: '80%',
     participationNote: 'Belum ada partisipasi',
     phaseTitle: 'Monitoring Aktif',
     nextPhase: 'Reveal & Tally',
@@ -218,7 +216,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
           <div className="mt-5 h-2 rounded-full bg-slate-100">
             <div className={`h-2 rounded-full bg-slate-900 ${getParticipationWidthClass(detail.participationValue)}`} />
           </div>
-          <p className="mt-4 text-[15px] leading-7 text-slate-800">Target: {detail.participationTarget} ({detail.participationNote})</p>
+          <p className="mt-4 text-[15px] leading-7 text-slate-800">{detail.participationNote}</p>
         </article>
 
         <article className="rounded-[24px] bg-[#11182a] p-6 text-white">

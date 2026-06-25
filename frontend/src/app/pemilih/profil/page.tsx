@@ -1,24 +1,19 @@
 'use client'
 
-import { Camera, Copy, Pencil, ShieldCheck } from 'lucide-react'
-import { ChangeEvent, useEffect, useRef, useState } from 'react'
+import { Camera, Copy, Lock, ShieldCheck } from 'lucide-react'
+import { ChangeEvent, useRef } from 'react'
 import { ScrollReveal } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { useVoterStore } from '@/lib/voter-store'
-import { useProfileByWallet, useSaveCurrentProfile } from '@/hooks/use-profile'
+import { useProfileByWallet } from '@/hooks/use-profile'
 import { mapProfileToViewModel } from '@/lib/mappers/profileMapper'
-import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { useProfileImageUpload } from '@/hooks/use-profile-upload'
-import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 
 export default function VoterProfilePage() {
   const { showToast } = useToast()
-  const { store, loading, actions } = useVoterStore()
+  const { store, loading } = useVoterStore()
   const fileRef = useRef<HTMLInputElement>(null)
-  const [displayName, setDisplayName] = useState('')
-  const [bio, setBio] = useState('')
-  const saveProfile = useSaveCurrentProfile()
   const profileQuery = useProfileByWallet(store?.profile.wallet)
   const uploadAvatarMutation = useProfileImageUpload()
 
@@ -29,11 +24,6 @@ export default function VoterProfilePage() {
     bio: store?.profile.bio ?? '',
     avatarUrl: store?.profile.avatarUrl ?? null,
   })
-
-  useEffect(() => {
-    setDisplayName(resolvedProfile.displayName)
-    setBio(resolvedProfile.bio)
-  }, [resolvedProfile.bio, resolvedProfile.displayName])
 
   if (loading || !store) {
     return <VoterShell><div className="h-[420px] animate-pulse rounded-[32px] bg-slate-200" /></VoterShell>
@@ -47,7 +37,7 @@ export default function VoterProfilePage() {
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !profileQuery.data?.userId) return
-    
+
     if (!file.type.startsWith('image/')) {
       showToast({ tone: 'error', title: 'Format file tidak didukung', description: 'Silakan pilih file gambar JPG atau PNG.' })
       return
@@ -57,75 +47,39 @@ export default function VoterProfilePage() {
       { file, userId: profileQuery.data.userId },
       {
         onSuccess: (newUrl) => {
-          actions.updateProfile({ avatarUrl: newUrl })
           showToast({ tone: 'success', title: 'Foto profil diperbarui', description: 'Perubahan foto profil berhasil disimpan.' })
         },
         onError: (error) => {
-          showToast({ 
-            tone: 'error', 
-            title: 'Gagal mengunggah foto', 
-            description: error instanceof Error ? error.message : 'Terjadi kesalahan.' 
+          showToast({
+            tone: 'error',
+            title: 'Gagal mengunggah foto',
+            description: error instanceof Error ? error.message : 'Terjadi kesalahan.',
           })
         },
       }
     )
   }
 
-  const handleSave = () => {
-    actions.updateProfile({ name: displayName, bio })
-
-    if (!store?.profile.wallet) {
-      showToast({ tone: 'success', title: 'Perubahan disimpan', description: 'Profil pemilih berhasil diperbarui.' })
-      return
-    }
-
-    saveProfile.mutate(
-      {
-        walletAddress: store.profile.wallet,
-        displayName,
-        email: resolvedProfile.email,
-        avatarUrl: store.profile.avatarUrl,
-      },
-      {
-        onSuccess: () => {
-          showToast({ tone: 'success', title: 'Perubahan disimpan', description: 'Profil pemilih berhasil diperbarui.' })
-        },
-        onError: (error) => {
-          showToast({
-            tone: 'error',
-            title: 'Gagal menyimpan profil',
-            description: getRepositoryErrorMessage(error, 'Perubahan lokal tersimpan, tetapi sinkronisasi backend belum aktif.'),
-          })
-        },
-      },
-    )
-  }
+  const photoUrl = resolvedProfile.avatarUrl ?? store.profile.avatarUrl
 
   return (
     <VoterShell>
       <ScrollReveal variant="fade-up" duration={800}>
       <section className="max-w-4xl">
-        {profileQuery.error ? (
-          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800" role="status">
-            {getRepositoryErrorMessage(profileQuery.error, 'Profil live belum tersedia. Halaman masih memakai data transisi lokal.')}
-          </div>
-        ) : null}
-
         <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
           <span>Portal Pemilih</span>
           <span>›</span>
-          <span>KEAMANAN</span>
-          <span>›</span>
-          <span className="text-slate-900">Pengaturan Profil</span>
+          <span className="text-slate-900">Profil Saya</span>
         </div>
-        <h1 className="mt-5 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Sunting Profil</h1>
-        <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">Kelola identitas digital Anda dalam ekosistem voting. Pastikan informasi tetap jelas, rapi, dan mudah diverifikasi.</p>
+        <h1 className="mt-5 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Profil Saya</h1>
+        <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">Informasi profil Anda dalam sistem voting. Untuk perubahan data lainnya, hubungi administrator.</p>
       </section>
       </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={100} duration={800}>
       <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(320px,0.64fr)_minmax(0,1.36fr)]">
         <div className="space-y-6">
+          {/* Photo Card */}
           <article className="rounded-[32px] border border-slate-100 bg-white p-8 text-center">
             <div className="relative mx-auto h-[136px] w-[136px]">
               <div className="h-full w-full rounded-full overflow-hidden ring-4 ring-white flex items-center justify-center bg-slate-100">
@@ -133,15 +87,15 @@ export default function VoterProfilePage() {
                   <div className="flex items-center justify-center bg-slate-900/50 w-full h-full">
                     <div className="h-8 w-8 animate-spin rounded-full border-4 border-white/20 border-t-white" />
                   </div>
-                ) : (resolvedProfile.avatarUrl ?? store.profile.avatarUrl) ? (
-                  <img src={resolvedProfile.avatarUrl ?? store.profile.avatarUrl} alt={resolvedProfile.displayName} className="h-full w-full object-cover" />
+                ) : photoUrl ? (
+                  <img src={photoUrl} alt={resolvedProfile.displayName} className="h-full w-full object-cover" />
                 ) : (
                   <span className="text-3xl font-bold text-slate-300">VM</span>
                 )}
               </div>
-              <button 
-                type="button" 
-                onClick={() => fileRef.current?.click()} 
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
                 disabled={uploadAvatarMutation.isPending}
                 className="absolute bottom-1 right-1 flex h-11 w-11 items-center justify-center rounded-full bg-black text-white hover:bg-slate-900 disabled:opacity-50"
               >
@@ -149,11 +103,11 @@ export default function VoterProfilePage() {
               </button>
             </div>
             <h2 className="mt-6 text-[24px] font-semibold text-slate-900">Foto Profil</h2>
-            <p className="mt-3 text-[15px] leading-8 text-slate-800">Gunakan foto yang jelas untuk mempermudah identifikasi saat proses voting berlangsung.</p>
+            <p className="mt-3 text-[15px] leading-8 text-slate-800">Klik ikon kamera atau tombol di bawah untuk mengganti foto profil Anda.</p>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-            <button 
-              type="button" 
-              onClick={() => fileRef.current?.click()} 
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
               disabled={uploadAvatarMutation.isPending}
               className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-100 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-200 disabled:opacity-50"
             >
@@ -170,29 +124,30 @@ export default function VoterProfilePage() {
           </article>
         </div>
 
-          <article className="rounded-[32px] border border-slate-100 bg-white p-6 sm:p-8">
+        {/* Read-only info */}
+        <article className="rounded-[32px] border border-slate-100 bg-white p-6 sm:p-8">
           <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-700">Informasi personal</p>
 
           <div className="mt-8 space-y-7">
             <div>
-              <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Nama tampilan (display name) <RequiredAsterisk /></label>
+              <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Nama tampilan</label>
               <div className="relative">
-                 <input value={displayName || resolvedProfile.displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={100} className="h-14 w-full rounded-2xl bg-slate-100 px-4 pr-12 text-[16px] text-slate-900 outline-none focus:bg-white focus:ring-1 focus:ring-slate-300 sm:px-5" />
-                <Pencil className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input value={resolvedProfile.displayName} disabled readOnly className="h-14 w-full cursor-not-allowed rounded-2xl bg-slate-100 px-5 pr-12 text-[16px] text-slate-600 outline-none opacity-70" />
+                <Lock className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
             </div>
 
             <div>
               <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Alamat email terdaftar</label>
-               <input value={resolvedProfile.email} disabled className="h-14 w-full cursor-not-allowed rounded-2xl bg-slate-100 px-4 text-[16px] text-slate-500 outline-none sm:px-5" />
-              <p className="mt-3 text-[12px] leading-6 text-slate-400">Email dikunci untuk keamanan akun. Hubungi administrator jika ada perubahan data vital.</p>
+              <input value={resolvedProfile.email} disabled readOnly className="h-14 w-full cursor-not-allowed rounded-2xl bg-slate-100 px-4 text-[16px] text-slate-500 outline-none sm:px-5" />
+              <p className="mt-3 text-[12px] leading-6 text-slate-400">Email dikunci. Hubungi administrator jika ada perubahan data vital.</p>
             </div>
 
             <div>
               <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Hash identitas (wallet address)</label>
               <div className="flex h-14 items-center overflow-hidden rounded-2xl bg-slate-100">
                 <div className="h-full w-1.5 bg-black" />
-                 <div className="flex-1 truncate px-3 font-mono text-[12px] text-slate-800 sm:px-4 sm:text-[14px]">{resolvedProfile.walletAddress}</div>
+                <div className="flex-1 truncate px-3 font-mono text-[12px] text-slate-800 sm:px-4 sm:text-[14px]">{resolvedProfile.walletAddress}</div>
                 <button type="button" onClick={handleCopyWallet} className="px-3 text-slate-500 hover:text-slate-900 sm:px-5" aria-label="Salin alamat wallet pemilih">
                   <Copy className="h-5 w-5" />
                 </button>
@@ -201,18 +156,13 @@ export default function VoterProfilePage() {
 
             <div>
               <label className="mb-3 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Bio singkat</label>
-               <textarea value={bio || resolvedProfile.bio} onChange={(event) => setBio(event.target.value)} maxLength={1000} rows={4} className="w-full rounded-2xl bg-slate-100 p-4 text-[16px] leading-8 text-slate-900 outline-none focus:bg-white focus:ring-1 focus:ring-slate-300 sm:p-5" />
+              <textarea value={resolvedProfile.bio} disabled readOnly rows={4} className="w-full cursor-not-allowed rounded-2xl bg-slate-100 p-5 text-[16px] leading-8 text-slate-500 outline-none opacity-70" />
             </div>
           </div>
 
-          <div className="mt-8 flex flex-col gap-3 border-t border-slate-100 pt-8 sm:flex-row sm:justify-end">
-             <button type="button" onClick={() => { setDisplayName(resolvedProfile.displayName); setBio(resolvedProfile.bio) }} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-6 text-[14px] font-medium text-slate-700 hover:bg-slate-200">
-               Batalkan
-             </button>
-             <button type="button" onClick={handleSave} disabled={saveProfile.isPending} className="inline-flex h-12 items-center justify-center rounded-2xl bg-black px-6 text-[14px] font-medium text-white hover:bg-slate-900 disabled:opacity-60">
-               {saveProfile.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
-             </button>
-          </div>
+          <p className="mt-8 rounded-2xl bg-slate-50 p-4 text-[13px] leading-6 text-slate-500">
+            Untuk mengubah nama, email, atau bio, silakan hubungi administrator organisasi Anda.
+          </p>
         </article>
       </section>
       </ScrollReveal>

@@ -156,9 +156,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     ? Number(onChainPhase)
     : null
   const isRegistrationPhaseOnChain = onChainPhaseNumber === 0
-  // Candidates are editable only during registration phase (phase 0).
-  // Once voting starts (phase > 0), candidates are locked to maintain consistency.
-  const canAddCandidate = election.status === 'aktif' && isRegistrationPhaseOnChain
+  // ponytail: candidates are set before deployment; no editing after deploy
+  const canAddCandidate = false
   // Whitelist can be modified only during registration phase (phase 0).
   // Once voting starts, changing the voter list would be inconsistent.
   const canManageWhitelist = election.status === 'aktif' && isRegistrationPhaseOnChain
@@ -1167,18 +1166,11 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           </div>
         </div>
 
-        {activeTab === 'kandidat' ? (
-          canAddCandidate ? (
-            <Link href={`/admin/manajemen-pemilihan/${election.id}/tambah-kandidat`} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[15px] font-medium text-white hover:bg-slate-900">
-              <CirclePlus className="h-4 w-4" />
-              Tambah Kandidat
-            </Link>
-          ) : (
-            <button type="button" disabled className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-200 px-6 text-[15px] font-medium text-slate-400">
-              <CirclePlus className="h-4 w-4" />
-              Tambah Kandidat
-            </button>
-          )
+        {activeTab === 'kandidat' && canAddCandidate ? (
+          <Link href={`/admin/manajemen-pemilihan/${election.id}/tambah-kandidat`} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[15px] font-medium text-white hover:bg-slate-900">
+            <CirclePlus className="h-4 w-4" />
+            Tambah Kandidat
+          </Link>
         ) : null}
       </section>
 

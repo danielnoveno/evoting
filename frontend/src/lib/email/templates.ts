@@ -465,3 +465,119 @@ export function buildPhaseChangeEmail(params: {
 
   return { subject, html }
 }
+
+// ─── Deadline Reminder (commit phase ending soon) ───────────────────────────
+
+export function buildDeadlineReminderEmail(params: {
+  voterName: string
+  electionTitle: string
+  commitEndsAt: string
+  siteUrl: string
+}): { subject: string; html: string } {
+  const subject = `⏰ Pengingat: Pencoblosan ${params.electionTitle} Segera Ditutup`
+  const siteUrl = params.siteUrl.replace(/\/$/, '')
+
+  const html = `<div style="margin:0;padding:0;background:#F8FAFC;font-family:Inter,Arial,sans-serif;color:#0F172A;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
+    <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:28px;">
+      <div style="margin-bottom:24px;">
+        <img
+          src="https://votein-evoting.vercel.app/favicon.png"
+          alt="Votein"
+          width="44"
+          height="44"
+          style="display:block;width:44px;height:44px;border-radius:12px;background:#0F172A;"
+        />
+      </div>
+      <p style="margin:0 0 8px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#DC2626;">
+        Pengingat Mendesak
+      </p>
+      <h2 style="margin:0 0 12px;font-size:22px;line-height:1.3;font-weight:600;color:#0F172A;">
+        Pencoblosan Segera Ditutup
+      </h2>
+      <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#475569;">
+        Halo <strong>${params.voterName}</strong>, masa pencoblosan untuk pemilihan <strong>${params.electionTitle}</strong> akan berakhir pada <strong>${params.commitEndsAt}</strong>. Jika kamu belum memberikan suara, segera buka Votein dan coblos sekarang.
+      </p>
+      <a href="${siteUrl}"
+         style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;padding:12px 18px;background:#DC2626;color:#FFFFFF;text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;">
+        Coblos Sekarang
+      </a>
+      <div style="margin-top:20px;padding:14px 16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;">
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#991B1B;">
+          <strong>Penting:</strong> Setelah masa pencoblosan berakhir, suara tidak dapat lagi diterima. Pastikan kamu sudah submit commit sebelum batas waktu.
+        </p>
+      </div>
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid #F1F5F9;">
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#94A3B8;">
+          Terima kasih,<br />
+          Tim Votein
+        </p>
+      </div>
+    </div>
+    <p style="margin:16px 0 0;text-align:center;font-size:11px;line-height:1.6;color:#94A3B8;">
+      Votein — E-Voting Organisasi Mahasiswa
+    </p>
+  </div>
+</div>`
+
+  return { subject, html }
+}
+
+// ─── Proposal Status Update (to Admin who created it) ──────────────────────
+
+export function buildProposalStatusEmail(params: {
+  adminName: string
+  proposalTitle: string
+  status: 'approved' | 'rejected' | 'revision_requested'
+  message?: string | null
+  proposalLink: string
+}): { subject: string; html: string } {
+  const statusLabels: Record<string, string> = {
+    approved: 'Disetujui',
+    rejected: 'Ditolak',
+    revision_requested: 'Perlu Revisi',
+  }
+  const statusColors: Record<string, string> = {
+    approved: '#16A34A',
+    rejected: '#DC2626',
+    revision_requested: '#D97706',
+  }
+  const label = statusLabels[params.status] || params.status
+  const color = statusColors[params.status] || '#0F172A'
+  const subject = `Proposal ${label}: ${params.proposalTitle} — Votein`
+
+  const statusBanner = `<div style="display:inline-block;padding:4px 12px;border-radius:4px;background:${color};color:#FFFFFF;font-size:12px;font-weight:700;letter-spacing:0.04em;">${label}</div>`
+
+  const messageBlock = params.message
+    ? `<div style="margin:0 0 20px;padding:14px 16px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;">
+        <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#92400E;">Pesan dari Superadmin</p>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#78350F;">${params.message}</p>
+      </div>`
+    : ''
+
+  const html = `<div style="margin:0;padding:0;background:#F8FAFC;font-family:Inter,Arial,sans-serif;color:#0F172A;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
+    <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:28px;">
+      <div style="margin-bottom:24px;">
+        <img src="https://votein-evoting.vercel.app/favicon.png" alt="Votein" width="44" height="44" style="display:block;width:44px;height:44px;border-radius:12px;background:#0F172A;" />
+      </div>
+      <p style="margin:0 0 8px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#94A3B8;">Status Proposal</p>
+      ${statusBanner}
+      <h2 style="margin:12px 0 12px;font-size:22px;line-height:1.3;font-weight:600;color:#0F172A;">${params.proposalTitle}</h2>
+      <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#475569;">
+        Halo <strong>${params.adminName}</strong>, proposal kamu telah <strong>${label.toLowerCase()}</strong> oleh superadmin.
+      </p>
+      ${messageBlock}
+      <a href="${params.proposalLink}" style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;padding:12px 18px;background:#0F172A;color:#FFFFFF;text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;">
+        Lihat Proposal
+      </a>
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid #F1F5F9;">
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#94A3B8;">Terima kasih,<br />Tim Votein</p>
+      </div>
+    </div>
+    <p style="margin:16px 0 0;text-align:center;font-size:11px;line-height:1.6;color:#94A3B8;">Votein — E-Voting Organisasi Mahasiswa</p>
+  </div>
+</div>`
+
+  return { subject, html }
+}

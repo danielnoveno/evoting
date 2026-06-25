@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck, QrCode, WalletCards } from 'lucide-react'
+import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck, QrCode, WalletCards, Pencil, Lock, Monitor, Globe, LogOut } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton, SuperadminTextInput } from '@/components/superadmin/superadmin-shell'
@@ -61,6 +61,8 @@ export default function SuperadminProfilePage() {
 
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
   const [displayName, setDisplayName] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
+  const [activeSessions, setActiveSessions] = useState<Array<{ id: string; device: string; location: string; time: string; status: string; isCurrent: boolean; icon: typeof Monitor }>>([])
 
   const [platformName, setPlatformName] = useState('')
   const [language, setLanguage] = useState('')
@@ -83,6 +85,25 @@ export default function SuperadminProfilePage() {
       setDisplayName(profile.displayName)
     }
   }, [profile])
+
+  useEffect(() => {
+    const fetchSessionInfo = async () => {
+      try {
+        const response = await fetch('/api/auth/session-info')
+        const data = await response.json()
+        setActiveSessions([{
+          id: 'current',
+          device: `${data.device} Browser`,
+          location: data.location,
+          time: 'Baru saja',
+          status: 'online',
+          isCurrent: true,
+          icon: data.device === 'Mobile' ? Smartphone : Monitor,
+        }])
+      } catch {}
+    }
+    fetchSessionInfo()
+  }, [])
 
   useEffect(() => {
     if (platformSettings) {
@@ -302,16 +323,39 @@ export default function SuperadminProfilePage() {
             </div>
 
             <div className="mt-8 space-y-4">
-              <div className="rounded-[24px] bg-white border border-slate-200 px-5 py-5 focus-within:border-slate-900 transition-colors">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-slate-900">Informasi Personal</p>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(!isEditing)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold transition-all ${
+                    isEditing ? 'bg-black text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <Pencil className="h-4 w-4" />
+                  {isEditing ? 'Sedang Mengedit' : 'Edit Profil'}
+                </button>
+              </div>
+              <div className={`rounded-[24px] bg-white border px-5 py-5 transition-colors ${isEditing ? 'border-slate-300 focus-within:border-slate-900' : 'border-slate-200'}`}>
                 <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Nama Lengkap</p>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Masukkan nama lengkap"
-                  maxLength={100}
-                  className="mt-2 w-full text-[17px] font-semibold text-slate-900 bg-transparent border-none outline-none p-0"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Masukkan nama lengkap"
+                    disabled={!isEditing}
+                    maxLength={100}
+                    className={`mt-2 w-full text-[17px] font-semibold bg-transparent border-none outline-none p-0 pr-8 ${
+                      isEditing ? 'text-slate-900' : 'text-slate-600 cursor-not-allowed opacity-70'
+                    }`}
+                  />
+                  {!isEditing && (
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 text-slate-400">
+                      <Lock className="h-4 w-4" />
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="rounded-[24px] bg-slate-100 border border-slate-200 px-5 py-5 opacity-70">
                 <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Email Institusi (Read Only)</p>
@@ -354,23 +398,38 @@ export default function SuperadminProfilePage() {
               </div>
                
               <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleSaveProfile}
-                  disabled={saveProfileMutation.isPending || displayName === profile?.displayName}
-                  className="inline-flex h-14 flex-1 items-center justify-center gap-2 rounded-[24px] bg-slate-900 text-[15px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
-                >
-                  {saveProfileMutation.isPending ? 'Menyimpan...' : 'Simpan Profil'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleResetPassword}
-                  disabled={resetPasswordMutation.isPending}
-                  className="inline-flex h-14 w-14 items-center justify-center rounded-[24px] bg-slate-200 text-slate-900 transition hover:bg-slate-300 disabled:opacity-50"
-                  title="Ganti Kata Sandi"
-                >
-                  <KeyRound className="h-5 w-5" />
-                </button>
+                {isEditing ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditing(false)
+                        if (profile?.displayName) setDisplayName(profile.displayName)
+                      }}
+                      className="inline-flex h-14 flex-1 items-center justify-center gap-2 rounded-[24px] bg-slate-100 text-[15px] font-semibold text-slate-600 transition hover:bg-slate-200"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { handleSaveProfile(); setIsEditing(false) }}
+                      disabled={saveProfileMutation.isPending}
+                      className="inline-flex h-14 flex-1 items-center justify-center gap-2 rounded-[24px] bg-slate-900 text-[15px] font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50"
+                    >
+                      {saveProfileMutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    disabled={resetPasswordMutation.isPending}
+                    className="inline-flex h-14 w-14 items-center justify-center rounded-[24px] bg-slate-200 text-slate-900 transition hover:bg-slate-300 disabled:opacity-50"
+                    title="Ganti Kata Sandi"
+                  >
+                    <KeyRound className="h-5 w-5" />
+                  </button>
+                )}
               </div>
             </div>
           </SuperadminSectionCard>
@@ -437,7 +496,28 @@ export default function SuperadminProfilePage() {
             <div className="mt-8">
               <p className="text-[12px] uppercase tracking-[0.08em] text-slate-500">Sesi Aktif</p>
               <div className="mt-4 space-y-4">
-                {platform.sessions.map((session) => (
+                {activeSessions.map((session) => (
+                  <div key={session.id} className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-600">
+                        <session.icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[15px] font-bold text-slate-900">{session.device}</p>
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Sesi Ini</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1.5 text-[13px] text-slate-500">
+                          <Globe className="h-3.5 w-3.5" />
+                          <span>{session.location}</span>
+                          <span className="text-slate-300">•</span>
+                          <span>{session.time}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {activeSessions.length === 0 && platform.sessions.map((session) => (
                   <div key={session.id} className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
                     <div className="flex items-center gap-4">
                       <div className="text-slate-800">

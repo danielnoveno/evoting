@@ -311,9 +311,9 @@ export default function VoterHelpPage() {
           </div>
           <h3 className="mt-6 text-[24px] font-semibold text-slate-900 sm:text-[28px]">Hubungi via Email</h3>
           <p className="mt-4 text-[15px] leading-8 text-slate-800">Respon dalam 24 jam untuk pertanyaan non-mendesak terkait akun, bukti transaksi, atau kendala akses.</p>
-          <button type="button" onClick={() => showToast({ tone: 'success', title: 'Email support dibuka', description: 'Simulasi frontend mengarahkan Anda ke kanal email bantuan.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-black px-6 text-[14px] font-semibold text-white hover:bg-slate-900 sm:w-auto">
+          <a href="mailto:bantuan@portalsuara.id?subject=Bantuan%20Votein" className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-black px-6 text-[14px] font-semibold text-white hover:bg-slate-900 sm:w-auto">
             bantuan@portalsuara.id
-          </button>
+          </a>
         </article>
 
       </StaggerContainer>

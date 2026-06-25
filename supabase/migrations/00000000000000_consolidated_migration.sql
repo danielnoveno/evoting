@@ -1468,3 +1468,14 @@ for delete
 using (
   app.has_role(array['admin'::app.app_role, 'super_admin'::app.app_role])
 );
+
+--
+-- Add faculty columns to admin_registry and proposal_drafts.
+-- These are referenced in TypeScript types but missing from the original schema.
+--
+
+alter table app.admin_registry
+  add column if not exists faculty text;
+
+alter table app.proposal_drafts
+  add column if not exists faculty text;

@@ -28,12 +28,13 @@ function decodeUint256(hex: string): number {
 const FUNC_CANDIDATE_COUNT = '0x18d12e06'
 const FUNC_VOTE_COUNT = '0x6817c76c'
 
-async function ethCall(rpcUrl: string, to: string, data: string): Promise<string> {
-  // ponytail: try each public RPC in order, skip on failure
+async function ethCall(rpcUrl: string, to: string, data: string, timeoutMs = 4000): Promise<string> {
+  // ponytail: race all RPCs in parallel, first success wins. Cuts worst case from N*5s to ~5s.
   const rpcUrls = [rpcUrl, ...PUBLIC_RPC_URLS.filter((url) => url !== rpcUrl)]
-  let lastError = ''
 
-  for (const url of rpcUrls) {
+  const attempt = async (url: string): Promise<string> => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -44,18 +45,25 @@ async function ethCall(rpcUrl: string, to: string, data: string): Promise<string
           method: 'eth_call',
           params: [{ to, data }, 'latest'],
         }),
+        signal: controller.signal,
       })
-
-      if (!response.ok) { lastError = `RPC ${response.status}`; continue }
+      clearTimeout(timer)
+      if (!response.ok) throw new Error(`RPC ${response.status}`)
       const payload = await response.json()
-      if (payload.error) { lastError = payload.error.message; continue }
-      if (!payload.result) { lastError = 'empty result'; continue }
+      if (payload.error) throw new Error(payload.error.message)
+      if (!payload.result) throw new Error('empty result')
       return payload.result
     } catch (error) {
-      lastError = error instanceof Error ? error.message : 'network error'
+      clearTimeout(timer)
+      throw error
     }
   }
 
+  const results = await Promise.allSettled(rpcUrls.map(attempt))
+  for (const r of results) {
+    if (r.status === 'fulfilled') return r.value
+  }
+  const lastError = results.map((r) => r.status === 'rejected' ? r.reason?.message ?? 'error' : '').filter(Boolean).join('; ') || 'unknown'
   throw new Error(`RPC gagal: ${lastError}`)
 }
 
@@ -66,15 +74,14 @@ export async function fetchVoteCountsViaAlchemy(
   const rpcUrl = getRpcUrl()
   if (!rpcUrl) throw new Error('RPC Base Sepolia tidak tersedia.')
 
-  const results: Array<{ candidateId: number; voteCount: number }> = []
+  // ponytail: parallel reads instead of serial — cuts latency from N*5s to ~5s
+  const promises = Array.from({ length: candidateCount }, (_, i) => {
+    const candidateId = i + 1
+    const data = FUNC_VOTE_COUNT + encodeUint256(candidateId)
+    return ethCall(rpcUrl, spaceAddress, data).then((result) => ({ candidateId, voteCount: decodeUint256(result) }))
+  })
 
-  for (let i = 1; i <= candidateCount; i++) {
-    const data = FUNC_VOTE_COUNT + encodeUint256(i)
-    const result = await ethCall(rpcUrl, spaceAddress, data)
-    results.push({ candidateId: i, voteCount: decodeUint256(result) })
-  }
-
-  return results
+  return Promise.all(promises)
 }
 
 export async function fetchCandidateCountViaAlchemy(spaceAddress: string): Promise<number> {

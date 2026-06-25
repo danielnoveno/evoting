@@ -341,6 +341,16 @@ export function useVoterStore() {
   }, [])
 
   const actions = useMemo(() => ({
+    refresh() {
+      let cancelled = false
+      buildLiveStore().then((next) => {
+        if (!cancelled) {
+          persistStore(next)
+          setStore(next)
+        }
+      })
+      return () => { cancelled = true }
+    },
     reset() {
       clearAllVoteCommitments()
       persistStore(voterStoreInitial)
@@ -379,7 +389,7 @@ export function useVoterStore() {
     },
   }), [applyStore])
 
-  return { store, actions, loading: store === null }
+  return { store, actions, loading: store === null, refresh: actions.refresh }
 }
 
 export function findElection(store: VoterStore | null, electionId: string) {

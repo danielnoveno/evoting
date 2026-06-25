@@ -4,7 +4,7 @@ import { logAudit, getActorInfo } from '@/lib/audit-logger'
 import type { Database } from '@/lib/supabase/database.types'
 import { isRecord } from '@/lib/repositories/helpers'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
-import { sendVoterWhitelistEmail, sendProposalSubmittedEmail } from '@/lib/email/send'
+import { sendVoterWhitelistEmail, sendProposalSubmittedEmail, sendProposalStatusEmail } from '@/lib/email/send'
 
 export const runtime = 'nodejs'
 
@@ -168,6 +168,38 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
               proposalLink,
             }).catch(() => {})
           }
+        }
+      }
+    } catch {
+      // fire-and-forget
+    }
+  }
+
+  // Email notification to proposal creator when status changes to approved/rejected/revision_requested
+  if (['approved', 'rejected', 'revision_requested'].includes(status) && beforeRow?.created_by && data.title) {
+    try {
+      const serviceClient = getSupabaseServiceRoleClient()
+      if (serviceClient) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://e-votein.netlify.app'
+        const proposalLink = `${siteUrl}/admin/daftar-proposal/${id}`
+
+        // Get the proposal creator's email
+        const { data: creatorProfile } = await serviceClient
+          .schema('app')
+          .from('app_profiles')
+          .select('email, display_name')
+          .eq('id', beforeRow.created_by)
+          .maybeSingle()
+
+        if (creatorProfile?.email) {
+          sendProposalStatusEmail({
+            email: creatorProfile.email,
+            adminName: creatorProfile.display_name || 'Admin',
+            proposalTitle: data.title,
+            status: status as 'approved' | 'rejected' | 'revision_requested',
+            message,
+            proposalLink,
+          }).catch(() => {})
         }
       }
     } catch {

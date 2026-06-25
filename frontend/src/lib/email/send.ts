@@ -7,6 +7,8 @@ import {
   buildElectionResultsEmail,
   buildVoterWhitelistEmail,
   buildProposalSubmittedEmail,
+  buildDeadlineReminderEmail,
+  buildProposalStatusEmail,
 } from '@/lib/email/templates'
 
 export interface SendActivationEmailResult {
@@ -211,6 +213,37 @@ export async function sendVoterWhitelistEmail(params: {
   }
 }
 
+// ─── Deadline Reminder (commit phase ending soon) ──────────────────────────
+
+export async function sendDeadlineReminderEmail(params: {
+  email: string
+  voterName: string
+  electionTitle: string
+  commitEndsAt: string
+  siteUrl: string
+}): Promise<SendActivationEmailResult> {
+  const setup = createTransporter()
+  if (!setup) {
+    return { success: false, error: 'Konfigurasi SMTP (Gmail) belum lengkap.' }
+  }
+
+  const { subject, html } = buildDeadlineReminderEmail(params)
+
+  try {
+    const info = await setup.transporter.sendMail({
+      from: setup.from,
+      to: params.email,
+      subject,
+      html,
+    })
+    console.log('[Email] Deadline reminder sent:', info.messageId)
+    return { success: true, emailId: info.messageId }
+  } catch (err) {
+    console.error('[Email] Failed to send deadline reminder:', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Gagal mengirim email pengingat tenggat.' }
+  }
+}
+
 // ─── Proposal Submission Notification ────────────────────────────────────────
 
 export async function sendProposalSubmittedEmail(params: {
@@ -248,5 +281,45 @@ export async function sendProposalSubmittedEmail(params: {
   } catch (err) {
     console.error('[Email] Failed to send proposal notification:', err)
     return { success: false, error: err instanceof Error ? err.message : 'Gagal mengirim email notifikasi proposal.' }
+  }
+}
+
+// ─── Proposal Status Email (to admin who created it) ───────────────────────
+
+export async function sendProposalStatusEmail(params: {
+  email: string
+  adminName: string
+  proposalTitle: string
+  status: 'approved' | 'rejected' | 'revision_requested'
+  message?: string | null
+  proposalLink: string
+}): Promise<SendActivationEmailResult> {
+  const config = getSmtpConfig()
+  if (!config) {
+    console.warn('[Email] SMTP is not configured. Proposal status email skipped.')
+    return { success: false, error: 'Konfigurasi SMTP (Gmail) belum lengkap.' }
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.port === 465,
+    auth: { user: config.user, pass: config.pass },
+  })
+
+  const { subject, html } = buildProposalStatusEmail(params)
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"${config.fromName}" <${config.fromEmail}>`,
+      to: params.email,
+      subject,
+      html,
+    })
+    console.log('[Email] Proposal status email sent:', info.messageId)
+    return { success: true, emailId: info.messageId }
+  } catch (err) {
+    console.error('[Email] Failed to send proposal status email:', err)
+    return { success: false, error: err instanceof Error ? err.message : 'Gagal mengirim email status proposal.' }
   }
 }

@@ -222,6 +222,7 @@ export interface ProposalDraftUpsertInput {
   description?: string | null
   bannerImagePath?: string | null
   candidateCount: number
+  faculty?: string | null
   registrationStartAt?: string | null
   commitStartAt?: string | null
   revealStartAt?: string | null

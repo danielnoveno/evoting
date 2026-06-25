@@ -72,6 +72,7 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
     category: liveProposal?.organizationName ?? 'Organisasi',
     description: liveProposal?.description ?? '',
     candidateCount: liveProposal?.candidateCount ?? 0,
+    registrationDate: toDatetimeLocal(liveProposal?.registrationStartAt ?? null, ''),
     commitDate: toDatetimeLocal(liveProposal?.commitStartAt ?? null, ''),
     revealDate: toDatetimeLocal(liveProposal?.revealStartAt ?? null, ''),
     endedDate: toDatetimeLocal(liveProposal?.endedAt ?? null, ''),

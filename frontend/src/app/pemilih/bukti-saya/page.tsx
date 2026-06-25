@@ -1,6 +1,7 @@
 'use client'
 
 import { ArrowRight, Download, ExternalLink, HelpCircle, QrCode, ShieldCheck } from 'lucide-react'
+import Link from 'next/link'
 import { ScrollReveal } from '@/components/public/parallax'
 import { useToast } from '@/components/ui/toast-provider'
 import { VoterShell } from '@/components/voter/voter-shell'
@@ -144,7 +145,9 @@ export default function VoterProofPage() {
     return <VoterShell><div className="h-[420px] animate-pulse rounded-[32px] bg-slate-200" /></VoterShell>
   }
 
-  const selectedElection = store.elections.find((election) => election.id === store.selectedProofElectionId) ?? store.elections[0]
+  // ponytail: bukti-saya only shows elections where voter has actually voted
+  const votedElections = store.elections.filter((election) => election.commitProof || election.revealProof)
+  const selectedElection = votedElections.find((election) => election.id === store.selectedProofElectionId) ?? votedElections[0]
 
   if (!selectedElection) {
     return (
@@ -153,25 +156,25 @@ export default function VoterProofPage() {
           <section className="max-w-4xl">
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Arsip digital</p>
             <h1 className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Bukti Saya</h1>
-            <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
-              Riwayat pemilihan yang akan, sedang, dan sudah Anda ikuti beserta bukti transaksi yang dapat ditinjau secara publik.
+          <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
+              Riwayat pemilihan yang sudah Anda ikuti beserta bukti transaksi yang dapat ditinjau secara publik.
             </p>
-          </section>
-        </ScrollReveal>
+        </section>
+      </ScrollReveal>
 
-        <ScrollReveal variant="fade-up" delay={100} duration={800}>
-          <section className="mt-10 rounded-[32px] border border-slate-100 bg-white p-8 text-center md:p-10">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-slate-100 text-slate-700">
-              <ShieldCheck className="h-7 w-7" />
-            </div>
-            <h2 className="mt-6 text-[24px] font-semibold text-slate-900 sm:text-[32px]">Belum ada bukti pemilihan</h2>
-            <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-8 text-slate-700 sm:text-[16px]">
-              Data pemilihan belum tersedia untuk akun ini. Setelah Anda mengikuti pemilihan dan transaksi berhasil, bukti akan tampil di halaman ini.
-            </p>
-          </section>
-        </ScrollReveal>
-      </VoterShell>
-    )
+      <ScrollReveal variant="fade-up" delay={100} duration={800}>
+        <section className="mt-10 rounded-[32px] border border-slate-100 bg-white p-8 text-center md:p-10">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] bg-slate-100 text-slate-700">
+            <ShieldCheck className="h-7 w-7" />
+          </div>
+          <h2 className="mt-6 text-[24px] font-semibold text-slate-900 sm:text-[32px]">Belum ada bukti pemilihan</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-8 text-slate-700 sm:text-[16px]">
+            Anda belum mengikuti pemilihan apapun. Setelah Anda memberikan suara, bukti transaksi akan tampil di halaman ini.
+          </p>
+        </section>
+      </ScrollReveal>
+    </VoterShell>
+  )
   }
 
   return (
@@ -181,7 +184,7 @@ export default function VoterProofPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Arsip digital</p>
           <h1 id="tour-voter-proof-title" className="mt-3 text-[34px] font-semibold tracking-[-0.04em] text-slate-900 sm:text-[44px] md:text-[56px]">Bukti Saya</h1>
           <p className="mt-4 text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
-            Riwayat pemilihan yang akan, sedang, dan sudah Anda ikuti beserta bukti transaksi yang dapat ditinjau secara publik.
+            Riwayat pemilihan yang sudah Anda ikuti beserta bukti transaksi yang dapat ditinjau secara publik.
           </p>
         </section>
       </ScrollReveal>
@@ -191,12 +194,12 @@ export default function VoterProofPage() {
           <article id="tour-voter-participation-total" className="rounded-[32px] bg-[#161f35] p-6 text-white md:p-8">
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total partisipasi</p>
 
-          <p className="mt-6 text-[64px] font-semibold leading-none tracking-[-0.05em] text-white sm:text-[86px]">{String(store.elections.filter((election) => election.commitProof || election.revealProof).length).padStart(2, '0')}</p>
+          <p className="mt-6 text-[64px] font-semibold leading-none tracking-[-0.05em] text-white sm:text-[86px]">{String(votedElections.length).padStart(2, '0')}</p>
           <p className="mt-6 max-w-[18ch] text-[16px] leading-7 text-slate-300 md:text-[18px] md:leading-8">Pemilihan yang telah Anda ikuti sejak bergabung.</p>
         </article>
 
         <div className="space-y-4">
-          {store.elections.map((election) => {
+          {votedElections.map((election) => {
             const tone = getPhaseTone(election.phase)
 
             return (
@@ -330,10 +333,10 @@ export default function VoterProofPage() {
       </ScrollReveal>
 
       <div className="mt-8 flex justify-stretch sm:justify-end">
-        <button type="button" onClick={() => showToast({ tone: 'info', title: 'Tim bantuan siap membantu', description: 'Silakan lanjut ke menu bantuan untuk panduan verifikasi lebih rinci.' })} className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-[13px] font-semibold text-slate-900 hover:bg-slate-50 sm:w-auto">
+        <Link href="/pemilih/bantuan" className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-[13px] font-semibold text-slate-900 hover:bg-slate-50 sm:w-auto">
           <HelpCircle className="h-4 w-4" />
           Butuh Bantuan?
-        </button>
+        </Link>
       </div>
     </VoterShell>
   )
