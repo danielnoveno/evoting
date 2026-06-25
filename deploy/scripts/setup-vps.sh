@@ -84,8 +84,7 @@ clone_repo() {
         cd "$APP_DIR"
         git pull origin main
     else
-        # Replace with your actual repo URL
-        git clone <YOUR_REPO_URL> "$APP_DIR"
+        git clone https://github.com/danielnoveno/evoting.git "$APP_DIR"
         cd "$APP_DIR"
     fi
     

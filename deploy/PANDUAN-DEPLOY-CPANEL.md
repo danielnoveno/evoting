@@ -153,18 +153,13 @@ cd /home/voteinbi/app
 
 ### Clone Repository
 
-Ganti `<URL_REPO_KAMU>` dengan URL repository GitHub kamu:
-
 ```bash
-git clone https://github.com/USERNAME/REPO.git .
+git clone https://github.com/danielnoveno/evoting.git .
 ```
 
-Contoh:
-```bash
-git clone https://github.com/danielnoveno/skripsi-evoting.git .
-```
-
-**Catatan**: Titik `.` di akhir artinya clone ke folder saat ini (`/home/voteinbi/app`).
+**Catatan**: 
+- URL repo: `https://github.com/danielnoveno/evoting`
+- Titik `.` di akhir artinya clone ke folder saat ini (`/home/voteinbi/app`)
 
 ### Verifikasi
 
