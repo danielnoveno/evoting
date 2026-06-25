@@ -17,7 +17,6 @@ node_modules/
 # Ignore low-fi prototype folder
 lowfi-html/
 # Foundry / Contracts
-contracts/broadcast/
 contracts/cache/
 contracts/out/
 # Frontend build
@@ -49,5 +48,8 @@ AGENTS.local.md
 # Local Netlify folder
 .netlify
 
-# cPanel deploy (sensitive: env files + guide with credentials)
+# Deploy configs
 deploy/
+
+# Supabase CLI temp
+supabase/.temp/
