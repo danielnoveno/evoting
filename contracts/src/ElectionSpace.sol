@@ -133,15 +133,10 @@ contract ElectionSpace {
         }
 
         if (
-            _commitStartsAt != 0 || _commitEndsAt != 0 || _revealStartsAt != 0
-                || _revealEndsAt != 0
+            _commitStartsAt != 0 || _commitEndsAt != 0 || _revealStartsAt != 0 || _revealEndsAt != 0
         ) {
             _setPhaseSchedule(
-                _commitStartsAt,
-                _commitEndsAt,
-                _revealStartsAt,
-                _revealEndsAt,
-                _initialActor
+                _commitStartsAt, _commitEndsAt, _revealStartsAt, _revealEndsAt, _initialActor
             );
         }
 
@@ -204,7 +199,9 @@ contract ElectionSpace {
         uint256 _revealStartsAt,
         uint256 _revealEndsAt
     ) external onlySpaceAdminOrSuperAdmin onlyActive onlyPhase(Phase.Registration) {
-        _setPhaseSchedule(_commitStartsAt, _commitEndsAt, _revealStartsAt, _revealEndsAt, msg.sender);
+        _setPhaseSchedule(
+            _commitStartsAt, _commitEndsAt, _revealStartsAt, _revealEndsAt, msg.sender
+        );
     }
 
     function _setPhaseSchedule(

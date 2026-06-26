@@ -162,18 +162,17 @@ contract VoteChainMVPTest {
         uint256 revealStartsAt = commitEndsAt;
         uint256 revealEndsAt = block.timestamp + 30;
 
-        (uint256 proposalId, uint256 spaceId, address spaceAddress) =
-            registry.createElectionForAdminWithConfig(
-                address(admin),
-                "Pemilihan Ketua HIMAFORKA",
-                "supabase://proposal-drafts/example",
-                2,
-                voters,
-                commitStartsAt,
-                commitEndsAt,
-                revealStartsAt,
-                revealEndsAt
-            );
+        (uint256 proposalId, uint256 spaceId, address spaceAddress) = registry.createElectionForAdminWithConfig(
+            address(admin),
+            "Pemilihan Ketua HIMAFORKA",
+            "supabase://proposal-drafts/example",
+            2,
+            voters,
+            commitStartsAt,
+            commitEndsAt,
+            revealStartsAt,
+            revealEndsAt
+        );
 
         ElectionSpace space = ElectionSpace(spaceAddress);
         require(proposalId == 1, "proposalId should be 1");
