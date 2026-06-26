@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Clock3, Search } from 'lucide-react'
+import { AlertTriangle, Clock3, Eye, FileCheck2, PauseCircle, PlayCircle, Search, ShieldCheck } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -28,7 +28,6 @@ import {
   DataTableRow,
   DataTableShell,
   DataTableViewport,
-  RowActionMenu,
   SortableTableHeader,
   type TableSortDirection,
 } from '@/components/ui/data-table'
@@ -264,20 +263,54 @@ export default function SuperadminElectionManagementPage() {
                       <p className="text-[16px] font-semibold text-slate-900">{election.participation}</p>
                     </DataTableCell>
                     <DataTableCell className="text-center" onClick={(event) => event.stopPropagation()}>
-                      <RowActionMenu
-                        buttonLabel={`Aksi untuk ${election.title}`}
-                        items={[
-                          { label: 'Detail', onClick: () => router.push(getCardTarget(election.id, election.status)) },
-                          ...(election.status === 'Aktif'
-                            ? [
-                              { label: 'Moderasi', onClick: () => router.push(`/superadmin/manajemen-pemilihan/${election.id}/moderasi`) },
-                              { label: 'Suspend', onClick: () => updateElectionStatus(election.id, 'Ditangguhkan', 'Pemilihan ditangguhkan') },
-                            ]
-                            : election.status === 'Ditangguhkan'
-                              ? [{ label: 'Resume', onClick: () => updateElectionStatus(election.id, 'Aktif', 'Pemilihan dilanjutkan kembali') }]
-                              : [{ label: 'Final', onClick: () => showToast({ tone: 'info', title: 'Pemilihan selesai', description: 'Status final tidak dapat dimoderasi lagi.' }) }]),
-                        ]}
-                      />
+                      <div className="inline-flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          aria-label={`Detail ${election.title}`}
+                          onClick={() => router.push(getCardTarget(election.id, election.status))}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        {election.status === 'Aktif' ? (
+                          <>
+                            <button
+                              type="button"
+                              aria-label={`Moderasi ${election.title}`}
+                              onClick={() => router.push(`/superadmin/manajemen-pemilihan/${election.id}/moderasi`)}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                            >
+                              <ShieldCheck className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Tangguhkan ${election.title}`}
+                              onClick={() => updateElectionStatus(election.id, 'Ditangguhkan', 'Pemilihan ditangguhkan')}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-200 bg-white text-red-600 transition hover:bg-red-50"
+                            >
+                              <PauseCircle className="h-4 w-4" />
+                            </button>
+                          </>
+                        ) : election.status === 'Ditangguhkan' ? (
+                          <button
+                            type="button"
+                            aria-label={`Lanjutkan ${election.title}`}
+                            onClick={() => updateElectionStatus(election.id, 'Aktif', 'Pemilihan dilanjutkan kembali')}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-200 bg-white text-emerald-600 transition hover:bg-emerald-50"
+                          >
+                            <PlayCircle className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            aria-label={`Final ${election.title}`}
+                            onClick={() => showToast({ tone: 'info', title: 'Pemilihan selesai', description: 'Status final tidak dapat dimoderasi lagi.' })}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                          >
+                            <FileCheck2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </DataTableCell>
                   </DataTableRow>
                 )) : (

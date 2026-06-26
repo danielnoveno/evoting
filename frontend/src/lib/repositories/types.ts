@@ -52,6 +52,13 @@ export interface AdminRegistryRecord {
   updatedAt: string
 }
 
+export interface CurrentAdminRegistryStatus {
+  email: string
+  status: 'pending' | 'active' | 'inactive'
+  updatedByEmail: string | null
+  updatedByName: string | null
+}
+
 export interface AdminRegistryInput {
   email: string
   displayName?: string | null

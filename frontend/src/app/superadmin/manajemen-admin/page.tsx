@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Copy, Download, EllipsisVertical, Loader2, Mail, Power, Search, Trash2, UserPlus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Copy, Download, EllipsisVertical, Eye, Loader2, Mail, Pencil, Power, Search, Trash2, UserPlus } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -41,7 +41,6 @@ import {
   DataTableShell,
   DataTableToolbar,
   DataTableViewport,
-  RowActionMenu,
   SelectedCounter,
   SortableTableHeader,
   type TableSortDirection,
@@ -98,6 +97,7 @@ function SuperadminAdminManagementContent() {
   const [sortDirection, setSortDirection] = useState<TableSortDirection>(null)
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
   const [bulkDeactivateDialogOpen, setBulkDeactivateDialogOpen] = useState(false)
+  const [singleDeleteTarget, setSingleDeleteTarget] = useState<{ email: string; name: string } | null>(null)
 
   const admins = useMemo(() => {
     return (adminDirectoryQuery.data ?? [])
@@ -145,6 +145,15 @@ function SuperadminAdminManagementContent() {
     () => (adminDirectoryQuery.data ?? []).filter((record) => record.role === 'admin' && selectedAdminEmails.includes(record.email)),
     [adminDirectoryQuery.data, selectedAdminEmails],
   )
+
+  const selectedStatusAction = useMemo(() => {
+    if (selectedAdmins.length === 0) return null
+    const allInactive = selectedAdmins.every((admin) => admin.status === 'Nonaktif')
+    const allNotInactive = selectedAdmins.every((admin) => admin.status !== 'Nonaktif')
+    if (allInactive) return 'activate' as const
+    if (allNotInactive) return 'deactivate' as const
+    return null
+  }, [selectedAdmins])
 
   const allFilteredSelected = filteredAdmins.length > 0 && filteredAdmins.every((admin) => selectedAdminEmails.includes(admin.email))
   const selectedFilteredCount = filteredAdmins.filter((admin) => selectedAdminEmails.includes(admin.email)).length
@@ -248,10 +257,10 @@ function SuperadminAdminManagementContent() {
     })
   }
 
-  const handleBulkDeactivate = async () => {
-    const candidates = selectedAdminDirectoryRecords.filter((record) => record.registryStatus !== 'inactive')
+  const handleBulkUpdateStatus = async (status: 'active' | 'inactive') => {
+    const candidates = selectedAdminDirectoryRecords.filter((record) => record.registryStatus !== status)
     if (candidates.length === 0) {
-      showToast({ tone: 'info', title: 'Admin terpilih sudah nonaktif', description: 'Tidak ada admin terpilih yang perlu dinonaktifkan.' })
+      showToast({ tone: 'info', title: 'Tidak ada perubahan status', description: 'Status admin terpilih sudah sesuai.' })
       setBulkDeactivateDialogOpen(false)
       return
     }
@@ -262,7 +271,7 @@ function SuperadminAdminManagementContent() {
       displayName: record.displayName,
       organizationName: record.organizationName,
       accessScope: record.accessScope,
-      status: 'inactive',
+      status,
       description: record.description,
       walletAddress: record.walletAddress,
     })))
@@ -275,9 +284,9 @@ function SuperadminAdminManagementContent() {
 
     showToast({
       tone: failedCount === 0 ? 'success' : 'info',
-      title: 'Bulk nonaktif admin diproses',
+      title: status === 'inactive' ? 'Bulk nonaktif admin diproses' : 'Bulk aktif admin diproses',
       description: failedCount === 0
-        ? `${successCount} admin berhasil dinonaktifkan.`
+        ? `${successCount} admin berhasil ${status === 'inactive' ? 'dinonaktifkan' : 'diaktifkan kembali'}.`
         : `${successCount} berhasil, ${failedCount} gagal. Coba ulang pada admin yang gagal.`,
     })
   }
@@ -304,6 +313,21 @@ function SuperadminAdminManagementContent() {
         ? `${successCount} akses admin berhasil dihapus.`
         : `${successCount} berhasil dihapus, ${failedCount} gagal.`,
     })
+  }
+
+  const handleSingleDelete = async () => {
+    if (!singleDeleteTarget) return
+    setBulkActionLoading('delete')
+    try {
+      await deleteAdminRegistry(singleDeleteTarget.email)
+      await invalidateAdminDirectory()
+      showToast({ tone: 'success', title: 'Akses admin dihapus', description: `${singleDeleteTarget.name} sudah dihapus dari registry admin.` })
+    } catch (error) {
+      showToast({ tone: 'error', title: 'Gagal menghapus admin', description: getRepositoryErrorMessage(error) })
+    } finally {
+      setBulkActionLoading(null)
+      setSingleDeleteTarget(null)
+    }
   }
 
   const handleCreateAdmin = () => {
@@ -535,13 +559,32 @@ function SuperadminAdminManagementContent() {
                     <p className="mt-1 text-[13px] text-slate-500">{admin.lastLoginRelative}</p>
                   </DataTableCell>
                   <DataTableCell className="text-center" onClick={(event) => event.stopPropagation()}>
-                    <RowActionMenu
-                      buttonLabel={`Aksi untuk ${admin.name}`}
-                      items={[
-                        { label: 'Detail', onClick: () => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}`) },
-                        { label: 'Edit', onClick: () => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}/edit?from=list`) },
-                      ]}
-                    />
+                    <div className="inline-flex items-center justify-center gap-1.5">
+                      <button
+                        type="button"
+                        aria-label={`Detail ${admin.name}`}
+                        onClick={() => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}`)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Edit ${admin.name}`}
+                        onClick={() => router.push(`/superadmin/manajemen-admin/${encodeURIComponent(admin.id)}/edit?from=list`)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Hapus ${admin.name}`}
+                        onClick={() => setSingleDeleteTarget({ email: admin.email, name: admin.name })}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-200 bg-white text-red-600 transition hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </DataTableCell>
                 </DataTableRow>
               )) : (
@@ -571,15 +614,17 @@ function SuperadminAdminManagementContent() {
                         {bulkActionLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                         Kirim Email Aktivasi
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setBulkDeactivateDialogOpen(true)}
-                        disabled={bulkActionLoading !== null}
-                        className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-amber-200 bg-amber-50 px-3.5 text-[13px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
-                      >
-                        {bulkActionLoading === 'deactivate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
-                        Nonaktifkan Akses
-                      </button>
+                      {selectedStatusAction && (
+                        <button
+                          type="button"
+                          onClick={() => setBulkDeactivateDialogOpen(true)}
+                          disabled={bulkActionLoading !== null}
+                          className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-amber-200 bg-amber-50 px-3.5 text-[13px] font-semibold text-amber-700 transition hover:bg-amber-100 disabled:opacity-50"
+                        >
+                          {bulkActionLoading === 'deactivate' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
+                          {selectedStatusAction === 'activate' ? 'Aktifkan Admin' : 'Nonaktifkan Akses'}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => setBulkDeleteDialogOpen(true)}
@@ -757,24 +802,38 @@ function SuperadminAdminManagementContent() {
 
       <ConfirmDialog
         open={bulkDeactivateDialogOpen}
-        title="Nonaktifkan admin terpilih?"
-        description={`Akses ${selectedAdmins.length} admin terpilih akan dinonaktifkan dari registry admin.`}
-        confirmLabel="Ya, Nonaktifkan"
+        title={selectedStatusAction === 'activate' ? 'Aktifkan admin terpilih?' : 'Nonaktifkan admin terpilih?'}
+        description={selectedStatusAction === 'activate'
+          ? `Akses ${selectedAdmins.length} admin terpilih akan diaktifkan kembali.`
+          : `Akses ${selectedAdmins.length} admin terpilih akan dinonaktifkan dari registry admin.`}
+        confirmLabel={selectedStatusAction === 'activate' ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan'}
         cancelLabel="Batal"
         tone="default"
-        onConfirm={() => { void handleBulkDeactivate() }}
+        onConfirm={() => { void handleBulkUpdateStatus(selectedStatusAction === 'activate' ? 'active' : 'inactive') }}
         onCancel={() => setBulkDeactivateDialogOpen(false)}
       />
 
       <ConfirmDialog
         open={bulkDeleteDialogOpen}
         title="Hapus akses admin terpilih?"
-        description={`Tindakan ini akan menghapus ${selectedAdmins.length} akses admin dari registry dan mengembalikan role mereka menjadi voter.`}
+        description={`Tindakan ini akan menghapus ${selectedAdmins.length} akses admin dari registry.`}
         confirmLabel="Ya, Hapus"
         cancelLabel="Batal"
         tone="danger"
         onConfirm={() => { void handleBulkDelete() }}
         onCancel={() => setBulkDeleteDialogOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={singleDeleteTarget !== null}
+        title="Hapus akses admin ini?"
+        description={singleDeleteTarget ? `Akses admin ${singleDeleteTarget.name} akan dihapus dari registry.` : ''}
+        confirmLabel="Ya, Hapus"
+        cancelLabel="Batal"
+        tone="danger"
+        disabled={bulkActionLoading === 'delete'}
+        onConfirm={() => { void handleSingleDelete() }}
+        onCancel={() => setSingleDeleteTarget(null)}
       />
     </SuperadminShell>
   )

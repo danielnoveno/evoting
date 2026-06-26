@@ -3,7 +3,7 @@
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import type { Database } from '@/lib/supabase/database.types'
-import type { AdminDirectoryRecord, AdminRegistryInput, AdminRegistryRecord, AdminSpaceAccessRecord, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
+import type { AdminDirectoryRecord, AdminRegistryInput, AdminRegistryRecord, AdminSpaceAccessRecord, AppProfileRecord, CurrentAdminRegistryStatus, ProfileUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
 import { clearLocalAuthSession, isInvalidStoredSession, sameWalletAddress } from './helpers'
 
@@ -206,6 +206,47 @@ export async function getCurrentProfile(): Promise<AppProfileRecord | null> {
 
   if (error) throw new RepositoryError('Gagal memuat profil. Coba lagi.')
   return data ? mapProfileRow(data) : null
+}
+
+export async function getCurrentAdminRegistryStatus(): Promise<CurrentAdminRegistryStatus | null> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return null
+
+  const currentProfile = await getCurrentProfile()
+  const email = normalizeEmail(currentProfile?.email ?? '')
+  if (!email || currentProfile?.role !== 'admin') return null
+
+  const { data: registry, error } = await client
+    .schema('app')
+    .from('admin_registry')
+    .select('email,status,updated_by')
+    .eq('email', email)
+    .maybeSingle()
+
+  if (error) throw new RepositoryError('Gagal memeriksa status akses admin. Coba lagi.')
+  if (!registry) return null
+
+  let updatedByEmail: string | null = null
+  let updatedByName: string | null = null
+
+  if (registry.updated_by) {
+    const { data: updater } = await client
+      .schema('app')
+      .from('app_profiles')
+      .select('email,display_name')
+      .eq('id', registry.updated_by)
+      .maybeSingle()
+
+    updatedByEmail = updater?.email ?? null
+    updatedByName = updater?.display_name ?? null
+  }
+
+  return {
+    email: registry.email,
+    status: registry.status,
+    updatedByEmail,
+    updatedByName,
+  }
 }
 
 async function getCurrentProfileId(): Promise<string | null> {
@@ -603,7 +644,7 @@ export async function updateAdminRegistry(currentEmail: string, input: AdminRegi
     await syncProfileRoleForEmail(oldEmail, 'voter')
   }
 
-  await syncProfileRoleForEmail(nextEmail, payload.status === 'inactive' ? 'voter' : currentRecord.assigned_role, displayName)
+  await syncProfileRoleForEmail(nextEmail, currentRecord.assigned_role, displayName)
 
   return mapAdminRegistryRow(data)
 }
@@ -657,6 +698,5 @@ export async function updateDirectoryRegistryStatus(email: string, status: 'pend
 
   if (error) throw new RepositoryError('Gagal memperbarui status akses. Coba lagi.')
 
-  const nextRole = status === 'inactive' ? 'voter' : current.assigned_role
-  await syncProfileRoleForEmail(normalizedEmail, nextRole)
+  await syncProfileRoleForEmail(normalizedEmail, current.assigned_role)
 }

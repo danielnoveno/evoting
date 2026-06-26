@@ -7,6 +7,7 @@ import { RoleGate } from '@/components/auth/role-gate'
 import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/console-shell'
 import { adminShellContent } from '@/lib/admin-content'
 import { OnboardingTour } from './onboarding-tour'
+import { AdminSuspensionOverlay } from './admin-suspension-overlay'
 
 import { useLanguage } from '@/lib/contexts/language-context'
 
@@ -64,6 +65,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       >
         {children}
       </ConsoleShell>
+      <AdminSuspensionOverlay />
       <OnboardingTour />
     </RoleGate>
   )

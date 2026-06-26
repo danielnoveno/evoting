@@ -1,6 +1,6 @@
 'use client'
 
-import { Copy, Loader2, Mail, Power, Search, UserPlus, CheckCircle2, Clock3, ChevronsUpDown, ChevronUp, ChevronDown, Link } from 'lucide-react'
+import { Copy, Eye, Loader2, Mail, Pencil, Power, Search, Trash2, UserPlus, CheckCircle2, Clock3, ChevronsUpDown, ChevronUp, ChevronDown, Link } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -34,7 +34,6 @@ import {
   DataTableShell,
   DataTableToolbar,
   DataTableViewport,
-  RowActionMenu,
   SelectedCounter,
 } from '@/components/ui/data-table'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -44,7 +43,7 @@ import { updateDirectoryRegistryStatus } from '@/lib/repositories/profileReposit
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { useCreateAdminInvite, useResendAdminInvite } from '@/hooks/use-admin-invite'
 import { useFormDraft } from '@/hooks/use-form-draft'
-import { profileQueryKeys, useCurrentProfile, useSuperadminAdminDirectory } from '@/hooks/use-profile'
+import { profileQueryKeys, useCurrentProfile, useDeleteAdminRegistry, useSuperadminAdminDirectory } from '@/hooks/use-profile'
 import { useSuperadminOnchainStatus } from '@/hooks/use-superadmin-onchain-status'
 import { useRegistryContract } from '@/hooks/use-registry-contract'
 import type { Address } from 'viem'
@@ -83,8 +82,10 @@ function SuperadminManagementContent() {
   const [sortDirection, setSortDirection] = useState<SortDirection>(null)
   const [bulkDeactivateDialogOpen, setBulkDeactivateDialogOpen] = useState(false)
   const [onchainRegisterDialogOpen, setOnchainRegisterDialogOpen] = useState(false)
+  const [singleDeleteTarget, setSingleDeleteTarget] = useState<{ email: string; name: string } | null>(null)
   const createAdminInviteMutation = useCreateAdminInvite()
   const resendInviteMutation = useResendAdminInvite()
+  const deleteAdminMutation = useDeleteAdminRegistry()
   const currentProfileQuery = useCurrentProfile()
   const adminDirectoryQuery = useSuperadminAdminDirectory()
   const { addSuperAdmin, userAddress, isSuperAdmin, isSuperAdminLoading, isWritePending } = useRegistryContract()
@@ -615,31 +616,32 @@ function SuperadminManagementContent() {
                             )}
                           </DataTableCell>
                           <DataTableCell className="text-center" onClick={(event) => event.stopPropagation()}>
-                            <RowActionMenu
-                              buttonLabel={`Aksi untuk ${admin.displayName || admin.email}`}
-                              items={[
-                                { label: 'Detail', onClick: () => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`) },
-                                ...(!isActive ? [{
-                                  label: 'Kirim Ulang Email Aktivasi',
-                                  onClick: () => {
-                                    resendInviteMutation.mutate(admin.email, {
-                                      onSuccess: (result) => {
-                                        showToast({
-                                          tone: result.emailStatus === 'sent' ? 'success' : 'info',
-                                          title: result.emailStatus === 'sent' ? 'Email Terkirim' : 'Email Gagal',
-                                          description: result.emailStatus === 'sent' ? 'Link aktivasi sudah dikirim ulang.' : result.emailError ?? 'Coba lagi nanti.',
-                                        })
-                                      },
-                                      onError: (err) => {
-                                        showToast({ tone: 'error', title: 'Kirim Ulang Gagal', description: getRepositoryErrorMessage(err) })
-                                      },
-                                    })
-                                  },
-                                  disabled: resendInviteMutation.isPending,
-                                }] : []),
-                                { label: 'Edit', onClick: () => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}/edit?from=list`) },
-                              ]}
-                            />
+                            <div className="inline-flex items-center justify-center gap-1.5">
+                              <button
+                                type="button"
+                                aria-label={`Detail ${displayLabel}`}
+                                onClick={() => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}`)}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`Edit ${displayLabel}`}
+                                onClick={() => router.push(`/superadmin/manajemen-superadmin/${encodeURIComponent(admin.email)}/edit?from=list`)}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`Hapus ${displayLabel}`}
+                                onClick={() => setSingleDeleteTarget({ email: admin.email, name: displayLabel })}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-200 bg-white text-red-600 transition hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
                           </DataTableCell>
                         </DataTableRow>
                       )
@@ -810,6 +812,27 @@ function SuperadminManagementContent() {
         tone="default"
         onConfirm={() => { void handleBulkRegisterOnchain() }}
         onCancel={() => setOnchainRegisterDialogOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={singleDeleteTarget !== null}
+        title="Hapus akses superadmin ini?"
+        description={singleDeleteTarget ? `Akses superadmin ${singleDeleteTarget.name} akan dihapus dari registry.` : ''}
+        confirmLabel="Ya, Hapus"
+        cancelLabel="Batal"
+        tone="danger"
+        disabled={deleteAdminMutation.isPending}
+        onConfirm={() => {
+          if (!singleDeleteTarget) return
+          deleteAdminMutation.mutate(singleDeleteTarget.email, {
+            onSuccess: () => {
+              showToast({ tone: 'success', title: 'Akses superadmin dihapus', description: `${singleDeleteTarget.name} sudah dihapus dari registry.` })
+              setSingleDeleteTarget(null)
+            },
+            onError: (error) => showToast({ tone: 'error', title: 'Gagal menghapus superadmin', description: getRepositoryErrorMessage(error) }),
+          })
+        }}
+        onCancel={() => setSingleDeleteTarget(null)}
       />
     </SuperadminShell>
   )

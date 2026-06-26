@@ -1,6 +1,6 @@
 'use client'
 
-import { Search } from 'lucide-react'
+import { Eye, Pencil, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { SuperadminEmptyState, SuperadminShell, SuperadminStatusBadge, SuperadminFilterChip } from '@/components/superadmin/superadmin-shell'
@@ -21,7 +21,6 @@ import {
   DataTableRow,
   DataTableShell,
   DataTableViewport,
-  RowActionMenu,
   SortableTableHeader,
   type TableSortDirection,
 } from '@/components/ui/data-table'
@@ -192,13 +191,24 @@ export default function SuperadminProposalManagementPage() {
                       <SuperadminStatusBadge status={proposal.status} />
                     </DataTableCell>
                     <DataTableCell className="text-center" onClick={(event) => event.stopPropagation()}>
-                      <RowActionMenu
-                        buttonLabel={`Aksi untuk proposal ${proposal.organizationName}`}
-                        items={[
-                          { label: 'Detail', onClick: () => router.push(`/superadmin/manajemen-proposal/${proposal.id}`) },
-                          { label: 'Review', onClick: () => router.push(`/superadmin/manajemen-proposal/${proposal.id}`) },
-                        ]}
-                      />
+                      <div className="inline-flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          aria-label={`Detail proposal ${proposal.organizationName}`}
+                          onClick={() => router.push(`/superadmin/manajemen-proposal/${proposal.id}`)}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Review proposal ${proposal.organizationName}`}
+                          onClick={() => router.push(`/superadmin/manajemen-proposal/${proposal.id}`)}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </div>
                     </DataTableCell>
                   </DataTableRow>
                 )) : (

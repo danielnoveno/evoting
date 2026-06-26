@@ -1,11 +1,12 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { bindCurrentUserWallet, createAdminRegistry, deleteAdminRegistry, getCurrentProfile, getProfileByWalletAddress, listAdminDirectory, updateAdminRegistry, upsertCurrentProfile } from '@/lib/repositories/profileRepository'
+import { bindCurrentUserWallet, createAdminRegistry, deleteAdminRegistry, getCurrentAdminRegistryStatus, getCurrentProfile, getProfileByWalletAddress, listAdminDirectory, updateAdminRegistry, upsertCurrentProfile } from '@/lib/repositories/profileRepository'
 import type { AdminRegistryInput, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
 
 export const profileQueryKeys = {
   current: ['profile', 'current'] as const,
+  currentAdminRegistryStatus: ['profile', 'current-admin-registry-status'] as const,
   wallet: (walletAddress: string) => ['profile', 'wallet', walletAddress] as const,
   adminDirectory: ['profile', 'admin-directory'] as const,
   superadmins: ['superadmins'] as const,
@@ -21,6 +22,15 @@ export function useCurrentProfile() {
     queryKey: profileQueryKeys.current,
     queryFn: getCurrentProfile,
     retry: false,
+  })
+}
+
+export function useCurrentAdminRegistryStatus() {
+  return useQuery({
+    queryKey: profileQueryKeys.currentAdminRegistryStatus,
+    queryFn: getCurrentAdminRegistryStatus,
+    retry: false,
+    refetchInterval: 15_000,
   })
 }
 
