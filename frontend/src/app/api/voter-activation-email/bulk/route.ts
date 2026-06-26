@@ -3,6 +3,7 @@ import { createHash, randomBytes } from 'crypto'
 import { sendVoterActivationEmail } from '@/lib/email/send'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import { isRecord } from '@/lib/repositories/helpers'
+import { getRequestOrigin } from '@/lib/url'
 
 export const runtime = 'nodejs'
 
@@ -14,13 +15,6 @@ type RecipientInput = {
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status })
-}
-
-function getRequestOrigin(request: NextRequest) {
-  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL
-  if (configuredOrigin?.trim()) return configuredOrigin.trim().replace(/\/$/, '')
-
-  return request.nextUrl.origin.replace(/\/$/, '')
 }
 
 function createActivationToken() {

@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import { sendAdminActivationEmail } from '@/lib/email/send'
 import { isRecord } from '@/lib/repositories/helpers'
+import { getRequestOrigin } from '@/lib/url'
 
 export const runtime = 'nodejs'
 
@@ -20,12 +21,6 @@ function hashToken(token: string) {
 
 function createActivationToken() {
   return randomBytes(32).toString('base64url')
-}
-
-function getRequestOrigin(request: NextRequest) {
-  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL
-  if (configuredOrigin?.trim()) return configuredOrigin.trim().replace(/\/$/, '')
-  return request.nextUrl.origin.replace(/\/$/, '')
 }
 
 function createActivationLink(request: NextRequest, token: string) {

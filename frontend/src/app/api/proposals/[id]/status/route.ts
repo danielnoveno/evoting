@@ -145,7 +145,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       const serviceClient = getSupabaseServiceRoleClient()
       if (serviceClient && data.title) {
         const isResubmission = beforeRow?.status === 'revision_requested'
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://e-votein.netlify.app'
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://votein.biz.id'
         const proposalLink = `${siteUrl}/superadmin/manajemen-proposal/${id}`
 
         // Get all superadmin emails
@@ -180,7 +180,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     try {
       const serviceClient = getSupabaseServiceRoleClient()
       if (serviceClient) {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://e-votein.netlify.app'
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://votein.biz.id'
         const proposalLink = `${siteUrl}/admin/daftar-proposal/${id}`
 
         // Get the proposal creator's email
@@ -231,7 +231,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     try {
       const serviceClient = getSupabaseServiceRoleClient()
       if (serviceClient) {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://votein-evoting.vercel.app'
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://votein.biz.id'
         const commitDate = data.commit_start_at ? new Date(data.commit_start_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'
         const revealDate = data.reveal_start_at ? new Date(data.reveal_start_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'
 

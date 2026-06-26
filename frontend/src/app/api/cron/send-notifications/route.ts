@@ -17,7 +17,7 @@ function getCronSecret() {
 }
 
 function getSiteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://votein-evoting.vercel.app'
+  return process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://votein.biz.id'
 }
 
 function getPonderGraphqlUrl(): string | null {
