@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, sent: 0, reason: 'Tidak ada superadmin yang cocok.' })
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://votein.biz.id'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://e-votein.netlify.app'
   const proposalLink = `${siteUrl}/superadmin/manajemen-proposal/${proposalId}`
   const actorName = proposal.organization_name || 'Admin Organisasi'
 

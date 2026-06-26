@@ -56,7 +56,7 @@ check_env() {
 }
 
 build() {
-    log "Building frontend..."
+    log "Building frontend (production mode)..."
     cd "$LOCAL_DIR"
     
     # Pull latest
@@ -65,8 +65,23 @@ build() {
     # Install deps
     npm install
     
+    # Ensure production env for build (NEXT_PUBLIC_* are baked at build time)
+    if [ -f ".env.local" ]; then
+        log "  Backing up .env.local → .env.local.bak"
+        cp .env.local .env.local.bak
+    fi
+    cp .env .env.local
+    
     # Build
     npm run build
+    
+    # Restore original .env.local
+    if [ -f ".env.local.bak" ]; then
+        log "  Restoring .env.local from backup"
+        mv .env.local.bak .env.local
+    else
+        rm -f .env.local
+    fi
     
     success "Build complete!"
 }

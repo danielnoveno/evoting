@@ -8,6 +8,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
+        NEXT_PUBLIC_SITE_URL: 'https://votein.biz.id',
+        NEXT_PUBLIC_APP_URL: 'https://votein.biz.id',
       },
       instances: 1,
       exec_mode: 'fork',
