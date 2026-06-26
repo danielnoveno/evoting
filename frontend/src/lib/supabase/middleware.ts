@@ -16,6 +16,13 @@ function getPathWithSearch(request: NextRequest) {
   return `${request.nextUrl.pathname}${request.nextUrl.search}`
 }
 
+/** Resolve the correct production origin for redirects (not deploy preview URLs). */
+function getRedirectOrigin(request: NextRequest): string {
+  const envOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL
+  if (envOrigin?.trim()) return envOrigin.trim().replace(/\/$/, '')
+  return request.nextUrl.origin
+}
+
 export async function updateSupabaseSession(request: NextRequest) {
   if (!isSupabaseConfigured()) {
     return NextResponse.next({ request })
@@ -60,13 +67,15 @@ export async function updateSupabaseSession(request: NextRequest) {
 
   const isProtectedRoute = PROTECTED_PREFIXES.some((prefix) => request.nextUrl.pathname.startsWith(prefix))
 
+  const origin = getRedirectOrigin(request)
+
   if (isProtectedRoute) {
     // getSession might refresh the token, which triggers set() above
     const { data: { session } } = await client.auth.getSession()
 
     if (!session) {
       const requiredRole = getRequiredRole(request.nextUrl.pathname)
-      const redirectUrl = new URL('/sesi-berakhir', request.url)
+      const redirectUrl = new URL('/sesi-berakhir', origin)
       redirectUrl.searchParams.set('redirect', getPathWithSearch(request))
       // When redirecting, we MUST include the headers from our 'response' object 
       // which contains any newly set session cookies from a refresh.
@@ -86,7 +95,7 @@ export async function updateSupabaseSession(request: NextRequest) {
         .maybeSingle()
 
       if (profileError) {
-        const authUrl = new URL('/hubungkan-dompet', request.url)
+        const authUrl = new URL('/hubungkan-dompet', origin)
         authUrl.searchParams.set('authError', 'profile_unavailable')
         authUrl.searchParams.set('redirect', getPathWithSearch(request))
         return NextResponse.redirect(authUrl, { headers: response.headers })
@@ -105,7 +114,7 @@ export async function updateSupabaseSession(request: NextRequest) {
           .maybeSingle()
 
         if (registryError) {
-          const authUrl = new URL('/hubungkan-dompet', request.url)
+          const authUrl = new URL('/hubungkan-dompet', origin)
           authUrl.searchParams.set('authError', 'registry_unavailable')
           authUrl.searchParams.set('redirect', getPathWithSearch(request))
           return NextResponse.redirect(authUrl, { headers: response.headers })
@@ -118,12 +127,12 @@ export async function updateSupabaseSession(request: NextRequest) {
         if (hasPendingAdminInvite) {
           if (adminRegistry.assigned_role === 'super_admin') {
             // Superadmin langsung ke /portal-admin
-            const portalUrl = new URL('/portal-admin', request.url)
+            const portalUrl = new URL('/portal-admin', origin)
             portalUrl.searchParams.set('redirect', '/superadmin')
             return NextResponse.redirect(portalUrl, { headers: response.headers })
           }
           // Admin organisasi ke /hubungkan-dompet
-          const activationUrl = new URL('/hubungkan-dompet', request.url)
+          const activationUrl = new URL('/hubungkan-dompet', origin)
           activationUrl.searchParams.set('activate', 'admin')
           activationUrl.searchParams.set('redirect', '/admin')
           return NextResponse.redirect(activationUrl, { headers: response.headers })
@@ -131,25 +140,25 @@ export async function updateSupabaseSession(request: NextRequest) {
       }
 
       if (requiredRole === 'voter' && (role === 'admin' || role === 'super_admin')) {
-        const adminUrl = new URL(role === 'super_admin' ? '/portal-admin' : '/admin', request.url)
+        const adminUrl = new URL(role === 'super_admin' ? '/portal-admin' : '/admin', origin)
         return NextResponse.redirect(adminUrl, { headers: response.headers })
       }
 
       if (requiredRole === 'super_admin' && role !== 'super_admin') {
-        const fallbackUrl = new URL(role === 'admin' ? '/admin' : '/hubungkan-dompet', request.url)
+        const fallbackUrl = new URL(role === 'admin' ? '/admin' : '/hubungkan-dompet', origin)
         if (role !== 'admin') fallbackUrl.searchParams.set('redirect', '/pemilih')
         return NextResponse.redirect(fallbackUrl, { headers: response.headers })
       }
 
       if (requiredRole === 'admin' && role !== 'admin' && role !== 'super_admin') {
-        const fallbackUrl = new URL('/hubungkan-dompet', request.url)
+        const fallbackUrl = new URL('/hubungkan-dompet', origin)
         fallbackUrl.searchParams.set('redirect', '/pemilih')
         return NextResponse.redirect(fallbackUrl, { headers: response.headers })
       }
 
       if (requiredRole === 'voter' && !role) {
         // Voters with no role yet are redirected to wallet binding
-        const bindUrl = new URL('/hubungkan-dompet', request.url)
+        const bindUrl = new URL('/hubungkan-dompet', origin)
         bindUrl.searchParams.set('redirect', getPathWithSearch(request))
         return NextResponse.redirect(bindUrl, { headers: response.headers })
       }

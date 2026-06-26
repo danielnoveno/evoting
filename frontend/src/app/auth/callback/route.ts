@@ -15,6 +15,13 @@ function safeInternalPath(value: string | null, fallback = '/pemilih') {
   }
 }
 
+/** Resolve the correct production origin for redirects (not deploy preview URLs). */
+function getRedirectOrigin(request: NextRequest): string {
+  const envOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXT_PUBLIC_APP_URL
+  if (envOrigin?.trim()) return envOrigin.trim().replace(/\/$/, '')
+  return request.nextUrl.origin
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
   const code = searchParams.get('code')
@@ -25,7 +32,8 @@ export async function GET(request: NextRequest) {
   const isAdmin = nextPath.startsWith('/admin')
   const isAuthAdmin = isSuperAdmin || isAdmin
   // super_admin error → portal-admin; admin/voter error → hubungkan-dompet
-  const errorRedirectUrl = new URL(isSuperAdmin ? '/portal-admin' : '/hubungkan-dompet', request.url)
+  const origin = getRedirectOrigin(request)
+  const errorRedirectUrl = new URL(isSuperAdmin ? '/portal-admin' : '/hubungkan-dompet', origin)
   errorRedirectUrl.searchParams.set('redirect', nextPath)
 
   if (!isSupabaseConfigured()) {
@@ -84,13 +92,13 @@ export async function GET(request: NextRequest) {
           if (registry.status !== 'active') {
             if (registry.assigned_role === 'super_admin') {
               // Superadmin langsung ke /portal-admin
-              const portalUrl = new URL('/portal-admin', request.url)
+              const portalUrl = new URL('/portal-admin', origin)
               portalUrl.searchParams.set('redirect', '/superadmin')
               portalUrl.searchParams.set('authError', 'admin_pending')
               return NextResponse.redirect(portalUrl)
             }
             // Admin organisasi ke /hubungkan-dompet
-            const pendingUrl = new URL('/hubungkan-dompet', request.url)
+            const pendingUrl = new URL('/hubungkan-dompet', origin)
             pendingUrl.searchParams.set('activate', 'admin')
             pendingUrl.searchParams.set('redirect', '/admin')
             pendingUrl.searchParams.set('authError', 'admin_pending')
@@ -121,7 +129,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      return NextResponse.redirect(new URL(resolvedPath, request.url))
+      return NextResponse.redirect(new URL(resolvedPath, origin))
     } catch (err) {
       console.error('Unexpected error in auth callback:', err)
       errorRedirectUrl.searchParams.set('authError', 'internal_callback_error')
