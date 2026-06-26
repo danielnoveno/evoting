@@ -6,10 +6,17 @@
 set -euo pipefail
 
 # ─── Config ──────────────────────────────────────────────────────────
-BACKUP_DIR="/home/voteinbi/backups/database"
-SUPABASE_HOST="db.cuxoheyjxjeeqpxtfssb.supabase.co"
-SUPABASE_USER="postgres"
-SUPABASE_DB="postgres"
+# Load .env.deploy if present (git-ignored, never committed)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_DEPLOY="${SCRIPT_DIR}/../.env.deploy"
+if [ -f "$ENV_DEPLOY" ]; then
+    set -a; source "$ENV_DEPLOY"; set +a
+fi
+
+BACKUP_DIR="${BACKUP_DIR:-/home/voteinbi/backups/database}"
+SUPABASE_HOST="${SUPABASE_HOST:?SUPABASE_HOST not set — export it or create deploy/.env.deploy}"
+SUPABASE_USER="${SUPABASE_USER:-postgres}"
+SUPABASE_DB="${SUPABASE_DB:-postgres}"
 RETENTION_DAYS=30
 DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="${BACKUP_DIR}/supabase_${DATE}.sql.gz"

@@ -5,9 +5,16 @@
 set -euo pipefail
 
 # ─── Config ──────────────────────────────────────────────────────────
-VPS_HOST="195.88.211.190"
-VPS_USER="voteinbi"
-VPS_DIR="/home/voteinbi/app"
+# Load .env.deploy if present (git-ignored, never committed)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_DEPLOY="${SCRIPT_DIR}/../.env.deploy"
+if [ -f "$ENV_DEPLOY" ]; then
+    set -a; source "$ENV_DEPLOY"; set +a
+fi
+
+VPS_HOST="${VPS_HOST:?VPS_HOST not set — export it or create deploy/.env.deploy}"
+VPS_USER="${VPS_USER:-voteinbi}"
+VPS_DIR="${VPS_DIR:-/home/voteinbi/app}"
 LOCAL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 RED='\033[0;31m'
@@ -58,15 +65,21 @@ check_status() {
 setup_env() {
     log "Setting up indexer environment..."
     
+    # Require SUPABASE_URL and SUPABASE_KEY from .env.deploy or env
+    if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_KEY:-}" ]; then
+        error "SUPABASE_URL and SUPABASE_KEY must be set in deploy/.env.deploy or environment"
+        exit 1
+    fi
+    
     # Create .env for indexer on VPS
-    cat << 'EOF' > /tmp/indexer.env
+    cat << EOF > /tmp/indexer.env
 # Ponder Indexer Environment
 # Base Sepolia RPC (public)
 PONDER_RPC_URL_84532=https://sepolia.base.org
 
 # Supabase
-SUPABASE_URL=https://yswroopfcokpqjvewbvv.supabase.co
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlzd3Jvb3BmY29rcXBqdmV3YnZ2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MDEzMjYyMiwiZXhwIjoyMDY1NzA4NjIyfQ.Nv046iWCpK8JW4hBk8IaKvQXG4BqFy3Xv4B5N6M7P8Q
+SUPABASE_URL=${SUPABASE_URL}
+SUPABASE_KEY=${SUPABASE_KEY}
 
 # Node environment
 NODE_ENV=production
@@ -74,6 +87,7 @@ EOF
     
     # Upload to VPS
     scp /tmp/indexer.env "${VPS_USER}@${VPS_HOST}:${VPS_DIR}/indexer/.env"
+    rm -f /tmp/indexer.env
     
     success "Indexer .env uploaded"
 }

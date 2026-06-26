@@ -9,11 +9,18 @@
 set -euo pipefail
 
 # ─── Config ──────────────────────────────────────────────────────────
-VPS_HOST="195.88.211.190"
-VPS_USER="voteinbi"
-VPS_DIR="/home/voteinbi/app/frontend"
+# Load .env.deploy if present (git-ignored, never committed)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_DEPLOY="${SCRIPT_DIR}/../.env.deploy"
+if [ -f "$ENV_DEPLOY" ]; then
+    set -a; source "$ENV_DEPLOY"; set +a
+fi
+
+VPS_HOST="${VPS_HOST:?VPS_HOST not set — export it or create deploy/.env.deploy}"
+VPS_USER="${VPS_USER:-voteinbi}"
+VPS_DIR="${VPS_DIR:-/home/voteinbi/app/frontend}"
 LOCAL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../frontend" && pwd)"
-DOMAIN="votein.biz.id"
+DOMAIN="${DOMAIN:-votein.biz.id}"
 
 # ─── Colors ──────────────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -120,6 +127,8 @@ full() {
     build
     upload
     restart
+    # Setup cron jobs (send-notifications + auto-reveal)
+    bash "${SCRIPT_DIR}/setup-crons.sh" install 2>/dev/null || warn "Cron setup skipped — run setup-crons.sh manually"
     status
 }
 

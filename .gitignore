@@ -10,8 +10,10 @@ node_modules/
 .env.development
 .env.staging
 .env.production
+.env.deploy
 !.env.example
 !.env.production.example
+!.env.deploy.example
 
 # Foundry / Contracts
 contracts/cache/
