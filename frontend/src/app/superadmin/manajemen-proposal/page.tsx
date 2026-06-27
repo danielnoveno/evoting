@@ -1,6 +1,6 @@
 'use client'
 
-import { Eye, Pencil, Search } from 'lucide-react'
+import { Eye, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { SuperadminEmptyState, SuperadminShell, SuperadminStatusBadge, SuperadminFilterChip } from '@/components/superadmin/superadmin-shell'
@@ -199,14 +199,6 @@ export default function SuperadminProposalManagementPage() {
                           className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
                         >
                           <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Review proposal ${proposal.organizationName}`}
-                          onClick={() => router.push(`/superadmin/manajemen-proposal/${proposal.id}`)}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
-                        >
-                          <Pencil className="h-4 w-4" />
                         </button>
                       </div>
                     </DataTableCell>

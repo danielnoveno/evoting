@@ -14,6 +14,7 @@ import { basescanTxUrl, findElection, formatDateTime, formatWallet, useVoterStor
 import { generateCommitment, generateSalt, saveVoteCommitment, type VoteCommitmentRecord } from '@/lib/vote-commitment-storage'
 import { backendRuntimeConfig } from '@/lib/supabase/config'
 import { useElectionContract } from '@/hooks/use-election-contract'
+import { useCommitRelayer } from '@/hooks/use-commit-relayer'
 import { useToast } from '@/components/ui/toast-provider'
 import { queueAutoRevealIntent } from '@/lib/auto-reveal-intents'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
@@ -80,6 +81,17 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     hasCommittedError,
     whitelistError,
   } = useElectionContract(contractAddress, { checks: ['phase', 'hasCommitted', 'isWhitelisted'] })
+
+  const {
+    isPending: isRelayerSigning,
+    isSubmitting: isRelayerSubmitting,
+    isConfirmed: isRelayerConfirmed,
+    isFailed: isRelayerFailed,
+    result: relayerResult,
+    error: relayerError,
+    submitCommit,
+    reset: resetRelayer,
+  } = useCommitRelayer()
 
   const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
     ? Number(currentPhase)
@@ -175,6 +187,52 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         })
       })
   }, [isConfirmed, hash, receipt, pendingCommit, actions, params.id, address, showToast])
+
+  // Handle relayer commit confirmation
+  useEffect(() => {
+    if (!isRelayerConfirmed || !relayerResult || !pendingCommit) return
+
+    const proof = {
+      txHash: relayerResult.txHash,
+      blockNumber: relayerResult.blockNumber,
+      gasUsed: relayerResult.gasUsed,
+      createdAt: new Date().toISOString(),
+      statusLabel: 'Pilihan tersimpan',
+    }
+
+    actions.commitVote(params.id, pendingCommit.record.commitment, proof)
+    setAutoRevealQueueStatus('saving')
+    setAutoRevealQueueError(null)
+
+    queueAutoRevealIntent({
+      electionId: params.id,
+      voterWallet: address ?? '',
+      contractAddress: pendingCommit.contractAddress,
+      candidateUuid: pendingCommit.candidateUuid,
+      candidateNumber: pendingCommit.candidateNumber,
+      salt: pendingCommit.record.salt,
+      commitment: pendingCommit.record.commitment,
+      commitTxHash: relayerResult.txHash as `0x${string}`,
+      blockNumber: relayerResult.blockNumber,
+    })
+      .then(() => {
+        setAutoRevealQueueStatus('saved')
+        showToast({
+          title: 'Suara berhasil dicoblos',
+          description: 'Pilihanmu sudah terkunci. Sistem akan menghitung otomatis saat jadwal penghitungan dibuka.',
+          tone: 'success',
+        })
+      })
+      .catch((error: Error) => {
+        setAutoRevealQueueStatus('failed')
+        setAutoRevealQueueError(error.message)
+        showToast({
+          title: 'Pilihan tersimpan, antrean otomatis perlu dicek',
+          description: 'Transaksi commit berhasil, tetapi sistem belum berhasil menyimpan antrean penghitungan otomatis.',
+          tone: 'error',
+        })
+      })
+  }, [isRelayerConfirmed, relayerResult, pendingCommit, actions, params.id, address, showToast])
 
   useEffect(() => {
     if (!election?.deadlineIso) return
@@ -348,7 +406,12 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       })
       setAutoRevealQueueStatus('idle')
       setAutoRevealQueueError(null)
-      commitVote(commitment)
+
+      // Submit via relayer (EOA → contract direct, shows in Basescan Transactions tab)
+      submitCommit({
+        commitment,
+        contractAddress: deployedSpaceAddress,
+      })
     }
     setConfirmOpen(false)
   }
@@ -359,6 +422,12 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     txHash: receipt.transactionHash,
     blockNumber: Number(receipt.blockNumber),
     gasUsed: Number(receipt.gasUsed),
+    createdAt: new Date().toISOString(),
+    statusLabel: 'Pilihan tersimpan',
+  } : null) || (isRelayerConfirmed && relayerResult ? {
+    txHash: relayerResult.txHash,
+    blockNumber: relayerResult.blockNumber,
+    gasUsed: relayerResult.gasUsed,
     createdAt: new Date().toISOString(),
     statusLabel: 'Pilihan tersimpan',
   } : null)
@@ -514,16 +583,18 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             </div>
           </div>
         </section>
-      ) : (voteBlockedReason || writeError) ? (
+      ) : (voteBlockedReason || writeError || relayerError) ? (
         <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-[13px] leading-7 text-amber-900">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
             <div>
               <p className="font-semibold">Belum bisa mencoblos</p>
               <p className="mt-1">
-                {writeError
-                  ? 'Transaksi belum berhasil diproses. Pastikan wallet siap dan pemilihan sudah berada pada masa pencoblosan.'
-                  : voteBlockedReason}
+                {relayerError
+                  ? relayerError
+                  : writeError
+                    ? 'Transaksi belum berhasil diproses. Pastikan wallet siap dan pemilihan sudah berada pada masa pencoblosan.'
+                    : voteBlockedReason}
               </p>
             </div>
           </div>
@@ -592,11 +663,21 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 <button
                   type="button"
                   onClick={() => handleSelectClick(candidate.id)}
-                  disabled={isWritePending || isConfirming || hasCommittedOnChain === true}
+                  disabled={isWritePending || isConfirming || isRelayerSigning || isRelayerSubmitting || hasCommittedOnChain === true}
                   className="mt-4 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#0F172A] px-4 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label={`Pilih kandidat ${candidate.name}`}
                 >
-                  {isWritePending || isConfirming ? (
+                  {isRelayerSigning ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Menandatangani...
+                    </>
+                  ) : isRelayerSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Mengirim ke jaringan...
+                    </>
+                  ) : isWritePending || isConfirming ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Memproses...

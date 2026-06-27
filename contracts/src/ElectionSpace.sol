@@ -56,6 +56,9 @@ contract ElectionSpace {
     event RevealRelayed(
         uint256 indexed spaceId, address indexed voter, address indexed relayer, uint256 candidateId
     );
+    event CommitRelayed(
+        uint256 indexed spaceId, address indexed voter, address indexed relayer, bytes32 commitment
+    );
     event ElectionStatusChanged(
         uint256 indexed spaceId,
         ElectionStatus indexed status,
@@ -311,6 +314,26 @@ contract ElectionSpace {
         commitmentOf[msg.sender] = commitment;
 
         emit Committed(spaceId, msg.sender, commitment);
+    }
+
+    /// @notice Relayer-submitted commit on behalf of a whitelisted voter.
+    /// @dev Mirrors commitVote but allows any caller (relayer EOA) to submit.
+    ///      The relayer pays gas; the commitment is stored under the voter address.
+    function commitFor(address voter, bytes32 commitment)
+        external
+        onlyActive
+        onlyPhase(Phase.Commit)
+    {
+        if (voter == address(0)) revert InvalidVoter();
+        if (!isWhitelisted[voter]) revert NotRegistered();
+        if (hasCommitted[voter]) revert AlreadyCommitted();
+        if (commitment == bytes32(0)) revert InvalidCommitment();
+
+        hasCommitted[voter] = true;
+        commitmentOf[voter] = commitment;
+
+        emit Committed(spaceId, voter, commitment);
+        emit CommitRelayed(spaceId, voter, msg.sender, commitment);
     }
 
     function revealVote(uint256 candidateId, bytes32 salt)

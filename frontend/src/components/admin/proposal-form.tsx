@@ -23,6 +23,7 @@ export interface ProposalFormData {
   category: string
   description: string
   bannerImagePath: string
+  bannerImageDataUrl: string
   candidateCount: number
   voterCount: number
   registrationDate: string
@@ -31,6 +32,7 @@ export interface ProposalFormData {
   endedDate: string
   candidateEntries: ProposalCandidateInput[]
   whitelistWallets: string
+  candidatePhotoDataUrls: Record<number, string>
 }
 
 const EMPTY_CANDIDATE: ProposalCandidateInput = {
@@ -132,6 +134,7 @@ export function ProposalForm({
     category: initialData?.category || 'Internal Organisasi',
     description: initialData?.description || '',
     bannerImagePath: initialData?.bannerImagePath || '',
+    bannerImageDataUrl: initialData?.bannerImageDataUrl || '',
     candidateCount: initialData?.candidateCount ?? 2,
     voterCount: initialData?.voterCount ?? 0,
     registrationDate: initialData?.registrationDate || '',
@@ -140,6 +143,7 @@ export function ProposalForm({
     endedDate: initialData?.endedDate || '',
     candidateEntries: initialData?.candidateEntries || [EMPTY_CANDIDATE, EMPTY_CANDIDATE],
     whitelistWallets: initialData?.whitelistWallets || '',
+    candidatePhotoDataUrls: initialData?.candidatePhotoDataUrls || {},
   })
   const draftKey = proposalId ? `proposal-edit-${proposalId}` : 'proposal-create'
   const { clearDraft } = useFormDraft(draftKey, formData, setFormData)
@@ -215,6 +219,7 @@ export function ProposalForm({
         category: initialData.category || 'Internal Organisasi',
         description: initialData.description || '',
         bannerImagePath: initialData.bannerImagePath || '',
+        bannerImageDataUrl: initialData.bannerImageDataUrl || '',
         candidateCount: initialData.candidateCount ?? 2,
         voterCount: initialData.voterCount ?? 0,
         registrationDate: initialData.registrationDate || '',
@@ -223,6 +228,7 @@ export function ProposalForm({
         endedDate: initialData.endedDate || '',
         candidateEntries: initialData.candidateEntries || [EMPTY_CANDIDATE, EMPTY_CANDIDATE],
         whitelistWallets: initialData.whitelistWallets || '',
+        candidatePhotoDataUrls: initialData.candidatePhotoDataUrls || {},
       })
     }
   }, [initialData])
@@ -456,6 +462,13 @@ export function ProposalForm({
       if (prev) URL.revokeObjectURL(prev)
       return URL.createObjectURL(file)
     })
+
+    // Convert to data URL for persistence across sessions
+    const reader = new FileReader()
+    reader.onload = () => {
+      setFormData((prev) => ({ ...prev, bannerImageDataUrl: reader.result as string }))
+    }
+    reader.readAsDataURL(file)
   }
 
   const handleBannerImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -481,7 +494,7 @@ export function ProposalForm({
       if (prev) URL.revokeObjectURL(prev)
       return null
     })
-    setFormData((prev) => ({ ...prev, bannerImagePath: '' }))
+    setFormData((prev) => ({ ...prev, bannerImagePath: '', bannerImageDataUrl: '' }))
   }
 
   const processCandidatePhotoFile = (index: number, file: File) => {
@@ -509,6 +522,16 @@ export function ProposalForm({
       if (prev[index]) URL.revokeObjectURL(prev[index])
       return { ...prev, [index]: URL.createObjectURL(file) }
     })
+
+    // Convert to data URL for persistence across sessions
+    const reader = new FileReader()
+    reader.onload = () => {
+      setFormData((prev) => ({
+        ...prev,
+        candidatePhotoDataUrls: { ...prev.candidatePhotoDataUrls, [index]: reader.result as string },
+      }))
+    }
+    reader.readAsDataURL(file)
   }
 
   const handleCandidatePhotoChange = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -539,6 +562,11 @@ export function ProposalForm({
       const next = { ...prev }
       delete next[index]
       return next
+    })
+    setFormData((prev) => {
+      const nextUrls = { ...prev.candidatePhotoDataUrls }
+      delete nextUrls[index]
+      return { ...prev, candidatePhotoDataUrls: nextUrls }
     })
     handleCandidateChange(index, 'avatarPath', '')
   }
@@ -832,7 +860,7 @@ export function ProposalForm({
                       <span className="block text-[12px] font-semibold text-slate-600">Banner Pemilihan <span className="font-normal text-slate-400">(opsional)</span></span>
                       <p className="mt-1 text-[12px] leading-5 text-slate-400">Gambar akan tampil sebagai background card dengan linear-gradient overlay.</p>
                     </div>
-                    {(bannerImagePreview || formData.bannerImagePath) && !isReadOnly ? (
+                    {(bannerImagePreview || formData.bannerImagePath || formData.bannerImageDataUrl) && !isReadOnly ? (
                       <button type="button" onClick={removeBannerImage} className="inline-flex h-9 items-center justify-center rounded-xl text-[13px] font-medium text-red-600 hover:bg-red-50">
                         Hapus banner
                       </button>
@@ -845,7 +873,7 @@ export function ProposalForm({
                   >
                     <input type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" className="sr-only" onChange={handleBannerImageChange} disabled={isReadOnly} />
                     <BannerPreviewCard
-                      imageUrl={bannerImagePreview ?? formData.bannerImagePath}
+                      imageUrl={bannerImagePreview ?? formData.bannerImageDataUrl ?? formData.bannerImagePath}
                       title={formData.title || 'Nama Pemilihan'}
                       description={formData.description || 'Deskripsi singkat pemilihan akan tampil di area ini.'}
                       isReadOnly={isReadOnly}
@@ -1004,10 +1032,10 @@ export function ProposalForm({
                         className="relative flex min-h-[240px] w-full flex-1 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[14px] border border-dashed border-slate-300 bg-white text-center transition-colors duration-150 hover:border-slate-400 hover:bg-slate-50 focus-within:border-slate-900 focus-within:ring-4 focus-within:ring-slate-900/5 lg:min-h-[384px]"
                       >
                         <input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" className="sr-only" onChange={(event) => handleCandidatePhotoChange(i, event)} />
-                        {candidatePhotoPreviews[i] || c.avatarPath ? (
+                        {candidatePhotoPreviews[i] || formData.candidatePhotoDataUrls[i] || c.avatarPath ? (
                           <div className="absolute inset-0 h-full w-full">
                             <img
-                              src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''}
+                              src={candidatePhotoPreviews[i] ?? formData.candidatePhotoDataUrls[i] ?? c.avatarPath ?? ''}
                               alt={`Foto kandidat ${c.name || i + 1}`}
                               className="h-full w-full object-cover"
                             />
@@ -1026,15 +1054,15 @@ export function ProposalForm({
                           </div>
                         )}
                       </label>
-                      {(candidatePhotoPreviews[i] || c.avatarPath) ? (
+                      {(candidatePhotoPreviews[i] || formData.candidatePhotoDataUrls[i] || c.avatarPath) ? (
                         <button type="button" onClick={() => removeCandidatePhoto(i)} className="inline-flex h-9 items-center justify-center rounded-xl text-[13px] font-medium text-red-600 hover:bg-red-50">
                           Hapus foto
                         </button>
                       ) : null}
                     </div>
-                  ) : candidatePhotoPreviews[i] || c.avatarPath ? (
+                  ) : candidatePhotoPreviews[i] || formData.candidatePhotoDataUrls[i] || c.avatarPath ? (
                     <div className="min-h-[240px] flex-1 overflow-hidden rounded-[14px] border border-slate-200 bg-slate-50 lg:min-h-[384px]">
-                      <img src={candidatePhotoPreviews[i] ?? c.avatarPath ?? ''} alt={`Foto kandidat ${c.name || i + 1}`} className="h-full min-h-[240px] w-full object-cover lg:min-h-[384px]" />
+                      <img src={candidatePhotoPreviews[i] ?? formData.candidatePhotoDataUrls[i] ?? c.avatarPath ?? ''} alt={`Foto kandidat ${c.name || i + 1}`} className="h-full min-h-[240px] w-full object-cover lg:min-h-[384px]" />
                     </div>
                   ) : (
                     <div className="flex min-h-[240px] w-full flex-1 flex-col items-center justify-center rounded-[14px] border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-slate-400 lg:min-h-[384px]">

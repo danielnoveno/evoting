@@ -290,9 +290,10 @@ export async function sendProposalStatusEmail(params: {
   email: string
   adminName: string
   proposalTitle: string
-  status: 'approved' | 'rejected' | 'revision_requested'
+  status: 'approved' | 'rejected' | 'revision_requested' | 'deployed'
   message?: string | null
   proposalLink: string
+  electionLink?: string | null
 }): Promise<SendActivationEmailResult> {
   const config = getSmtpConfig()
   if (!config) {

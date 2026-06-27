@@ -1479,3 +1479,20 @@ alter table app.admin_registry
 
 alter table app.proposal_drafts
   add column if not exists faculty text;
+
+--
+-- ElectionSpace deployment data (Base Sepolia, 27 Jun 2026)
+-- Deployed standalone (bypass Registry) to add commitFor support.
+-- Contract: 0x9D95FfD857A11c46FB5AAAE875118B2196416aA7
+-- Deploy tx: 0x0045743eda4911920dd1030c2f65de9d05ece7f65909053331fae6dc54a08539
+-- Registry: 0x56115201473a636d39886Ffe467CDc1d464C3169
+-- Deployer/Relayer: 0xbCe97c5EDF9004F102F0B41C3e2dbDDd77aaB488
+--
+
+update app.proposal_drafts
+set status = 'deployed',
+    deployed_space_id = 1,
+    deployed_space_address = '0x9D95FfD857A11c46FB5AAAE875118B2196416aA7',
+    deployment_tx_hash = '0x0045743eda4911920dd1030c2f65de9d05ece7f65909053331fae6dc54a08539'
+where title = 'Pemilihan Ketua HIMAFORKA 2026'
+  and status = 'approved';

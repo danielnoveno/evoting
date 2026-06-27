@@ -207,6 +207,40 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     }
   }
 
+  // Email notification to proposal creator when deployed
+  if (status === 'deployed' && beforeRow?.created_by && data.title) {
+    try {
+      const serviceClient = getSupabaseServiceRoleClient()
+      if (serviceClient) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://e-votein.netlify.app'
+        const proposalLink = `${siteUrl}/admin/daftar-proposal/${id}`
+        const spaceAddress = data.deployed_space_address
+        const electionLink = spaceAddress ? `${siteUrl}/pemilihan/${spaceAddress}/hasil` : null
+
+        const { data: creatorProfile } = await serviceClient
+          .schema('app')
+          .from('app_profiles')
+          .select('email, display_name')
+          .eq('id', beforeRow.created_by)
+          .maybeSingle()
+
+        if (creatorProfile?.email) {
+          sendProposalStatusEmail({
+            email: creatorProfile.email,
+            adminName: creatorProfile.display_name || 'Admin',
+            proposalTitle: data.title,
+            status: 'deployed',
+            message,
+            proposalLink,
+            electionLink,
+          }).catch(() => {})
+        }
+      }
+    } catch {
+      // fire-and-forget
+    }
+  }
+
   // Public notification for deployed elections — visible to all visitors
   if (status === 'deployed' && data.title) {
     const spaceAddress = data.deployed_space_address

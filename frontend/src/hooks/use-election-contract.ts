@@ -110,11 +110,33 @@ export function useElectionContract(address?: string, options: UseElectionContra
     }
   })
 
+  const { data: commitEndsAt } = useReadContract({
+    address: address as `0x${string}`,
+    abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
+    functionName: 'commitEndsAt',
+    query: {
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address && enabledChecks.has('phase'),
+    }
+  })
+
   const { data: revealStartsAt } = useReadContract({
     address: address as `0x${string}`,
     abi: electionSpaceAbi,
     chainId: baseSepolia.id,
     functionName: 'revealStartsAt',
+    query: {
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address && enabledChecks.has('phase'),
+    }
+  })
+
+  const { data: revealEndsAt } = useReadContract({
+    address: address as `0x${string}`,
+    abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
+    functionName: 'revealEndsAt',
     query: {
       ...DEFAULT_READ_QUERY_OPTIONS,
       enabled: !!address && enabledChecks.has('phase'),
@@ -273,7 +295,9 @@ export function useElectionContract(address?: string, options: UseElectionContra
     // State
     currentPhase,
     commitStartsAt,
+    commitEndsAt,
     revealStartsAt,
+    revealEndsAt,
     hasCommittedOnChain,
     hasRevealedOnChain,
     isWhitelistedOnChain,

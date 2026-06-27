@@ -528,25 +528,35 @@ export function buildDeadlineReminderEmail(params: {
 export function buildProposalStatusEmail(params: {
   adminName: string
   proposalTitle: string
-  status: 'approved' | 'rejected' | 'revision_requested'
+  status: 'approved' | 'rejected' | 'revision_requested' | 'deployed'
   message?: string | null
   proposalLink: string
+  electionLink?: string | null
 }): { subject: string; html: string } {
   const statusLabels: Record<string, string> = {
     approved: 'Disetujui',
     rejected: 'Ditolak',
     revision_requested: 'Perlu Revisi',
+    deployed: 'Berhasil Di-deploy',
   }
   const statusColors: Record<string, string> = {
     approved: '#16A34A',
     rejected: '#DC2626',
     revision_requested: '#D97706',
+    deployed: '#3B82F6',
   }
   const label = statusLabels[params.status] || params.status
   const color = statusColors[params.status] || '#0F172A'
   const subject = `Proposal ${label}: ${params.proposalTitle} — Votein`
 
   const statusBanner = `<div style="display:inline-block;padding:4px 12px;border-radius:4px;background:${color};color:#FFFFFF;font-size:12px;font-weight:700;letter-spacing:0.04em;">${label}</div>`
+
+  const isDeployed = params.status === 'deployed'
+  const bodyText = isDeployed
+    ? `Proposal kamu telah berhasil di-deploy ke blockchain oleh superadmin. Pemilihan <strong>${params.proposalTitle}</strong> sekarang sudah aktif dan pemilih bisa mulai berpartisipasi.`
+    : `Proposal kamu telah <strong>${label.toLowerCase()}</strong> oleh superadmin.`
+  const buttonLabel = isDeployed ? 'Lihat Pemilihan' : 'Lihat Proposal'
+  const buttonLink = isDeployed && params.electionLink ? params.electionLink : params.proposalLink
 
   const messageBlock = params.message
     ? `<div style="margin:0 0 20px;padding:14px 16px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;">
@@ -565,11 +575,11 @@ export function buildProposalStatusEmail(params: {
       ${statusBanner}
       <h2 style="margin:12px 0 12px;font-size:22px;line-height:1.3;font-weight:600;color:#0F172A;">${params.proposalTitle}</h2>
       <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#475569;">
-        Halo <strong>${params.adminName}</strong>, proposal kamu telah <strong>${label.toLowerCase()}</strong> oleh superadmin.
+        Halo <strong>${params.adminName}</strong>, ${bodyText}
       </p>
       ${messageBlock}
-      <a href="${params.proposalLink}" style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;padding:12px 18px;background:#0F172A;color:#FFFFFF;text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;">
-        Lihat Proposal
+      <a href="${buttonLink}" style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;padding:12px 18px;background:#0F172A;color:#FFFFFF;text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;">
+        ${buttonLabel}
       </a>
       <div style="margin-top:24px;padding-top:20px;border-top:1px solid #F1F5F9;">
         <p style="margin:0;font-size:12px;line-height:1.6;color:#94A3B8;">Terima kasih,<br />Tim Votein</p>

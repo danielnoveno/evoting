@@ -97,13 +97,20 @@ begin
   );
 end $$;
 
--- Setelah contract benar-benar dideploy di Base Sepolia, jalankan UPDATE ini dengan nilai nyata:
--- update app.proposal_drafts
--- set status = 'deployed',
---     deployed_space_id = TODO_SPACE_ID,
---     deployed_space_address = '0xTODO_CONTRACT_ADDRESS_40_HEX',
---     deployment_tx_hash = '0xTODO_DEPLOYMENT_TX_HASH_64_HEX'
--- where id = 'TODO_PROPOSAL_ID';
+-- Setelah contract benar-benar dideploy di Base Sepolia, jalankan UPDATE ini:
+-- Deployment terakhir (27 Jun 2026):
+--   ElectionSpace: 0x9D95FfD857A11c46FB5AAAE875118B2196416aA7
+--   Tx: 0x0045743eda4911920dd1030c2f65de9d05ece7f65909053331fae6dc54a08539
+--   Registry: 0x56115201473a636d39886Ffe467CDc1d464C3169
+--   Deployer/Relayer: 0xbCe97c5EDF9004F102F0B41C3e2dbDDd77aaB488
+--
+update app.proposal_drafts
+set status = 'deployed',
+    deployed_space_id = 1,
+    deployed_space_address = '0x9D95FfD857A11c46FB5AAAE875118B2196416aA7',
+    deployment_tx_hash = '0x0045743eda4911920dd1030c2f65de9d05ece7f65909053331fae6dc54a08539'
+where title = 'Pemilihan Ketua HIMAFORKA 2026'
+  and status = 'approved';
 
 -- Jika ingin public page dapat membaca data tanpa login, jalankan policy berikut sesuai kebutuhan demo publik:
 drop policy if exists "proposal_drafts_select_public_approved" on app.proposal_drafts;
