@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 interface IRegistryRoleOracle {
     function isSuperAdmin(address account) external view returns (bool);
+    function isPlatformAdmin(address account) external view returns (bool);
 }
 
 contract ElectionSpace {
@@ -20,7 +21,7 @@ contract ElectionSpace {
     }
 
     address public immutable registry;
-    address public immutable spaceAdmin;
+    address public spaceAdmin;
     uint256 public immutable spaceId;
     uint256 public immutable candidateCount;
 
@@ -81,6 +82,13 @@ contract ElectionSpace {
         uint256 revealEndsAt,
         address actor
     );
+    event SpaceAdminTransferred(
+        uint256 indexed spaceId,
+        address indexed previousAdmin,
+        address indexed newAdmin,
+        address actor,
+        string reasonCode
+    );
 
     error NotAuthorized();
     error NotRegistry();
@@ -98,6 +106,7 @@ contract ElectionSpace {
     error ElectionSuspended();
     error ElectionTerminated();
     error InvalidPhaseSchedule();
+    error InvalidAdmin();
 
     constructor(
         address _registry,
@@ -159,7 +168,9 @@ contract ElectionSpace {
     }
 
     modifier onlySpaceAdminOrSuperAdmin() {
-        if (msg.sender != spaceAdmin && !IRegistryRoleOracle(registry).isSuperAdmin(msg.sender)) {
+        IRegistryRoleOracle roleOracle = IRegistryRoleOracle(registry);
+        bool isActiveSpaceAdmin = msg.sender == spaceAdmin && roleOracle.isPlatformAdmin(msg.sender);
+        if (!isActiveSpaceAdmin && !roleOracle.isSuperAdmin(msg.sender)) {
             revert NotAuthorized();
         }
         _;
@@ -350,6 +361,18 @@ contract ElectionSpace {
 
         status = suspended ? ElectionStatus.Suspended : ElectionStatus.Active;
         emit ElectionStatusChanged(spaceId, status, actor, reasonCode);
+    }
+
+    function transferSpaceAdmin(address newAdmin, address actor, string calldata reasonCode)
+        external
+        onlyRegistry
+    {
+        if (newAdmin == address(0)) revert InvalidAdmin();
+
+        address previousAdmin = spaceAdmin;
+        spaceAdmin = newAdmin;
+
+        emit SpaceAdminTransferred(spaceId, previousAdmin, newAdmin, actor, reasonCode);
     }
 
     function terminate(address actor, string calldata reasonCode) external onlyRegistry {

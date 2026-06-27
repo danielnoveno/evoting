@@ -72,6 +72,13 @@ contract VoteChainRegistry {
         uint256 revealStartsAt,
         uint256 revealEndsAt
     );
+    event SpaceAdminTransferred(
+        uint256 indexed spaceId,
+        address indexed previousAdmin,
+        address indexed newAdmin,
+        address actor,
+        string reasonCode
+    );
 
     error NotSuperAdmin();
     error NotRootSuperAdmin();
@@ -124,6 +131,22 @@ contract VoteChainRegistry {
 
         isPlatformAdmin[admin] = isActive;
         emit AdminUpserted(admin, isActive);
+    }
+
+    function transferSpaceAdmin(uint256 spaceId, address newAdmin, string calldata reasonCode)
+        external
+        onlySuperAdmin
+    {
+        address target = spaceById[spaceId];
+        if (target == address(0)) revert SpaceNotFound();
+        if (newAdmin == address(0)) revert InvalidAdmin();
+        if (!isPlatformAdmin[newAdmin] && !superAdmins[newAdmin]) revert NotPlatformAdmin();
+
+        ElectionSpace space = ElectionSpace(target);
+        address previousAdmin = space.spaceAdmin();
+        space.transferSpaceAdmin(newAdmin, msg.sender, reasonCode);
+
+        emit SpaceAdminTransferred(spaceId, previousAdmin, newAdmin, msg.sender, reasonCode);
     }
 
     function isSuperAdmin(address account) external view returns (bool) {

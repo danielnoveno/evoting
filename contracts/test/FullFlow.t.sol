@@ -45,6 +45,7 @@ contract FullFlowTest is Test {
         voter2 = makeAddr("voter-2");
 
         registry = new VoteChainRegistry(superAdmin);
+        registry.setAdmin(spaceAdmin, true);
 
         (uint256 proposalId, uint256 sid, address spaceAddr) = registry.createElectionForAdmin(
             spaceAdmin,
@@ -380,6 +381,7 @@ contract FullFlowTest is Test {
         address voterA = makeAddr("voter-a");
 
         VoteChainRegistry r2 = new VoteChainRegistry(superAdmin);
+        r2.setAdmin(admin2, true);
         (,, address sAddr) = r2.createElectionForAdmin(admin2, "test", "", 2);
         ElectionSpace s2 = ElectionSpace(sAddr);
 
@@ -510,5 +512,89 @@ contract FullFlowTest is Test {
         vm.prank(voter1);
         vm.expectRevert(ElectionSpace.InvalidCommitment.selector);
         space.commitVote(bytes32(0));
+    }
+
+    // ══════════════════════════════════════════════
+    // 7. ADMIN DISABLED + OWNERSHIP TRANSFER
+    // ══════════════════════════════════════════════
+    function test_disabled_admin_cannot_manage_existing_space() external {
+        (
+            VoteChainRegistry registry,
+            address spaceAdmin,
+            address voter1,
+            address voter2,
+            ElectionSpace space,
+            uint256 spaceId
+        ) = _deployClean();
+
+        registry.setAdmin(spaceAdmin, false);
+
+        vm.prank(spaceAdmin);
+        vm.expectRevert(ElectionSpace.NotAuthorized.selector);
+        space.transitionToNextPhase();
+    }
+
+    function test_transfer_space_admin_preserves_commit_reveal_state() external {
+        (
+            VoteChainRegistry registry,
+            address oldAdmin,
+            address voter1,
+            address voter2,
+            ElectionSpace space,
+            uint256 spaceId
+        ) = _deployClean();
+        address newAdmin = makeAddr("replacement-admin");
+        registry.setAdmin(newAdmin, true);
+
+        vm.prank(oldAdmin);
+        space.registerVoter(voter1);
+        vm.prank(oldAdmin);
+        space.transitionToNextPhase();
+
+        bytes32 salt = bytes32(uint256(20260627));
+        bytes32 commitment = _commitment(space, voter1, 1, salt);
+        vm.prank(voter1);
+        space.commitVote(commitment);
+
+        registry.setAdmin(oldAdmin, false);
+        registry.transferSpaceAdmin(spaceId, newAdmin, "ADMIN_DISABLED");
+
+        assertEq(space.spaceAdmin(), newAdmin);
+        assertTrue(space.hasCommitted(voter1));
+
+        vm.prank(oldAdmin);
+        vm.expectRevert(ElectionSpace.NotAuthorized.selector);
+        space.transitionToNextPhase();
+
+        vm.prank(newAdmin);
+        space.transitionToNextPhase();
+        assertEq(uint8(space.phase()), uint8(ElectionSpace.Phase.Reveal));
+
+        vm.prank(voter1);
+        space.revealVote(1, salt);
+
+        assertTrue(space.hasRevealed(voter1));
+        assertEq(space.voteCount(1), 1);
+        assertFalse(space.isWhitelisted(voter2));
+    }
+
+    function test_only_super_admin_can_transfer_space_admin() external {
+        (
+            VoteChainRegistry registry,
+            address oldAdmin,
+            address voter1,
+            address voter2,
+            ElectionSpace space,
+            uint256 spaceId
+        ) = _deployClean();
+        address newAdmin = makeAddr("replacement-admin-2");
+        address attacker = makeAddr("attacker");
+        registry.setAdmin(newAdmin, true);
+
+        vm.prank(attacker);
+        vm.expectRevert(VoteChainRegistry.NotSuperAdmin.selector);
+        registry.transferSpaceAdmin(spaceId, newAdmin, "ATTACK");
+
+        assertEq(space.spaceAdmin(), oldAdmin);
     }
 }
