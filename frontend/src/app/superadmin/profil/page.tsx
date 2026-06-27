@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck, WalletCards, Pencil, Lock, Monitor, Globe, LogOut } from 'lucide-react'
+import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck, WalletCards, Pencil, Lock, Monitor, Globe, LogOut, Link, AlertTriangle } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
@@ -15,6 +15,7 @@ import { useResetPassword } from '@/hooks/use-auth-session'
 import { useAccount, useBalance } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { isAddress, type Address } from 'viem'
+import { useSuperadminOnchainStatus } from '@/hooks/use-superadmin-onchain-status'
 
 export default function SuperadminProfilePage() {
   const { showToast } = useToast()
@@ -37,6 +38,15 @@ export default function SuperadminProfilePage() {
     : undefined
   const balanceWalletAddress = connectedWallet ?? savedProfileWallet
   const walletReadMode = connectedWallet ? 'connected' : savedProfileWallet ? 'saved-profile' : 'none'
+  
+  // On-chain superadmin status
+  const walletForOnchainCheck = connectedWallet || savedProfileWallet
+  const { statusMap: onchainStatusMap, isLoading: isOnchainStatusLoading } = useSuperadminOnchainStatus(
+    walletForOnchainCheck ? [walletForOnchainCheck] : []
+  )
+  const isOnchainSuperadmin = walletForOnchainCheck
+    ? onchainStatusMap.get(walletForOnchainCheck.toLowerCase()) === true
+    : false
   const walletBalanceQuery = useBalance({
     address: balanceWalletAddress,
     chainId: baseSepolia.id,
@@ -303,6 +313,46 @@ export default function SuperadminProfilePage() {
                 <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Blockchain Identity</p>
                 <p className="mt-2 font-mono text-[14px] break-all text-slate-100">{profile?.walletAddress || '-'}</p>
               </div>
+
+              {/* On-chain superadmin registration status */}
+              {walletForOnchainCheck && (
+                <div className={`rounded-[24px] border px-5 py-5 ${isOnchainSuperadmin ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}>
+                  <div className="flex items-start gap-3">
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${isOnchainSuperadmin ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {isOnchainSuperadmin ? <Link className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Status On-Chain</p>
+                        {isOnchainStatusLoading ? (
+                          <div className="h-4 w-16 animate-pulse rounded-full bg-slate-200" />
+                        ) : (
+                          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${isOnchainSuperadmin ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {isOnchainSuperadmin ? 'Terdaftar' : 'Belum Terdaftar'}
+                          </span>
+                        )}
+                      </div>
+                      {isOnchainStatusLoading ? (
+                        <div className="mt-2 h-4 w-48 animate-pulse rounded bg-slate-200" />
+                      ) : isOnchainSuperadmin ? (
+                        <p className="mt-2 text-[13px] leading-6 text-emerald-700">
+                          Wallet ini sudah terdaftar sebagai superadmin di kontrak registry Base Sepolia. Anda bisa deploy pemilihan dan mendaftarkan superadmin lain.
+                        </p>
+                      ) : (
+                        <div className="mt-2">
+                          <p className="text-[13px] leading-6 text-amber-700">
+                            Wallet ini belum terdaftar sebagai superadmin di kontrak registry. Anda belum bisa deploy pemilihan sampai wallet ini didaftarkan on-chain.
+                          </p>
+                          <div className="mt-2 rounded-2xl bg-white/60 px-3 py-2 text-[12px] leading-5 text-amber-800">
+                            <p className="font-semibold">Cara mengatasi:</p>
+                            <p className="mt-1">Minta superadmin lain yang sudah terdaftar on-chain untuk membuka halaman <span className="font-semibold">Manajemen Superadmin</span> — wallet Anda akan otomatis didaftarkan.</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="rounded-[24px] border border-slate-200 bg-white px-5 py-5">
                 <div className="flex items-start gap-3">

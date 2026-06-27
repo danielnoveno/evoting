@@ -1,6 +1,6 @@
 'use client'
 
-import { BadgeCheck, CalendarDays, Check, CircleAlert, Download, ExternalLink, FileText, Landmark, ListChecks, ShieldCheck, ThumbsDown, ThumbsUp, Loader2, Rocket, Eye, UserRound, Youtube, Users, Clock3 } from 'lucide-react'
+import { BadgeCheck, CalendarDays, Check, CircleAlert, Download, ExternalLink, FileText, Landmark, ListChecks, ShieldCheck, ThumbsDown, ThumbsUp, Loader2, Rocket, Eye, UserRound, Youtube, Users, Clock3, Link } from 'lucide-react'
 import { notFound, useRouter } from 'next/navigation'
 import { useMemo, useRef, useState, useEffect } from 'react'
 import {
@@ -53,7 +53,7 @@ function getDeployErrorMessage(error: unknown) {
   }
 
   if (lowerMessage.includes('notsuperadmin')) {
-    return 'Wallet yang tersambung bukan superadmin di kontrak registry. Sambungkan wallet yang sudah terdaftar sebagai superadmin di Base Sepolia, atau minta superadmin lain melakukan deploy.'
+    return 'Wallet yang tersambung belum terdaftar sebagai superadmin di kontrak registry Base Sepolia. Hubungi superadmin on-chain lain untuk mendaftarkan wallet Anda melalui halaman Manajemen Superadmin > Daftarkan On-Chain, lalu sambungkan ulang wallet ini.'
   }
 
   if (lowerMessage.includes('invalidcandidatecount')) {
@@ -396,9 +396,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
 
       if (isSuperAdmin !== true) {
         showToast({
-          title: isSuperAdmin === false ? 'Wallet bukan superadmin kontrak' : 'Validasi wallet belum siap',
+          title: isSuperAdmin === false ? 'Wallet belum terdaftar on-chain' : 'Validasi wallet belum siap',
           description: isSuperAdmin === false 
-            ? `Smart Wallet tersambung: ${userAddress?.slice(0, 6)}...${userAddress?.slice(-4)} belum terdaftar sebagai superadmin di kontrak. Superadmin on-chain: ${superAdminAddress ? `${(superAdminAddress as string).slice(0, 6)}...${(superAdminAddress as string).slice(-4)}` : '(memuat...)'}. Deploy hanya bisa memakai Smart Wallet yang sudah diberi hak superadmin on-chain.` 
+            ? `Wallet ${userAddress?.slice(0, 6)}...${userAddress?.slice(-4)} belum terdaftar sebagai superadmin di kontrak registry. Hubungi superadmin on-chain lain${superAdminAddress ? ` (${(superAdminAddress as string).slice(0, 6)}...${(superAdminAddress as string).slice(-4)})` : ''} untuk mendaftarkan wallet Anda melalui halaman Manajemen Superadmin, lalu sambungkan ulang wallet ini.`
             : 'Tunggu beberapa detik sampai peran wallet terbaca, lalu coba deploy lagi.',
           tone: 'error',
         })
@@ -580,7 +580,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               </div>
               {isSuperAdmin === false ? (
                 <p className="mt-3 text-[13px] leading-6 text-red-800">
-                  Wallet <span className="font-mono font-semibold">{userAddress?.slice(0, 6)}...{userAddress?.slice(-4)}</span> belum terdaftar sebagai superadmin di kontrak registry. Superadmin on-chain: <span className="font-mono font-semibold">{superAdminAddress ? `${(superAdminAddress as string).slice(0, 6)}...${(superAdminAddress as string).slice(-4)}` : '(memuat...)'}. Untuk deploy, sambungkan wallet yang sudah terdaftar sebagai superadmin, atau minta superadmin lain melakukan deploy pemilihan ini.</span>
+                  Wallet <span className="font-mono font-semibold">{userAddress?.slice(0, 6)}...{userAddress?.slice(-4)}</span> belum terdaftar sebagai superadmin di kontrak registry. Superadmin on-chain: <span className="font-mono font-semibold">{superAdminAddress && typeof superAdminAddress === 'string' ? `${superAdminAddress.slice(0, 6)}...${superAdminAddress.slice(-4)}` : '(memuat...)'}</span>. Untuk deploy, sambungkan wallet yang sudah terdaftar sebagai superadmin, atau minta superadmin lain melakukan deploy pemilihan ini.
                 </p>
               ) : null}
             </div>
@@ -949,6 +949,38 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         </div>
 
         <div className="space-y-6 xl:sticky xl:top-6 xl:self-start">
+          {/* On-chain registration warning */}
+          {isConnected && isSuperAdmin === false && proposal.badge !== 'Berjalan' && proposal.badge !== 'Selesai' && proposal.badge !== 'Dibatalkan' && (
+            <section className="rounded-[32px] border border-amber-200 bg-amber-50 p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                  <Link className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-semibold text-amber-800">Wallet belum terdaftar on-chain</p>
+                  <p className="mt-2 text-[13px] leading-6 text-amber-700">
+                    Wallet <span className="font-mono font-semibold">{userAddress?.slice(0, 6)}...{userAddress?.slice(-4)}</span> belum terdaftar sebagai superadmin di smart contract registry. Deploy hanya bisa dilakukan oleh wallet yang sudah terdaftar on-chain.
+                  </p>
+                  <div className="mt-3 rounded-2xl bg-white/60 px-4 py-3 text-[12px] leading-6 text-amber-800">
+                    <p className="font-semibold">Cara mengatasi:</p>
+                    <ol className="mt-1.5 list-decimal space-y-1 pl-4">
+                      <li>Minta superadmin lain yang sudah terdaftar on-chain untuk login</li>
+                      <li>Minta mereka buka <span className="font-semibold">Manajemen Superadmin</span></li>
+                      <li>Di halaman itu, wallet Anda akan otomatis didaftarkan on-chain</li>
+                      <li>Setelah terdaftar, ulangi aksi deploy ini</li>
+                    </ol>
+                  </div>
+                  {typeof superAdminAddress === 'string' && (
+                    <p className="mt-2 text-[11px] text-amber-600">
+                      {'Superadmin on-chain saat ini: '}
+                      <span className="font-mono">{superAdminAddress.slice(0, 6)}...{superAdminAddress.slice(-4)}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
           {proposal.badge !== 'Berjalan' && proposal.badge !== 'Selesai' && proposal.badge !== 'Dibatalkan' && (
           <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Aksi Review</p>

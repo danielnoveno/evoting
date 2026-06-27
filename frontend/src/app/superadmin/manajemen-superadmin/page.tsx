@@ -1,6 +1,6 @@
 'use client'
 
-import { Copy, Eye, Loader2, Mail, Pencil, Power, Search, Trash2, UserPlus, CheckCircle2, Clock3, ChevronsUpDown, ChevronUp, ChevronDown, Link } from 'lucide-react'
+import { Copy, Eye, Loader2, Mail, Pencil, Power, Search, Trash2, UserPlus, CheckCircle2, Clock3, ChevronsUpDown, ChevronUp, ChevronDown, Link, AlertTriangle } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -88,7 +88,7 @@ function SuperadminManagementContent() {
   const deleteAdminMutation = useDeleteAdminRegistry()
   const currentProfileQuery = useCurrentProfile()
   const adminDirectoryQuery = useSuperadminAdminDirectory()
-  const { addSuperAdmin, userAddress, isSuperAdmin, isSuperAdminLoading, isWritePending } = useRegistryContract()
+  const { addSuperAdmin, userAddress, isConnected, isSuperAdmin, isSuperAdminLoading, isWritePending } = useRegistryContract()
 
   const superadmins = useMemo(
     () => (adminDirectoryQuery.data ?? []).filter((admin) => admin.role === 'super_admin'),
@@ -457,6 +457,37 @@ function SuperadminManagementContent() {
           )}
         </div>
       </ScrollReveal>
+
+      {/* Bootstrap warning: wallet belum terdaftar on-chain */}
+      {isConnected && userAddress && !isSuperadminWallet && !isOnchainStatusLoading && (
+        <ScrollReveal variant="fade-up" delay={100} duration={800}>
+          <div className="mt-6 rounded-[24px] border border-amber-200 bg-amber-50 p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-semibold text-amber-800">Wallet belum terdaftar on-chain</p>
+                <p className="mt-1.5 text-[13px] leading-6 text-amber-700">
+                  Wallet <span className="font-mono font-semibold">{userAddress.slice(0, 6)}...{userAddress.slice(-4)}</span> belum terdaftar sebagai superadmin di smart contract registry. Pendaftaran on-chain hanya bisa dilakukan oleh superadmin yang sudah terdaftar sebelumnya.
+                </p>
+                <div className="mt-3 rounded-2xl bg-white/60 px-4 py-3 text-[12px] leading-6 text-amber-800">
+                  <p className="font-semibold">Cara mengatasi:</p>
+                  <ol className="mt-1.5 list-decimal space-y-1 pl-4">
+                    <li>Sambungkan wallet superadmin yang <span className="font-semibold">sudah terdaftar on-chain</span> (wallet pertama yang deploy registry)</li>
+                    <li>Buka halaman <span className="font-semibold">Manajemen Superadmin</span> ini dengan wallet tersebut</li>
+                    <li>Sistem akan otomatis mendaftarkan semua superadmin yang belum terdaftar on-chain</li>
+                    <li>Setelah terdaftar, sambungkan kembali wallet Anda untuk deploy pemilihan</li>
+                  </ol>
+                </div>
+                <p className="mt-2 text-[11px] text-amber-600">
+                  Catatan: Hanya superadmin on-chain yang bisa menambah superadmin lain di kontrak. Ini adalah mekanisme keamanan blockchain untuk mencegah penambahan otoritas tanpa izin.
+                </p>
+              </div>
+            </div>
+          </div>
+        </ScrollReveal>
+      )}
 
       {activeTab === 'daftar' ? (
         <>
