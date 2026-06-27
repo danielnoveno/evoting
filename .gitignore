@@ -19,6 +19,10 @@ node_modules/
 contracts/cache/
 contracts/out/
 
+# Ponder / Indexer local database cache
+indexer/.ponder/
+indexer/generated/
+
 # Deploy artifacts (not scripts)
 deploy/scripts/logs/
 deploy/backups/
