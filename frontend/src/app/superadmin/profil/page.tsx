@@ -1,17 +1,15 @@
 'use client'
 
-import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck, QrCode, WalletCards, Pencil, Lock, Monitor, Globe, LogOut } from 'lucide-react'
+import { Building2, KeyRound, Laptop, Smartphone, Upload, ShieldCheck, WalletCards, Pencil, Lock, Monitor, Globe, LogOut } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton, SuperadminTextInput } from '@/components/superadmin/superadmin-shell'
+import { SuperadminSectionCard, SuperadminShell, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { useToast } from '@/components/ui/toast-provider'
-import { ModalShell } from '@/components/ui/modal-shell'
 import { superadminPlatformData, type SuperadminPlatformSession } from '@/lib/superadmin-data'
 import { useCurrentProfile, useSaveCurrentProfile } from '@/hooks/use-profile'
 import { getAdminInitials } from '@/lib/superadmin-admin-mapper'
 import { useProfileImageUpload } from '@/hooks/use-profile-upload'
-import { useMFAFactors, useEnrollMFA, useVerifyMFA, useUnenrollMFA } from '@/hooks/use-mfa'
 import { usePlatformSettings, useUpdatePlatformSettings } from '@/hooks/use-platform-settings'
 import { useResetPassword } from '@/hooks/use-auth-session'
 import { useAccount, useBalance } from 'wagmi'
@@ -48,18 +46,12 @@ export default function SuperadminProfilePage() {
     },
   })
   
-  const { data: mfaFactors, isLoading: isMfaLoading } = useMFAFactors()
-  const enrollMutation = useEnrollMFA()
-  const verifyMutation = useVerifyMFA()
-  const unenrollMutation = useUnenrollMFA()
-
   const { data: platformSettings, isLoading: isPlatformSettingsLoading } = usePlatformSettings()
   const updatePlatformMutation = useUpdatePlatformSettings()
 
   const uploadAvatarMutation = useProfileImageUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [isEditing, setIsEditing] = useState(false)
   const [activeSessions, setActiveSessions] = useState<Array<{ id: string; device: string; location: string; time: string; status: string; isCurrent: boolean; icon: typeof Monitor }>>([])
@@ -68,17 +60,6 @@ export default function SuperadminProfilePage() {
   const [language, setLanguage] = useState('')
   const [networkName, setNetworkName] = useState('')
   const [gasLimit, setGasLimit] = useState(50)
-
-  const [mfaModalOpen, setMfaModalOpen] = useState(false)
-  const [mfaCode, setMfaCode] = useState('')
-  const [enrollData, setEnrollData] = useState<{ id: string; totp: { qr_code: string } } | null>(null)
-
-  const verifiedFactor = mfaFactors?.totp?.find((f: any) => f.status === 'verified')
-  const isMfaActive = !!verifiedFactor
-
-  useEffect(() => {
-    setTwoFactorEnabled(isMfaActive)
-  }, [isMfaActive])
 
   useEffect(() => {
     if (profile?.displayName) {
@@ -155,49 +136,6 @@ export default function SuperadminProfilePage() {
         onError: (error) => {
           showToast({ tone: 'error', title: 'Gagal menyimpan', description: error instanceof Error ? error.message : 'Terjadi kesalahan.' })
         },
-      }
-    )
-  }
-
-  const handleMfaToggle = async () => {
-    if (isMfaActive) {
-      if (!verifiedFactor) return
-      unenrollMutation.mutate(verifiedFactor.id, {
-        onSuccess: () => {
-          showToast({ tone: 'success', title: '2FA dinonaktifkan', description: 'Lapisan keamanan ekstra telah dihapus.' })
-        },
-        onError: (err) => {
-          showToast({ tone: 'error', title: 'Gagal menonaktifkan 2FA', description: err instanceof Error ? err.message : 'Terjadi kesalahan.' })
-        }
-      })
-    } else {
-      enrollMutation.mutate(undefined, {
-        onSuccess: (data) => {
-          setEnrollData(data as any)
-          setMfaModalOpen(true)
-        },
-        onError: (err) => {
-          showToast({ tone: 'error', title: 'Gagal memulai 2FA', description: err instanceof Error ? err.message : 'Terjadi kesalahan.' })
-        }
-      })
-    }
-  }
-
-  const handleVerifyMfa = () => {
-    if (!enrollData || !mfaCode) return
-
-    verifyMutation.mutate(
-      { factorId: enrollData.id, code: mfaCode },
-      {
-        onSuccess: () => {
-          setMfaModalOpen(false)
-          setMfaCode('')
-          setEnrollData(null)
-          showToast({ tone: 'success', title: '2FA Aktif', description: 'Autentikasi dua faktor berhasil dikonfigurasi.' })
-        },
-        onError: (err) => {
-          showToast({ tone: 'error', title: 'Kode salah', description: 'Kode yang Anda masukkan tidak valid atau sudah kedaluwarsa.' })
-        }
       }
     )
   }
@@ -436,63 +374,6 @@ export default function SuperadminProfilePage() {
 
           <SuperadminSectionCard>
             <h2 className="text-[18px] font-semibold text-slate-900">Keamanan Sesi</h2>
-            <div className="mt-8 rounded-[24px] bg-white p-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-[18px] font-semibold text-slate-900">Autentikasi Dua Faktor (2FA)</p>
-                  <p className="mt-2 text-[15px] leading-7 text-slate-800">Gunakan aplikasi authenticator untuk keamanan ekstra.</p>
-                </div>
-                <button
-                  type="button"
-                  aria-pressed={twoFactorEnabled}
-                  disabled={isMfaLoading || enrollMutation.isPending || unenrollMutation.isPending}
-                  onClick={handleMfaToggle}
-                  className={`relative h-8 w-14 rounded-full outline-none transition focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50 ${
-                    twoFactorEnabled ? 'bg-black' : 'bg-slate-300'
-                  }`}
-                >
-                  <span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition ${twoFactorEnabled ? 'left-7' : 'left-1'}`} />
-                </button>
-              </div>
-            </div>
-
-            <ModalShell
-              open={mfaModalOpen}
-              title="Konfigurasi 2FA"
-              description="Scan QR Code ini menggunakan aplikasi authenticator (Google Authenticator/Authy) lalu masukkan kode 6 digit."
-              onClose={() => {
-                setMfaModalOpen(false)
-                setEnrollData(null)
-                setMfaCode('')
-              }}
-            >
-              <div className="flex flex-col items-center gap-6">
-                {enrollData?.totp?.qr_code && (
-                  <div className="rounded-2xl border-2 border-slate-100 p-4 bg-white shadow-sm">
-                    <img src={enrollData.totp.qr_code} alt="MFA QR Code" className="h-48 w-48" />
-                  </div>
-                )}
-                
-                <div className="w-full space-y-3">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400">Kode Verifikasi</p>
-                  <SuperadminTextInput
-                    placeholder="Masukkan 6 digit kode"
-                    value={mfaCode}
-                    maxLength={6}
-                    onChange={(e) => setMfaCode(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    disabled={verifyMutation.isPending || mfaCode.length < 6}
-                    onClick={handleVerifyMfa}
-                    className="w-full h-14 rounded-[20px] bg-black text-white font-semibold transition hover:bg-slate-800 disabled:opacity-50"
-                  >
-                    {verifyMutation.isPending ? 'Memverifikasi...' : 'Aktifkan 2FA'}
-                  </button>
-                </div>
-              </div>
-            </ModalShell>
-
             <div className="mt-8">
               <p className="text-[12px] uppercase tracking-[0.08em] text-slate-500">Sesi Aktif</p>
               <div className="mt-4 space-y-4">

@@ -28,7 +28,7 @@ import {
 type SortField = 'tanggal' | 'organisasi' | 'pemilihan' | 'status'
 type SortDirection = TableSortDirection
 const PAGE_SIZE = 10
-const PROPOSAL_STATUS_FILTERS = ['Semua', 'Menunggu Review', 'Perlu Revisi', 'Disetujui', 'Berjalan'] as const
+const PROPOSAL_STATUS_FILTERS = ['Semua', 'Menunggu Review', 'Perlu Revisi', 'Disetujui', 'Berjalan', 'Dibatalkan'] as const
 type ProposalStatusFilter = (typeof PROPOSAL_STATUS_FILTERS)[number]
 
 export default function SuperadminProposalManagementPage() {
@@ -46,7 +46,7 @@ export default function SuperadminProposalManagementPage() {
       electionName: p.title || 'Nama pemilihan belum diisi',
       submittedAt: new Date(p.createdAt).toLocaleDateString('id-ID'),
       submittedAtTime: new Date(p.createdAt).getTime(),
-      status: p.status === 'draft' ? 'Draf' : p.status === 'submitted' ? 'Menunggu Review' : p.status === 'revision_requested' ? 'Perlu Revisi' : p.status === 'approved' ? 'Disetujui' : p.status === 'deployed' ? 'Berjalan' : p.status
+      status: p.status === 'draft' ? 'Draf' : p.status === 'submitted' ? 'Menunggu Review' : p.status === 'revision_requested' ? 'Perlu Revisi' : p.status === 'approved' ? 'Disetujui' : p.status === 'deployed' ? 'Berjalan' : p.status === 'archived' ? 'Dibatalkan' : p.status
     }))
   }, [proposalRowsRaw])
   const [sortField, setSortField] = useState<SortField | null>('tanggal')

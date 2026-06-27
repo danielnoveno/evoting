@@ -3,7 +3,7 @@
 import { AdminShell } from '@/components/admin/admin-shell'
 import { OnboardingTour } from '@/components/admin/onboarding-tour'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { BookOpen, HelpCircle, MessageSquare, Phone } from 'lucide-react'
+import { BookOpen, HelpCircle, Mail } from 'lucide-react'
 
 export default function AdminHelpPage() {
   return (
@@ -73,19 +73,13 @@ export default function AdminHelpPage() {
         <div className="max-w-md">
           <h2 className="text-[24px] font-bold mb-3">Butuh bantuan lebih lanjut?</h2>
           <p className="text-slate-400 text-[15px] leading-7">
-            Tim teknis kami siap membantu Anda menyelesaikan kendala operasional platform 24/7.
+            Tim teknis kami siap membantu Anda menyelesaikan kendala operasional platform.
           </p>
         </div>
-        <div className="flex flex-wrap gap-4">
-          <button className="h-14 px-8 rounded-2xl bg-white text-slate-900 font-bold flex items-center gap-3 hover:bg-slate-100 transition-colors">
-            <MessageSquare className="h-5 w-5" />
-            Live Chat
-          </button>
-          <button className="h-14 px-8 rounded-2xl bg-white/10 text-white font-bold flex items-center gap-3 hover:bg-white/20 transition-colors border border-white/20">
-            <Phone className="h-5 w-5" />
-            Hubungi Kami
-          </button>
-        </div>
+        <a href="mailto:support@votein.biz.id?subject=Bantuan%20Admin%20Votein" className="inline-flex h-14 items-center gap-3 rounded-2xl bg-white px-8 text-slate-900 font-bold hover:bg-slate-100 transition-colors">
+          <Mail className="h-5 w-5" />
+          support@votein.biz.id
+        </a>
       </section>
     </AdminShell>
   )

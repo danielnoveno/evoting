@@ -9,8 +9,9 @@ export interface RiskAnalysisResult {
 }
 
 /**
- * Option A: Neural Logic - Pattern Analysis Engine
- * Analisis heuristik untuk mensimulasikan deteksi pola neural.
+ * Pattern Analysis Engine — Heuristic risk scoring.
+ * Counts alerts, detects repeated actors and multi-vector anomalies,
+ * then assigns a weighted score and risk level.
  */
 export function analyzeRiskPatterns(alerts: SuperadminRiskAlert[]): RiskAnalysisResult {
   if (alerts.length === 0) {

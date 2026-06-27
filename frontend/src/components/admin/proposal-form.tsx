@@ -1208,17 +1208,33 @@ export function ProposalForm({
 
           {/* Selected summary */}
           {selectedWhitelistVoterIds.size > 0 && (
-            <div className="flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3">
-              <span className="text-[13px] font-medium text-blue-800">
-                {selectedWhitelistVoterIds.size} pemilih dipilih untuk whitelist
-              </span>
-              <button
-                type="button"
-                onClick={() => setSelectedWhitelistVoterIds(new Set())}
-                className="text-[12px] font-medium text-blue-600 hover:text-blue-800"
-              >
-                Batalkan Semua
-              </button>
+            <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-medium text-blue-800">
+                  {selectedWhitelistVoterIds.size} pemilih dipilih untuk whitelist
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedWhitelistVoterIds(new Set())}
+                  className="text-[12px] font-medium text-blue-600 hover:text-blue-800"
+                >
+                  Batalkan Semua
+                </button>
+              </div>
+              {/* Compact voter list */}
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {allMasterVoters
+                  .filter((v) => selectedWhitelistVoterIds.has(v.id))
+                  .map((voter) => (
+                    <span
+                      key={voter.id}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-2.5 py-1 text-[11px] font-medium text-blue-800"
+                    >
+                      <span className="font-semibold">{voter.fullName.split(' ')[0]}</span>
+                      <span className="font-mono text-[10px] text-blue-500">({voter.nim})</span>
+                    </span>
+                  ))}
+              </div>
             </div>
           )}
 

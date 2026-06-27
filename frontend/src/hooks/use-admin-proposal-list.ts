@@ -29,7 +29,7 @@ export function useAdminProposalList() {
     const total = data.length
     const waiting = data.filter((item) => item.status === 'submitted').length
     const running = data.filter((item) => item.status === 'deployed').length
-    const finished = data.filter((item) => item.endedAt).length
+    const finished = data.filter((item) => item.endedAt && item.status !== 'archived').length
 
     return [
       { label: 'TOTAL PROPOSAL', value: String(total), iconKey: 'bar-chart' },

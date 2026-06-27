@@ -53,7 +53,7 @@ function getDeployErrorMessage(error: unknown) {
   }
 
   if (lowerMessage.includes('notsuperadmin')) {
-    return 'Wallet tersambung bukan superadmin kontrak registry.'
+    return 'Wallet yang tersambung bukan superadmin di kontrak registry. Sambungkan wallet yang sudah terdaftar sebagai superadmin di Base Sepolia, atau minta superadmin lain melakukan deploy.'
   }
 
   if (lowerMessage.includes('invalidcandidatecount')) {
@@ -122,7 +122,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
 
     return {
       id: liveProposal.id,
-      badge: liveProposal.status === 'draft' ? 'Draf' : liveProposal.status === 'submitted' ? 'Menunggu Review' : liveProposal.status === 'revision_requested' ? 'Perlu Revisi' : liveProposal.status === 'approved' ? 'Disetujui' : liveProposal.status === 'deployed' ? 'Berjalan' : liveProposal.status,
+      badge: liveProposal.status === 'draft' ? 'Draf' : liveProposal.status === 'submitted' ? 'Menunggu Review' : liveProposal.status === 'revision_requested' ? 'Perlu Revisi' : liveProposal.status === 'approved' ? 'Disetujui' : liveProposal.status === 'deployed' ? 'Berjalan' : liveProposal.status === 'archived' ? 'Dibatalkan' : liveProposal.status,
       proposalCode: `PROPOSAL-${liveProposal.id.slice(0, 8).toUpperCase()}`,
       title: liveProposal.title,
       organizationName: liveProposal.organizationName ?? 'Organisasi Tanpa Nama',
@@ -138,13 +138,6 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         { id: 'obj-1', title: 'Data proposal dasar tersedia', description: 'Nama organisasi, tipe proposal, dan tanggal pengajuan sudah tercatat.', tone: 'success' as const },
         { id: 'obj-2', title: 'Kandidat terdaftar', description: `${liveProposal.candidateCount} kandidat telah didaftarkan.`, tone: 'success' as const },
       ],
-      riskProfile: {
-        level: 'Low',
-        note: 'Proposal diverifikasi oleh sistem.',
-        items: [
-          { label: 'Whitelist', status: 'Mitigated' },
-        ],
-      },
       timeline: proposalActivities.length > 0
         ? proposalActivities.map((activity) => ({ id: activity.id, title: activity.title, actor: activity.message ? `${activity.actorLabel} • ${activity.message}` : activity.actorLabel, time: new Date(activity.createdAt).toLocaleString('id-ID') }))
         : [{ id: 't1', title: 'Proposal Diajukan', actor: `Oleh: ${liveProposal.organizationName ?? 'Admin'}`, time: new Date(liveProposal.createdAt).toLocaleString('id-ID') }],
@@ -522,7 +515,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           <>
             <SuperadminStatusBadge status={proposal.badge} />
             <span className="inline-flex items-center gap-2"><Landmark className="h-4 w-4" /> {proposal.organizationName}</span>
-            <span className="inline-flex items-center gap-2"><CalendarDays className="h-4 w-4" /> Diajukan {proposal.submittedAt}</span>
+            <span className="inline-flex items-center gap-2"><CalendarDays className="h-4 w-4" /> Diajukan {liveProposal ? new Date(liveProposal.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : proposal.submittedAt}</span>
           </>
         )}
         actions={(
@@ -549,7 +542,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             ) : (
               <button
                 type="button"
-                 disabled={isConnectPending || isWritePending || isConfirming || isSyncingInitialWhitelist || pendingOnchainDecision !== null || proposal.badge === 'Selesai' || proposal.badge === 'Berjalan' || proposal.badge === 'Perlu Revisi'}
+                  disabled={isConnectPending || isWritePending || isConfirming || isSyncingInitialWhitelist || pendingOnchainDecision !== null || proposal.badge === 'Selesai' || proposal.badge === 'Berjalan' || proposal.badge === 'Perlu Revisi' || proposal.badge === 'Dibatalkan'}
                 onClick={() => setDecisionType('approve')}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#0B1120] px-5 text-[15px] font-medium text-white hover:bg-slate-800 disabled:opacity-50"
               >
@@ -574,7 +567,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         </section>
       )}
 
-      {isConnected && userAddress && proposal.badge !== 'Berjalan' && proposal.badge !== 'Selesai' ? (
+      {isConnected && userAddress && proposal.badge !== 'Berjalan' && proposal.badge !== 'Selesai' && proposal.badge !== 'Dibatalkan' ? (
         <section className={`mt-6 rounded-2xl border p-5 ${isSuperAdmin === false ? 'border-red-200 bg-red-50 text-red-900' : 'border-slate-200 bg-white text-slate-800'}`}>
           <div className="flex items-start gap-3">
             {isSuperAdmin === true ? <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" /> : <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />}
@@ -587,7 +580,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               </div>
               {isSuperAdmin === false ? (
                 <p className="mt-3 text-[13px] leading-6 text-red-800">
-                  Wallet kamu sudah tersambung, tetapi registry yang sedang dibaca frontend belum menetapkan wallet ini sebagai superadmin. Jika baru migrasi/deploy ulang, pastikan environment Vercel <span className="font-mono">NEXT_PUBLIC_REGISTRY_ADDRESS</span> mengarah ke registry baru, lalu redeploy frontend.
+                  Wallet <span className="font-mono font-semibold">{userAddress?.slice(0, 6)}...{userAddress?.slice(-4)}</span> belum terdaftar sebagai superadmin di kontrak registry. Superadmin on-chain: <span className="font-mono font-semibold">{superAdminAddress ? `${(superAdminAddress as string).slice(0, 6)}...${(superAdminAddress as string).slice(-4)}` : '(memuat...)'}. Untuk deploy, sambungkan wallet yang sudah terdaftar sebagai superadmin, atau minta superadmin lain melakukan deploy pemilihan ini.</span>
                 </p>
               ) : null}
             </div>
@@ -596,22 +589,22 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       ) : null}
 
       <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-6 lg:grid-cols-4">
-        <article className="rounded-[24px] border border-slate-200 bg-white p-6">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Organisasi</p>
-          <p className="mt-5 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">{proposal.organizationName}</p>
-          <p className="mt-3 text-[15px] leading-7 text-slate-800">Pemilik proposal yang sedang mengajukan ruang pemilihan baru.</p>
+        <article className="rounded-[24px] border border-blue-200 bg-blue-50 p-6">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-blue-600">Jadwal Pemilihan</p>
+          <p className="mt-5 text-[18px] font-semibold tracking-[-0.02em] text-blue-900">
+            {liveProposal?.commitStartAt ? new Date(liveProposal.commitStartAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+            {' — '}
+            {liveProposal?.endedAt ? new Date(liveProposal.endedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+          </p>
+          <p className="mt-3 text-[14px] leading-6 text-blue-800">
+            Mulai Pencoblosan: {liveProposal?.commitStartAt ? new Date(liveProposal.commitStartAt).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
+          </p>
         </article>
 
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Readiness Score</p>
           <p className="mt-5 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">{readinessScore}/{totalChecks}</p>
           <p className="mt-3 text-[15px] leading-7 text-slate-800">Checklist teknis yang sudah memenuhi syarat review awal.</p>
-        </article>
-
-        <article className="rounded-[24px] border border-slate-200 bg-white p-6">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Risk Level</p>
-          <p className="mt-5 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">{proposal.riskProfile.level}</p>
-          <p className="mt-3 text-[15px] leading-7 text-slate-800">{proposal.riskProfile.note}</p>
         </article>
 
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
@@ -623,7 +616,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Whitelist Awal</p>
           <p className="mt-5 text-[24px] font-semibold tracking-[-0.04em] text-slate-900">{proposalWhitelistQuery.isLoading ? '...' : initialWhitelistWallets.length}</p>
-          <p className="mt-3 text-[15px] leading-7 text-slate-800">Wallet valid dari proposal yang akan dicoba didaftarkan on-chain setelah deploy.</p>
+          <p className="mt-3 text-[15px] leading-7 text-slate-800">Wallet valid dari proposal yang akan didaftarkan on-chain setelah deploy.</p>
         </article>
       </StaggerContainer>
 
@@ -956,7 +949,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         </div>
 
         <div className="space-y-6 xl:sticky xl:top-6 xl:self-start">
-          {proposal.badge !== 'Berjalan' && proposal.badge !== 'Selesai' && (
+          {proposal.badge !== 'Berjalan' && proposal.badge !== 'Selesai' && proposal.badge !== 'Dibatalkan' && (
           <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Aksi Review</p>
             <div className="mt-6 space-y-3">
@@ -1013,27 +1006,6 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             </div>
           </section>
           )}
-
-          <SuperadminSectionCard className="border border-slate-200 bg-white">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Profil Risiko</p>
-            <div className="mt-6 flex items-start gap-4 rounded-[24px] bg-slate-50 p-5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                <CircleAlert className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="text-[22px] font-semibold text-slate-900">Tingkat Risiko: {proposal.riskProfile.level}</h2>
-                <p className="mt-2 text-[15px] text-slate-800">{proposal.riskProfile.note}</p>
-              </div>
-            </div>
-            <div className="mt-5 space-y-3">
-              {proposal.riskProfile.items.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-[18px] bg-slate-50 px-4 py-3 text-[15px] text-slate-700">
-                  <span>{item.label}</span>
-                  <span className={item.status === 'Elevated' ? 'text-amber-600' : 'text-emerald-600'}>{item.status}</span>
-                </div>
-              ))}
-            </div>
-          </SuperadminSectionCard>
 
           <SuperadminSectionCard className="border border-slate-200 bg-white">
             <div className="flex items-center gap-3">

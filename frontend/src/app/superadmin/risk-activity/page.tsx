@@ -24,14 +24,14 @@ export default function SuperadminRiskActivityPage() {
   const [aiSummary, setAiSummary] = useState<string>('Menganalisis pola keamanan...')
   const [isAiLoading, setIsAiLoading] = useState(false)
 
-  // Option A: Neural Logic Analysis
+  // Layer 1: Heuristic pattern analysis (local, deterministic)
   const analysis = analyzeRiskPatterns(alerts)
 
-  // Option B: Fetch Generative Summary
+  // Layer 2: Generative summary via Gemini API
   useEffect(() => {
     const fetchAiSummary = async () => {
       if (alerts.length === 0) {
-        setAiSummary('Sistem dalam kondisi stabil. Tidak ada aktivitas mencurigakan yang terdeteksi melalui analisis neural.')
+        setAiSummary('Sistem dalam kondisi stabil. Tidak ada aktivitas mencurigakan yang terdeteksi melalui analisis pola.')
         return
       }
 
@@ -45,7 +45,7 @@ export default function SuperadminRiskActivityPage() {
         const data = await res.json()
         setAiSummary(data.summary || 'Gagal memuat ringkasan AI.')
       } catch (err) {
-        setAiSummary('Terjadi kesalahan saat menghubungi Neural Engine.')
+        setAiSummary('Terjadi kesalahan saat menghubungi layanan AI.')
       } finally {
         setIsAiLoading(false)
       }
@@ -56,7 +56,7 @@ export default function SuperadminRiskActivityPage() {
     }
   }, [alerts, isLoading])
 
-  const getNeuralSummary = () => {
+  const getRiskSummary = () => {
     return {
       status: analysis.riskLevel === 'low' ? 'Optimal' : 
               analysis.riskLevel === 'medium' ? 'Waspada' :
@@ -68,7 +68,7 @@ export default function SuperadminRiskActivityPage() {
     }
   }
 
-  const neuralSummary = getNeuralSummary()
+  const riskSummary = getRiskSummary()
 
   return (
     <SuperadminShell>
@@ -170,31 +170,31 @@ export default function SuperadminRiskActivityPage() {
 
         <div className="space-y-6">
           <div>
-            <h2 className="text-[20px] font-semibold text-slate-900">Neural Threat Summary</h2>
+            <h2 className="text-[20px] font-semibold text-slate-900">Analisis Risiko AI</h2>
             <AppSectionCard className="mt-4 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
               <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-5">
-                <p className="text-[16px] text-slate-700">Status Model</p>
+                <p className="text-[16px] text-slate-700">Status Analisis</p>
                 <span className={`rounded-xl px-3 py-1 text-[14px] font-semibold ${
-                  neuralSummary.tone === 'success' ? 'bg-emerald-50 text-emerald-600' :
-                  neuralSummary.tone === 'danger' ? 'bg-red-50 text-red-600' :
+                  riskSummary.tone === 'success' ? 'bg-emerald-50 text-emerald-600' :
+                  riskSummary.tone === 'danger' ? 'bg-red-50 text-red-600' :
                   'bg-amber-50 text-amber-600'
                 }`}>
-                  {neuralSummary.status}
+                  {riskSummary.status}
                 </span>
               </div>
               <div className="pt-5">
                 <div className="flex items-center justify-between gap-4 text-[15px] text-slate-700">
                   <span>Tingkat Kepercayaan</span>
-                  <span>{neuralSummary.confidence}</span>
+                  <span>{riskSummary.confidence}</span>
                 </div>
                 <div className="mt-4 h-1.5 rounded-full bg-slate-200">
                   <div 
                     className={`h-1.5 rounded-full transition-all duration-1000 ${
-                      neuralSummary.tone === 'success' ? 'bg-emerald-500' :
-                      neuralSummary.tone === 'danger' ? 'bg-red-600' :
+                      riskSummary.tone === 'success' ? 'bg-emerald-500' :
+                      riskSummary.tone === 'danger' ? 'bg-red-600' :
                       'bg-amber-500'
                     }`} 
-                    style={{ width: neuralSummary.confidence }} 
+                    style={{ width: riskSummary.confidence }} 
                   />
                 </div>
                 <div className={`mt-6 transition-opacity duration-300 ${isAiLoading ? 'opacity-50' : 'opacity-100'}`}>
@@ -205,7 +205,7 @@ export default function SuperadminRiskActivityPage() {
                       <div className="h-4 w-4/6 animate-pulse rounded bg-slate-100" />
                     </div>
                   ) : (
-                    <p className="text-[15px] leading-8 text-slate-800">{neuralSummary.description}</p>
+                    <p className="text-[15px] leading-8 text-slate-800">{riskSummary.description}</p>
                   )}
                 </div>
               </div>

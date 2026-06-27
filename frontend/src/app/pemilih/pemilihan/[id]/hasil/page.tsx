@@ -87,7 +87,44 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
         <div className="flex flex-col gap-3 sm:flex-row">
           <button 
             type="button" 
-            onClick={() => showToast({ tone: 'info', title: 'Rekap sedang disiapkan', description: 'Silakan gunakan bukti transaksi di Basescan untuk peninjauan saat ini.' })} 
+            onClick={() => {
+              const rows = resultRows
+              const lines: string[] = []
+              lines.push('Rekapitulasi Hasil Pemilihan')
+              lines.push(`Nama Pemilihan,${election.title}`)
+              lines.push(`Total Suara Sah,${totalVotes}`)
+              lines.push(`Partisipasi,${election.quorumPercent}% (${election.revealedCount} dari ${election.totalParticipants} pemilih)`)
+              lines.push(`Pilihan Disimpan (Commit),${election.committedCount}`)
+              lines.push(`Suara Disahkan (Reveal),${election.revealedCount}`)
+              if (election.revealProof) {
+                lines.push('')
+                lines.push('Bukti Transaksi')
+                lines.push(`Tx Hash,${election.revealProof.txHash}`)
+                lines.push(`Block Number,${election.revealProof.blockNumber}`)
+                lines.push(`Gas Used,${election.revealProof.gasUsed ?? '-'}`)
+                lines.push(`Waktu Sinkron,${election.revealProof.createdAt}`)
+                lines.push(`Basescan,https://sepolia.basescan.org/tx/${election.revealProof.txHash}`)
+              }
+              lines.push('')
+              lines.push('Perolehan Suara Kandidat')
+              lines.push('Nama Kandidat,Perolehan Suara,Persentase')
+              for (const r of rows) {
+                lines.push(`${r.name},${r.votes},${r.percentage.toFixed(1)}%`)
+              }
+              lines.push('')
+              lines.push(`Diunduh pada,${new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })}`)
+              const csvContent = lines.join('\n')
+              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+              const url = URL.createObjectURL(blob)
+              const link = document.createElement('a')
+              link.href = url
+              link.download = `rekap-${election.title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.csv`
+              document.body.appendChild(link)
+              link.click()
+              document.body.removeChild(link)
+              URL.revokeObjectURL(url)
+              showToast({ tone: 'success', title: 'Rekap berhasil diunduh', description: 'File CSV rekapitulasi hasil pemilihan sudah diunduh.' })
+            }} 
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-800 transition-colors hover:bg-slate-50 focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:outline-none"
             aria-label="Unduh Rekapitulasi Suara Resmi"
           >

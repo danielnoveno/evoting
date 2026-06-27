@@ -33,7 +33,6 @@ export interface SuperadminProposalDetail {
   summary: string[]
   networkConfig: { contractAddress: string; consensus: string }
   objectives: Array<{ id: string; title: string; description: string; tone: 'success' | 'danger' }>
-  riskProfile: { level: string; note: string; items: Array<{ label: string; status: string }> }
   timeline: Array<{ id: string; title: string; actor: string; time: string }>
   documents: Array<{ id: string; name: string; meta: string; path?: string; contentType?: string; documentType?: string; sizeLabel?: string; uploadedAt?: string }>
 }
@@ -94,7 +93,7 @@ export const superadminRiskData = {
     { id: 'spaces', label: 'Ruang dipantau', value: '0', suffix: '', accent: '', note: 'Menunggu data ruang', tone: 'default' },
     { id: 'incidents', label: 'Insiden', value: '0', suffix: '', accent: '', note: 'Belum ada insiden', tone: 'success' },
   ],
-  neuralSummary: { status: 'Menunggu data', confidence: '0%', description: 'Belum ada data risiko live untuk dianalisis.' },
+  riskSummary: { status: 'Menunggu data', confidence: '0%', description: 'Belum ada data risiko live untuk dianalisis.' },
   regionProfile: { region: 'Belum tersedia', description: 'Profil risiko akan muncul setelah data audit tersedia.' },
   alerts: [] satisfies SuperadminRiskAlert[],
 }
