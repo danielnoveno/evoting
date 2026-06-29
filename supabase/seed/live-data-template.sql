@@ -101,7 +101,7 @@ end $$;
 -- Deployment terakhir (27 Jun 2026):
 --   ElectionSpace: 0x9D95FfD857A11c46FB5AAAE875118B2196416aA7
 --   Tx: 0x0045743eda4911920dd1030c2f65de9d05ece7f65909053331fae6dc54a08539
---   Registry: 0x56115201473a636d39886Ffe467CDc1d464C3169
+--   Registry: 0xd1d48796FB21cB1D66C48930a6905C46fE270277
 --   Deployer/Relayer: 0xbCe97c5EDF9004F102F0B41C3e2dbDDd77aaB488
 --
 update app.proposal_drafts
