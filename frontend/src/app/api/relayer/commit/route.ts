@@ -39,6 +39,50 @@ function asString(value: unknown) {
 }
 
 /**
+ * Extract raw ECDSA signature (65 bytes) from various formats:
+ * - Standard EOA: 0x + 130 hex chars (r + s + v)
+ * - ABI-encoded SCW (Base Account SDK): wrapped in ABI bytes or tuple encoding
+ *
+ * Base Account SDK wraps the ECDSA signature in ABI-encoded form, e.g.:
+ *   offset(32) + r_bytes32(32) + s_bytes32(32) + v_uint8(32, right-padded)
+ * or more commonly:
+ *   offset(32) + extra(32) + offset2(32) + length(32, value=0x41) + r(32) + s(32) + v(32)
+ */
+function extractEcdsaSignature(rawSignature: string): string | null {
+  const hex = rawSignature.startsWith('0x') ? rawSignature.slice(2) : rawSignature
+
+  // Standard ECDSA: exactly 130 hex chars (65 bytes)
+  if (/^[a-fA-F0-9]{130}$/.test(hex)) {
+    return `0x${hex}`
+  }
+
+  // ABI-encoded SCW signature: try to find r, s, v in the data
+  // Scan for a 32-byte word equal to 0x41 (65) — the length of a signature
+  // followed immediately by r(32 bytes) + s(32 bytes) + v(1 byte in last byte of 32-byte word)
+  if (hex.length >= 384) {
+    // Try multiple common start offsets for r within the ABI-encoded data
+    const offsets = [0, 64, 128, 192, 256]
+    for (const start of offsets) {
+      const end = start + 192 // 3 x 64 hex chars (r + s + v_word)
+      if (end <= hex.length) {
+        const r = hex.slice(start, start + 64)
+        const s = hex.slice(start + 64, start + 128)
+        const vWord = hex.slice(start + 128, start + 192)
+        const vByte = vWord.slice(62, 64)
+        if (/^[a-fA-F0-9]{64}$/.test(r) && /^[a-fA-F0-9]{64}$/.test(s) && /^[a-fA-F0-9]{2}$/.test(vByte)) {
+          const v = parseInt(vByte, 16)
+          if (v === 27 || v === 28) {
+            return `0x${r}${s}${vByte}`
+          }
+        }
+      }
+    }
+  }
+
+  return null
+}
+
+/**
  * POST /api/relayer/commit
  *
  * Accepts a voter-signed commit request and submits it on-chain via relayer EOA.
@@ -75,7 +119,7 @@ export async function POST(request: NextRequest) {
   const voter = asString(body.voter) as `0x${string}`
   const commitment = asString(body.commitment) as `0x${string}`
   const contractAddress = asString(body.contractAddress) as `0x${string}`
-  const signature = asString(body.signature) as `0x${string}`
+  const rawSignature = asString(body.signature) as `0x${string}`
 
   if (!voter || !/^0x[a-fA-F0-9]{40}$/.test(voter)) {
     return jsonError('Alamat voter tidak valid.')
@@ -86,23 +130,14 @@ export async function POST(request: NextRequest) {
   if (!contractAddress || !/^0x[a-fA-F0-9]{40}$/.test(contractAddress)) {
     return jsonError('Alamat kontrak tidak valid.')
   }
-  if (!signature || !/^0x[a-fA-F0-9]{130}$/.test(signature)) {
+  if (!rawSignature) {
     return jsonError('Signature tidak valid.')
   }
 
-  // ── Recover signer from signature ──
-  const message = `VoteChain commit: ${commitment} for ${contractAddress}`
-  const messageHash = hashMessage(message)
-  try {
-    const recovered = await recoverAddress({ hash: messageHash, signature })
-    if (recovered.toLowerCase() !== voter.toLowerCase()) {
-      return jsonError('Signature tidak sesuai dengan alamat voter.')
-    }
-  } catch {
-    return jsonError('Gagal memverifikasi signature.')
-  }
+  // ── Extract ECDSA signature (handles both EOA and SCW/Base Account SDK) ──
+  const extractedSignature = extractEcdsaSignature(rawSignature)
 
-  // ── Setup relayer wallet ──
+  // ── Setup relayer wallet (needed for both verification and tx submission) ──
   const privateKey = getRelayerKey()
   if (!privateKey) return jsonError('RELAYER_PRIVATE_KEY belum dikonfigurasi.', 503)
 
@@ -110,6 +145,59 @@ export async function POST(request: NextRequest) {
   const transport = http(getRpcUrl())
   const publicClient = createPublicClient({ chain: baseSepolia, transport })
   const walletClient = createWalletClient({ account, chain: baseSepolia, transport })
+
+  // ── Recover signer from signature ──
+  const message = `VoteChain commit: ${commitment} for ${contractAddress}`
+  const messageHash = hashMessage(message)
+
+  let signatureValid = false
+
+  // Attempt 1: Standard ECDSA recovery (works for EOA wallets)
+  if (extractedSignature) {
+    try {
+      const recovered = await recoverAddress({ hash: messageHash, signature: extractedSignature as Hex })
+      if (recovered.toLowerCase() === voter.toLowerCase()) {
+        signatureValid = true
+      }
+    } catch {
+      // Recovery failed — fall through to EIP-1271
+    }
+  }
+
+  // Attempt 2: EIP-1271 verification (works for Smart Contract Wallets like Base Account SDK)
+  if (!signatureValid) {
+    try {
+      const code = await publicClient.getCode({ address: voter as `0x${string}` })
+      if (code && code !== '0x') {
+        // Address is a contract — try EIP-1271 isValidSignature(bytes32,bytes)
+        const EIP1271_MAGIC = '0x1626ba7e' // EIP-1271 success magic value
+        const result = await publicClient.readContract({
+          address: voter as `0x${string}`,
+          abi: [{
+            name: 'isValidSignature',
+            type: 'function',
+            stateMutability: 'view',
+            inputs: [
+              { name: 'hash', type: 'bytes32' },
+              { name: 'signature', type: 'bytes' },
+            ],
+            outputs: [{ name: 'magicValue', type: 'bytes4' }],
+          }],
+          functionName: 'isValidSignature',
+          args: [messageHash, rawSignature as `0x${string}`],
+        })
+        if (result && result.toLowerCase() === EIP1271_MAGIC) {
+          signatureValid = true
+        }
+      }
+    } catch {
+      // EIP-1271 verification failed
+    }
+  }
+
+  if (!signatureValid) {
+    return jsonError('Signature tidak valid atau tidak sesuai dengan alamat voter.')
+  }
 
   // ── Check if voter already committed on-chain ──
   try {

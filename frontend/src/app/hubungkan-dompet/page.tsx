@@ -86,13 +86,13 @@ function getRedirectModalContent(target: string, role: string | null | undefined
 function getWalletConnectionErrorMessage(error: { message?: string }) {
   const message = error.message?.toLowerCase() ?? ''
   if (message.includes('window') || message.includes('popup') || message.includes('permission')) {
-    return 'Browser memerlukan izin untuk membuka jendela dompet. Klik tombol sambungkan lagi, lalu izinkan jendela yang muncul.'
+    return 'Browser memerlukan izin untuk membuka jendela konfirmasi. Klik tombol sambungkan lagi, lalu izinkan jendela yang muncul.'
   }
   if (message.includes('rejected') || message.includes('denied') || message.includes('cancel')) {
-    return 'Penyambungan dompet dibatalkan. Klik sambungkan lagi jika ingin melanjutkan.'
+    return 'Pembuatan ID voting dibatalkan. Klik sambungkan lagi jika ingin melanjutkan.'
   }
 
-  return 'Coba lagi dari perangkat atau browser yang mendukung Smart Wallet.'
+  return 'Coba lagi dari perangkat atau browser yang mendukung Base Account.'
 }
 
 function ConnectWalletContent() {
@@ -230,11 +230,11 @@ function ConnectWalletContent() {
   const firstTimeBindingRequiresActivation = Boolean(authSession && !currentProfile && !activationMode)
   const bindingBlocked = accountHasDifferentWallet || connectedWalletOwnedByOther || firstTimeBindingRequiresActivation || voterActivationMissingToken || adminActivationMissingToken
   const bindingBlockMessage = accountHasDifferentWallet
-    ? `Akun ${authSession?.user?.email ?? 'ini'} sudah tertaut ke wallet lain. Putuskan dompet tersambung, lalu sambungkan wallet yang sesuai untuk melanjutkan.`
+    ? `Akun ${authSession?.user?.email ?? 'ini'} sudah tertaut ke ID voting lain. Putuskan ID voting yang tersambung, lalu buat ID voting yang sesuai untuk melanjutkan.`
     : connectedWalletOwnedByOther
-      ? `Wallet tersambung sudah tertaut ke akun ${connectedWalletProfile?.email ?? 'kampus lain'}. Putuskan dompet tersambung, lalu pilih wallet yang sesuai.`
+      ? `ID voting ini sudah tertaut ke akun ${connectedWalletProfile?.email ?? 'kampus lain'}. Putuskan ID voting yang tersambung, lalu pilih ID voting yang sesuai.`
       : firstTimeBindingRequiresActivation
-        ? 'Akun ini belum diaktivasi. Gunakan tautan aktivasi dari admin sebelum menghubungkan wallet dan masuk dashboard.'
+        ? 'Akun ini belum diaktivasi. Gunakan tautan aktivasi dari admin sebelum membuat ID voting dan masuk dashboard.'
       : voterActivationMissingToken
         ? 'Link aktivasi tidak membawa token undangan. Minta admin mengirim ulang link aktivasi terbaru.'
       : adminActivationMissingToken
@@ -263,7 +263,7 @@ function ConnectWalletContent() {
           ? 'Tahap 2 dari 2'
           : 'Aktivasi selesai'
       : !isConnected
-        ? activationMode ? 'Tahap 1 dari 3' : 'Sambungkan Dompet'
+        ? activationMode ? 'Tahap 1 dari 3' : 'Buat ID Voting'
         : !authSession
           ? activationMode ? 'Tahap 2 dari 3' : 'Masuk dengan Akun Kampus'
           : !isWalletBound
@@ -336,7 +336,7 @@ function ConnectWalletContent() {
 
     if (bindingBlockMessage) {
       setBindError(bindingBlockMessage)
-      showToast({ tone: 'error', title: 'Dompet dan Akun Tidak Cocok', description: bindingBlockMessage })
+      showToast({ tone: 'error', title: 'ID Voting dan Akun Tidak Cocok', description: bindingBlockMessage })
       return
     }
 
@@ -350,10 +350,10 @@ function ConnectWalletContent() {
       },
       {
         onSuccess: () => {
-          showToast({ tone: 'success', title: 'Akses Berhasil Diaktifkan', description: 'Smart Wallet dan akun kampus sudah terhubung.' })
+          showToast({ tone: 'success', title: 'Akses Berhasil Diaktifkan', description: 'ID voting dan akun kampus sudah terhubung.' })
         },
         onError: (err) => {
-          const message = getRepositoryErrorMessage(err, 'Dompet belum dapat ditautkan. Coba lagi.')
+          const message = getRepositoryErrorMessage(err, 'ID voting belum dapat ditautkan. Coba lagi.')
           setBindError(message)
           showToast({ tone: 'error', title: 'Validasi Gagal', description: message })
         }
@@ -420,8 +420,8 @@ function ConnectWalletContent() {
     if (!connector) {
       showToast({
         tone: 'error',
-        title: 'Smart Wallet belum siap',
-        description: 'Connector Coinbase/Base Account belum tersedia. Coba muat ulang halaman.',
+        title: 'ID voting belum siap',
+        description: 'Sistem Base Account belum tersedia. Coba muat ulang halaman.',
       })
       return
     }
@@ -430,10 +430,10 @@ function ConnectWalletContent() {
       { connector },
       {
         onError: (error) => {
-          showToast({
-            tone: 'error',
-            title: 'Gagal menyambungkan Smart Wallet',
-            description: getWalletConnectionErrorMessage(error),
+      showToast({
+        tone: 'error',
+        title: 'Gagal membuat ID voting',
+        description: getWalletConnectionErrorMessage(error),
           })
         },
       },
@@ -518,9 +518,9 @@ function ConnectWalletContent() {
                         {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className={authSession ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Sambungkan Dompet</h2>
+                        <h2 className={authSession ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Buat ID Voting</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isConnected ? 'Dompet sudah tersambung.' : 'Hubungkan dompet untuk identitas admin.'}
+                          {isConnected ? 'ID voting sudah aktif.' : 'Buat ID voting untuk mengelola pemilihan.'}
                         </p>
                       </div>
                       {authSession && !isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -545,9 +545,9 @@ function ConnectWalletContent() {
                         {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-[14px] font-semibold text-slate-900">Sambungkan Dompet</h2>
+                        <h2 className="text-[14px] font-semibold text-slate-900">Buat ID Voting</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isConnected ? 'Dompet sudah tersambung.' : 'Hubungkan dompet sebagai identitas digital.'}
+                          {isConnected ? 'ID voting sudah aktif.' : 'Buat ID voting untuk membuktikan identitas Anda.'}
                         </p>
                       </div>
                       {!isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -560,9 +560,9 @@ function ConnectWalletContent() {
                         {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-[14px] font-semibold text-slate-900">Sambungkan Dompet</h2>
+                        <h2 className="text-[14px] font-semibold text-slate-900">Buat ID Voting</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isConnected ? 'Dompet sudah tersambung.' : 'Hubungkan dompet sebagai identitas digital.'}
+                          {isConnected ? 'ID voting sudah aktif.' : 'Buat ID voting untuk membuktikan identitas Anda.'}
                         </p>
                       </div>
                       {!isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -604,13 +604,13 @@ function ConnectWalletContent() {
 
                     {((!isAdminActivationFlow && !isVoterSsoFirstFlow && !isConnected) || (isAdminActivationFlow && authSession && !isConnected) || (isVoterSsoFirstFlow && !isConnected)) && (
                       <div className="mt-8 w-full">
-                        <h2 className="text-[20px] font-semibold text-slate-900">{isAdminActivationFlow ? 'Tahap 2 — Sambungkan Dompet' : activationMode ? isVoterSsoFirstFlow ? 'Tahap 2 — Sambungkan Dompet' : 'Tahap 1 — Sambungkan Dompet' : 'Sambungkan Dompet'}</h2>
+                        <h2 className="text-[20px] font-semibold text-slate-900">{isAdminActivationFlow ? 'Tahap 2 — Buat ID Voting' : activationMode ? isVoterSsoFirstFlow ? 'Tahap 2 — Buat ID Voting' : 'Tahap 1 — Buat ID Voting' : 'Buat ID Voting'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationMode
                             ? activationContext === 'admin'
-                              ? 'Hubungkan dompet yang akan digunakan untuk mengelola pemilihan organisasi.'
-                              : 'Hubungkan dompet yang akan digunakan untuk memilih. Tidak perlu biaya gas.'
-                            : 'Cukup sambungkan dompet, dan sistem akan mengenali Anda secara otomatis.'}
+                              ? 'Buat ID voting untuk mengelola pemilihan organisasi Anda.'
+                              : 'Buat ID voting untuk mulai memilih. Gratis, tanpa biaya apapun.'
+                            : 'Cukup buat ID voting, dan sistem akan mengenali Anda secara otomatis.'}
                         </p>
 
                         {activationMode && (
@@ -620,13 +620,13 @@ function ConnectWalletContent() {
                               {isVoterSsoFirstFlow ? (
                                 <>
                                   <p><strong>Tahap 1.</strong> Verifikasi akun kampus sudah selesai.</p>
-                                  <p><strong>Tahap 2.</strong> Sambungkan dompet digital, lalu aktifkan hak suara.</p>
+                                  <p><strong>Tahap 2.</strong> Buat ID voting, lalu aktifkan hak suara.</p>
                                 </>
                               ) : (
                                 <>
-                                  <p><strong>Tahap 1.</strong> {activationContext === 'admin' ? 'Masuk dengan email organisasi yang sudah didaftarkan.' : 'Sambungkan dompet yang akan dipakai untuk memilih.'}</p>
-                                  <p><strong>Tahap 2.</strong> {activationContext === 'admin' ? 'Sambungkan dompet yang akan dipakai sebagai identitas admin.' : 'Masuk dengan akun kampus untuk verifikasi identitas.'}</p>
-                                  <p><strong>Tahap 3.</strong> {activationContext === 'admin' ? 'Aktifkan akses admin' : 'Aktifkan hak suara'} dengan menautkan akun kampus dan dompet.</p>
+                                  <p><strong>Tahap 1.</strong> {activationContext === 'admin' ? 'Masuk dengan email organisasi yang sudah didaftarkan.' : 'Buat ID voting untuk memilih.'}</p>
+                                  <p><strong>Tahap 2.</strong> {activationContext === 'admin' ? 'Buat ID voting untuk mengelola pemilihan.' : 'Masuk dengan akun kampus untuk verifikasi identitas.'}</p>
+                                  <p><strong>Tahap 3.</strong> {activationContext === 'admin' ? 'Aktifkan akses admin' : 'Aktifkan hak suara'} dengan menautkan akun kampus dan ID voting.</p>
                                 </>
                               )}
                             </div>
@@ -635,9 +635,9 @@ function ConnectWalletContent() {
 
                         <div className="mt-8 space-y-4">
                           {[
-                            'Dompet bisa dibuat secara instan tanpa biaya gas.',
-                            'Tidak perlu biaya gas di jaringan Base Sepolia.',
-                            activationContext === 'admin' ? 'Anda perlu email kampus dan dompet yang cocok.' : 'Pilihan Anda tetap terjaga sampai fase reveal.',
+                            'ID voting dibuat otomatis — tidak perlu install aplikasi tambahan.',
+                            'Tidak ada biaya apapun, gratis seluruhnya.',
+                            activationContext === 'admin' ? 'Anda perlu email kampus dan ID voting yang cocok.' : 'Pilihan Anda tetap terjaga sampai fase reveal.',
                           ].map((item) => (
                             <div key={item} className="flex items-center gap-3 text-[13px] text-slate-600">
                               <span className="h-3 w-3 rounded-full border-2 border-blue-500 bg-blue-50" />
@@ -650,9 +650,9 @@ function ConnectWalletContent() {
                           <div className="flex gap-3">
                             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                             <div>
-                              <p className="text-[12px] font-semibold">Jika muncul dialog dari Base Account</p>
+                              <p className="text-[12px] font-semibold">Jika muncul dialog konfirmasi</p>
                               <p className="mt-1 text-[12px] leading-5 text-amber-800">
-                                Itu adalah permintaan izin dari penyedia dompet. Ikuti tombol konfirmasi pada dialog tersebut untuk melanjutkan. Jika tidak sengaja tertutup, klik tombol sambungkan lagi.
+                                Itu adalah permintaan izin untuk membuat ID voting. Klik tombol konfirmasi pada dialog tersebut untuk melanjutkan. Jika tidak sengaja tertutup, klik tombol sambungkan lagi.
                               </p>
                             </div>
                           </div>
@@ -666,11 +666,11 @@ function ConnectWalletContent() {
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationContext === 'admin'
                             ? 'Masuk dengan email organisasi yang sudah didaftarkan oleh Superadmin.'
-                            : 'Setelah dompet tersambung, masuk untuk memastikan Anda mahasiswa UAJY.'}
+                            : 'Setelah ID voting aktif, masuk untuk memastikan Anda mahasiswa UAJY.'}
                         </p>
 
                         {isConnected && <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50 p-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Dompet tersambung</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">ID voting aktif</p>
                           <div className="mt-2 flex min-w-0 items-center gap-2">
                             <WalletAddress
                               address={address ?? ''}
@@ -681,10 +681,10 @@ function ConnectWalletContent() {
                               onClick={() => {
                                 if (address) {
                                   navigator.clipboard.writeText(address)
-                                  showToast({ tone: 'success', title: 'Alamat Disalin', description: 'Alamat dompet disalin ke clipboard.' })
+                                  showToast({ tone: 'success', title: 'Alamat Disalin', description: 'Alamat ID voting disalin ke clipboard.' })
                                 }
                               }}
-                              title="Salin alamat dompet"
+                              title="Salin ID voting"
                               className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-700"
                             >
                               <Copy className="h-3.5 w-3.5" />
@@ -736,14 +736,14 @@ function ConnectWalletContent() {
                               <h3 className="text-[13px] font-bold text-blue-900">{activationContext === 'admin' ? 'Penting untuk Admin' : 'Penting untuk Pemilih'}</h3>
                               <p className="text-[12px] leading-5 text-blue-800/80">
                                 {activationContext === 'admin'
-                                  ? 'Gunakan email yang sama dengan undangan Superadmin. Dompet ini akan menjadi identitas Anda di dashboard admin.'
-                                  : <>Dompet akan ditautkan permanen ke akun <span className="font-bold">@students.uajy.ac.id</span> Anda. Satu dompet untuk satu mahasiswa.</>}
+                                  ? 'Gunakan email yang sama dengan undangan Superadmin. ID voting akan menjadi identitas Anda di dashboard admin.'
+                                  : <>ID voting akan ditautkan permanen ke akun <span className="font-bold">@students.uajy.ac.id</span> Anda. Satu ID voting untuk satu mahasiswa.</>}
                               </p>
                               <div className="rounded-lg bg-white/60 p-3 text-[11px] leading-relaxed text-blue-900/70 border border-blue-100/50">
                                 <span className="font-bold text-blue-900 block mb-1">Tips:</span>
                                   {activationContext === 'admin'
                                     ? 'Pastikan email yang Anda gunakan sama dengan yang diundang Superadmin.'
-                                    : 'Gunakan email mahasiswa UAJY saat membuat dompet agar sinkron dengan sistem.'}
+                                    : 'Gunakan email mahasiswa UAJY saat membuat ID voting agar sinkron dengan sistem.'}
                               </div>
                             </div>
                           </div>
@@ -763,27 +763,27 @@ function ConnectWalletContent() {
                           <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? `Tahap ${isVoterSsoFirstFlow ? 2 : 3} — ${activationContext === 'admin' ? 'Aktifkan Akses Admin' : 'Aktifkan Hak Suara'}` : activationContext === 'admin' ? 'Aktifkan Akses Admin' : 'Aktifkan Hak Suara'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationContext === 'admin'
-                            ? 'Tautkan akun kampus dan dompet untuk mengaktifkan akses admin.'
-                            : 'Tautkan akun kampus dan dompet untuk mengaktifkan hak suara.'}
+                            ? 'Tautkan akun kampus dan ID voting untuk mengaktifkan akses admin.'
+                            : 'Tautkan akun kampus dan ID voting untuk mengaktifkan hak suara.'}
                         </p>
 
                         <div className="mt-6 space-y-3">
                           {bindingBlocked && (
                             <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                              <p className="text-[12px] font-semibold text-red-700">Dompet dan akun tidak cocok</p>
+                              <p className="text-[12px] font-semibold text-red-700">ID voting dan akun tidak cocok</p>
                               <p className="mt-2 text-[12px] leading-5 text-red-600">{bindingBlockMessage}</p>
                               <button
                                 type="button"
                                 onClick={() => disconnect()}
                                 className="mt-3 inline-flex h-9 items-center justify-center rounded-md border border-red-200 bg-white px-3 text-[12px] font-semibold text-red-700 transition-colors hover:bg-red-50"
                               >
-                                Putuskan & Ganti Dompet
+                                Putuskan & Ganti ID Voting
                               </button>
                             </div>
                           )}
 
                           <div className="rounded-lg border border-slate-100 bg-slate-50 p-4">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Smart Wallet</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">ID Voting</p>
                             <WalletAddress
                               address={address ?? '-'}
                               className="mt-1 block font-mono text-[12px] font-semibold text-slate-900"
@@ -814,7 +814,7 @@ function ConnectWalletContent() {
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationContext === 'admin' 
                             ? 'Anda bisa mengelola pemilihan dari dashboard.'
-                            : 'Anda akan diarahkan ke halaman pemilih...'}
+                            : 'ID voting sudah aktif. Anda akan diarahkan ke halaman pemilih...'}
                         </p>
                       </div>
                     )}
@@ -838,7 +838,7 @@ function ConnectWalletContent() {
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
                       >
                         {isConnectPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        Sambungkan Smart Wallet
+                        Sambungkan ID Voting
                         {!isConnectPending ? <ChevronRight className="h-4 w-4" /> : null}
                       </button>
                     )}

@@ -1144,9 +1144,56 @@ export function ProposalForm({
               </p>
             </div>
             <span className="inline-flex w-fit rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-              {selectedWhitelistVoterIds.size} dipilih
+              {whitelistLines.length + selectedWhitelistVoterIds.size} total
             </span>
           </div>
+
+          {/* Existing whitelist entries (edit mode) */}
+          {proposalId && whitelistLines.length > 0 && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[13px] font-semibold text-emerald-800">
+                  Daftar Whitelist Saat Ini ({whitelistLines.length} wallet)
+                </h3>
+                {!isReadOnly && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, whitelistWallets: '' }))}
+                    className="text-[12px] font-medium text-red-500 hover:text-red-700"
+                  >
+                    Hapus Semua
+                  </button>
+                )}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {whitelistLines.map((wallet, idx) => (
+                  <span
+                    key={`${wallet}-${idx}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-[11px] font-medium text-emerald-800"
+                  >
+                    <span className="font-mono">{wallet.slice(0, 6)}...{wallet.slice(-4)}</span>
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = whitelistLines.filter((_, i) => i !== idx)
+                          setFormData((prev) => ({ ...prev, whitelistWallets: updated.join('\n') }))
+                        }}
+                        className="ml-0.5 text-emerald-400 hover:text-red-500"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+              {invalidWhitelistCount > 0 && (
+                <p className="mt-2 text-[12px] text-amber-600">
+                  {invalidWhitelistCount} alamat tidak valid dan akan diabaikan saat disimpan.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Search & Filter */}
           <div className="space-y-3">

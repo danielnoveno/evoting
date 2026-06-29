@@ -57,23 +57,30 @@ function CountdownTile({ label, value }: { label: string; value: number }) {
   )
 }
 
-function useLiveCountdown(targetIso: string) {
+function useLiveCountdown(targetIso: string, onReachedZero?: () => void) {
   const [countdown, setCountdown] = useState(() => getCountdownParts(targetIso))
 
   useEffect(() => {
     setCountdown(getCountdownParts(targetIso))
+    let calledZero = false
     const interval = window.setInterval(() => {
-      setCountdown(getCountdownParts(targetIso))
+      const parts = getCountdownParts(targetIso)
+      setCountdown(parts)
+      // Trigger refresh once when countdown first reaches zero
+      if (parts.days === 0 && parts.hours === 0 && parts.minutes === 0 && parts.seconds === 0 && !calledZero) {
+        calledZero = true
+        onReachedZero?.()
+      }
     }, 1000)
 
     return () => window.clearInterval(interval)
-  }, [targetIso])
+  }, [targetIso, onReachedZero])
 
   return countdown
 }
 
-function FeaturedHeroCard({ election }: { election: VoterElection }) {
-  const countdown = useLiveCountdown(election.deadlineIso)
+function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElection; onCountdownZero?: () => void }) {
+  const countdown = useLiveCountdown(election.deadlineIso, onCountdownZero)
   const action = resolveElectionAction(election)
   const viewState = getElectionViewState(election)
   const isUpcoming = viewState.nextAction === 'wait'
@@ -243,7 +250,7 @@ function ScheduleStateBanner({ hasUpcoming, onlyPast, upcomingCount }: { hasUpco
 }
 
 export default function VoterDashboardPage() {
-  const { store, loading } = useVoterStore()
+  const { store, loading, refresh } = useVoterStore()
 
   if (loading || !store) {
     return (
@@ -302,7 +309,7 @@ export default function VoterDashboardPage() {
 
       <ScrollReveal variant="fade-up" delay={100} duration={800}>
         <section className="mt-6">
-          <FeaturedHeroCard election={featuredElection} />
+          <FeaturedHeroCard election={featuredElection} onCountdownZero={refresh} />
         </section>
       </ScrollReveal>
 
