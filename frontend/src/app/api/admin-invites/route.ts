@@ -6,6 +6,7 @@ import { isRecord } from '@/lib/repositories/helpers'
 import { getRequestOrigin } from '@/lib/url'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 type InviteRole = 'admin' | 'super_admin'
 

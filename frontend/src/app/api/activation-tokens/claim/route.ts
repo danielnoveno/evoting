@@ -5,6 +5,7 @@ import { logAudit } from '@/lib/audit-logger'
 import { isRecord, sameWalletAddress } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 type ActivationTokenRow = {
   id: string

@@ -4,6 +4,7 @@ import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import { isRecord, sameWalletAddress } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 type InviteRole = 'admin' | 'super_admin'
 

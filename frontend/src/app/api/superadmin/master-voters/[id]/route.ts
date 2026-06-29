@@ -5,6 +5,7 @@ import type { Database } from '@/lib/supabase/database.types'
 import { isRecord } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 type MasterVoterRow = Database['app']['Tables']['master_voters']['Row']
 type MasterVoterStatus = MasterVoterRow['status']

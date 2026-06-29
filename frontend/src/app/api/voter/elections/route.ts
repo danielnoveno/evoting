@@ -5,6 +5,7 @@ import { asStringArray } from '@/lib/repositories/helpers'
 import { formatDateTime } from '@/lib/voter-helpers'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 type CandidateRow = Database['app']['Tables']['proposal_candidates']['Row']

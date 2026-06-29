@@ -7,6 +7,7 @@ import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import { sendVoterWhitelistEmail, sendProposalSubmittedEmail, sendProposalStatusEmail } from '@/lib/email/send'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 type ProposalStatus = Database['app']['Tables']['proposal_drafts']['Row']['status']
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']

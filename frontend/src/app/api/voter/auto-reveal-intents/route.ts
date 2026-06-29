@@ -3,6 +3,7 @@ import { requireProfile, jsonError } from '@/app/api/_lib/auth'
 import { isRecord } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 function isHex32(value: string) {
   return /^0x[a-fA-F0-9]{64}$/.test(value)

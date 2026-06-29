@@ -4,6 +4,7 @@ import { logAudit, getActorInfo } from '@/lib/audit-logger'
 import { isRecord } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   const auth = await requireProfile(request, ['admin', 'super_admin'])

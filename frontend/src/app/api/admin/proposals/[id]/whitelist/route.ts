@@ -4,6 +4,7 @@ import type { Database } from '@/lib/supabase/database.types'
 import { isRecord } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 type WhitelistRow = Database['app']['Tables']['proposal_whitelist_entries']['Row']
 

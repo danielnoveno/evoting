@@ -3,6 +3,7 @@ import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import { requireProfile } from '@/app/api/_lib/auth'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   const auth = await requireProfile(request, ['admin', 'super_admin', 'voter'])

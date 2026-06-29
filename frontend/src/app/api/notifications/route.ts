@@ -4,6 +4,7 @@ import { requireProfile } from '@/app/api/_lib/auth'
 import { isRecord } from '@/lib/repositories/helpers'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 interface NotificationEntry {
   targetProfileId?: string | null

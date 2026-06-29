@@ -2,6 +2,9 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 type RiskLevel = 'low' | 'medium' | 'high' | 'critical'
 
 interface RiskSummaryPayload {

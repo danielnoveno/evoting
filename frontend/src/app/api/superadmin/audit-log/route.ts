@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status })

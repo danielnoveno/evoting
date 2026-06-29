@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 function getIndexerGraphqlUrl(): string | null {
   const rawUrl = process.env.NEXT_PUBLIC_PONDER_URL?.trim()

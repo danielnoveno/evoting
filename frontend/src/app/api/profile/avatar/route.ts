@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 function asObject(value: unknown): Record<string, unknown> {
   if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>

@@ -2,6 +2,9 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextResponse, type NextRequest } from 'next/server'
 import { jsonError, requireProfile } from '@/app/api/_lib/auth'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 type ChatRole = 'user' | 'assistant'
 
 interface ChatMessage {
