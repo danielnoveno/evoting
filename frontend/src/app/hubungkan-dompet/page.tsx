@@ -870,11 +870,6 @@ function ConnectWalletContent() {
             </section>
           </ScrollReveal>
 
-            {/* <ScrollReveal variant="fade-up" delay={500} className="mt-8 text-center">
-              <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-400">
-                Sambungkan Dompet Digital Kamu
-              </p>
-            </ScrollReveal> */}
           </div>
         </div>
 

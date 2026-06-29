@@ -187,7 +187,6 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       document.body.removeChild(link)
       showToast({ tone: 'success', title: 'Unduhan dimulai', description: `File ${fileName} sedang diunduh.` })
     } catch (error) {
-      console.error('[superadmin] Gagal menyiapkan signed URL unduhan:', error)
       const reason = error instanceof Error ? error.message : 'Penyimpanan file belum dapat diakses.'
       showToast({ tone: 'error', title: 'Gagal mengunduh', description: reason })
     }
@@ -214,7 +213,6 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       const url = await createProposalDocumentPreviewUrl(path)
       setPreviewUrl(url)
     } catch (error) {
-      console.error('[superadmin] Gagal menyiapkan pratinjau dokumen:', error)
       const reason = error instanceof Error ? error.message : 'Pratinjau dokumen belum dapat dibuka.'
       showToast({ tone: 'error', title: 'Gagal membuka pratinjau', description: reason })
     } finally {
@@ -271,7 +269,6 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                   walletAddresses: initialWhitelistWallets,
                 })
               } catch (error) {
-                console.error('[superadmin] Gagal menandai whitelist awal tersinkron:', error)
                 whitelistSyncMessage = `${initialWhitelistWallets.length} wallet whitelist sudah dikirim dalam deploy, tetapi status sinkron Supabase belum berhasil diperbarui.`
               } finally {
                 setIsSyncingInitialWhitelist(false)

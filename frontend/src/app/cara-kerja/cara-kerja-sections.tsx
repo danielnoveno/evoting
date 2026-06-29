@@ -120,7 +120,7 @@ export function CaraKerjaSections() {
                 <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
                   <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Status Kontrak</p>
                   <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-black/20 px-4 py-4">
-                    <p className="font-mono text-sm text-slate-200">0x8F2A...c91E (Verified)</p>
+                    <p className="font-mono text-sm text-slate-200">ElectionSpace (Verified)</p>
                     <span className="h-3 w-3 animate-pulse rounded-full bg-emerald-400" />
                   </div>
                 </div>

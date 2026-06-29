@@ -2,9 +2,9 @@
 
 Skrip deploy/verify Foundry akan ditempatkan di folder ini.
 
-Rencana:
-- `DeployVoteChainMVP.s.sol`
-- `VerifyVoteChainMVP.s.sol`
+Tersedia:
+- `DeployRegistry.s.sol` — deploy VoteChainRegistry
+- `DeployElectionSpace.s.sol` — deploy ElectionSpace standalone (bypass registry)
 
 Evidence wajib setelah deploy:
 - Contract address (Base Sepolia, chain id 84532)

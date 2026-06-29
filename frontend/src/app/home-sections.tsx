@@ -49,9 +49,8 @@ export function HeroSection() {
 
             <ScrollReveal variant="fade-up" delay={300} duration={900}>
               <p className="mt-8 max-w-[720px] text-[18px] leading-9 text-slate-800">
-                Keamanan kelas institusi bertemu dengan transparansi yang dapat diaudit. Platform e-voting ini
-                mengubah kepercayaan abstrak menjadi jejak kriptografis yang tercatat permanen untuk konteks
-                organisasi mahasiswa.
+                Keamanan terjamin, transparansi bisa dicek sendiri. Setiap suara tercatat permanen dan bisa
+                diverifikasi oleh siapa saja.
               </p>
             </ScrollReveal>
 
@@ -154,7 +153,7 @@ export function InfrastructureSection() {
           <div className="max-w-[680px]">
             <h2 className="text-[32px] font-semibold leading-tight tracking-[-0.02em] text-slate-900 md:text-[40px]">Infrastruktur Kepercayaan</h2>
             <p className="mt-4 text-[18px] leading-9 text-slate-800">
-              Dibangun di atas protokol terdesentralisasi, menjamin setiap suara dihitung dan dapat diaudit oleh publik tanpa mengorbankan privasi pemilih.
+              Semua suara bisa dicek publik tanpa bocor identitas pemilih.
             </p>
           </div>
         </ScrollReveal>
@@ -262,9 +261,4 @@ export function InfrastructureSection() {
   )
 }
 
-/* ─────────────────────────────────────────────
-   (Unused export – kept for compat)
-   ───────────────────────────────────────────── */
-export function FeatureCardsSection() {
-  return null
-}
+
