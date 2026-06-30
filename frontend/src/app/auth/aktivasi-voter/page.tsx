@@ -163,13 +163,7 @@ function ActivationContent() {
                             Masuk dengan Microsoft SSO
                           </button>
 
-                          <button
-                            onClick={() => handleSSOLogin('google')}
-                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
-                          >
-                            <img src="https://www.google.com/favicon.ico" className="h-5 w-5" alt="Google" />
-                            Masuk dengan Google Workspace
-                          </button>
+                          {/* ponytail: Google SSO dihapus untuk voter, hanya Microsoft SSO */}
                         </div>
                       ) : isCorrectAccount ? (
                         <div className="space-y-4">
