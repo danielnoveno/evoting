@@ -717,17 +717,14 @@ function ConnectWalletContent() {
                             Masuk dengan Microsoft UAJY
                           </button>
 
-                          {/* ponytail: Google SSO hanya untuk admin, voter wajib Microsoft SSO */}
-                          {activationContext === 'admin' && (
-                            <button
-                              onClick={handleGoogleLogin}
-                              disabled={googleLoginMutation.isPending}
-                              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
-                            >
-                              {googleLoginMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <img src="https://www.google.com/favicon.ico" className="h-4 w-4" alt="Google" />}
-                              Masuk dengan Google
-                            </button>
-                          )}
+                          <button
+                            onClick={handleGoogleLogin}
+                            disabled={googleLoginMutation.isPending}
+                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                          >
+                            {googleLoginMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <img src="https://www.google.com/favicon.ico" className="h-4 w-4" alt="Google" />}
+                            Masuk dengan Google
+                          </button>
                         </div>
 
                         <div className="mt-8 rounded-xl border border-blue-100 bg-blue-50/50 p-5">

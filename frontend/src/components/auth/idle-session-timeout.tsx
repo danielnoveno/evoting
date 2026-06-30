@@ -49,6 +49,7 @@ export function IdleSessionTimeout() {
   const warningRef = useRef<number | null>(null)
   const intervalRef = useRef<number | null>(null)
   const hasTimedOutRef = useRef(false)
+  const expiredPathRef = useRef<string | null>(null)
 
   const [showWarning, setShowWarning] = useState(false)
   const [showExpired, setShowExpired] = useState(false)
@@ -143,7 +144,8 @@ export function IdleSessionTimeout() {
 
     const targetPath = getRoleAwareLoginPath(pathname, currentProfile?.role)
 
-    // Langsung tampilkan modal expired, jangan tunggu signout selesai
+    // Simpan path di ref (persist across effect re-runs) lalu tampilkan modal
+    expiredPathRef.current = targetPath
     setExpiredTargetPath(targetPath)
     setShowExpired(true)
     
@@ -195,12 +197,16 @@ export function IdleSessionTimeout() {
   }, [readLastActivityAt, scheduleFromLastActivity, shouldTrackSession])
 
   useEffect(() => {
+    // Jangan re-initialize jika timeout sudah terjadi — modal harus tetap hidup
+    if (hasTimedOutRef.current) return
+
     if (isManualLogoutInProgress()) {
       hasTimedOutRef.current = true
       clearTimers()
       setShowWarning(false)
       setShowExpired(false)
       setExpiredTargetPath(null)
+      expiredPathRef.current = null
       return
     }
 
@@ -208,14 +214,13 @@ export function IdleSessionTimeout() {
       clearTimers()
       hasTimedOutRef.current = false
       setShowWarning(false)
-      if (!showExpired) setExpiredTargetPath(null)
+      // Jangan reset expired state jika user sudah melihat modal expired
+      if (!expiredPathRef.current) setExpiredTargetPath(null)
       return
     }
 
     hasTimedOutRef.current = false
     setShowWarning(false)
-    setShowExpired(false)
-    setExpiredTargetPath(null)
     const now = Date.now()
     writeLastActivityAt(now)
     scheduleFromLastActivity(now)
@@ -240,7 +245,7 @@ export function IdleSessionTimeout() {
       }
       document.removeEventListener('visibilitychange', checkClock)
     }
-  }, [checkClock, clearTimers, markActivity, scheduleFromLastActivity, shouldTrackSession, showExpired, writeLastActivityAt])
+  }, [checkClock, clearTimers, markActivity, scheduleFromLastActivity, shouldTrackSession, writeLastActivityAt])
 
   useEffect(() => {
     const suppressTimeoutModal = () => {
@@ -249,6 +254,7 @@ export function IdleSessionTimeout() {
       setShowWarning(false)
       setShowExpired(false)
       setExpiredTargetPath(null)
+      expiredPathRef.current = null
     }
 
     window.addEventListener(MANUAL_LOGOUT_EVENT, suppressTimeoutModal)
@@ -294,7 +300,7 @@ export function IdleSessionTimeout() {
         <div className="mt-6 flex justify-center">
           <button
             type="button"
-            onClick={handleForceLogout.bind(null, expiredTargetPath ?? '/sesi-berakhir?redirect=%2Fpemilih')}
+            onClick={() => handleForceLogout(getRoleAwareLoginPath(pathname, currentProfile?.role))}
             className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-6 text-[14px] font-semibold text-white transition hover:bg-slate-800"
           >
             <LogOut className="mr-2 h-4 w-4" />
@@ -321,7 +327,7 @@ export function IdleSessionTimeout() {
         <div className="mt-6 flex justify-center">
           <button
             type="button"
-            onClick={() => handleForceLogout(expiredTargetPath)}
+            onClick={() => handleForceLogout(expiredTargetPath ?? expiredPathRef.current ?? '/sesi-berakhir?redirect=%2Fpemilih')}
             className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-6 text-[14px] font-semibold text-white transition hover:bg-slate-800"
           >
             Login Ulang
