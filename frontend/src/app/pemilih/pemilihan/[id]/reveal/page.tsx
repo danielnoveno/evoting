@@ -9,14 +9,26 @@ import { VoterStepper } from '@/components/voter/voter-stepper'
 import { findElection, formatWallet, useVoterStore } from '@/lib/voter-store'
 import { clearVoteCommitment, loadVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
+import { useServerWallet } from '@/hooks/use-server-wallet'
 import { useToast } from '@/components/ui/toast-provider'
-import { useAccount } from 'wagmi'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
 
 export default function VoterRevealPage({ params }: { params: { id: string } }) {
   const { store, loading: storeLoading, actions } = useVoterStore()
   const { showToast } = useToast()
-  const { address: connectedWallet } = useAccount()
+  
+  // Server-side wallet (no popup needed)
+  const {
+    address: serverWalletAddress,
+    isLoading: isWalletLoading,
+    isReady: isWalletReady,
+    error: walletError,
+    revealVote: serverRevealVote,
+    isSubmitting: isServerSubmitting,
+    isConfirmed: isServerConfirmed,
+    revealResult: serverRevealResult,
+    revealError: serverRevealError,
+  } = useServerWallet()
 
   const election = findElection(store, params.id)
   
@@ -63,6 +75,26 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
       clearVoteCommitment(params.id)
     }
   }, [isConfirmed, hash, receipt, params.id, actions, showToast])
+
+  // Handle server-side reveal confirmation
+  useEffect(() => {
+    if (isServerConfirmed && serverRevealResult) {
+      showToast({
+        title: 'Konfirmasi Berhasil',
+        description: 'Pilihan Anda telah divalidasi dan dihitung.',
+        tone: 'success',
+      })
+      actions.revealVote(params.id, {
+        txHash: serverRevealResult.txHash,
+        blockNumber: serverRevealResult.blockNumber,
+        gasUsed: serverRevealResult.gasUsed,
+        createdAt: new Date().toISOString(),
+        statusLabel: 'Suara disahkan',
+      })
+      // Clear commitment since it's used
+      clearVoteCommitment(params.id)
+    }
+  }, [isServerConfirmed, serverRevealResult, params.id, actions, showToast])
 
   if (storeLoading || !store) {
     return <VoterShell><div className="h-[420px] animate-pulse rounded-xl bg-slate-200" /></VoterShell>
@@ -116,7 +148,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
     ? Number(currentPhase)
     : null
   const profileWallet = store.profile.wallet
-  const isConnectedWalletProfileWallet = sameWalletAddress(connectedWallet, profileWallet)
+  const isServerWalletProfileWallet = sameWalletAddress(serverWalletAddress, profileWallet)
   const isRevealPhaseOnChain = currentPhaseNumber === 2
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? hasRevealedError ?? null
   const onChainPhaseLabel = currentPhaseNumber === 0
@@ -129,33 +161,33 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
           ? 'Selesai'
           : 'Belum terbaca'
   const isOnChainStatusReady = Boolean(contractAddress)
-    && Boolean(connectedWallet)
-    && isConnectedWalletProfileWallet
+    && Boolean(serverWalletAddress)
+    && isServerWalletProfileWallet
     && currentPhaseNumber !== null
     && typeof isWhitelistedOnChain === 'boolean'
     && typeof hasCommittedOnChain === 'boolean'
 
   const revealBlockedReason = !contractAddress
     ? 'Smart contract untuk pemilihan ini belum tersedia.'
-    : !connectedWallet
-      ? 'Dompet belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum mengesahkan suara.'
-    : profileWallet && !isConnectedWalletProfileWallet
-      ? `Dompet tersambung (${formatWallet(connectedWallet)}) berbeda dari dompet akun ini (${formatWallet(profileWallet)}). Sambungkan dompet yang sama agar konfirmasi suara sesuai.`
+    : !isWalletReady
+      ? 'ID voting sedang disiapkan. Tunggu sebentar sebelum mengesahkan suara.'
+    : profileWallet && !isServerWalletProfileWallet
+      ? `ID voting (${formatWallet(serverWalletAddress ?? '')}) berbeda dari dompet akun ini (${formatWallet(profileWallet)}).`
     : onChainStatusError
       ? 'Jaringan Base Sepolia belum merespons. Coba muat ulang status sebelum mengesahkan suara.'
     : !isOnChainStatusReady
       ? 'Status on-chain sedang diperiksa. Tunggu sebentar sebelum mengesahkan suara.'
     : !isWhitelistedOnChain
-      ? 'Dompet digital ini belum terdaftar di Daftar Pemilih Tetap (whitelist) untuk pemilihan ini.'
+      ? 'ID voting ini belum terdaftar di Daftar Pemilih Tetap (whitelist) untuk pemilihan ini.'
     : !hasCommittedOnChain
-      ? 'Wallet ini belum menyimpan pilihan di smart contract, jadi belum bisa mengesahkan suara.'
+      ? 'ID voting ini belum menyimpan pilihan di smart contract, jadi belum bisa mengesahkan suara.'
     : !isRevealPhaseOnChain
       ? `Tahap pemilihan masih ${onChainPhaseLabel}, belum berada di Pengesahan Suara (Reveal). Sistem otomatis baru bisa mengesahkan suara saat jadwal penghitungan dibuka.`
     : hasRevealedOnChain
-      ? 'Wallet ini sudah pernah mengesahkan suara untuk ruang voting ini.'
+      ? 'ID voting ini sudah pernah mengesahkan suara untuk ruang voting ini.'
       : ''
 
-  const handleReveal = () => {
+  const handleReveal = async () => {
     if (!savedCommitment || !committedCandidate) return
     if (revealBlockedReason) {
       showToast({
@@ -169,7 +201,9 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
     
     // Map candidate ID to index (1-based)
     const candidateIndex = election.candidates.findIndex(c => c.id === committedCandidate.id) + 1
-    revealVote(candidateIndex, savedCommitment.salt)
+    
+    // Use server-side reveal
+    await serverRevealVote(candidateIndex, savedCommitment.salt, contractAddress!)
   }
 
   const stepState = election.revealProof || hasRevealedOnChain
@@ -232,9 +266,9 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
               <div>
                 <p className="font-semibold">Konfirmasi suara belum bisa dilakukan</p>
                 <p className="mt-1">{revealBlockedReason}</p>
-                {connectedWallet ? (
+                {isWalletReady && serverWalletAddress ? (
                   <p className="mt-2 text-[12px] text-amber-800">
-                    Dompet tersambung: {formatWallet(connectedWallet)} · Dompet akun: {formatWallet(profileWallet)}
+                    ID voting: {formatWallet(serverWalletAddress)} · Dompet akun: {formatWallet(profileWallet)}
                   </p>
                 ) : null}
               </div>
@@ -267,14 +301,14 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
           <button
             type="button"
-            disabled={Boolean(revealBlockedReason) || !savedCommitment || isWritePending || isConfirming || !!election.revealProof || !!(hasRevealedOnChain as boolean | undefined)}
+            disabled={Boolean(revealBlockedReason) || !savedCommitment || isWritePending || isConfirming || isServerSubmitting || !!election.revealProof || !!(hasRevealedOnChain as boolean | undefined)}
             onClick={() => setConfirmOpen(true)}
             className="inline-flex h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-[#0F172A] px-6 text-[13px] font-bold text-white transition-all hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-w-[220px]"
           >
-            {isWritePending ? (
+            {isWritePending || isServerSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Menunggu persetujuan...
+                Mengesahkan suara...
               </>
             ) : isConfirming ? (
               <>

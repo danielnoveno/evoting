@@ -1496,3 +1496,76 @@ set status = 'deployed',
     deployment_tx_hash = '0x0045743eda4911920dd1030c2f65de9d05ece7f65909053331fae6dc54a08539'
 where title = 'Pemilihan Ketua HIMAFORKA 2026'
   and status = 'approved';
+
+--
+-- Migration: Add user_wallets table for deterministic key derivation
+-- Date: 2026-06-30
+-- Purpose: Store public wallet address derived from user_id + master secret
+--
+
+-- Add new action types to the enum
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum
+    WHERE enumlabel = 'commit_vote_server_signed'
+    AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'tx_action_type')
+  ) THEN
+    ALTER TYPE app.tx_action_type ADD VALUE 'commit_vote_server_signed';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum
+    WHERE enumlabel = 'reveal_vote_server_signed'
+    AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'tx_action_type')
+  ) THEN
+    ALTER TYPE app.tx_action_type ADD VALUE 'reveal_vote_server_signed';
+  END IF;
+END $$;
+
+-- Create user_wallets table
+CREATE TABLE IF NOT EXISTS app.user_wallets (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  wallet_address TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT user_wallets_user_id_unique UNIQUE (user_id),
+  CONSTRAINT user_wallets_wallet_address_format CHECK (wallet_address ~ '^0x[a-fA-F0-9]{40}$')
+);
+
+-- Create index for fast lookups
+CREATE INDEX IF NOT EXISTS idx_user_wallets_user_id ON app.user_wallets(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_wallets_address ON app.user_wallets(wallet_address);
+
+-- Enable RLS
+ALTER TABLE app.user_wallets ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Users can read own wallet" ON app.user_wallets
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Service role can manage wallets" ON app.user_wallets
+  FOR ALL
+  USING (auth.role() = 'service_role');
+
+-- Function to automatically update updated_at
+CREATE OR REPLACE FUNCTION app.update_user_wallet_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS trigger_update_user_wallet_timestamp ON app.user_wallets;
+CREATE TRIGGER trigger_update_user_wallet_timestamp
+  BEFORE UPDATE ON app.user_wallets
+  FOR EACH ROW
+  EXECUTE FUNCTION app.update_user_wallet_timestamp();
+
+-- Grant permissions
+GRANT SELECT ON app.user_wallets TO authenticated;
+GRANT ALL ON app.user_wallets TO service_role;

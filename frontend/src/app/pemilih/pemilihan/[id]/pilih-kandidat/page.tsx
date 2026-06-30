@@ -4,17 +4,14 @@ import { AlertCircle, ArrowRight, CheckCircle2, Clock3, Info, Loader2 } from 'lu
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useAccount, useConnect } from 'wagmi'
-import type { Address } from 'viem'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { basescanTxUrl, findElection, formatDateTime, formatWallet, useVoterStore } from '@/lib/voter-store'
-import { generateCommitment, generateSalt, saveVoteCommitment, type VoteCommitmentRecord } from '@/lib/vote-commitment-storage'
-import { backendRuntimeConfig } from '@/lib/supabase/config'
+import { saveVoteCommitment, type VoteCommitmentRecord } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
-import { useCommitRelayer } from '@/hooks/use-commit-relayer'
+import { useServerWallet } from '@/hooks/use-server-wallet'
 import { useToast } from '@/components/ui/toast-provider'
 import { queueAutoRevealIntent } from '@/lib/auto-reveal-intents'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
@@ -35,20 +32,8 @@ async function fetchLatestContractAddress(electionId: string): Promise<string | 
   }
 }
 
-function getWalletConnectionErrorMessage(error: unknown) {
-  const message = error instanceof Error ? error.message : ''
-
-  if (/user rejected|request rejected|user denied|user closed modal|accounts received is empty/i.test(message)) {
-    return 'Penyambungan dompet dibatalkan. Coba lagi saat Anda siap.'
-  }
-
-  return 'Dompet digital belum berhasil tersambung. Coba sambungkan ulang melalui tombol yang tersedia.'
-}
-
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
   const router = useRouter()
-  const { address } = useAccount()
-  const { connect, connectors, isPending: isConnectPending } = useConnect()
   const { showToast } = useToast()
   const { store, loading, actions } = useVoterStore()
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 8 })
@@ -62,7 +47,20 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   } | null>(null)
   const [autoRevealQueueStatus, setAutoRevealQueueStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
   const [autoRevealQueueError, setAutoRevealQueueError] = useState<string | null>(null)
-  const [pendingCandidateAfterConnect, setPendingCandidateAfterConnect] = useState<string | null>(null)
+
+  // Server-side wallet (no popup needed)
+  const {
+    address: serverWalletAddress,
+    isLoading: isWalletLoading,
+    isReady: isWalletReady,
+    error: walletError,
+    commitVote: serverCommitVote,
+    isPending: isServerSigning,
+    isSubmitting: isServerSubmitting,
+    isConfirmed: isServerConfirmed,
+    commitResult: serverCommitResult,
+    commitError: serverCommitError,
+  } = useServerWallet()
 
   const election = findElection(store, params.id)
   const contractAddress = election?.deployedSpaceAddress ?? undefined
@@ -82,21 +80,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     whitelistError,
   } = useElectionContract(contractAddress, { checks: ['phase', 'hasCommitted', 'isWhitelisted'] })
 
-  const {
-    isPending: isRelayerSigning,
-    isSubmitting: isRelayerSubmitting,
-    isConfirmed: isRelayerConfirmed,
-    isFailed: isRelayerFailed,
-    result: relayerResult,
-    error: relayerError,
-    submitCommit,
-    reset: resetRelayer,
-  } = useCommitRelayer()
-
   const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
     ? Number(currentPhase)
     : null
-  const isConnectedWalletProfileWallet = sameWalletAddress(address, store?.profile.wallet)
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
 
   const dbPhase = election?.phase ?? 'registration'
@@ -115,7 +101,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         : currentPhaseNumber === 3
           ? 'Selesai'
           : 'belum terbaca'
-  const onChainCommitBlockedReason = !address
+  const onChainCommitBlockedReason = !serverWalletAddress
     ? ''
     : currentPhaseNumber === null
       ? 'Status fase blockchain belum terbaca. Coba muat ulang halaman sebelum mencoblos.'
@@ -129,8 +115,8 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
   const voteBlockedReason = !contractAddress
     ? 'Pemilihan ini belum memiliki smart contract aktif.'
-    : store?.profile.wallet && address && !isConnectedWalletProfileWallet
-      ? `Dompet tersambung (${formatWallet(address)}) berbeda dari dompet akun ini (${formatWallet(store.profile.wallet)}).`
+    : store?.profile.wallet && serverWalletAddress && !sameWalletAddress(serverWalletAddress, store.profile.wallet)
+      ? `ID voting (${formatWallet(serverWalletAddress ?? '')}) berbeda dari dompet akun ini (${formatWallet(store.profile.wallet)}).`
     : onChainStatusError
       ? 'Status blockchain belum terbaca. Coba muat ulang halaman sebelum mencoblos.'
     : effectivePhaseNumber !== 1
@@ -160,7 +146,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
     queueAutoRevealIntent({
       electionId: params.id,
-      voterWallet: address ?? '',
+      voterWallet: serverWalletAddress ?? '',
       contractAddress: pendingCommit.contractAddress,
       candidateUuid: pendingCommit.candidateUuid,
       candidateNumber: pendingCommit.candidateNumber,
@@ -186,34 +172,34 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
           tone: 'error',
         })
       })
-  }, [isConfirmed, hash, receipt, pendingCommit, actions, params.id, address, showToast])
+  }, [isConfirmed, hash, receipt, pendingCommit, actions, params.id, serverWalletAddress, showToast])
 
-  // Handle relayer commit confirmation
+  // Handle server-side commit confirmation
   useEffect(() => {
-    if (!isRelayerConfirmed || !relayerResult || !pendingCommit) return
+    if (!isServerConfirmed || !serverCommitResult || !pendingCommit) return
 
     const proof = {
-      txHash: relayerResult.txHash,
-      blockNumber: relayerResult.blockNumber,
-      gasUsed: relayerResult.gasUsed,
+      txHash: serverCommitResult.txHash,
+      blockNumber: serverCommitResult.blockNumber,
+      gasUsed: serverCommitResult.gasUsed,
       createdAt: new Date().toISOString(),
       statusLabel: 'Pilihan tersimpan',
     }
 
-    actions.commitVote(params.id, pendingCommit.record.commitment, proof)
+    actions.commitVote(params.id, serverCommitResult.commitment, proof)
     setAutoRevealQueueStatus('saving')
     setAutoRevealQueueError(null)
 
     queueAutoRevealIntent({
       electionId: params.id,
-      voterWallet: address ?? '',
+      voterWallet: serverCommitResult.voterAddress,
       contractAddress: pendingCommit.contractAddress,
       candidateUuid: pendingCommit.candidateUuid,
       candidateNumber: pendingCommit.candidateNumber,
-      salt: pendingCommit.record.salt,
-      commitment: pendingCommit.record.commitment,
-      commitTxHash: relayerResult.txHash as `0x${string}`,
-      blockNumber: relayerResult.blockNumber,
+      salt: serverCommitResult.salt as `0x${string}`,
+      commitment: serverCommitResult.commitment as `0x${string}`,
+      commitTxHash: serverCommitResult.txHash as `0x${string}`,
+      blockNumber: serverCommitResult.blockNumber,
     })
       .then(() => {
         setAutoRevealQueueStatus('saved')
@@ -232,7 +218,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
           tone: 'error',
         })
       })
-  }, [isRelayerConfirmed, relayerResult, pendingCommit, actions, params.id, address, showToast])
+  }, [isServerConfirmed, serverCommitResult, pendingCommit, actions, params.id, showToast])
 
   useEffect(() => {
     if (!election?.deadlineIso) return
@@ -255,14 +241,6 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
   }, [election?.deadlineIso])
-
-  useEffect(() => {
-    if (address && pendingCandidateAfterConnect && !isConnectPending) {
-      setCandidateToConfirm(pendingCandidateAfterConnect)
-      setConfirmOpen(true)
-      setPendingCandidateAfterConnect(null)
-    }
-  }, [address, pendingCandidateAfterConnect, isConnectPending])
 
   if (loading || !store) {
     return (
@@ -294,27 +272,8 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   ]
 
   const handleSelectClick = (candidateId: string) => {
-    if (!address) {
-      const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
-      if (!connector) {
-        showToast({ title: 'Dompet belum siap', description: 'Connector Base Account belum tersedia. Coba muat ulang halaman.', tone: 'error' })
-        return
-      }
-      setPendingCandidateAfterConnect(candidateId)
-      connect(
-        { connector },
-        {
-          onSuccess: () => {
-            setCandidateToConfirm(candidateId)
-            setConfirmOpen(true)
-            setPendingCandidateAfterConnect(null)
-          },
-          onError: (error) => {
-            showToast({ title: 'Gagal menyambungkan dompet', description: getWalletConnectionErrorMessage(error), tone: 'error' })
-            setPendingCandidateAfterConnect(null)
-          },
-        },
-      )
+    if (!isWalletReady) {
+      showToast({ title: 'ID voting belum siap', description: 'Sedang memuat ID voting Anda. Coba beberapa saat lagi.', tone: 'info' })
       return
     }
     setCandidateToConfirm(candidateId)
@@ -326,30 +285,11 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       const candidate = election.candidates.find(c => c.id === candidateToConfirm)
       const candidateNumber = election.candidates.findIndex(c => c.id === candidateToConfirm) + 1
       const deployedSpaceAddress = election.deployedSpaceAddress ?? await fetchLatestContractAddress(election.id)
-      const voterWallet = address
+      const voterWallet = serverWalletAddress
 
       if (!voterWallet) {
         setConfirmOpen(false)
-        const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
-        if (!connector) {
-          showToast({ title: 'Dompet belum siap', description: 'Connector Base Account belum tersedia. Coba muat ulang halaman.', tone: 'error' })
-          return
-        }
-        setPendingCandidateAfterConnect(candidateToConfirm)
-        connect(
-          { connector },
-          {
-            onSuccess: () => {
-              setCandidateToConfirm(candidateToConfirm)
-              setConfirmOpen(true)
-              setPendingCandidateAfterConnect(null)
-            },
-            onError: (error) => {
-              showToast({ title: 'Gagal menyambungkan dompet', description: getWalletConnectionErrorMessage(error), tone: 'error' })
-              setPendingCandidateAfterConnect(null)
-            },
-          },
-        )
+        showToast({ title: 'ID voting belum siap', description: 'Sedang memuat ID voting Anda. Coba beberapa saat lagi.', tone: 'info' })
         return
       }
 
@@ -369,9 +309,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         return
       }
 
-      if (address && store.profile.wallet && !sameWalletAddress(address, store.profile.wallet)) {
+      if (serverWalletAddress && store.profile.wallet && !sameWalletAddress(serverWalletAddress, store.profile.wallet)) {
         setConfirmOpen(false)
-        showToast({ title: 'Dompet tidak sesuai', description: 'Sambungkan dompet yang sama dengan profil pemilih sebelum mencoblos.', tone: 'error' })
+        showToast({ title: 'ID voting tidak sesuai', description: 'ID voting yang di-derive tidak sesuai dengan profil pemilih.', tone: 'error' })
         return
       }
 
@@ -383,35 +323,41 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
       actions.selectCandidate(election.id, candidateToConfirm)
       
-      const salt = generateSalt()
-      const commitment = generateCommitment(
-        candidateNumber,
-        salt,
-        voterWallet as Address,
-        deployedSpaceAddress as Address,
-        backendRuntimeConfig.chainId,
-      )
-      const record = {
-        candidateId: candidateToConfirm,
-        salt,
-        commitment,
-        timestamp: new Date().toISOString()
-      }
-      saveVoteCommitment(election.id, record)
       setPendingCommit({
         candidateUuid: candidateToConfirm,
         candidateNumber,
         contractAddress: deployedSpaceAddress,
-        record,
+        record: {
+          candidateId: candidateToConfirm,
+          salt: '0x0000000000000000000000000000000000000000000000000000000000000000',
+          commitment: '0x0000000000000000000000000000000000000000000000000000000000000000',
+          timestamp: new Date().toISOString(),
+        },
       })
       setAutoRevealQueueStatus('idle')
       setAutoRevealQueueError(null)
 
-      // Submit via relayer (EOA → contract direct, shows in Basescan Transactions tab)
-      submitCommit({
-        commitment,
-        contractAddress: deployedSpaceAddress,
-      })
+      // Submit via server-side signing (no wallet popup needed)
+      const result = await serverCommitVote(candidateNumber, deployedSpaceAddress)
+      
+      if (result) {
+        // Save commitment to localStorage for manual reveal fallback
+        const record = {
+          candidateId: candidateToConfirm,
+          salt: result.salt as `0x${string}`,
+          commitment: result.commitment as `0x${string}`,
+          timestamp: new Date().toISOString(),
+        }
+        saveVoteCommitment(election.id, record)
+        
+        // Update pendingCommit with actual data
+        setPendingCommit({
+          candidateUuid: candidateToConfirm,
+          candidateNumber,
+          contractAddress: deployedSpaceAddress,
+          record,
+        })
+      }
     }
     setConfirmOpen(false)
   }
@@ -424,10 +370,10 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     gasUsed: Number(receipt.gasUsed),
     createdAt: new Date().toISOString(),
     statusLabel: 'Pilihan tersimpan',
-  } : null) || (isRelayerConfirmed && relayerResult ? {
-    txHash: relayerResult.txHash,
-    blockNumber: relayerResult.blockNumber,
-    gasUsed: relayerResult.gasUsed,
+  } : null) || (isServerConfirmed && serverCommitResult ? {
+    txHash: serverCommitResult.txHash,
+    blockNumber: serverCommitResult.blockNumber,
+    gasUsed: serverCommitResult.gasUsed,
     createdAt: new Date().toISOString(),
     statusLabel: 'Pilihan tersimpan',
   } : null)
@@ -507,8 +453,8 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             <h1 className="mt-3 text-[26px] font-bold tracking-tight text-white md:text-[32px]">
               {voteBlockedReason
                 ? 'Belum Bisa Mencoblos'
-                : !address
-                  ? 'Siapkan Dompet'
+                : !isWalletReady
+                  ? 'Menyiapkan ID Voting'
                   : effectivePhaseNumber === 1
                     ? 'Saatnya Mencoblos'
                     : 'Menunggu Jadwal'}
@@ -516,10 +462,10 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             <p className="mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-slate-300">
               {voteBlockedReason
                 ? voteBlockedReason
-                : !address
-                  ? 'Sambungkan dompet yang tertaut ke akun ini untuk mulai mencoblos. Kandidat bisa dilihat tanpa dompet.'
+                : !isWalletReady
+                  ? 'Sistem sedang menyiapkan ID voting Anda. Tunggu sebentar...'
                 : effectivePhaseNumber === 1
-                  ? 'Pilih satu kandidat lalu konfirmasi di dompet. Setelah itu selesai; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.'
+                  ? 'Pilih satu kandidat lalu konfirmasi. Setelah itu selesai; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.'
                   : 'Pencoblosan belum dimulai. Kamu bisa melihat kandidat terlebih dahulu, lalu coblos saat masa pencoblosan dibuka.'}
             </p>
           </div>
@@ -573,27 +519,37 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         </div>
       </section>
 
-      {!address ? (
+      {!isWalletReady ? (
         <section className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4 text-[13px] leading-7 text-blue-900">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
             <div>
-              <p className="font-semibold">Dompet belum tersambung</p>
-              <p className="mt-1">Klik "Coblos Kandidat Ini" pada kandidat pilihanmu. Sistem akan meminta penyambungan dompet secara otomatis.</p>
+              <p className="font-semibold">ID voting sedang disiapkan</p>
+              <p className="mt-1">Sistem sedang menyiapkan ID voting Anda. Tunggu sebentar sebelum mencoblos.</p>
             </div>
           </div>
         </section>
-      ) : (voteBlockedReason || writeError || relayerError) ? (
+      ) : walletError ? (
+        <section className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-[13px] leading-7 text-red-900">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+            <div>
+              <p className="font-semibold">Gagal memuat ID voting</p>
+              <p className="mt-1">{walletError}</p>
+            </div>
+          </div>
+        </section>
+      ) : (voteBlockedReason || writeError || serverCommitError) ? (
         <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-[13px] leading-7 text-amber-900">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
             <div>
               <p className="font-semibold">Belum bisa mencoblos</p>
               <p className="mt-1">
-                {relayerError
-                  ? relayerError
+                {serverCommitError
+                  ? serverCommitError
                   : writeError
-                    ? 'Transaksi belum berhasil diproses. Pastikan wallet siap dan pemilihan sudah berada pada masa pencoblosan.'
+                    ? 'Transaksi belum berhasil diproses. Pastikan pemilihan sudah berada pada masa pencoblosan.'
                     : voteBlockedReason}
               </p>
             </div>
@@ -663,16 +619,16 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 <button
                   type="button"
                   onClick={() => handleSelectClick(candidate.id)}
-                  disabled={isWritePending || isConfirming || isRelayerSigning || isRelayerSubmitting || hasCommittedOnChain === true}
+                  disabled={isWritePending || isConfirming || isServerSigning || isServerSubmitting || hasCommittedOnChain === true}
                   className="mt-4 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#0F172A] px-4 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label={`Pilih kandidat ${candidate.name}`}
                 >
-                  {isRelayerSigning ? (
+                  {isServerSigning ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Menandatangani...
                     </>
-                  ) : isRelayerSubmitting ? (
+                  ) : isServerSubmitting ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Mengirim ke jaringan...
@@ -681,11 +637,6 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Memproses...
-                    </>
-                  ) : isConnectPending && pendingCandidateAfterConnect === candidate.id ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Menyambungkan...
                     </>
                   ) : hasCommittedOnChain === true ? (
                     'Sudah Mencoblos'
