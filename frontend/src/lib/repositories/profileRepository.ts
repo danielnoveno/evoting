@@ -3,7 +3,7 @@
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import type { Database } from '@/lib/supabase/database.types'
-import type { AdminDirectoryRecord, AdminRegistryInput, AdminRegistryRecord, AdminSpaceAccessRecord, AppProfileRecord, CurrentAdminRegistryStatus, ProfileUpsertInput } from '@/lib/repositories/types'
+import type { AdminDirectoryRecord, AdminRegistryInput, AdminRegistryRecord, AdminSpaceAccessRecord, AppProfileRecord, AppRole, CurrentAdminRegistryStatus, ProfileUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
 import { clearLocalAuthSession, isInvalidStoredSession, sameWalletAddress } from './helpers'
 
@@ -287,6 +287,32 @@ export async function getProfileByWalletAddress(walletAddress: string): Promise<
 
   if (error) throw new RepositoryError('Gagal memuat profil. Coba lagi.')
   return data ? mapProfileRow(data) : null
+}
+
+// ponytail: cek admin_registry langsung by wallet_address — admin mungkin belum punya app_profiles
+export async function getAdminRegistryByWalletAddress(walletAddress: string): Promise<{ role: AppRole; organizationName: string | null } | null> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return null
+
+  const normalizedWallet = walletAddress.trim()
+  if (!normalizedWallet) return null
+
+  const { data, error } = await client
+    .schema('app')
+    .from('admin_registry')
+    .select('assigned_role, organization_name, status')
+    .ilike('wallet_address', normalizedWallet)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle()
+
+  if (error) return null
+  if (!data) return null
+
+  return {
+    role: data.assigned_role as AppRole,
+    organizationName: data.organization_name,
+  }
 }
 
 export async function upsertCurrentProfile(input: ProfileUpsertInput): Promise<AppProfileRecord> {

@@ -1,13 +1,14 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { bindCurrentUserWallet, createAdminRegistry, deleteAdminRegistry, getCurrentAdminRegistryStatus, getCurrentProfile, getProfileByWalletAddress, listAdminDirectory, updateAdminRegistry, upsertCurrentProfile } from '@/lib/repositories/profileRepository'
+import { bindCurrentUserWallet, createAdminRegistry, deleteAdminRegistry, getCurrentAdminRegistryStatus, getCurrentProfile, getAdminRegistryByWalletAddress, getProfileByWalletAddress, listAdminDirectory, updateAdminRegistry, upsertCurrentProfile } from '@/lib/repositories/profileRepository'
 import type { AdminRegistryInput, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
 
 export const profileQueryKeys = {
   current: ['profile', 'current'] as const,
   currentAdminRegistryStatus: ['profile', 'current-admin-registry-status'] as const,
   wallet: (walletAddress: string) => ['profile', 'wallet', walletAddress] as const,
+  adminRegistryByWallet: (walletAddress: string) => ['profile', 'admin-registry-wallet', walletAddress] as const,
   adminDirectory: ['profile', 'admin-directory'] as const,
   superadmins: ['superadmins'] as const,
 }
@@ -38,6 +39,16 @@ export function useProfileByWallet(walletAddress: string | null | undefined) {
   return useQuery({
     queryKey: profileQueryKeys.wallet(walletAddress ?? 'unknown'),
     queryFn: () => getProfileByWalletAddress(walletAddress ?? ''),
+    enabled: Boolean(walletAddress),
+    retry: false,
+  })
+}
+
+// ponytail: cek admin_registry by wallet_address — admin mungkin belum punya app_profiles
+export function useAdminRegistryByWallet(walletAddress: string | null | undefined) {
+  return useQuery({
+    queryKey: profileQueryKeys.adminRegistryByWallet(walletAddress ?? 'unknown'),
+    queryFn: () => getAdminRegistryByWalletAddress(walletAddress ?? ''),
     enabled: Boolean(walletAddress),
     retry: false,
   })

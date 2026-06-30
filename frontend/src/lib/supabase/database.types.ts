@@ -591,6 +591,218 @@ export type Database = {
           updated_at?: string
         }
       }
+      ops_audit_log: {
+        Row: {
+          id: string
+          actor_profile_id: string | null
+          actor_wallet: string | null
+          action_name: string
+          entity_type: string
+          entity_id: string
+          request_id: string | null
+          before_state: Json | null
+          after_state: Json | null
+          related_tx_hash: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          actor_profile_id?: string | null
+          actor_wallet?: string | null
+          action_name: string
+          entity_type: string
+          entity_id: string
+          request_id?: string | null
+          before_state?: Json | null
+          after_state?: Json | null
+          related_tx_hash?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          actor_profile_id?: string | null
+          actor_wallet?: string | null
+          action_name?: string
+          entity_type?: string
+          entity_id?: string
+          request_id?: string | null
+          before_state?: Json | null
+          after_state?: Json | null
+          related_tx_hash?: string | null
+          created_at?: string
+        }
+      }
+      proof_exports: {
+        Row: {
+          id: string
+          space_id: number | null
+          owner_profile_id: string | null
+          wallet_address: string
+          proof_type: 'commit_receipt' | 'reveal_receipt' | 'space_report' | 'audit_bundle'
+          file_path: string
+          tx_hash: string | null
+          generated_at: string
+          metadata: Json
+        }
+        Insert: {
+          id?: string
+          space_id?: number | null
+          owner_profile_id?: string | null
+          wallet_address: string
+          proof_type: 'commit_receipt' | 'reveal_receipt' | 'space_report' | 'audit_bundle'
+          file_path: string
+          tx_hash?: string | null
+          generated_at?: string
+          metadata?: Json
+        }
+        Update: {
+          id?: string
+          space_id?: number | null
+          owner_profile_id?: string | null
+          wallet_address?: string
+          proof_type?: 'commit_receipt' | 'reveal_receipt' | 'space_report' | 'audit_bundle'
+          file_path?: string
+          tx_hash?: string | null
+          generated_at?: string
+          metadata?: Json
+        }
+      }
+      space_metadata_versions: {
+        Row: {
+          id: string
+          proposal_draft_id: string
+          version: number
+          metadata_uri: string
+          content_hash: string
+          is_final: boolean
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          proposal_draft_id: string
+          version: number
+          metadata_uri: string
+          content_hash: string
+          is_final?: boolean
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          proposal_draft_id?: string
+          version?: number
+          metadata_uri?: string
+          content_hash?: string
+          is_final?: boolean
+          created_by?: string | null
+          created_at?: string
+        }
+      }
+      risk_alerts: {
+        Row: {
+          id: string
+          title: string
+          description: string
+          actor_label: string
+          actor_value: string
+          tone: 'danger' | 'warning' | 'info'
+          status: 'active' | 'resolved' | 'blocked'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description: string
+          actor_label: string
+          actor_value: string
+          tone?: 'danger' | 'warning' | 'info'
+          status?: 'active' | 'resolved' | 'blocked'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string
+          actor_label?: string
+          actor_value?: string
+          tone?: 'danger' | 'warning' | 'info'
+          status?: 'active' | 'resolved' | 'blocked'
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      blocked_entities: {
+        Row: {
+          id: string
+          entity_type: string
+          entity_value: string
+          reason: string | null
+          blocked_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          entity_type: string
+          entity_value: string
+          reason?: string | null
+          blocked_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          entity_type?: string
+          entity_value?: string
+          reason?: string | null
+          blocked_by?: string | null
+          created_at?: string
+        }
+      }
+      admin_space_access: {
+        Row: {
+          id: string
+          admin_email: string
+          proposal_draft_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          admin_email: string
+          proposal_draft_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          admin_email?: string
+          proposal_draft_id?: string
+          created_at?: string
+        }
+      }
+      user_wallets: {
+        Row: {
+          id: string
+          user_id: string
+          wallet_address: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          wallet_address: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          wallet_address?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -654,4 +866,4 @@ export type Database = {
   }
 }
 
-export type StorageBucket = 'space-metadata' | 'proof-exports'
+export type StorageBucket = 'space-metadata' | 'proof-exports' | 'proposal-documents' | 'public-assets'

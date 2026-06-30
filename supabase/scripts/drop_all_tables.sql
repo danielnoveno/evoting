@@ -20,6 +20,9 @@ DROP TABLE IF EXISTS app.admin_registry CASCADE;
 DROP TABLE IF EXISTS app.risk_alerts CASCADE;
 DROP TABLE IF EXISTS app.blocked_entities CASCADE;
 DROP TABLE IF EXISTS app.proposal_drafts CASCADE;
+DROP TABLE IF EXISTS app.proposal_documents CASCADE;
+DROP TABLE IF EXISTS app.master_voters CASCADE;
+DROP TABLE IF EXISTS app.user_wallets CASCADE;
 DROP TABLE IF EXISTS app.app_profiles CASCADE;
 DROP TABLE IF EXISTS indexer.indexer_sync_status CASCADE;
 
@@ -30,6 +33,9 @@ DROP FUNCTION IF EXISTS app.current_user_role() CASCADE;
 DROP FUNCTION IF EXISTS app.has_role(app.app_role[]) CASCADE;
 DROP FUNCTION IF EXISTS app.role_for_email(text) CASCADE;
 DROP FUNCTION IF EXISTS app.on_profile_activation_notify() CASCADE;
+DROP FUNCTION IF EXISTS app.auth_email() CASCADE;
+DROP FUNCTION IF EXISTS app.can_manage_proposal(uuid) CASCADE;
+DROP FUNCTION IF EXISTS app.update_user_wallet_timestamp() CASCADE;
 
 -- Drop all custom types in schema 'app' and 'indexer'
 DROP TYPE IF EXISTS app.app_role CASCADE;

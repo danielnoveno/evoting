@@ -22,7 +22,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { signOutCurrentSession } from '@/lib/repositories/authRepository'
 import { useToast } from '@/components/ui/toast-provider'
 import { authSessionQueryKey, useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useEmailPasswordLogin, useEmailPasswordSignUp } from '@/hooks/use-auth-session'
-import { useBindCurrentWallet, useCurrentProfile, useProfileByWallet } from '@/hooks/use-profile'
+import { useBindCurrentWallet, useCurrentProfile, useProfileByWallet, useAdminRegistryByWallet } from '@/hooks/use-profile'
 import { ScrollReveal } from '@/components/public/parallax'
 import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
 import Link from 'next/link'
@@ -106,6 +106,7 @@ function ConnectWalletContent() {
   const authSessionQuery = useAuthSession()
   const currentProfileQuery = useCurrentProfile()
   const connectedWalletProfileQuery = useProfileByWallet(address)
+  const adminRegistryByWalletQuery = useAdminRegistryByWallet(address)
   const bindWalletMutation = useBindCurrentWallet()
   const microsoftLoginMutation = useMicrosoftCampusLogin()
   const googleLoginMutation = useGoogleLogin()
@@ -129,16 +130,18 @@ function ConnectWalletContent() {
   const currentProfile = currentProfileQuery.data
   const connectedWalletProfile = connectedWalletProfileQuery.data
 
-  // Determine context: prioritized by profile role if logged in, then connected wallet role, then URL param, then redirect hint
+  // Determine context: prioritized by profile role if logged in, then admin registry by wallet, then URL param, then redirect hint
   const activationContext = useMemo((): 'admin' | 'voter' => {
     if (currentProfile?.role === 'admin' || currentProfile?.role === 'super_admin') return 'admin'
-    // ponytail: cek role wallet dari database — admin organiasi tetap dianggap admin meski belum login
+    // ponytail: cek admin_registry langsung by wallet_address — admin mungkin belum punya app_profiles
+    const adminByWallet = adminRegistryByWalletQuery.data
+    if (adminByWallet?.role === 'admin' || adminByWallet?.role === 'super_admin') return 'admin'
     if (connectedWalletProfile?.role === 'admin' || connectedWalletProfile?.role === 'super_admin') return 'admin'
     if (adminInviteTokenFromRedirect) return 'admin'
     if (activateParam === 'admin') return 'admin'
     if (redirectParam?.startsWith('/admin') || redirectParam?.startsWith('/superadmin') || redirectParam?.startsWith('/portal-admin')) return 'admin'
     return 'voter'
-  }, [currentProfile?.role, connectedWalletProfile?.role, adminInviteTokenFromRedirect, activateParam, redirectParam])
+  }, [currentProfile?.role, adminRegistryByWalletQuery.data, connectedWalletProfile?.role, adminInviteTokenFromRedirect, activateParam, redirectParam])
 
   const activationMode = activateParam === '1' || activateParam === 'admin' || activateParam === 'voter' || Boolean(adminInviteTokenFromRedirect) || (Boolean(authSession) && activationContext === 'admin')
   const voterActivationMissingToken = activationMode && activationContext === 'voter' && !activationToken
