@@ -129,14 +129,16 @@ function ConnectWalletContent() {
   const currentProfile = currentProfileQuery.data
   const connectedWalletProfile = connectedWalletProfileQuery.data
 
-  // Determine context: prioritized by profile role if logged in, then URL param, then redirect hint
+  // Determine context: prioritized by profile role if logged in, then connected wallet role, then URL param, then redirect hint
   const activationContext = useMemo((): 'admin' | 'voter' => {
     if (currentProfile?.role === 'admin' || currentProfile?.role === 'super_admin') return 'admin'
+    // ponytail: cek role wallet dari database — admin organiasi tetap dianggap admin meski belum login
+    if (connectedWalletProfile?.role === 'admin' || connectedWalletProfile?.role === 'super_admin') return 'admin'
     if (adminInviteTokenFromRedirect) return 'admin'
     if (activateParam === 'admin') return 'admin'
     if (redirectParam?.startsWith('/admin') || redirectParam?.startsWith('/superadmin') || redirectParam?.startsWith('/portal-admin')) return 'admin'
     return 'voter'
-  }, [currentProfile?.role, adminInviteTokenFromRedirect, activateParam, redirectParam])
+  }, [currentProfile?.role, connectedWalletProfile?.role, adminInviteTokenFromRedirect, activateParam, redirectParam])
 
   const activationMode = activateParam === '1' || activateParam === 'admin' || activateParam === 'voter' || Boolean(adminInviteTokenFromRedirect) || (Boolean(authSession) && activationContext === 'admin')
   const voterActivationMissingToken = activationMode && activationContext === 'voter' && !activationToken
@@ -717,14 +719,17 @@ function ConnectWalletContent() {
                             Masuk dengan Microsoft UAJY
                           </button>
 
-                          <button
-                            onClick={handleGoogleLogin}
-                            disabled={googleLoginMutation.isPending}
-                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
-                          >
-                            {googleLoginMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <img src="https://www.google.com/favicon.ico" className="h-4 w-4" alt="Google" />}
-                            Masuk dengan Google
-                          </button>
+                          {/* ponytail: Google SSO hanya untuk admin organiasi, voter hanya Microsoft */}
+                          {activationContext === 'admin' && (
+                            <button
+                              onClick={handleGoogleLogin}
+                              disabled={googleLoginMutation.isPending}
+                              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                            >
+                              {googleLoginMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <img src="https://www.google.com/favicon.ico" className="h-4 w-4" alt="Google" />}
+                              Masuk dengan Google
+                            </button>
+                          )}
                         </div>
 
                         <div className="mt-8 rounded-xl border border-blue-100 bg-blue-50/50 p-5">
