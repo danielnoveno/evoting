@@ -211,7 +211,8 @@ export function SuperadminOnboardingTour({ forceStart = false, onComplete }: Onb
           showProgress: true,
           buttons: ['back', 'primary', 'skip'],
           primaryColor: '#0F172A',
-          zIndex: 1000,
+          // ponytail: z-index harus jauh di atas sticky navbar (z-30 = 30)
+          zIndex: 9999,
         }}
         locale={{
           back: 'Kembali',
