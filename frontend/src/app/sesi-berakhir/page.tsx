@@ -17,13 +17,13 @@ function SesiBerakhirContent() {
   if (!mounted) return null
 
   const handleMasukUlang = () => {
-    // Determine login page based on redirect target
+    // ponytail: langsung ke halaman login sesuai role — tidak perlu ?reason=session-timeout
     if (redirect.startsWith('/superadmin') || redirect.startsWith('/portal-admin')) {
-      router.push('/portal-admin?reason=session-timeout')
+      router.push('/portal-admin')
     } else if (redirect.startsWith('/admin')) {
-      router.push(`/hubungkan-dompet?activate=admin&redirect=${encodeURIComponent(redirect)}&reason=session-timeout`)
+      router.push('/hubungkan-dompet?activate=admin')
     } else {
-      router.push(`/hubungkan-dompet?redirect=${encodeURIComponent(redirect)}&reason=session-timeout`)
+      router.push('/hubungkan-dompet')
     }
   }
 

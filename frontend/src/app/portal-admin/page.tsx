@@ -14,7 +14,6 @@ import {
   X,
   Copy,
   ShieldCheck,
-  AlertTriangle,
 } from 'lucide-react'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { useToast } from '@/components/ui/toast-provider'
@@ -73,7 +72,6 @@ function PortalAdminContent() {
   const [mounted, setMounted] = useState(false)
   const [formError, setFormError] = useState('')
   const [bindError, setBindError] = useState('')
-  const [sessionTimeout, setSessionTimeout] = useState(false)
   const [redirectState, setRedirectState] = useState<{
     target: string
     label: string
@@ -83,18 +81,6 @@ function PortalAdminContent() {
   const redirectTimerRef = useRef<number | null>(null)
 
   useEffect(() => { setMounted(true) }, [])
-
-  // Detect session-timeout redirect from middleware
-  useEffect(() => {
-    if (!mounted) return
-    if (searchParams.get('reason') === 'session-timeout') {
-      setSessionTimeout(true)
-      // Clean up URL so refreshing doesn't re-show the modal
-      const url = new URL(window.location.href)
-      url.searchParams.delete('reason')
-      window.history.replaceState({}, '', url.toString())
-    }
-  }, [searchParams, mounted])
 
   useEffect(() => {
     return () => {
@@ -594,59 +580,6 @@ function PortalAdminContent() {
             targetLabel={redirectState.label}
           />
         )}
-
-        {sessionTimeout ? (
-          <div
-            className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="session-timeout-title"
-            aria-describedby="session-timeout-description"
-          >
-            <div className="w-full max-w-[360px] rounded-2xl border border-slate-200 bg-white p-6 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600">
-                <AlertTriangle className="h-7 w-7" aria-hidden="true" />
-              </div>
-
-              <h2 id="session-timeout-title" className="mt-5 text-[16px] font-semibold text-slate-900">
-                Sesi Berakhir
-              </h2>
-              <p id="session-timeout-description" className="mt-3 text-[13px] leading-6 text-slate-600">
-                Sesi Anda telah berakhir karena waktu aktif habis. Silakan masuk kembali untuk melanjutkan.
-              </p>
-
-              <div className="mt-5 space-y-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSessionTimeout(false)
-                    handleMicrosoftLogin()
-                  }}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 text-[13px] font-semibold text-white transition hover:bg-slate-800"
-                >
-                  <svg className="h-4 w-4" viewBox="0 0 23 23" fill="none">
-                    <path d="M0 0H11V11H0V0Z" fill="currentColor"/>
-                    <path d="M12 0H23V11H12V0Z" fill="currentColor"/>
-                    <path d="M0 12H11V23H0V12Z" fill="currentColor"/>
-                    <path d="M12 12H23V23H12V12Z" fill="currentColor"/>
-                  </svg>
-                  Masuk dengan Microsoft SSO
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSessionTimeout(false)
-                    handleGoogleLogin()
-                  }}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 text-[13px] font-semibold text-slate-900 transition hover:bg-slate-50"
-                >
-                  <img src="https://www.google.com/favicon.ico" className="h-4 w-4" alt="Google" />
-                  Masuk dengan Google
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
       </div>
 
       <PublicFooter />

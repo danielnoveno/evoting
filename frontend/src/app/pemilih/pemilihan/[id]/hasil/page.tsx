@@ -55,6 +55,10 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
   const resultRows = getElectionResultRows(election)
   const totalVotes = resultRows.reduce((acc, curr) => acc + curr.votes, 0)
 
+  // Only declare a winner if there are actual votes AND the top candidate has strictly more votes than others
+  const maxVotes = resultRows.length > 0 ? resultRows[0].votes : 0
+  const hasWinner = totalVotes > 0 && maxVotes > 0 && resultRows.filter((r) => r.votes === maxVotes).length === 1
+
   return (
     <VoterShell>
       <VoterStepper
@@ -157,65 +161,78 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
           <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-slate-800">Perolehan suara kandidat</h2>
           <p className="mt-1 mb-6 text-[13px] text-slate-600">Ringkasan perolehan suara akhir yang dapat ditinjau publik.</p>
 
-          <div className="space-y-4">
-            {resultRows.map((candidate, index) => {
-              const isWinner = index === 0
-              return (
-                <div 
-                  key={candidate.id} 
-                  className={`rounded-xl border p-4 transition-all duration-300 hover:shadow-sm ${
-                    isWinner 
-                      ? 'border-amber-200 bg-amber-50/20' 
-                      : 'border-slate-100 bg-white'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-full text-[13px] font-bold ${
-                        isWinner ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-slate-100 text-slate-800'
-                      }`}>
-                        {candidate.name
-                          .split(' ')
-                          .slice(0, 2)
-                          .map((part) => part[0])
-                          .join('')}
+          {totalVotes === 0 ? (
+            <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50/50 p-8 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+                <Trophy className="h-7 w-7 text-amber-400" />
+              </div>
+              <h3 className="mt-4 text-[16px] font-semibold text-slate-900">Belum ada suara sah</h3>
+              <p className="mt-2 mx-auto max-w-md text-[13px] leading-6 text-slate-600">
+                Hasil pemilihan belum dapat ditampilkan karena belum ada suara yang berhasil di-reveal. 
+                Perolehan suara akan muncul setelah pemilih mengonfirmasi pilihan mereka.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {resultRows.map((candidate, index) => {
+                const isWinner = hasWinner && index === 0
+                return (
+                  <div 
+                    key={candidate.id} 
+                    className={`rounded-xl border p-4 transition-all duration-300 hover:shadow-sm ${
+                      isWinner 
+                        ? 'border-amber-200 bg-amber-50/20' 
+                        : 'border-slate-100 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-11 w-11 items-center justify-center rounded-full text-[13px] font-bold ${
+                          isWinner ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-slate-100 text-slate-800'
+                        }`}>
+                          {candidate.name
+                            .split(' ')
+                            .slice(0, 2)
+                            .map((part) => part[0])
+                            .join('')}
+                        </div>
+                        <div>
+                          <h3 className="flex items-center gap-2 text-[15px] font-bold text-slate-950">
+                            {candidate.name}
+                            {isWinner ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-900">
+                                <Trophy className="h-3 w-3 text-amber-700" />
+                                Pemenang
+                              </span>
+                            ) : null}
+                          </h3>
+                          <p className="text-[12px] font-medium text-slate-600 mt-0.5">
+                            {formatNumber(candidate.votes)} suara
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="flex items-center gap-2 text-[15px] font-bold text-slate-950">
-                          {candidate.name}
-                          {isWinner ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-900">
-                              <Trophy className="h-3 w-3 text-amber-700" />
-                              Pemenang
-                            </span>
-                          ) : null}
-                        </h3>
-                        <p className="text-[12px] font-medium text-slate-600 mt-0.5">
-                          {formatNumber(candidate.votes)} suara
-                        </p>
+                      <span className={`text-[16px] font-bold ${isWinner ? 'text-amber-900' : 'text-slate-950'}`}>
+                        {candidate.percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <div className="h-3 rounded-full bg-slate-100 overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                            isWinner 
+                              ? 'bg-[#0F172A]' 
+                              : 'bg-slate-400'
+                          }`} 
+                          style={{ width: `${candidate.percentage}%` }} 
+                        />
                       </div>
                     </div>
-                    <span className={`text-[16px] font-bold ${isWinner ? 'text-amber-900' : 'text-slate-950'}`}>
-                      {candidate.percentage.toFixed(1)}%
-                    </span>
                   </div>
-                  
-                  <div className="mt-4">
-                    <div className="h-3 rounded-full bg-slate-100 overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                          isWinner 
-                            ? 'bg-[#0F172A]' 
-                            : 'bg-slate-400'
-                        }`} 
-                        style={{ width: `${candidate.percentage}%` }} 
-                      />
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </article>
 
         <article className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-6 transition-all duration-300 hover:border-slate-300">

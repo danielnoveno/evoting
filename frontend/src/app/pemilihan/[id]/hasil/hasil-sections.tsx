@@ -84,7 +84,7 @@ export function HasilSections({ id }: { id: string }) {
         const candidateId = resolveCandidateId(candidate.candidateLocalId, index)
         const voteCount = candidateResults.get(candidateId)?.voteCount ?? 0
         const percentage = totalRevealed > 0 ? (voteCount / totalRevealed) * 100 : 0
-        if (!currentWinner || voteCount > currentWinner.voteCount) {
+        if (voteCount > 0 && (!currentWinner || voteCount > currentWinner.voteCount)) {
           return { name: candidate.fullName, voteCount, percentage, avatarPath: candidate.avatarPath }
         }
         return currentWinner

@@ -20,23 +20,11 @@ const SESSION_DEBUG_STORAGE_KEY = 'votein:session-debug'
 const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'scroll', 'touchstart', 'pointerdown'] as const
 const CLOCK_CHECK_EVENTS = ['focus', 'pageshow'] as const
 
-function getRoleAwareLoginPath(pathname: string, role: string | null | undefined) {
-  if (role === 'super_admin') {
-    const redirectTarget = pathname.startsWith('/superadmin') ? pathname : '/superadmin'
-    return `/sesi-berakhir?redirect=${encodeURIComponent(redirectTarget)}`
-  }
-
-  if (role === 'admin') {
-    const redirectTarget = pathname.startsWith('/admin') ? pathname : '/admin'
-    return `/sesi-berakhir?redirect=${encodeURIComponent(redirectTarget)}`
-  }
-
-  if (pathname.startsWith('/superadmin')) return `/sesi-berakhir?redirect=${encodeURIComponent(pathname)}`
-  if (pathname.startsWith('/admin')) return `/sesi-berakhir?redirect=${encodeURIComponent(pathname)}`
-  if (pathname.startsWith('/portal-admin')) return '/sesi-berakhir?redirect=%2Fsuperadmin'
-
-  const redirectTarget = pathname.startsWith('/pemilih') ? pathname : '/pemilih'
-  return `/sesi-berakhir?redirect=${encodeURIComponent(redirectTarget)}`
+function resolveLoginPathByRole(role: string | null | undefined) {
+  // ponytail: resolve dari role database — tanpa pathname guessing
+  if (role === 'super_admin') return '/portal-admin'
+  if (role === 'admin') return '/hubungkan-dompet?activate=admin'
+  return '/hubungkan-dompet'
 }
 
 export function IdleSessionTimeout() {
@@ -49,11 +37,11 @@ export function IdleSessionTimeout() {
   const warningRef = useRef<number | null>(null)
   const intervalRef = useRef<number | null>(null)
   const hasTimedOutRef = useRef(false)
-  const expiredPathRef = useRef<string | null>(null)
+  // ponytail: simpan role saat timeout — resolve path saat user klik, bukan saat timeout
+  const timedOutRoleRef = useRef<string | null | undefined>(undefined)
 
   const [showWarning, setShowWarning] = useState(false)
   const [showExpired, setShowExpired] = useState(false)
-  const [expiredTargetPath, setExpiredTargetPath] = useState<string | null>(null)
   const [isDebugEnabled, setIsDebugEnabled] = useState(false)
   const [debugTick, setDebugTick] = useState(0)
 
@@ -119,6 +107,7 @@ export function IdleSessionTimeout() {
     clearTimers()
     setShowWarning(false)
     setShowExpired(false)
+    timedOutRoleRef.current = undefined
 
     // Sign out in background, then redirect
     void signOutCurrentSession().catch(() => undefined)
@@ -134,7 +123,7 @@ export function IdleSessionTimeout() {
       clearTimers()
       setShowWarning(false)
       setShowExpired(false)
-      setExpiredTargetPath(null)
+      timedOutRoleRef.current = undefined
       return
     }
 
@@ -142,18 +131,15 @@ export function IdleSessionTimeout() {
     hasTimedOutRef.current = true
     clearTimers()
 
-    const targetPath = getRoleAwareLoginPath(pathname, currentProfile?.role)
-
-    // Simpan path di ref (persist across effect re-runs) lalu tampilkan modal
-    expiredPathRef.current = targetPath
-    setExpiredTargetPath(targetPath)
+    // ponytail: simpan role dari database SEKARANG sebelum cache di-clear
+    timedOutRoleRef.current = currentProfile?.role ?? null
     setShowExpired(true)
     
     // Lakukan signout di background
     void signOutCurrentSession()
       .then(() => clearAuthQueryCache())
       .catch(() => undefined)
-  }, [clearAuthQueryCache, clearTimers, currentProfile?.role, pathname])
+  }, [clearAuthQueryCache, clearTimers, currentProfile?.role])
 
   const scheduleFromLastActivity = useCallback((lastActivityAt: number) => {
     if (!shouldTrackSession) return
@@ -205,8 +191,7 @@ export function IdleSessionTimeout() {
       clearTimers()
       setShowWarning(false)
       setShowExpired(false)
-      setExpiredTargetPath(null)
-      expiredPathRef.current = null
+      timedOutRoleRef.current = undefined
       return
     }
 
@@ -215,7 +200,7 @@ export function IdleSessionTimeout() {
       hasTimedOutRef.current = false
       setShowWarning(false)
       // Jangan reset expired state jika user sudah melihat modal expired
-      if (!expiredPathRef.current) setExpiredTargetPath(null)
+      if (!hasTimedOutRef.current) setShowExpired(false)
       return
     }
 
@@ -253,8 +238,7 @@ export function IdleSessionTimeout() {
       clearTimers()
       setShowWarning(false)
       setShowExpired(false)
-      setExpiredTargetPath(null)
-      expiredPathRef.current = null
+      timedOutRoleRef.current = undefined
     }
 
     window.addEventListener(MANUAL_LOGOUT_EVENT, suppressTimeoutModal)
@@ -300,7 +284,7 @@ export function IdleSessionTimeout() {
         <div className="mt-6 flex justify-center">
           <button
             type="button"
-            onClick={() => handleForceLogout(getRoleAwareLoginPath(pathname, currentProfile?.role))}
+            onClick={() => handleForceLogout(resolveLoginPathByRole(currentProfile?.role))}
             className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-6 text-[14px] font-semibold text-white transition hover:bg-slate-800"
           >
             <LogOut className="mr-2 h-4 w-4" />
@@ -312,7 +296,8 @@ export function IdleSessionTimeout() {
   ) : null
 
   // ─── Modal Sesi Berakhir ─────────────────────────────────────────────
-  const expiredModal = showExpired && expiredTargetPath ? (
+  // ponytail: resolve dari role yg disimpan saat timeout — tidak pathname guessing
+  const expiredModal = showExpired ? (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm">
       <div className="relative z-10 w-full max-w-[420px] rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.12)]">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
@@ -327,7 +312,7 @@ export function IdleSessionTimeout() {
         <div className="mt-6 flex justify-center">
           <button
             type="button"
-            onClick={() => handleForceLogout(expiredTargetPath ?? expiredPathRef.current ?? '/sesi-berakhir?redirect=%2Fpemilih')}
+            onClick={() => handleForceLogout(resolveLoginPathByRole(timedOutRoleRef.current))}
             className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-6 text-[14px] font-semibold text-white transition hover:bg-slate-800"
           >
             Login Ulang
