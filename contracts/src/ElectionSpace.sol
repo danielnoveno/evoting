@@ -65,9 +65,6 @@ contract ElectionSpace {
         address indexed actor,
         string reasonCode
     );
-    event ElectionMetadataUpdated(
-        uint256 indexed spaceId, string title, string metadataURI, address actor
-    );
     event PhaseScheduleUpdated(
         uint256 indexed spaceId,
         uint256 commitStartsAt,
@@ -403,16 +400,4 @@ contract ElectionSpace {
         emit ElectionStatusChanged(spaceId, status, actor, reasonCode);
     }
 
-    function updateMetadata(string calldata _title, string calldata _metadataURI, address actor)
-        external
-        onlyRegistry
-    {
-        Phase actual = phase();
-        if (actual != Phase.Registration) {
-            revert WrongPhase(Phase.Registration, actual);
-        }
-        title = _title;
-        metadataURI = _metadataURI;
-        emit ElectionMetadataUpdated(spaceId, _title, _metadataURI, actor);
-    }
 }

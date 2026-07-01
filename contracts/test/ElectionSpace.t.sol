@@ -13,31 +13,14 @@ contract AdminClient {
         registry.removeSuperAdmin(admin);
     }
 
-    function createElectionForAdmin(VoteChainRegistry registry, address spaceAdmin)
+    function deployElectionForAdmin(VoteChainRegistry registry, address spaceAdmin)
         external
         returns (uint256, uint256, address)
     {
-        return registry.createElectionForAdmin(
-            spaceAdmin, "Pemilihan Ketua HIMAFORKA", "supabase://proposal-drafts/example", 2
+        address[] memory voters = new address[](0);
+        return registry.createElectionForAdminWithConfig(
+            spaceAdmin, "Pemilihan Ketua HIMAFORKA", "supabase://proposal-drafts/example", 2, voters, 0, 0, 0, 0
         );
-    }
-
-    function submitProposal(VoteChainRegistry registry, uint256 candidateCount)
-        external
-        returns (uint256)
-    {
-        return registry.submitProposal("Pemilihan Ketua", "ipfs://proposal", candidateCount);
-    }
-
-    function reviewProposal(VoteChainRegistry registry, uint256 proposalId, bool approve) external {
-        registry.reviewProposal(proposalId, approve);
-    }
-
-    function createElection(VoteChainRegistry registry, uint256 proposalId)
-        external
-        returns (uint256, address)
-    {
-        return registry.createElectionFromProposal(proposalId);
     }
 
     function registerVoter(ElectionSpace space, address voter) external {
@@ -101,25 +84,31 @@ contract VoteChainMVPTest {
 
         registry.setAdmin(address(admin), true);
 
-        uint256 proposalId = admin.submitProposal(registry, candidateCount);
-        registry.reviewProposal(proposalId, true);
-
         address spaceAddress;
-        (spaceId, spaceAddress) = admin.createElection(registry, proposalId);
+        (, spaceId, spaceAddress) = registry.createElectionForAdminWithConfig(
+            address(admin),
+            "Pemilihan Ketua HIMAFORKA",
+            "supabase://proposal-drafts/example",
+            candidateCount,
+            new address[](0),
+            0,
+            0,
+            0,
+            0
+        );
         space = ElectionSpace(spaceAddress);
     }
 
-    function test_super_admin_can_crud_admin_and_create_space() external {
+    function test_super_admin_can_crud_admin_and_deploy_configured_space() external {
         VoteChainRegistry registry = new VoteChainRegistry(address(this));
         AdminClient admin = new AdminClient();
 
         registry.setAdmin(address(admin), true);
         require(registry.isPlatformAdmin(address(admin)), "admin should be active");
 
-        uint256 proposalId = admin.submitProposal(registry, 2);
-        registry.reviewProposal(proposalId, true);
-
-        (uint256 spaceId, address spaceAddress) = admin.createElection(registry, proposalId);
+        (, uint256 spaceId, address spaceAddress) = registry.createElectionForAdminWithConfig(
+            address(admin), "Pemilihan Ketua HIMAFORKA", "supabase://proposal-drafts/example", 2, new address[](0), 0, 0, 0, 0
+        );
 
         require(spaceId == 1, "spaceId should be 1");
         require(spaceAddress != address(0), "space address required");
@@ -130,8 +119,8 @@ contract VoteChainMVPTest {
         VoteChainRegistry registry = new VoteChainRegistry(address(this));
         AdminClient admin = new AdminClient();
 
-        (uint256 proposalId, uint256 spaceId, address spaceAddress) = registry.createElectionForAdmin(
-            address(admin), "Pemilihan Ketua HIMAFORKA", "supabase://proposal-drafts/example", 2
+        (uint256 proposalId, uint256 spaceId, address spaceAddress) = registry.createElectionForAdminWithConfig(
+            address(admin), "Pemilihan Ketua HIMAFORKA", "supabase://proposal-drafts/example", 2, new address[](0), 0, 0, 0, 0
         );
 
         ElectionSpace space = ElectionSpace(spaceAddress);
@@ -214,7 +203,7 @@ contract VoteChainMVPTest {
         registry.addSuperAdmin(address(facultyTu));
 
         (uint256 proposalId, uint256 spaceId, address spaceAddress) =
-            facultyTu.createElectionForAdmin(registry, address(spaceAdmin));
+            facultyTu.deployElectionForAdmin(registry, address(spaceAdmin));
 
         ElectionSpace space = ElectionSpace(spaceAddress);
         require(proposalId == 1, "proposalId should be 1");
@@ -229,7 +218,7 @@ contract VoteChainMVPTest {
         require(registry.spaceById(spaceId) == spaceAddress, "registry mapping mismatch");
     }
 
-    function test_added_super_admin_can_create_approved_proposal_space() external {
+    function test_added_super_admin_can_deploy_configured_space() external {
         VoteChainRegistry registry = new VoteChainRegistry(address(this));
         AdminClient facultyTu = new AdminClient();
         AdminClient platformAdmin = new AdminClient();
@@ -237,9 +226,8 @@ contract VoteChainMVPTest {
         registry.addSuperAdmin(address(facultyTu));
         registry.setAdmin(address(platformAdmin), true);
 
-        uint256 proposalId = platformAdmin.submitProposal(registry, 2);
-        facultyTu.reviewProposal(registry, proposalId, true);
-        facultyTu.createElection(registry, proposalId);
+        registry.setAdmin(address(platformAdmin), true);
+        facultyTu.deployElectionForAdmin(registry, address(platformAdmin));
     }
 
     function test_removed_super_admin_cannot_deploy_election_for_admin() external {
@@ -250,7 +238,7 @@ contract VoteChainMVPTest {
         registry.addSuperAdmin(address(facultyTu));
         registry.removeSuperAdmin(address(facultyTu));
 
-        try facultyTu.createElectionForAdmin(registry, address(spaceAdmin)) returns (
+        try facultyTu.deployElectionForAdmin(registry, address(spaceAdmin)) returns (
             uint256, uint256, address
         ) {
             revert("expected removed superadmin deploy revert");
@@ -273,19 +261,19 @@ contract VoteChainMVPTest {
             revert("expected normal wallet remove superadmin revert");
         } catch { }
 
-        try normalWallet.createElectionForAdmin(registry, address(spaceAdmin)) returns (
+        try normalWallet.deployElectionForAdmin(registry, address(spaceAdmin)) returns (
             uint256, uint256, address
         ) {
             revert("expected normal wallet deploy revert");
         } catch { }
     }
 
-    function test_non_admin_cannot_submit_proposal() external {
+    function test_non_super_admin_cannot_deploy_space() external {
         VoteChainRegistry registry = new VoteChainRegistry(address(this));
         AdminClient nonAdmin = new AdminClient();
 
-        try nonAdmin.submitProposal(registry, 2) returns (uint256) {
-            revert("expected non-admin revert");
+        try nonAdmin.deployElectionForAdmin(registry, address(nonAdmin)) returns (uint256, uint256, address) {
+            revert("expected non-superadmin deploy revert");
         } catch { }
     }
 

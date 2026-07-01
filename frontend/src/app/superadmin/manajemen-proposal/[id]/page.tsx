@@ -289,7 +289,22 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               const verifyResponse = await fetch('/api/verify-contract', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contractAddress: deployment.spaceAddress }),
+                body: JSON.stringify({
+                  contractAddress: deployment.spaceAddress,
+                  contractType: 'election-space',
+                  registry: registryAddress,
+                  spaceAdmin: ownerWallet,
+                  spaceId: deployment.spaceId,
+                  candidateCount: liveProposal.candidateCount,
+                  title: liveProposal.title,
+                  metadataURI: `supabase://proposal-drafts/${liveProposal.id}`,
+                  initialActor: userAddress,
+                  initialVoters: initialWhitelistWallets,
+                  commitStartsAt: commitStartsAt!.toString(),
+                  commitEndsAt: revealStartsAt!.toString(),
+                  revealStartsAt: revealStartsAt!.toString(),
+                  revealEndsAt: revealEndsAt!.toString(),
+                }),
               })
               const verifyResult = await verifyResponse.json()
               if (verifyResult.verified) {

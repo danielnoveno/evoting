@@ -47,11 +47,16 @@ contract FullFlowTest is Test {
         registry = new VoteChainRegistry(superAdmin);
         registry.setAdmin(spaceAdmin, true);
 
-        (uint256 proposalId, uint256 sid, address spaceAddr) = registry.createElectionForAdmin(
+        (uint256 proposalId, uint256 sid, address spaceAddr) = registry.createElectionForAdminWithConfig(
             spaceAdmin,
             "Pemilihan Ketua HIMAFORKA 2026/2027",
             "supabase://proposal-drafts/full-flow-test",
-            2 // 2 kandidat
+            2, // 2 kandidat
+            new address[](0),
+            0,
+            0,
+            0,
+            0
         );
 
         spaceId = sid;
@@ -382,7 +387,7 @@ contract FullFlowTest is Test {
 
         VoteChainRegistry r2 = new VoteChainRegistry(superAdmin);
         r2.setAdmin(admin2, true);
-        (,, address sAddr) = r2.createElectionForAdmin(admin2, "test", "", 2);
+        (,, address sAddr) = r2.createElectionForAdminWithConfig(admin2, "test", "", 2, new address[](0), 0, 0, 0, 0);
         ElectionSpace s2 = ElectionSpace(sAddr);
 
         vm.prank(admin2);

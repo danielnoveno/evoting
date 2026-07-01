@@ -9,7 +9,7 @@ import VoteChainRegistryArtifact from '@/lib/abi/VoteChainRegistry.json'
 const registryAbi = VoteChainRegistryArtifact.abi
 
 // Default registry address for Base Sepolia - should be updated after deployment
-export const REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || '0xD83e94c96B9F5494FddcA2e8Baa5615067F62c82'
+export const REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS || '0x059e0F48aEB8190c7c9955023eB46716b8ef8Ce1'
 
 interface ElectionSpaceCreatedEvent {
   proposalId: number
@@ -21,7 +21,6 @@ export function useRegistryContract() {
   const { address: userAddress, isConnected, chainId } = useAccount()
 
   const { 
-    writeContract, 
     writeContractAsync,
     data: hash, 
     isPending: isWritePending, 
@@ -59,47 +58,6 @@ export function useRegistryContract() {
   })
 
   // Write functions
-  const reviewProposal = (proposalId: number, approve: boolean) => {
-    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
-    writeContract({
-      address: REGISTRY_ADDRESS as `0x${string}`,
-      abi: registryAbi,
-      functionName: 'reviewProposal',
-      args: [BigInt(proposalId), approve],
-      // @ts-ignore - capabilities EIP-5792
-      capabilities,
-    })
-  }
-
-  const createElection = (proposalId: number) => {
-    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
-    writeContract({
-      address: REGISTRY_ADDRESS as `0x${string}`,
-      abi: registryAbi,
-      functionName: 'createElectionFromProposal',
-      args: [BigInt(proposalId)],
-      // @ts-ignore - capabilities EIP-5792
-      capabilities,
-    })
-  }
-
-  const createElectionForAdmin = useCallback((
-    spaceAdmin: Address,
-    title: string,
-    metadataURI: string,
-    candidateCount: number
-  ) => {
-    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
-    return writeContractAsync({
-      address: REGISTRY_ADDRESS as Address,
-      abi: registryAbi,
-      functionName: 'createElectionForAdmin',
-      args: [spaceAdmin, title, metadataURI, BigInt(candidateCount)],
-      // @ts-ignore - capabilities EIP-5792
-      capabilities,
-    })
-  }, [writeContractAsync])
-
   const createElectionForAdminWithConfig = useCallback((
     spaceAdmin: Address,
     title: string,
@@ -184,22 +142,6 @@ export function useRegistryContract() {
     return null
   }, [])
 
-  const submitProposal = (
-    title: string,
-    metadataURI: string,
-    candidateCount: number,
-  ) => {
-    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
-    writeContract({
-      address: REGISTRY_ADDRESS as `0x${string}`,
-      abi: registryAbi,
-      functionName: 'submitProposal',
-      args: [title, metadataURI, BigInt(candidateCount)],
-      // @ts-ignore - capabilities EIP-5792
-      capabilities,
-    })
-  }
-
   return {
     isSuperAdmin,
     isSuperAdminLoading: isSuperAdminLoading || isSuperAdminFetching,
@@ -208,13 +150,9 @@ export function useRegistryContract() {
     userAddress,
     isConnected,
     chainId,
-    reviewProposal,
-    createElection,
-    createElectionForAdmin,
     createElectionForAdminWithConfig,
     addSuperAdmin,
     removeSuperAdmin,
-    submitProposal,
     parseElectionSpaceCreated,
     hash,
     isWritePending,
