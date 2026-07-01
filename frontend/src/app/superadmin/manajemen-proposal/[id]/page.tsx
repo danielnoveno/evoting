@@ -1,6 +1,6 @@
 'use client'
 
-import { BadgeCheck, CalendarDays, Check, CircleAlert, Download, ExternalLink, FileText, Landmark, ListChecks, ShieldCheck, ThumbsDown, ThumbsUp, Loader2, Rocket, Eye, UserRound, Youtube, Users, Clock3, Link } from 'lucide-react'
+import { BadgeCheck, CalendarDays, Check, CircleAlert, Download, ExternalLink, FileText, Landmark, ListChecks, ShieldCheck, ThumbsDown, ThumbsUp, Loader2, Rocket, Eye, UserRound, Youtube, Users, Clock3, Link, CheckCircle2, XCircle, AlertTriangle, RefreshCw } from 'lucide-react'
 import { notFound, useRouter } from 'next/navigation'
 import { useMemo, useRef, useState, useEffect } from 'react'
 import {
@@ -623,31 +623,95 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             <div>
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-5 w-5 text-slate-700" />
-                <h2 className="text-[20px] font-semibold text-slate-900">Whitelist dari Proposal</h2>
+                <h2 className="text-[20px] font-semibold text-slate-900">Whitelist Pemilih</h2>
               </div>
               <p className="mt-2 text-[14px] leading-6 text-slate-600">
-                Daftar ini diisi admin saat membuat proposal. Setelah deploy sukses, sistem akan mengirim transaksi kedua untuk mendaftarkan wallet valid ke kontrak selama fase Registration.
+                Daftar lengkap wallet yang didaftarkan admin. Setelah deploy, wallet valid akan didaftarkan ke smart contract selama fase Registration.
               </p>
             </div>
-            <span className="inline-flex w-fit rounded-xl bg-slate-100 px-3 py-2 text-[13px] font-medium text-slate-700">
-              {initialWhitelistWallets.length} wallet valid
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex w-fit rounded-xl bg-slate-100 px-3 py-2 text-[13px] font-medium text-slate-700">
+                {proposalWhitelistEntries.length} total
+              </span>
+              <span className="inline-flex w-fit rounded-xl bg-emerald-50 px-3 py-2 text-[13px] font-medium text-emerald-700">
+                {initialWhitelistWallets.length} valid
+              </span>
+              {proposalWhitelistEntries.filter((e) => e.validationStatus === 'invalid').length > 0 && (
+                <span className="inline-flex w-fit rounded-xl bg-red-50 px-3 py-2 text-[13px] font-medium text-red-600">
+                  {proposalWhitelistEntries.filter((e) => e.validationStatus === 'invalid').length} invalid
+                </span>
+              )}
+            </div>
           </div>
           <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-[13px] leading-6 text-amber-900">
-            Jika sinkronisasi awal gagal karena wallet ditolak, gas habis, atau transaksi dibatalkan, pemilihan tetap ter-deploy dan admin masih bisa memakai fitur tambah/import/sinkron whitelist di Manajemen Pemilihan. Fitur lama tidak dihapus.
+            Jika sinkronisasi awal gagal karena wallet ditolak, gas habis, atau transaksi dibatalkan, pemilihan tetap ter-deploy dan admin masih bisa memakai fitur tambah/import/sinkron whitelist di Manajemen Pemilihan.
           </div>
           {proposalWhitelistQuery.isLoading ? (
             <div className="mt-5 h-24 animate-pulse rounded-2xl bg-slate-100" />
-          ) : initialWhitelistWallets.length === 0 ? (
+          ) : proposalWhitelistEntries.length === 0 ? (
             <div className="mt-5">
-              <SuperadminEmptyState title="Whitelist awal kosong" description="Proposal ini belum membawa daftar wallet. Admin tetap dapat menambahkan whitelist setelah pemilihan di-deploy selama fase Registration." />
+              <SuperadminEmptyState title="Whitelist kosong" description="Proposal ini belum memiliki daftar wallet pemilih. Admin dapat menambahkan whitelist setelah pemilihan di-deploy selama fase Registration." />
             </div>
           ) : (
-            <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {initialWhitelistWallets.slice(0, 9).map((wallet) => (
-                <span key={wallet} className="truncate rounded-xl bg-slate-100 px-3 py-2 font-mono text-[12px] text-slate-700">{wallet}</span>
-              ))}
-              {initialWhitelistWallets.length > 9 ? <span className="rounded-xl bg-slate-900 px-3 py-2 text-[12px] font-semibold text-white">+{initialWhitelistWallets.length - 9} wallet lainnya</span> : null}
+            <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-[14px]">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <th className="px-4 py-3 font-semibold text-slate-700">Alamat Wallet</th>
+                      <th className="px-4 py-3 font-semibold text-slate-700">Nama Pemilih</th>
+                      <th className="px-4 py-3 font-semibold text-slate-700">Sumber</th>
+                      <th className="px-4 py-3 font-semibold text-slate-700">Status Validasi</th>
+                      <th className="px-4 py-3 font-semibold text-slate-700">Status Sinkron</th>
+                      <th className="px-4 py-3 font-semibold text-slate-700">Tanggal Ditambahkan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {proposalWhitelistEntries.map((entry) => {
+                      const isValid = entry.validationStatus === 'valid' || entry.validationStatus === 'synced'
+                      const isSynced = entry.syncStatus === 'synced' || entry.validationStatus === 'synced'
+                      const isInvalid = entry.validationStatus === 'invalid'
+                      return (
+                        <tr key={entry.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                          <td className="px-4 py-3 font-mono text-[13px] text-slate-700">{entry.walletAddress}</td>
+                          <td className="px-4 py-3 text-slate-700">{entry.voterName || <span className="text-slate-400 italic">Belum diisi</span>}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex rounded-lg px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] ${
+                              entry.source === 'csv' ? 'bg-blue-50 text-blue-600' : entry.source === 'sync' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {entry.source === 'csv' ? 'CSV' : entry.source === 'sync' ? 'Sinkron' : 'Manual'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] ${
+                              isValid ? 'bg-emerald-50 text-emerald-600' : isInvalid ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
+                            }`}>
+                              {isValid ? <CheckCircle2 className="h-3 w-3" /> : isInvalid ? <XCircle className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+                              {isValid ? 'Valid' : isInvalid ? 'Invalid' : 'Pending'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] ${
+                              isSynced ? 'bg-emerald-50 text-emerald-600' : entry.latestSyncTxHash ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {isSynced ? <RefreshCw className="h-3 w-3" /> : null}
+                              {isSynced ? 'Tersinkron' : entry.latestSyncTxHash ? 'Proses' : 'Belum On-Chain'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-[13px] text-slate-500">
+                            {new Date(entry.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {proposalWhitelistEntries.length > 10 && (
+                <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-center text-[13px] text-slate-500">
+                  Menampilkan {proposalWhitelistEntries.length} dari {proposalWhitelistEntries.length} pemilih
+                </div>
+              )}
             </div>
           )}
         </section>

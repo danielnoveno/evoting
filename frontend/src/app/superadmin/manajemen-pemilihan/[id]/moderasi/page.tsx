@@ -1,96 +1,17 @@
 'use client'
 
-import { Activity, AlertTriangle, ArrowRight, BadgeCheck, CalendarDays, ExternalLink, Hourglass, Lock, ShieldCheck, Wallet, Loader2 } from 'lucide-react'
+import { Activity, AlertTriangle, ArrowRight, BadgeCheck, CalendarDays, ExternalLink, Hourglass, Lock, ShieldCheck, Wallet, Loader2, Users, CheckCircle2, XCircle, RefreshCw, UserRound, Youtube, Clock3 } from 'lucide-react'
 import { notFound, useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { SuperadminDetailIntro, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge, SuperadminToolbarButton } from '@/components/superadmin/superadmin-shell'
+import { SuperadminDetailIntro, SuperadminEmptyState, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { type SuperadminElectionState } from '@/lib/superadmin-data'
 import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
-import { useProposalDraft } from '@/hooks/use-proposal-draft'
-
-type ModerationDetail = {
-  network: string
-  electionCode: string
-  endLabel: string
-  totalVotes: string
-  totalVotesDelta: string
-  verificationNote: string
-  participationValue: string
-  participationNote: string
-  phaseTitle: string
-  nextPhase: string
-  blockNumber: string
-  blockSyncLabel: string
-  contractAddress: string
-  contractUrl: string
-  suspensionNote: string
-  candidateSectionTitle: string
-  candidateSectionDescription: string
-  encryptedLabel: string
-  candidates: Array<{
-    id: string
-    ballotNumber: string
-    name: string
-    vision: string
-    commitmentCount: string
-    initials: string
-  }>
-  supportCards: Array<{
-    id: string
-    title: string
-    description: string
-    icon: 'shield' | 'activity'
-  }>
-  feed: Array<{
-    id: string
-    title: string
-    description: string
-    hash: string
-    time: string
-    tone: 'info' | 'teal' | 'slate'
-  }>
-}
-
-const moderationDetails: Record<string, ModerationDetail> = {}
-
-function getFallbackDetail(title: string, code: string): ModerationDetail {
-  return {
-    network: 'Base Sepolia Testnet Secured',
-    electionCode: `ID: ${code}`,
-    endLabel: 'Jadwal akhir sedang disinkronkan',
-    totalVotes: '0',
-    totalVotesDelta: '+0%',
-    verificationNote: 'Verifikasi on-chain: menunggu data',
-    participationValue: '0%',
-    participationNote: 'Belum ada partisipasi',
-    phaseTitle: 'Monitoring Aktif',
-    nextPhase: 'Reveal & Tally',
-    blockNumber: 'Menunggu data',
-    blockSyncLabel: 'Belum ada sinkronisasi indexer',
-    contractAddress: 'Belum tersedia',
-    contractUrl: 'https://sepolia.basescan.org/',
-    suspensionNote: 'Penangguhan akan menghentikan pemilihan ini sampai proses tinjauan selesai.',
-    candidateSectionTitle: `Monitoring Kandidat ${title}`,
-    candidateSectionDescription: 'Detail kandidat untuk pemilihan ini sedang dilengkapi untuk kebutuhan moderasi.',
-    encryptedLabel: 'Suara Dienkripsi',
-    candidates: [],
-    supportCards: [
-      { id: 'sf1', title: 'Audit Tambahan', description: 'Konten dukungan belum tersedia untuk pemilihan ini.', icon: 'shield' },
-      { id: 'sf2', title: 'Aktivitas Lanjutan', description: 'Lengkapi data aktivitas untuk melihat tinjauan yang lebih detail.', icon: 'activity' },
-    ],
-    feed: [],
-  }
-}
-
-function getFeedToneClass(tone: ModerationDetail['feed'][number]['tone']) {
-  if (tone === 'teal') return 'border-teal-200 bg-teal-50 text-teal-700'
-  if (tone === 'slate') return 'border-slate-200 bg-slate-100 text-slate-700'
-  return 'border-blue-200 bg-blue-50 text-blue-700'
-}
+import { useProposalDraft, useProposalActivities } from '@/hooks/use-proposal-draft'
+import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 
 function getElectionStatusColor(status: SuperadminElectionState) {
   if (status === 'Ditangguhkan') return 'text-red-600'
@@ -98,10 +19,21 @@ function getElectionStatusColor(status: SuperadminElectionState) {
   return 'text-emerald-600'
 }
 
-function getParticipationWidthClass(value: string) {
-  if (value === '68.4%') return 'w-[68.4%]'
-  if (value === '0%') return 'w-0'
-  return 'w-1/2'
+function getInitials(name: string) {
+  return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+}
+
+function resolvePhase(data: { status?: string; commitStartAt?: string | null; revealStartAt?: string | null; endedAt?: string | null }) {
+  const now = Date.now()
+  const commitStart = data.commitStartAt ? new Date(data.commitStartAt).getTime() : Number.NaN
+  const revealStart = data.revealStartAt ? new Date(data.revealStartAt).getTime() : Number.NaN
+  const endedAt = data.endedAt ? new Date(data.endedAt).getTime() : Number.NaN
+
+  if (data.status === 'archived' || (!Number.isNaN(endedAt) && now >= endedAt)) return { phase: 'ended', label: 'Selesai', next: '-', color: 'emerald' as const }
+  if (data.status !== 'deployed') return { phase: 'registration', label: 'Persiapan', next: 'Commit', color: 'blue' as const }
+  if (!Number.isNaN(revealStart) && now >= revealStart) return { phase: 'reveal', label: 'Konfirmasi (Reveal)', next: 'Selesai', color: 'amber' as const }
+  if (!Number.isNaN(commitStart) && now >= commitStart) return { phase: 'commit', label: 'Pencoblosan (Commit)', next: 'Reveal', color: 'teal' as const }
+  return { phase: 'registration', label: 'Persiapan', next: 'Commit', color: 'blue' as const }
 }
 
 export default function SuperadminElectionModerationPage({ params }: { params: { id: string } }) {
@@ -109,6 +41,9 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
   const { showToast } = useToast()
   const { elections, setElections } = useSuperadminElectionsStore()
   const proposalQuery = useProposalDraft(params.id)
+  const candidatesQuery = useProposalCandidates(params.id)
+  const whitelistQuery = useProposalWhitelistEntries(params.id)
+  const activitiesQuery = useProposalActivities(params.id)
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
 
   const election = useMemo(() => {
@@ -135,18 +70,24 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
   if (proposalQuery.isLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>
   if (!election) notFound()
 
-  const detail = moderationDetails[election.id] ?? getFallbackDetail(election.title, election.code)
+  const proposal = proposalQuery.data
+  const candidates = candidatesQuery.data ?? []
+  const whitelistEntries = whitelistQuery.data ?? []
+  const activities = activitiesQuery.data ?? []
 
-  // Use real contract data for detail if available
-  if (proposalQuery.data?.deployedSpaceAddress) {
-    detail.contractAddress = proposalQuery.data.deployedSpaceAddress
-    detail.contractUrl = `https://sepolia.basescan.org/address/${proposalQuery.data.deployedSpaceAddress}`
-  }
+  const contractAddress = proposal?.deployedSpaceAddress ?? 'Belum tersedia'
+  const contractUrl = proposal?.deployedSpaceAddress
+    ? `https://sepolia.basescan.org/address/${proposal.deployedSpaceAddress}`
+    : 'https://sepolia.basescan.org/'
 
-  // Override endLabel with actual schedule if available
-  const schedule = proposalQuery.data
-    ? { commitStartAt: proposalQuery.data.commitStartAt, revealStartAt: proposalQuery.data.revealStartAt, endedAt: proposalQuery.data.endedAt }
+  const schedule = proposal
+    ? { commitStartAt: proposal.commitStartAt, revealStartAt: proposal.revealStartAt, endedAt: proposal.endedAt, registrationStartAt: proposal.registrationStartAt }
     : null
+
+  const phaseInfo = proposal ? resolvePhase(proposal) : { phase: 'registration', label: 'Persiapan', next: 'Commit', color: 'blue' as const }
+
+  const validWhitelistCount = whitelistEntries.filter((e) => e.validationStatus === 'valid' || e.validationStatus === 'synced').length
+  const syncedWhitelistCount = whitelistEntries.filter((e) => e.syncStatus === 'synced' || e.validationStatus === 'synced').length
 
   return (
     <SuperadminShell>
@@ -158,9 +99,15 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
           <>
             <span className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[14px] font-medium text-blue-700">
               <BadgeCheck className="h-4 w-4" />
-              {detail.network}
+              Base Sepolia Testnet
             </span>
-            <span className="rounded-xl bg-slate-100 px-3 py-2 font-mono text-[13px] text-slate-500">{detail.electionCode}</span>
+            <span className="rounded-xl bg-slate-100 px-3 py-2 font-mono text-[13px] text-slate-500">ID: {election.code}</span>
+            {proposal?.deployedSpaceAddress && (
+              <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] font-medium text-emerald-700">
+                <Wallet className="h-3.5 w-3.5" />
+                {proposal.deployedSpaceAddress.slice(0, 6)}...{proposal.deployedSpaceAddress.slice(-4)}
+              </span>
+            )}
           </>
         )}
         title={election.title}
@@ -169,7 +116,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
             <SuperadminStatusBadge status={election.status} />
             <div className={`flex items-center gap-2 ${getElectionStatusColor(election.status)}`}>
               <CalendarDays className="h-4 w-4" />
-              <span className="text-slate-800">{schedule?.endedAt ? `Berakhir ${new Date(schedule.endedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : detail.endLabel}</span>
+              <span className="text-slate-800">{schedule?.endedAt ? `Berakhir ${new Date(schedule.endedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'Jadwal sedang disinkronkan'}</span>
             </div>
           </>
         )}
@@ -177,7 +124,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
           <div className="flex w-full max-w-[460px] flex-col items-stretch gap-4 xl:items-end">
             <div className="flex flex-col gap-3 sm:flex-row xl:w-full xl:justify-end">
             <a
-              href={detail.contractUrl}
+              href={contractUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex h-14 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-50"
@@ -194,52 +141,56 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
               Tangguhkan Pemilihan
             </button>
             </div>
-            <p className="max-w-[320px] text-[14px] leading-6 text-slate-500 xl:text-right">{detail.suspensionNote}</p>
+            <p className="max-w-[320px] text-[14px] leading-6 text-slate-500 xl:text-right">Penangguhan akan menghentikan pemilihan ini sampai proses tinjauan selesai.</p>
           </div>
         )}
       />
       </ScrollReveal>
 
+      {/* Metrics */}
       <StaggerContainer stagger={100} variant="fade-up" duration={600} className="mt-8 grid gap-6 xl:grid-cols-4">
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Total Suara Masuk</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Total Pemilih Terdaftar</p>
           <div className="mt-6 flex items-end gap-3">
-            <p className="text-[28px] font-semibold tracking-[-0.04em] text-slate-900">{detail.totalVotes}</p>
-            <span className="pb-1 text-[14px] font-semibold text-emerald-600">{detail.totalVotesDelta}</span>
+            <p className="text-[28px] font-semibold tracking-[-0.04em] text-slate-900">{whitelistEntries.length}</p>
+            <span className="pb-1 text-[14px] font-medium text-slate-500">wallet</span>
           </div>
-          <p className="mt-4 text-[15px] leading-7 text-slate-800">{detail.verificationNote}</p>
+          <p className="mt-4 text-[15px] leading-7 text-slate-800">{validWhitelistCount} wallet valid dari database</p>
         </article>
 
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Tingkat Partisipasi</p>
-          <p className="mt-6 text-[28px] font-semibold tracking-[-0.04em] text-slate-900">{detail.participationValue}</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Tersinkron On-Chain</p>
+          <p className="mt-6 text-[28px] font-semibold tracking-[-0.04em] text-slate-900">{syncedWhitelistCount} <span className="text-[16px] font-normal text-slate-500">/ {whitelistEntries.length}</span></p>
           <div className="mt-5 h-2 rounded-full bg-slate-100">
-            <div className={`h-2 rounded-full bg-slate-900 ${getParticipationWidthClass(detail.participationValue)}`} />
+            <div className="h-2 rounded-full bg-emerald-500 transition-all" style={{ width: whitelistEntries.length > 0 ? `${Math.round((syncedWhitelistCount / whitelistEntries.length) * 100)}%` : '0%' }} />
           </div>
-          <p className="mt-4 text-[15px] leading-7 text-slate-800">{detail.participationNote}</p>
+          <p className="mt-4 text-[15px] leading-7 text-slate-800">{syncedWhitelistCount === whitelistEntries.length && whitelistEntries.length > 0 ? 'Semua wallet sudah terdaftar on-chain' : 'Ada wallet yang belum terdaftar di kontrak'}</p>
         </article>
 
         <article className="rounded-[24px] bg-[#11182a] p-6 text-white">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-300">Fase Pemilihan</p>
           <div className="mt-5 flex items-start justify-between gap-4">
             <div>
-              <p className="text-[22px] font-semibold leading-tight">{detail.phaseTitle}</p>
-              <div className="mt-5 flex items-center gap-2 text-[15px] text-slate-300">
-                Selanjutnya: {detail.nextPhase}
-                <ArrowRight className="h-4 w-4" />
-              </div>
+              <p className="text-[22px] font-semibold leading-tight">{phaseInfo.label}</p>
+              {phaseInfo.next !== '-' && (
+                <div className="mt-5 flex items-center gap-2 text-[15px] text-slate-300">
+                  Selanjutnya: {phaseInfo.next}
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+              )}
             </div>
             <Hourglass className="h-12 w-12 text-slate-700" />
           </div>
         </article>
 
         <article className="rounded-[24px] border border-slate-200 bg-white p-6">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Blockchain Block</p>
-          <p className="mt-6 text-[28px] font-semibold tracking-[-0.04em] text-slate-900">{detail.blockNumber}</p>
-          <p className="mt-4 text-[15px] font-medium text-emerald-600">{detail.blockSyncLabel}</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat Terdaftar</p>
+          <p className="mt-6 text-[28px] font-semibold tracking-[-0.04em] text-slate-900">{candidates.length}</p>
+          <p className="mt-4 text-[15px] leading-7 text-slate-800">{proposal?.candidateCount ?? candidates.length} kandidat dari proposal</p>
         </article>
       </StaggerContainer>
 
+      {/* Schedule */}
       {schedule && (schedule.commitStartAt || schedule.revealStartAt || schedule.endedAt) && (
         <ScrollReveal variant="fade-up" delay={100} duration={600}>
           <div className="mt-6 rounded-[24px] border border-slate-200 bg-white p-6">
@@ -247,11 +198,20 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
               <CalendarDays className="h-5 w-5 text-slate-700" />
               <h2 className="text-[18px] font-semibold text-slate-900">Jadwal Pemilihan</h2>
             </div>
-            <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            <div className="mt-5 grid gap-4 sm:grid-cols-4">
+              {schedule.registrationStartAt && (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Persiapan</p>
+                  <p className="mt-2 text-[14px] font-semibold text-slate-900">
+                    {new Date(schedule.registrationStartAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  <p className="mt-1 text-[12px] text-slate-500">Whitelist & registrasi</p>
+                </div>
+              )}
               {schedule.commitStartAt && (
                 <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-600">Mulai Pencoblosan</p>
-                  <p className="mt-2 text-[15px] font-semibold text-blue-900">
+                  <p className="mt-2 text-[14px] font-semibold text-blue-900">
                     {new Date(schedule.commitStartAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </p>
                   <p className="mt-1 text-[12px] text-blue-700">Fase Commit dimulai</p>
@@ -260,7 +220,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
               {schedule.revealStartAt && (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-600">Mulai Konfirmasi</p>
-                  <p className="mt-2 text-[15px] font-semibold text-amber-900">
+                  <p className="mt-2 text-[14px] font-semibold text-amber-900">
                     {new Date(schedule.revealStartAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </p>
                   <p className="mt-1 text-[12px] text-amber-700">Fase Reveal (otomatis)</p>
@@ -269,7 +229,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
               {schedule.endedAt && (
                 <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-600">Selesai Pemilihan</p>
-                  <p className="mt-2 text-[15px] font-semibold text-emerald-900">
+                  <p className="mt-2 text-[14px] font-semibold text-emerald-900">
                     {new Date(schedule.endedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </p>
                   <p className="mt-1 text-[12px] text-emerald-700">Hasil dihitung</p>
@@ -283,101 +243,250 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
       <ScrollReveal variant="fade-up" delay={200} duration={800}>
         <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(360px,0.85fr)]">
         <div className="space-y-6">
+          {/* Candidate Section - Real Data */}
           <SuperadminSectionCard className="bg-white border border-slate-200 p-0">
             <div className="flex flex-col gap-5 border-b border-slate-100 px-6 py-6 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <h2 className="text-[18px] font-semibold text-slate-900">{detail.candidateSectionTitle}</h2>
-                <p className="mt-3 max-w-[540px] text-[15px] leading-7 text-slate-800">{detail.candidateSectionDescription}</p>
+                <div className="flex items-center gap-3">
+                  <Users className="h-5 w-5 text-slate-700" />
+                  <h2 className="text-[18px] font-semibold text-slate-900">Profil Kandidat</h2>
+                </div>
+                <p className="mt-3 max-w-[540px] text-[15px] leading-7 text-slate-800">
+                  Detail lengkap kandidat yang akan ikut dalam pemilihan ini. Data diambil dari database proposal.
+                </p>
               </div>
               <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-[15px] font-medium text-slate-700">
                 <Lock className="h-4 w-4" />
-                {detail.encryptedLabel}
+                Suara Dienkripsi
               </div>
             </div>
 
-            <div className="space-y-4 px-6 py-6">
-              {detail.candidates.length > 0 ? detail.candidates.map((candidate) => (
-                <article key={candidate.id} className="flex flex-col gap-5 rounded-[22px] border border-slate-200 px-5 py-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-[16px] font-semibold text-white">
-                      {candidate.initials}
-                    </div>
-                    <div>
-                      <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">{candidate.ballotNumber}</p>
-                      <p className="mt-2 text-[18px] font-semibold text-slate-900">{candidate.name}</p>
-                      <RichTextRenderer value={candidate.vision} className="mt-2 max-w-[420px] text-[15px] leading-7 text-slate-800" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-6 self-end lg:self-auto">
-                    <div className="text-right">
-                      <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Jumlah Commitment</p>
-                      <p className="mt-2 text-[18px] font-semibold text-slate-900">{candidate.commitmentCount} <span className="text-[14px] font-normal text-slate-500">tx</span></p>
-                    </div>
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-                      <Lock className="h-4 w-4" />
-                    </div>
-                  </div>
-                </article>
-              )) : (
-                <div className="rounded-[22px] border border-dashed border-slate-200 px-5 py-8 text-[15px] text-slate-500">
-                  Belum ada data kandidat yang terhubung untuk tampilan moderasi ini.
+            <div className="px-6 py-6">
+              {candidatesQuery.isLoading ? (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {[0, 1].map((i) => <div key={i} className="h-48 animate-pulse rounded-[22px] bg-slate-100" />)}
+                </div>
+              ) : candidates.length > 0 ? (
+                <div className="grid gap-5 lg:grid-cols-2">
+                  {candidates.map((candidate, index) => (
+                    <article key={candidate.id} className="overflow-hidden rounded-[24px] border border-slate-200 bg-slate-50">
+                      <div className="grid gap-0 md:grid-cols-[140px_minmax(0,1fr)]">
+                        <div className="min-h-[160px] bg-slate-100">
+                          {candidate.avatarPath ? (
+                            <img src={candidate.avatarPath} alt={`Foto ${candidate.fullName}`} className="h-full min-h-[160px] w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full min-h-[160px] items-center justify-center text-slate-400">
+                              <UserRound className="h-10 w-10" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat {index + 1}</p>
+                              <h3 className="mt-1 text-[17px] font-semibold text-slate-900">{candidate.fullName}</h3>
+                            </div>
+                            <span className="shrink-0 rounded-xl bg-white px-2.5 py-1 font-mono text-[11px] text-slate-500">ID {candidate.candidateLocalId}</span>
+                          </div>
+
+                          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                            <div className="rounded-xl bg-white p-2.5">
+                              <p className="text-[10px] uppercase tracking-[0.08em] text-slate-400">NPM/NIM</p>
+                              <p className="mt-0.5 text-[13px] font-semibold text-slate-900">{candidate.studentId || '-'}</p>
+                            </div>
+                            <div className="rounded-xl bg-white p-2.5">
+                              <p className="text-[10px] uppercase tracking-[0.08em] text-slate-400">Fakultas</p>
+                              <p className="mt-0.5 text-[13px] font-semibold text-slate-900">{candidate.faculty || '-'}</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 space-y-2 text-[13px] leading-5 text-slate-700">
+                            <div>
+                              <p className="font-semibold text-slate-900">Bio</p>
+                              <RichTextRenderer value={candidate.bio} emptyFallback="-" className="mt-0.5" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-900">Visi</p>
+                              <RichTextRenderer value={candidate.vision} emptyFallback="-" className="mt-0.5" />
+                            </div>
+                          </div>
+
+                          {candidate.youtubeUrl && (
+                            <a href={candidate.youtubeUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 hover:bg-slate-50">
+                              <Youtube className="h-3.5 w-3.5" />
+                              Video Profil
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-[22px] border border-dashed border-slate-200 px-5 py-8 text-center text-[15px] text-slate-500">
+                  Belum ada data kandidat yang terhubung untuk pemilihan ini.
                 </div>
               )}
             </div>
           </SuperadminSectionCard>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            {detail.supportCards.map((card) => (
-              <SuperadminSectionCard key={card.id} className="border border-slate-200 bg-white">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-700">
-                    {card.icon === 'shield' ? <ShieldCheck className="h-5 w-5" /> : <Activity className="h-5 w-5" />}
-                  </div>
-                  <div>
-                    <h3 className="text-[18px] font-semibold text-slate-900">{card.title}</h3>
-                    <p className="mt-3 text-[15px] leading-7 text-slate-800">{card.description}</p>
-                  </div>
+          {/* Whitelist Section - Real Data */}
+          <SuperadminSectionCard className="bg-white border border-slate-200 p-0">
+            <div className="flex flex-col gap-5 border-b border-slate-100 px-6 py-6 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="h-5 w-5 text-slate-700" />
+                  <h2 className="text-[18px] font-semibold text-slate-900">Daftar Pemilih (Whitelist)</h2>
                 </div>
-              </SuperadminSectionCard>
-            ))}
-          </div>
+                <p className="mt-3 max-w-[540px] text-[15px] leading-7 text-slate-800">
+                  Seluruh wallet yang terdaftar sebagai pemilih. Status sinkron on-chain dipantau terpisah dari database.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1.5 rounded-2xl bg-emerald-50 px-4 py-2 text-[13px] font-medium text-emerald-700">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {validWhitelistCount} valid
+                </span>
+                {whitelistEntries.filter((e) => e.validationStatus === 'invalid').length > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-2xl bg-red-50 px-4 py-2 text-[13px] font-medium text-red-600">
+                    <XCircle className="h-3.5 w-3.5" />
+                    {whitelistEntries.filter((e) => e.validationStatus === 'invalid').length} invalid
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="px-6 py-6">
+              {whitelistQuery.isLoading ? (
+                <div className="h-32 animate-pulse rounded-2xl bg-slate-100" />
+              ) : whitelistEntries.length === 0 ? (
+                <div className="rounded-[22px] border border-dashed border-slate-200 px-5 py-8 text-center text-[15px] text-slate-500">
+                  Belum ada pemilih terdaftar untuk pemilihan ini.
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-2xl border border-slate-200">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-[13px]">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50">
+                          <th className="px-4 py-3 font-semibold text-slate-700">Alamat Wallet</th>
+                          <th className="px-4 py-3 font-semibold text-slate-700">Nama</th>
+                          <th className="px-4 py-3 font-semibold text-slate-700">Sumber</th>
+                          <th className="px-4 py-3 font-semibold text-slate-700">Status Validasi</th>
+                          <th className="px-4 py-3 font-semibold text-slate-700">Status On-Chain</th>
+                          <th className="px-4 py-3 font-semibold text-slate-700">Tanggal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {whitelistEntries.slice(0, 20).map((entry) => {
+                          const isValid = entry.validationStatus === 'valid' || entry.validationStatus === 'synced'
+                          const isSynced = entry.syncStatus === 'synced' || entry.validationStatus === 'synced'
+                          const isInvalid = entry.validationStatus === 'invalid'
+                          return (
+                            <tr key={entry.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                              <td className="px-4 py-2.5 font-mono text-[12px] text-slate-700">{entry.walletAddress}</td>
+                              <td className="px-4 py-2.5 text-slate-700">{entry.voterName || <span className="text-slate-400 italic">-</span>}</td>
+                              <td className="px-4 py-2.5">
+                                <span className={`inline-flex rounded-lg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] ${
+                                  entry.source === 'csv' ? 'bg-blue-50 text-blue-600' : entry.source === 'sync' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {entry.source === 'csv' ? 'CSV' : entry.source === 'sync' ? 'Sinkron' : 'Manual'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] ${
+                                  isValid ? 'bg-emerald-50 text-emerald-600' : isInvalid ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
+                                }`}>
+                                  {isValid ? <CheckCircle2 className="h-2.5 w-2.5" /> : isInvalid ? <XCircle className="h-2.5 w-2.5" /> : <AlertTriangle className="h-2.5 w-2.5" />}
+                                  {isValid ? 'Valid' : isInvalid ? 'Invalid' : 'Pending'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] ${
+                                  isSynced ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+                                }`}>
+                                  {isSynced ? <RefreshCw className="h-2.5 w-2.5" /> : null}
+                                  {isSynced ? 'Tersinkron' : 'Belum On-Chain'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-[12px] text-slate-500">
+                                {new Date(entry.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {whitelistEntries.length > 20 && (
+                    <div className="border-t border-slate-200 bg-slate-50 px-4 py-2.5 text-center text-[12px] text-slate-500">
+                      Menampilkan 20 dari {whitelistEntries.length} pemilih
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </SuperadminSectionCard>
+
+          {/* Description / Ringkasan */}
+          {proposal?.description && (
+            <SuperadminSectionCard className="border border-slate-200 bg-white">
+              <div className="flex items-center gap-3">
+                <Activity className="h-5 w-5 text-slate-700" />
+                <h2 className="text-[18px] font-semibold text-slate-900">Deskripsi Pemilihan</h2>
+              </div>
+              <div className="mt-4 text-[15px] leading-7 text-slate-700">
+                <RichTextRenderer value={proposal.description} emptyFallback="Tidak ada deskripsi." />
+              </div>
+            </SuperadminSectionCard>
+          )}
         </div>
 
+        {/* Sidebar: Activity Feed */}
         <SuperadminSectionCard className="border border-slate-200 bg-white p-0">
           <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
-            <h2 className="text-[18px] font-semibold text-slate-900">Aktivitas Blockchain</h2>
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-[13px] font-medium text-emerald-600">Live Feed</span>
+            <h2 className="text-[18px] font-semibold text-slate-900">Riwayat Aktivitas</h2>
+            {activities.length > 0 && (
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-[13px] font-medium text-emerald-600">{activities.length} aktivitas</span>
+            )}
           </div>
 
           <div className="max-h-[920px] overflow-y-auto px-6 py-6">
-            <div className="space-y-8">
-              {detail.feed.length > 0 ? detail.feed.map((item) => (
-                <article key={item.id} className="relative pl-10">
-                  <span className={`absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border ${getFeedToneClass(item.tone)}`}>+</span>
-                  <h3 className="text-[16px] font-semibold text-slate-900">{item.title}</h3>
-                  <p className="mt-2 text-[15px] leading-7 text-slate-800">{item.description}</p>
-                  <div className="mt-3 inline-flex rounded-full bg-slate-100 px-3 py-1 font-mono text-[12px] text-slate-500">{item.hash}</div>
-                  <p className="mt-3 text-[14px] text-slate-400">{item.time}</p>
-                  <div className="absolute bottom-[-22px] left-[13px] top-8 w-px bg-slate-200 last:hidden" />
+            <div className="space-y-6">
+              {activities.length > 0 ? activities.map((activity) => (
+                <article key={activity.id} className="relative pl-8">
+                  <span className="absolute left-0 top-0 flex h-6 w-6 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-[10px] font-bold text-blue-600">+</span>
+                  <h3 className="text-[14px] font-semibold text-slate-900">{activity.title}</h3>
+                  {activity.message && (
+                    <p className="mt-1 text-[13px] leading-5 text-slate-600">{activity.message}</p>
+                  )}
+                  <p className="mt-1 text-[12px] text-slate-400">{activity.actorLabel}</p>
+                  <p className="mt-1 text-[11px] text-slate-400">{new Date(activity.createdAt).toLocaleString('id-ID')}</p>
+                  <div className="absolute bottom-[-16px] left-[11px] top-6 w-px bg-slate-200 last:hidden" />
                 </article>
               )) : (
-                <div className="rounded-[22px] border border-dashed border-slate-200 px-5 py-8 text-[15px] text-slate-500">
-                  Aktivitas blockchain belum tersedia untuk pemilihan ini.
+                <div className="rounded-[22px] border border-dashed border-slate-200 px-5 py-8 text-center text-[14px] text-slate-500">
+                  <Clock3 className="mx-auto mb-3 h-8 w-8 text-slate-300" />
+                  <p>Belum ada riwayat aktivitas untuk pemilihan ini.</p>
+                  <p className="mt-1 text-[12px] text-slate-400">Aktivitas akan muncul setelah admin melakukan aksi pada proposal.</p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="border-t border-slate-100 px-6 py-5">
-            <button
-              type="button"
-              onClick={() => showToast({ tone: 'info', title: 'Explorer lengkap dibuka', description: 'Feed aktivitas lengkap sedang disiapkan.' })}
-              className="inline-flex w-full items-center justify-center gap-2 text-[15px] font-medium text-slate-900 hover:text-slate-700"
-            >
-              Buka Explorer Lengkap
-              <ExternalLink className="h-4 w-4" />
-            </button>
-          </div>
+          {proposal?.deployedSpaceAddress && (
+            <div className="border-t border-slate-100 px-6 py-5">
+              <a
+                href={`https://sepolia.basescan.org/address/${proposal.deployedSpaceAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-full items-center justify-center gap-2 text-[14px] font-medium text-slate-900 hover:text-slate-700"
+              >
+                Buka di Basescan
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </div>
+          )}
         </SuperadminSectionCard>
         </section>
       </ScrollReveal>

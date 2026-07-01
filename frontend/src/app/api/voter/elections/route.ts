@@ -103,7 +103,13 @@ export async function GET(request: NextRequest) {
     .maybeSingle()
 
   if (profileError) return jsonError('Gagal memuat profil voter.', 500)
-  const walletAddress = profile?.wallet_address?.trim()
+
+  // Accept wallet from profile, query param, or X-Wallet-Address header as fallback
+  // This handles cases where app_profiles.wallet_address is not yet set but the voter
+  // has a wallet stored in localStorage from the "Hubungkan Dompet" flow
+  const walletFromHeader = request.headers.get('x-wallet-address')?.trim()
+  const walletFromQuery = request.nextUrl.searchParams.get('wallet')?.trim()
+  const walletAddress = profile?.wallet_address?.trim() || walletFromQuery || walletFromHeader
   if (!walletAddress) return NextResponse.json({ elections: [] })
 
   const { data: matchedWhitelist, error: whitelistError } = await client

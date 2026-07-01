@@ -301,9 +301,15 @@ export async function listVoterWhitelistedElections(walletAddress: string | stri
     const { data: sessionData } = await client.auth.getSession()
     const accessToken = sessionData.session?.access_token
     if (accessToken) {
-      const response = await fetch('/api/voter/elections', {
+      // Pass wallet as query param fallback for when app_profiles.wallet_address is not yet set
+      const walletParam = (Array.isArray(walletAddress) ? walletAddress[0] : walletAddress) ?? ''
+      const url = walletParam ? `/api/voter/elections?wallet=${encodeURIComponent(walletParam)}` : '/api/voter/elections'
+      const response = await fetch(url, {
         method: 'GET',
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          ...(walletParam ? { 'X-Wallet-Address': walletParam } : {}),
+        },
       })
 
       if (response.ok) {
