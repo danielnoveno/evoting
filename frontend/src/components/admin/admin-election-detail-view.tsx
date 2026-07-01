@@ -21,6 +21,7 @@ import { getElectionResultsFromIndexer, listPonderAuditLogs } from '@/lib/reposi
 import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { PilihDariMasterVoterModal } from '@/components/admin/pilih-dari-master-voter-modal'
+import { useMasterVoterByWallet } from '@/hooks/use-master-voters'
 import type { PublicElectionCandidateResultRecord } from '@/lib/repositories/types'
 import { useAccount, useConnect } from 'wagmi'
 
@@ -122,6 +123,9 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const [manualWhitelistConfirmOpen, setManualWhitelistConfirmOpen] = useState(false)
   const [manualWallet, setManualWallet] = useState('')
   const [manualName, setManualName] = useState('')
+  const [manualNameAutoFilled, setManualNameAutoFilled] = useState(false)
+  const [debouncedWallet, setDebouncedWallet] = useState('')
+  const masterVoterLookup = useMasterVoterByWallet(debouncedWallet)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [uploadConfirmOpen, setUploadConfirmOpen] = useState(false)
   const [uploadFileName, setUploadFileName] = useState('daftar-pemilih.csv')
@@ -151,6 +155,34 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   })
   const whitelistImportSignedUrl = useWhitelistImportSignedUrl()
   const candidatesQuery = useProposalCandidates(election.id)
+
+  // Debounce wallet address lookup for auto-fill name
+  const walletDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (walletDebounceRef.current) clearTimeout(walletDebounceRef.current)
+    const trimmed = manualWallet.trim()
+    if (/^0x[a-fA-F0-9]{40}$/.test(trimmed)) {
+      walletDebounceRef.current = setTimeout(() => setDebouncedWallet(trimmed.toLowerCase()), 500)
+    } else {
+      setDebouncedWallet('')
+    }
+    return () => { if (walletDebounceRef.current) clearTimeout(walletDebounceRef.current) }
+  }, [manualWallet])
+
+  // Auto-fill name when master voter lookup finds a match
+  useEffect(() => {
+    if (masterVoterLookup.data) {
+      // Auto-fill if name is empty or was previously auto-filled (user hasn't manually typed)
+      if (!manualName || manualNameAutoFilled) {
+        setManualName(masterVoterLookup.data.fullName)
+        setManualNameAutoFilled(true)
+      }
+    } else if (!masterVoterLookup.data && manualNameAutoFilled) {
+      // Clear only if it was auto-filled (not manually typed)
+      setManualName('')
+      setManualNameAutoFilled(false)
+    }
+  }, [masterVoterLookup.data]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const lastProcessedSyncHash = useRef<string | null>(null)
   const pendingSyncAddressesRef = useRef<string[]>([])
@@ -891,7 +923,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 <Users className="h-4 w-4" />
                 Pilih dari Master Voter
               </button>
-              <button type="button" onClick={() => setManualWhitelistOpen(true)} disabled={!canManageWhitelist} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" onClick={() => { setManualWhitelistOpen(true); setManualNameAutoFilled(false); setManualWallet(''); setManualName(''); setDebouncedWallet('') }} disabled={!canManageWhitelist} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50">
                 <CirclePlus className="h-4 w-4" />
                 Tambah Manual
               </button>
@@ -1425,8 +1457,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <ModalShell
         open={manualWhitelistOpen}
         title="Tambah Pemilih Manual"
-        description="Masukkan alamat wallet dan nama opsional untuk menambahkan pemilih ke whitelist."
-        onClose={() => setManualWhitelistOpen(false)}
+        description="Masukkan alamat wallet. Jika wallet terdaftar di master data, nama pemilih akan terisi otomatis."
+        onClose={() => { setManualWhitelistOpen(false); setManualNameAutoFilled(false); setDebouncedWallet('') }}
       >
         <div className="space-y-5">
           <div>
@@ -1434,17 +1466,35 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             <input
               type="text"
               value={manualWallet}
-              onChange={(event) => setManualWallet(event.target.value)}
+              onChange={(event) => {
+                setManualWallet(event.target.value)
+                setManualNameAutoFilled(false)
+              }}
               placeholder="0x..."
               className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none placeholder:text-slate-400"
             />
           </div>
           <div>
-            <label className="mb-2 block text-[12px] font-semibold text-slate-800">Nama (Opsional)</label>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-[12px] font-semibold text-slate-800">Nama (Opsional)</label>
+              {masterVoterLookup.isLoading && debouncedWallet && (
+                <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Mencari di master data...
+                </span>
+              )}
+              {manualNameAutoFilled && masterVoterLookup.data && (
+                <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-600">
+                  <Users className="h-3 w-3" /> Otomatis dari master data
+                </span>
+              )}
+            </div>
             <input
               type="text"
               value={manualName}
-              onChange={(event) => setManualName(event.target.value)}
+              onChange={(event) => {
+                setManualName(event.target.value)
+                setManualNameAutoFilled(false)
+              }}
               placeholder="Masukkan nama pemilih"
               className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none placeholder:text-slate-400"
             />

@@ -1481,19 +1481,31 @@ alter table app.proposal_drafts
   add column if not exists faculty text;
 
 --
--- ElectionSpace deployment data (Base Sepolia, 27 Jun 2026)
--- Deployed standalone (bypass Registry) to add commitFor support.
--- Contract: 0x9D95FfD857A11c46FB5AAAE875118B2196416aA7
--- Deploy tx: 0x0045743eda4911920dd1030c2f65de9d05ece7f65909053331fae6dc54a08539
--- Registry: 0x56115201473a636d39886Ffe467CDc1d464C3169
--- Deployer/Relayer: 0xbCe97c5EDF9004F102F0B41C3e2dbDDd77aaB488
+-- ═══════════════════════════════════════════════════════════════════════════
+-- ALAMAT KONTRAK AKTIF (per 01 Jul 2026 - REDEPLOY):
+--   Registry (singleton): 0x56cf4EAFC94410fCddc91B8310f4258074EeA88C
+--     Deploy tx: (auto-deployed via Foundry script)
+--     Deployer: 0xbce97c5edf9004f102f0b41c3e2dbddd77aab488
+--     Superadmin: 0xF41b1a84FF93C6074fD76860EA1351e2A7197004
+--     Basescan: https://sepolia.basescan.org/address/0x56cf4EAFC94410fCddc91B8310f4258074EeA88C
+--
+--   ElectionSpace (standalone):
+--     Space 1 "Pemilihan Ketua HIMAFORKA 2026": 0xa4DA977C4451394627cbffF0275A0c4BC47Fe80f
+--     Basescan: https://sepolia.basescan.org/address/0xa4DA977C4451394627cbffF0275A0c4BC47Fe80f
+--
+--   ⚠️ LEGACY (sudah tidak dipakai):
+--     Old Registry #1: 0x56115201473a636d39886Ffe467CDc1d464C3169
+--     Old Registry #2: 0xd1d48796FB21cB1D66C48930a6905C46fE270277
+--     Old ElectionSpace (standalone): 0x9D95FfD857A11c46FB5AAAE875118B2196416aA7
+--     Old ElectionSpaces (via old registry): 0x73e62Cd7..., 0x2B7B4A75..., 0xd416530a...
+-- ═══════════════════════════════════════════════════════════════════════════
 --
 
 update app.proposal_drafts
 set status = 'deployed',
-    deployed_space_id = 1,
-    deployed_space_address = '0x9D95FfD857A11c46FB5AAAE875118B2196416aA7',
-    deployment_tx_hash = '0x0045743eda4911920dd1030c2f65de9d05ece7f65909053331fae6dc54a08539'
+    deployed_space_id = 33,
+    deployed_space_address = '0x73e62Cd7b7E2B8545F49fD56B97e786051a6753F',
+    deployment_tx_hash = '0x58c61e186eae3a638f4c503c90dda95cad0102654083fb495d7674eb2c340ea5'
 where title = 'Pemilihan Ketua HIMAFORKA 2026'
   and status = 'approved';
 

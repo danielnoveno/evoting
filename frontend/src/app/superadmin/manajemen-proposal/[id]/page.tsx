@@ -283,9 +283,30 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               scheduleMessage = 'Data jadwal proposal belum lengkap/valid, sehingga jadwal on-chain tidak ikut diaktifkan.'
             }
 
+            // Auto-verify contract di Basescan (fire-and-forget)
+            let verifyMessage = ''
+            try {
+              const verifyResponse = await fetch('/api/verify-contract', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contractAddress: deployment.spaceAddress }),
+              })
+              const verifyResult = await verifyResponse.json()
+              if (verifyResult.verified) {
+                verifyMessage = ' Contract sudah terverifikasi di Basescan.'
+              } else if (verifyResult.pending) {
+                verifyMessage = ' Contract sedang diverifikasi di Basescan.'
+              } else {
+                verifyMessage = ''
+              }
+            } catch {
+              // Auto-verify gagal, tidak kritis
+              verifyMessage = ''
+            }
+
           showToast({
             title: 'Proposal Disetujui & Pemilihan Di-deploy',
-            description: `${whitelistSyncMessage} ${scheduleMessage} Alamat Space: ${deployment.spaceAddress}`,
+            description: `${whitelistSyncMessage} ${scheduleMessage} Alamat Space: ${deployment.spaceAddress}${verifyMessage}`,
               tone: scheduleMessage.includes('tidak ikut') ? 'info' : 'success',
             })
           resetWrite()

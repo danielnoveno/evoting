@@ -113,6 +113,25 @@ export async function listMasterVoterProdiOptions(): Promise<string[]> {
   return unique
 }
 
+export async function findMasterVoterByWallet(walletAddress: string): Promise<{ fullName: string; nim: string } | null> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return null
+
+  const normalized = walletAddress.trim().toLowerCase()
+
+  const { data, error } = await client
+    .schema('app')
+    .from('master_voters')
+    .select('full_name, nim, wallet_address')
+    .eq('status', 'active')
+    .ilike('wallet_address', normalized)
+    .maybeSingle()
+
+  if (error || !data) return null
+
+  return { fullName: data.full_name, nim: data.nim }
+}
+
 export async function addMasterVoterToWhitelist(input: {
   proposalDraftId: string
   masterVoterIds: string[]
