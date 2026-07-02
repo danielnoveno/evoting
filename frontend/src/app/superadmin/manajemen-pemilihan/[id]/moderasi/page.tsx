@@ -86,7 +86,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
 
   const phaseInfo = proposal ? resolvePhase(proposal) : { phase: 'registration', label: 'Persiapan', next: 'Commit', color: 'blue' as const }
 
-  const validWhitelistCount = whitelistEntries.filter((e) => e.validationStatus === 'valid' || e.validationStatus === 'synced').length
+  const validWhitelistCount = whitelistEntries.filter((e) => e.validationStatus === 'valid' || e.validationStatus === 'synced' || e.syncStatus === 'synced').length
   const syncedWhitelistCount = whitelistEntries.filter((e) => e.syncStatus === 'synced' || e.validationStatus === 'synced').length
 
   return (
@@ -241,7 +241,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
       )}
 
       <ScrollReveal variant="fade-up" delay={200} duration={800}>
-        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(360px,0.85fr)]">
+        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,400px)]">
         <div className="space-y-6">
           {/* Candidate Section - Real Data */}
           <SuperadminSectionCard className="bg-white border border-slate-200 p-0">
@@ -263,61 +263,57 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
 
             <div className="px-6 py-6">
               {candidatesQuery.isLoading ? (
-                <div className="grid gap-4 lg:grid-cols-2">
-                  {[0, 1].map((i) => <div key={i} className="h-48 animate-pulse rounded-[22px] bg-slate-100" />)}
+                <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+                  {[0, 1].map((i) => <div key={i} className="h-[420px] animate-pulse rounded-2xl bg-slate-100" />)}
                 </div>
               ) : candidates.length > 0 ? (
-                <div className="grid gap-5 lg:grid-cols-2">
+                <div className="grid gap-5 sm:grid-cols-2 2xl:grid-cols-3">
                   {candidates.map((candidate, index) => (
-                    <article key={candidate.id} className="overflow-hidden rounded-[24px] border border-slate-200 bg-slate-50">
-                      <div className="grid gap-0 md:grid-cols-[140px_minmax(0,1fr)]">
-                        <div className="min-h-[160px] bg-slate-100">
-                          {candidate.avatarPath ? (
-                            <img src={candidate.avatarPath} alt={`Foto ${candidate.fullName}`} className="h-full min-h-[160px] w-full object-cover" />
-                          ) : (
-                            <div className="flex h-full min-h-[160px] items-center justify-center text-slate-400">
-                              <UserRound className="h-10 w-10" />
-                            </div>
-                          )}
+                    <article key={candidate.id} className="flex min-h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                      <div className="relative aspect-[4/5] bg-slate-100">
+                        {candidate.avatarPath ? (
+                          <img src={candidate.avatarPath} alt={`Foto ${candidate.fullName}`} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-slate-400">
+                            <UserRound className="h-12 w-12" />
+                          </div>
+                        )}
+                        <span className="absolute left-3 top-3 rounded-lg bg-slate-900 px-2 py-1 font-mono text-[10px] font-semibold text-white">#{String(index + 1).padStart(2, '0')}</span>
+                      </div>
+                      <div className="flex flex-1 flex-col p-4">
+                        <p className="font-mono text-[11px] text-slate-400">ID {candidate.candidateLocalId}</p>
+                        <h3 className="mt-2 text-[18px] font-semibold leading-tight text-slate-900">{candidate.fullName}</h3>
+                        <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
+                          {candidate.studentId ? <span className="rounded-lg bg-slate-50 px-2 py-1 font-mono">{candidate.studentId}</span> : null}
+                          {candidate.faculty ? <span className="rounded-lg bg-slate-50 px-2 py-1">{candidate.faculty}</span> : null}
                         </div>
-                        <div className="p-4">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat {index + 1}</p>
-                              <h3 className="mt-1 text-[17px] font-semibold text-slate-900">{candidate.fullName}</h3>
-                            </div>
-                            <span className="shrink-0 rounded-xl bg-white px-2.5 py-1 font-mono text-[11px] text-slate-500">ID {candidate.candidateLocalId}</span>
-                          </div>
 
-                          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                            <div className="rounded-xl bg-white p-2.5">
-                              <p className="text-[10px] uppercase tracking-[0.08em] text-slate-400">NPM/NIM</p>
-                              <p className="mt-0.5 text-[13px] font-semibold text-slate-900">{candidate.studentId || '-'}</p>
-                            </div>
-                            <div className="rounded-xl bg-white p-2.5">
-                              <p className="text-[10px] uppercase tracking-[0.08em] text-slate-400">Fakultas</p>
-                              <p className="mt-0.5 text-[13px] font-semibold text-slate-900">{candidate.faculty || '-'}</p>
-                            </div>
+                        <div className="mt-4 space-y-3 text-[12px] leading-5 text-slate-700">
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Visi</p>
+                            <RichTextRenderer value={candidate.vision} emptyFallback="Visi belum diisi." className="mt-1 line-clamp-4" />
                           </div>
-
-                          <div className="mt-3 space-y-2 text-[13px] leading-5 text-slate-700">
-                            <div>
-                              <p className="font-semibold text-slate-900">Bio</p>
-                              <RichTextRenderer value={candidate.bio} emptyFallback="-" className="mt-0.5" />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-slate-900">Visi</p>
-                              <RichTextRenderer value={candidate.vision} emptyFallback="-" className="mt-0.5" />
-                            </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Misi</p>
+                            {candidate.mission.length > 0 ? (
+                              <ul className="mt-1 space-y-1">
+                                {candidate.mission.slice(0, 3).map((mission, missionIndex) => (
+                                  <li key={`${candidate.id}-mission-${missionIndex}`} className="flex gap-2">
+                                    <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-slate-500" />
+                                    <RichTextRenderer value={mission} className="line-clamp-2" />
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : <p className="mt-1 text-slate-500">Misi belum diisi.</p>}
                           </div>
-
-                          {candidate.youtubeUrl && (
-                            <a href={candidate.youtubeUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-700 hover:bg-slate-50">
-                              <Youtube className="h-3.5 w-3.5" />
-                              Video Profil
-                            </a>
-                          )}
                         </div>
+
+                        {candidate.youtubeUrl && (
+                          <a href={candidate.youtubeUrl} target="_blank" rel="noreferrer" className="mt-auto inline-flex pt-4 text-[12px] font-semibold text-slate-700 hover:text-slate-900">
+                            <Youtube className="mr-1.5 h-3.5 w-3.5" />
+                            Video profil
+                          </a>
+                        )}
                       </div>
                     </article>
                   ))}
@@ -379,7 +375,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
                       </thead>
                       <tbody>
                         {whitelistEntries.slice(0, 20).map((entry) => {
-                          const isValid = entry.validationStatus === 'valid' || entry.validationStatus === 'synced'
+                          const isValid = entry.validationStatus === 'valid' || entry.validationStatus === 'synced' || entry.syncStatus === 'synced'
                           const isSynced = entry.syncStatus === 'synced' || entry.validationStatus === 'synced'
                           const isInvalid = entry.validationStatus === 'invalid'
                           return (

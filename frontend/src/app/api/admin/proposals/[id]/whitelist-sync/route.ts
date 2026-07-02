@@ -24,7 +24,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
   const { error } = await auth.client
     .from('proposal_whitelist_entries')
-    .update({ sync_status: 'synced', latest_sync_tx_hash: txHash })
+    .update({ validation_status: 'synced', sync_status: 'synced', latest_sync_tx_hash: txHash })
     .eq('proposal_draft_id', id)
     .in('wallet_address', Array.from(new Set(walletAddresses)))
 

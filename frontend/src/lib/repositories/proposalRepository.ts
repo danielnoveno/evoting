@@ -367,6 +367,8 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
         wallet_address: entry.walletAddress.trim(),
         voter_name: entry.voterName?.trim() || null,
         source: 'manual' as const,
+        validation_status: 'valid' as const,
+        sync_status: 'pending' as const,
       }))
       .filter((entry) => /^0x[a-fA-F0-9]{40}$/.test(entry.wallet_address))
 

@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
 
   const { data: profile, error: profileError } = await client
     .from('app_profiles')
-    .select('wallet_address')
+    .select('wallet_address,email')
     .eq('user_id', userData.user.id)
     .maybeSingle()
 
@@ -110,12 +110,21 @@ export async function GET(request: NextRequest) {
   const walletFromHeader = request.headers.get('x-wallet-address')?.trim()
   const walletFromQuery = request.nextUrl.searchParams.get('wallet')?.trim()
   const walletsFromQuery = request.nextUrl.searchParams.get('wallets')?.trim()
+  const profileEmail = profile?.email?.trim().toLowerCase() || userData.user.email?.trim().toLowerCase() || ''
+  const { data: masterVoter } = profileEmail
+    ? await client
+      .from('master_voters')
+      .select('wallet_address')
+      .eq('email', profileEmail)
+      .maybeSingle()
+    : { data: null }
   
   // Collect all wallet candidates: profile wallet + query param(s) + header
   const profileWallet = profile?.wallet_address?.trim()
   const queryWallets = [walletFromQuery, ...(walletsFromQuery ? walletsFromQuery.split(',').map(w => w.trim()).filter(Boolean) : [])]
     .filter((w): w is string => Boolean(w))
-  const allWalletCandidates = Array.from(new Set([profileWallet, ...queryWallets, walletFromHeader].filter((w): w is string => Boolean(w))))
+  const masterVoterWallet = masterVoter?.wallet_address?.trim()
+  const allWalletCandidates = Array.from(new Set([profileWallet, ...queryWallets, walletFromHeader, masterVoterWallet].filter((w): w is string => Boolean(w))))
   
   if (allWalletCandidates.length === 0) return NextResponse.json({ elections: [] })
 

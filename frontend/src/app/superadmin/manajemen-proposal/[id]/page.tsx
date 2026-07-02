@@ -704,7 +704,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                   </thead>
                   <tbody>
                     {proposalWhitelistEntries.map((entry) => {
-                      const isValid = entry.validationStatus === 'valid' || entry.validationStatus === 'synced'
+                      const isValid = entry.validationStatus === 'valid' || entry.validationStatus === 'synced' || entry.syncStatus === 'synced'
                       const isSynced = entry.syncStatus === 'synced' || entry.validationStatus === 'synced'
                       const isInvalid = entry.validationStatus === 'invalid'
                       return (
@@ -827,77 +827,61 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           </div>
 
           {proposalCandidatesQuery.isLoading ? (
-            <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              {[0, 1].map((item) => <div key={item} className="h-56 animate-pulse rounded-[24px] bg-slate-100" />)}
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {[0, 1].map((item) => <div key={item} className="h-[420px] animate-pulse rounded-2xl bg-slate-100" />)}
             </div>
           ) : proposalCandidates.length === 0 ? (
             <div className="mt-6">
               <SuperadminEmptyState title="Kandidat belum tersedia" description="Admin belum menambahkan profil kandidat pada proposal ini." />
             </div>
           ) : (
-            <div className="mt-6 grid gap-5 lg:grid-cols-2">
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {proposalCandidates.map((candidate, index) => (
-                <article key={candidate.id} className="overflow-hidden rounded-[28px] border border-slate-200 bg-slate-50">
-                  <div className="grid gap-0 md:grid-cols-[180px_minmax(0,1fr)]">
-                    <div className="min-h-[220px] bg-slate-100">
-                      {candidate.avatarPath ? (
-                        <img src={candidate.avatarPath} alt={`Foto ${candidate.fullName}`} className="h-full min-h-[220px] w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full min-h-[220px] items-center justify-center text-slate-400">
-                          <UserRound className="h-12 w-12" />
-                        </div>
-                      )}
+                <article key={candidate.id} className="flex min-h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                  <div className="relative aspect-[4/5] bg-slate-100">
+                    {candidate.avatarPath ? (
+                      <img src={candidate.avatarPath} alt={`Foto ${candidate.fullName}`} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-slate-400">
+                        <UserRound className="h-12 w-12" />
+                      </div>
+                    )}
+                    <span className="absolute left-3 top-3 rounded-lg bg-slate-900 px-2 py-1 font-mono text-[10px] font-semibold text-white">#{String(index + 1).padStart(2, '0')}</span>
+                  </div>
+                  <div className="flex flex-1 flex-col p-4">
+                    <p className="font-mono text-[11px] text-slate-400">ID {candidate.candidateLocalId}</p>
+                    <h3 className="mt-2 text-[18px] font-semibold leading-tight text-slate-900">{candidate.fullName}</h3>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
+                      {candidate.studentId ? <span className="rounded-lg bg-slate-50 px-2 py-1 font-mono">{candidate.studentId}</span> : null}
+                      {candidate.faculty ? <span className="rounded-lg bg-slate-50 px-2 py-1">{candidate.faculty}</span> : null}
                     </div>
-                    <div className="p-5">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat {index + 1}</p>
-                          <h3 className="mt-2 text-[20px] font-semibold text-slate-900">{candidate.fullName}</h3>
-                        </div>
-                        <span className="rounded-xl bg-white px-3 py-1.5 font-mono text-[12px] text-slate-600">ID {candidate.candidateLocalId}</span>
-                      </div>
 
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-2xl bg-white p-3">
-                          <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">NPM/NIM</p>
-                          <p className="mt-1 text-[14px] font-semibold text-slate-900">{candidate.studentId || 'Belum diisi'}</p>
-                        </div>
-                        <div className="rounded-2xl bg-white p-3">
-                          <p className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Fakultas/Prodi</p>
-                          <p className="mt-1 text-[14px] font-semibold text-slate-900">{candidate.faculty || 'Belum diisi'}</p>
-                        </div>
+                    <div className="mt-4 space-y-3 text-[12px] leading-5 text-slate-700">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Visi</p>
+                        <RichTextRenderer value={candidate.vision} emptyFallback="Visi kandidat belum diisi." className="mt-1 line-clamp-4" />
                       </div>
-
-                      <div className="mt-4 space-y-4 text-[14px] leading-6 text-slate-700">
-                        <div>
-                          <p className="font-semibold text-slate-900">Bio singkat</p>
-                          <RichTextRenderer value={candidate.bio} emptyFallback="Bio kandidat belum diisi oleh admin." className="mt-1" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-slate-900">Visi</p>
-                          <RichTextRenderer value={candidate.vision} emptyFallback="Visi kandidat belum diisi oleh admin." className="mt-1" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-slate-900">Misi</p>
-                          {candidate.mission.length > 0 ? (
-                            <ol className="mt-2 space-y-2">
-                              {candidate.mission.map((mission, missionIndex) => (
-                                <li key={`${candidate.id}-${missionIndex}`} className="flex gap-2">
-                                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-slate-600">{missionIndex + 1}</span>
-                                  <RichTextRenderer value={mission} />
-                                </li>
-                              ))}
-                            </ol>
-                          ) : <p className="mt-1">Misi kandidat belum diisi oleh admin.</p>}
-                        </div>
-                        {candidate.youtubeUrl && (
-                          <a href={candidate.youtubeUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-900 hover:bg-slate-50">
-                            <Youtube className="h-4 w-4" />
-                            Lihat video profil
-                          </a>
-                        )}
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Misi</p>
+                        {candidate.mission.length > 0 ? (
+                          <ul className="mt-1 space-y-1">
+                            {candidate.mission.slice(0, 3).map((mission, missionIndex) => (
+                              <li key={`${candidate.id}-${missionIndex}`} className="flex gap-2">
+                                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-slate-500" />
+                                <RichTextRenderer value={mission} className="line-clamp-2" />
+                              </li>
+                            ))}
+                          </ul>
+                        ) : <p className="mt-1 text-slate-500">Misi kandidat belum diisi.</p>}
                       </div>
                     </div>
+
+                    {candidate.youtubeUrl && (
+                      <a href={candidate.youtubeUrl} target="_blank" rel="noreferrer" className="mt-auto inline-flex pt-4 text-[12px] font-semibold text-slate-700 hover:text-slate-900">
+                        <Youtube className="mr-1.5 h-3.5 w-3.5" />
+                        Video profil
+                      </a>
+                    )}
                   </div>
                 </article>
               ))}
@@ -907,7 +891,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={200} duration={800}>
-        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_420px]">
+        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,400px)]">
         <div className="space-y-6">
           <section className="rounded-[32px] border border-slate-200 bg-white p-7 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
             <div className="flex items-center gap-3">
