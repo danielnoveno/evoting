@@ -162,10 +162,10 @@ export function ProposalForm({
   const allMasterVoters = masterVotersQuery.data ?? []
   const prodiOptions = prodiOptionsQuery.data ?? []
   const selectedWhitelistWallets = useMemo(() => {
-    const wallets: string[] = []
+    const wallets: { wallet: string; voterName: string }[] = []
     for (const voter of allMasterVoters) {
       if (selectedWhitelistVoterIds.has(voter.id) && voter.walletAddress) {
-        wallets.push(voter.walletAddress.toLowerCase())
+        wallets.push({ wallet: voter.walletAddress.toLowerCase(), voterName: voter.fullName })
       }
     }
     return wallets
@@ -716,12 +716,23 @@ export function ProposalForm({
     }
 
     // Always merge picker selections AND text area entries (not mutually exclusive)
-    const textWallets = formData.whitelistWallets
+    const textWalletLines = formData.whitelistWallets
       .split('\n')
       .map((wallet) => wallet.trim())
       .filter((wallet) => wallet && isAddress(wallet))
       .map((wallet) => wallet.toLowerCase())
-    const allWhitelistWallets = Array.from(new Set([...selectedWhitelistWallets, ...textWallets]))
+    // Build deduplicated wallet set, preferring picker entries which carry voterName
+    const walletToName = new Map<string, string>()
+    for (const entry of selectedWhitelistWallets) {
+      if (!walletToName.has(entry.wallet)) walletToName.set(entry.wallet, entry.voterName)
+    }
+    for (const wallet of textWalletLines) {
+      if (!walletToName.has(wallet)) walletToName.set(wallet, '')
+    }
+    const allWhitelistEntries = Array.from(walletToName.entries()).map(([walletAddress, voterName]) => ({
+      walletAddress,
+      voterName: voterName || undefined,
+    }))
 
     saveProposalDraft.mutate({
       id: proposalId,
@@ -738,9 +749,7 @@ export function ProposalForm({
       endedAt: new Date(formData.endedDate).toISOString(),
       status: submitStatus,
       candidates: candidateEntries,
-      whitelistEntries: allWhitelistWallets.length > 0
-        ? allWhitelistWallets.map((wallet) => ({ walletAddress: wallet }))
-        : undefined,
+      whitelistEntries: allWhitelistEntries.length > 0 ? allWhitelistEntries : undefined,
     }, {
       onSuccess: async (proposal) => {
         clearDraft()
@@ -1388,17 +1397,15 @@ export function ProposalForm({
 
       {/* ── Navigation Buttons (stepper mode) ── */}
       {stepper && (
-        <div className={`flex items-center pt-4 ${currentStep < STEP_LABELS.length - 1 ? 'justify-between' : 'justify-center'}`}>
-          {currentStep < STEP_LABELS.length - 1 && (
-            <button
-              type="button"
-              onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
-              disabled={currentStep === 0}
-              className="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-[14px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Sebelumnya
-            </button>
-          )}
+        <div className="flex items-center justify-between pt-4">
+          <button
+            type="button"
+            onClick={() => setCurrentStep((s) => Math.max(0, s - 1))}
+            disabled={currentStep === 0}
+            className="inline-flex h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-[14px] font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Sebelumnya
+          </button>
           {currentStep < STEP_LABELS.length - 1 ? (
             <button
               type="button"

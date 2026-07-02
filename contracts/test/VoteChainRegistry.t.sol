@@ -79,6 +79,9 @@ contract VoteChainRegistryTest is Test {
         assertEq(space.spaceAdmin(), spaceAdmin);
         assertTrue(space.isWhitelisted(voter1));
         assertTrue(space.isWhitelisted(voter2));
+        assertEq(space.getWhitelistedVoterCount(), 2);
+        assertEq(space.getWhitelistedVoterAt(0), voter1);
+        assertEq(space.getWhitelistedVoterAt(1), voter2);
         assertGt(space.commitStartsAt(), 0);
         assertGt(space.commitEndsAt(), space.commitStartsAt());
         assertEq(space.revealStartsAt(), space.commitEndsAt());

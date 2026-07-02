@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { AlertTriangle } from 'lucide-react'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { ProposalForm, ProposalFormData } from '@/components/admin/proposal-form'
-import { useProposalDraft } from '@/hooks/use-proposal-draft'
+import { useProposalDraft, useProposalActivities } from '@/hooks/use-proposal-draft'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 
@@ -24,6 +25,8 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
   const proposalQuery = useProposalDraft(params.id)
   const candidateQuery = useProposalCandidates(params.id)
   const whitelistQuery = useProposalWhitelistEntries(params.id)
+  const activitiesQuery = useProposalActivities(params.id)
+  const latestRevisionMessage = (activitiesQuery.data ?? []).find((activity) => activity.eventType === 'revision_requested')?.message
   
   if (proposalQuery.isLoading) {
     return (
@@ -100,6 +103,17 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
       {candidateQuery.error || whitelistQuery.error ? (
         <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800" role="status">
           Relasi kandidat atau whitelist live belum lengkap. Pengeditan tetap memakai data yang tersedia.
+        </div>
+      ) : null}
+      {liveProposal?.status === 'revision_requested' && latestRevisionMessage ? (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div>
+              <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-amber-700">Pesan Revisi dari Superadmin</p>
+              <p className="mt-2 text-[14px] leading-7 text-amber-900">{latestRevisionMessage}</p>
+            </div>
+          </div>
         </div>
       ) : null}
       <ProposalForm

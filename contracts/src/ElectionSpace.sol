@@ -39,6 +39,8 @@ contract ElectionSpace {
     mapping(address => bool) public hasRevealed;
     mapping(address => bytes32) public commitmentOf;
     mapping(uint256 => uint256) public voteCount;
+    address[] private whitelistedVoters;
+    mapping(address => uint256) private whitelistIndexPlusOne;
 
     event PhaseChanged(
         uint256 indexed spaceId, Phase indexed previousPhase, Phase indexed newPhase, address actor
@@ -241,11 +243,48 @@ contract ElectionSpace {
         for (uint256 i = 0; i < voters.length; i++) {
             address voter = voters[i];
             if (voter == address(0)) revert InvalidVoter();
-            if (!isWhitelisted[voter]) {
-                isWhitelisted[voter] = true;
+            if (_addWhitelistedVoter(voter)) {
                 emit WhitelistUpdated(spaceId, voter, true, actor);
             }
         }
+    }
+
+    function _addWhitelistedVoter(address voter) internal returns (bool added) {
+        if (isWhitelisted[voter]) return false;
+        isWhitelisted[voter] = true;
+        whitelistedVoters.push(voter);
+        whitelistIndexPlusOne[voter] = whitelistedVoters.length;
+        return true;
+    }
+
+    function _removeWhitelistedVoter(address voter) internal returns (bool removed) {
+        if (!isWhitelisted[voter]) return false;
+
+        uint256 index = whitelistIndexPlusOne[voter] - 1;
+        uint256 lastIndex = whitelistedVoters.length - 1;
+
+        if (index != lastIndex) {
+            address lastVoter = whitelistedVoters[lastIndex];
+            whitelistedVoters[index] = lastVoter;
+            whitelistIndexPlusOne[lastVoter] = index + 1;
+        }
+
+        whitelistedVoters.pop();
+        delete whitelistIndexPlusOne[voter];
+        isWhitelisted[voter] = false;
+        return true;
+    }
+
+    function getWhitelistedVoters() external view returns (address[] memory) {
+        return whitelistedVoters;
+    }
+
+    function getWhitelistedVoterCount() external view returns (uint256) {
+        return whitelistedVoters.length;
+    }
+
+    function getWhitelistedVoterAt(uint256 index) external view returns (address) {
+        return whitelistedVoters[index];
     }
 
     function phase() public view returns (Phase) {
@@ -268,7 +307,7 @@ contract ElectionSpace {
         if (voter == address(0)) revert InvalidVoter();
         if (isWhitelisted[voter]) revert AlreadyRegistered();
 
-        isWhitelisted[voter] = true;
+        _addWhitelistedVoter(voter);
         emit WhitelistUpdated(spaceId, voter, true, msg.sender);
     }
 
@@ -281,8 +320,7 @@ contract ElectionSpace {
         for (uint256 i = 0; i < voters.length; i++) {
             address voter = voters[i];
             if (voter == address(0)) revert InvalidVoter();
-            if (!isWhitelisted[voter]) {
-                isWhitelisted[voter] = true;
+            if (_addWhitelistedVoter(voter)) {
                 emit WhitelistUpdated(spaceId, voter, true, msg.sender);
             }
         }
@@ -294,8 +332,9 @@ contract ElectionSpace {
         onlyActive
         onlyPhase(Phase.Registration)
     {
-        isWhitelisted[voter] = false;
-        emit WhitelistUpdated(spaceId, voter, false, msg.sender);
+        if (_removeWhitelistedVoter(voter)) {
+            emit WhitelistUpdated(spaceId, voter, false, msg.sender);
+        }
     }
 
     function commitVote(bytes32 commitment)

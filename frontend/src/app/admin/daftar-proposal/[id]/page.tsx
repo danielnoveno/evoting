@@ -60,6 +60,13 @@ export default function AdminDetailProposalPage({ params }: { params: { id: stri
     }
   }, [liveProposal?.status, latestRevisionMessage, params.id])
 
+  // Auto-redirect to edit page for revision_requested proposals
+  useEffect(() => {
+    if (liveProposal?.status === 'revision_requested') {
+      router.replace(`/admin/daftar-proposal/${params.id}/edit`)
+    }
+  }, [liveProposal?.status, params.id, router])
+
   const handleDismissRevisionPopup = () => {
     markDismissed(params.id)
     setShowRevisionPopup(false)

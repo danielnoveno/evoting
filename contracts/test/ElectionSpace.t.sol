@@ -27,6 +27,10 @@ contract AdminClient {
         space.registerVoter(voter);
     }
 
+    function unregisterVoter(ElectionSpace space, address voter) external {
+        space.unregisterVoter(voter);
+    }
+
     function transitionToNextPhase(ElectionSpace space) external {
         space.transitionToNextPhase();
     }
@@ -178,6 +182,37 @@ contract VoteChainMVPTest {
         bytes32 commitment = _commitment(space, address(voter1), 1, salt);
         voter1.commit(space, commitment);
         require(space.hasCommitted(address(voter1)), "voter1 should commit without manual sync");
+    }
+
+    function test_whitelisted_voters_are_listed_for_audit() external {
+        (, AdminClient admin, VoterClient voter1, VoterClient voter2,, ElectionSpace space) =
+            _createApprovedElection(2);
+
+        admin.registerVoter(space, address(voter1));
+        admin.registerVoter(space, address(voter2));
+
+        require(space.getWhitelistedVoterCount() == 2, "whitelist count mismatch");
+        require(space.getWhitelistedVoterAt(0) == address(voter1), "voter1 index mismatch");
+        require(space.getWhitelistedVoterAt(1) == address(voter2), "voter2 index mismatch");
+
+        address[] memory voters = space.getWhitelistedVoters();
+        require(voters.length == 2, "whitelist length mismatch");
+        require(voters[0] == address(voter1), "voter1 list mismatch");
+        require(voters[1] == address(voter2), "voter2 list mismatch");
+    }
+
+    function test_unregister_removes_voter_from_audit_list() external {
+        (, AdminClient admin, VoterClient voter1, VoterClient voter2,, ElectionSpace space) =
+            _createApprovedElection(2);
+
+        admin.registerVoter(space, address(voter1));
+        admin.registerVoter(space, address(voter2));
+        admin.unregisterVoter(space, address(voter1));
+
+        require(!space.isWhitelisted(address(voter1)), "voter1 should be removed");
+        require(space.isWhitelisted(address(voter2)), "voter2 should remain");
+        require(space.getWhitelistedVoterCount() == 1, "whitelist count after remove");
+        require(space.getWhitelistedVoterAt(0) == address(voter2), "remaining voter mismatch");
     }
 
     function test_root_super_admin_can_add_and_remove_super_admin() external {

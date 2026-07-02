@@ -109,13 +109,25 @@ export async function GET(request: NextRequest) {
   // has a wallet stored in localStorage from the "Hubungkan Dompet" flow
   const walletFromHeader = request.headers.get('x-wallet-address')?.trim()
   const walletFromQuery = request.nextUrl.searchParams.get('wallet')?.trim()
-  const walletAddress = profile?.wallet_address?.trim() || walletFromQuery || walletFromHeader
-  if (!walletAddress) return NextResponse.json({ elections: [] })
+  const walletsFromQuery = request.nextUrl.searchParams.get('wallets')?.trim()
+  
+  // Collect all wallet candidates: profile wallet + query param(s) + header
+  const profileWallet = profile?.wallet_address?.trim()
+  const queryWallets = [walletFromQuery, ...(walletsFromQuery ? walletsFromQuery.split(',').map(w => w.trim()).filter(Boolean) : [])]
+    .filter((w): w is string => Boolean(w))
+  const allWalletCandidates = Array.from(new Set([profileWallet, ...queryWallets, walletFromHeader].filter((w): w is string => Boolean(w))))
+  
+  if (allWalletCandidates.length === 0) return NextResponse.json({ elections: [] })
+
+  // Query whitelist with all wallet candidates (ilike for case-insensitive match)
+  const whitelistOrFilter = allWalletCandidates
+    .map((wallet) => `wallet_address.ilike.${wallet}`)
+    .join(',')
 
   const { data: matchedWhitelist, error: whitelistError } = await client
     .from('proposal_whitelist_entries')
     .select('*')
-    .ilike('wallet_address', walletAddress)
+    .or(whitelistOrFilter)
 
   if (whitelistError) return jsonError('Gagal memeriksa whitelist voter.', 500)
 
