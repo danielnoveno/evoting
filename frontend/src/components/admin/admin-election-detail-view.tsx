@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, CalendarDays, CirclePlus, Download, FileText, Link2, ListChecks, Loader2, Pencil, RefreshCw, Share2, ShieldCheck, Trash2, Upload, Users, Clock, ChevronRight } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CirclePlus, Download, FileText, Link2, ListChecks, Loader2, Pencil, RefreshCw, Share2, ShieldCheck, Trash2, Upload, Users, Clock, ChevronRight, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -32,10 +32,16 @@ function QuickActionIcon({ icon }: { icon: 'download' | 'share' | 'audit' | 'rep
   return <FileText className="h-5 w-5" />
 }
 
-function CandidateImage({ tone }: { tone: 'dark' | 'neutral' }) {
+function CandidateImage({ alt, src, tone }: { alt: string; src?: string | null; tone: 'dark' | 'neutral' }) {
   return (
-    <div className={`relative h-[280px] w-full overflow-hidden rounded-[28px] ${tone === 'dark' ? 'bg-[radial-gradient(circle_at_top,_#4b5563,_#0f172a_70%)]' : 'bg-[radial-gradient(circle_at_top,_#6b7280,_#111827_72%)]'}`}>
-      <div className="absolute inset-x-8 bottom-0 top-10 rounded-[32px] border border-white/10 bg-white/5" />
+    <div className={`relative flex h-[280px] w-full items-center justify-center overflow-hidden rounded-2xl ${tone === 'dark' ? 'bg-slate-100' : 'bg-slate-100'} sm:h-[300px]`}>
+      {src ? (
+        <img src={src} alt={alt} className="h-full w-full object-contain" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-slate-400">
+          <UserRound className="h-12 w-12" />
+        </div>
+      )}
     </div>
   )
 }
@@ -414,10 +420,11 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       faculty: candidate.faculty ?? candidate.studentId ?? 'Data fakultas belum diisi',
       summary: candidate.vision ?? candidate.bio ?? 'Ringkasan kandidat belum diisi.',
       imageTone: index % 2 === 0 ? 'dark' : 'neutral',
+      avatarPath: candidate.avatarPath ?? null,
       identityNumber: candidate.studentId ?? '-',
       bio: candidate.bio ?? '-',
       vision: candidate.vision ?? '-',
-      mission: '-',
+      mission: candidate.mission.join('\n'),
     })))
   }, [candidatesQuery.data])
 
@@ -656,37 +663,56 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   }
 
   const renderCandidateTab = () => (
-    <section className="mt-8 grid gap-6 2xl:grid-cols-[minmax(0,1.55fr)_420px]">
+    <section className="mt-8 grid gap-6 2xl:grid-cols-[minmax(0,1fr)_340px]">
       <div>
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {candidates.map((candidate) => (
-            <article key={candidate.id} className={`rounded-[30px] border border-slate-200 bg-white p-5 ${canAddCandidate ? 'cursor-pointer transition-all duration-150 hover:-translate-y-px hover:border-slate-300' : ''}`} onClick={canAddCandidate ? () => window.location.assign(`/admin/manajemen-pemilihan/${election.id}/kandidat/${candidate.id}/edit`) : undefined}>
+            <article key={candidate.id} className={`flex min-h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 ${canAddCandidate ? 'cursor-pointer transition-colors hover:border-slate-300' : ''}`} onClick={canAddCandidate ? () => window.location.assign(`/admin/manajemen-pemilihan/${election.id}/kandidat/${candidate.id}/edit`) : undefined}>
               <div className="relative">
-                <div className="absolute left-4 top-4 z-10 rounded-xl bg-black px-3 py-2 text-[14px] font-semibold text-white">
+                <div className="absolute left-3 top-3 z-10 rounded-lg bg-slate-900 px-2 py-1 font-mono text-[10px] font-semibold text-white">
                   {candidate.number}
                 </div>
-                <CandidateImage tone={candidate.imageTone} />
+                <CandidateImage alt={`Foto ${candidate.name}`} src={candidate.avatarPath} tone={candidate.imageTone} />
               </div>
-              <div className="mt-6">
-                <h2 className="text-[18px] font-semibold text-slate-900">{candidate.name}</h2>
-                <p className="mt-1 text-[14px] text-slate-500">{candidate.faculty}</p>
-              </div>
-              <div className="mt-4 rounded-2xl bg-slate-100 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Visi Misi Singkat</p>
-                <RichTextRenderer value={candidate.summary} className="mt-2 text-[13px] leading-6 text-slate-800" />
-              </div>
-                <div className="mt-6 flex items-center justify-end gap-4">
-                  {canAddCandidate ? (
-                    <div className="flex items-center gap-2">
-                       <button type="button" onClick={(event) => { event.stopPropagation(); setCandidateToDelete({ id: candidate.id, name: candidate.name }) }} className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
-                         <Trash2 className="h-4 w-4" />
-                       </button>
-                       <Link href={`/admin/manajemen-pemilihan/${election.id}/kandidat/${candidate.id}/edit`} onClick={(event) => event.stopPropagation()} className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
-                         <Pencil className="h-4 w-4" />
-                       </Link>
-                    </div>
-                  ) : null}
+              <div className="flex min-h-[300px] flex-1 flex-col pt-4">
+                <p className="font-mono text-[11px] text-slate-400">ID {candidate.id}</p>
+                <h2 className="mt-2 text-[18px] font-semibold leading-tight text-slate-900">{candidate.name}</h2>
+                <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
+                  {candidate.identityNumber ? <span className="rounded-lg bg-slate-50 px-2 py-1 font-mono">{candidate.identityNumber}</span> : null}
+                  {candidate.faculty ? <span className="rounded-lg bg-slate-50 px-2 py-1">{candidate.faculty}</span> : null}
                 </div>
+
+                <div className="mt-4 space-y-3 text-[12px] leading-5 text-slate-700">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Visi</p>
+                    <RichTextRenderer value={candidate.vision} emptyFallback="Visi belum diisi." className="mt-1 line-clamp-4" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Misi</p>
+                    {candidate.mission.trim() ? (
+                      <ul className="mt-1 space-y-1">
+                        {candidate.mission.split('\n').map((item) => item.trim()).filter(Boolean).slice(0, 3).map((mission, missionIndex) => (
+                          <li key={`${candidate.id}-mission-${missionIndex}`} className="flex gap-2">
+                            <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-slate-500" />
+                            <RichTextRenderer value={mission} className="line-clamp-2" />
+                          </li>
+                        ))}
+                      </ul>
+                    ) : <p className="mt-1 text-slate-500">Misi belum diisi.</p>}
+                  </div>
+                </div>
+
+                {canAddCandidate ? (
+                  <div className="mt-auto flex items-center justify-end gap-2 pt-4">
+                    <button type="button" onClick={(event) => { event.stopPropagation(); setCandidateToDelete({ id: candidate.id, name: candidate.name }) }} className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    <Link href={`/admin/manajemen-pemilihan/${election.id}/kandidat/${candidate.id}/edit`} onClick={(event) => event.stopPropagation()} className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
+                      <Pencil className="h-4 w-4" />
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
             </article>
           ))}
 
@@ -702,21 +728,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 </p>
               </div>
             </Link>
-          ) : (
-            <div className="rounded-[30px] border border-dashed border-slate-200 bg-slate-50 p-5 opacity-70">
-              <div className="flex h-full min-h-[540px] flex-col items-center justify-center text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                  <CirclePlus className="h-8 w-8" />
-                </div>
-                <h2 className="mt-8 text-[28px] font-semibold text-slate-500">Kandidat Dikunci</h2>
-                <p className="mt-3 max-w-[280px] text-[15px] leading-8 text-slate-400">
-                  {election.status !== 'aktif'
-                    ? 'Pemilihan ini sudah selesai. Kandidat tidak dapat diubah.'
-                    : 'Pencoblosan sudah dimulai di blockchain. Kandidat tidak dapat diubah untuk menjaga konsistensi data on-chain.'}
-                </p>
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
 

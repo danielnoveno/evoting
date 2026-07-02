@@ -30,6 +30,7 @@ export type AdminElectionRecord = {
       faculty: string
       summary: string
       imageTone: 'dark' | 'neutral'
+      avatarPath?: string | null
       identityNumber: string
       bio: string
       vision: string

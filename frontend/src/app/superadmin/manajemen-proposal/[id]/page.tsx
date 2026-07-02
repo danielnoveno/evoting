@@ -838,9 +838,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {proposalCandidates.map((candidate, index) => (
                 <article key={candidate.id} className="flex min-h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                  <div className="relative aspect-[4/5] bg-slate-100">
+                  <div className="relative flex h-[280px] items-center justify-center overflow-hidden bg-slate-100 sm:h-[300px]">
                     {candidate.avatarPath ? (
-                      <img src={candidate.avatarPath} alt={`Foto ${candidate.fullName}`} className="h-full w-full object-cover" />
+                      <img src={candidate.avatarPath} alt={`Foto ${candidate.fullName}`} className="h-full w-full object-contain" />
                     ) : (
                       <div className="flex h-full items-center justify-center text-slate-400">
                         <UserRound className="h-12 w-12" />
@@ -848,7 +848,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                     )}
                     <span className="absolute left-3 top-3 rounded-lg bg-slate-900 px-2 py-1 font-mono text-[10px] font-semibold text-white">#{String(index + 1).padStart(2, '0')}</span>
                   </div>
-                  <div className="flex flex-1 flex-col p-4">
+                  <div className="flex min-h-[300px] flex-1 flex-col p-4">
                     <p className="font-mono text-[11px] text-slate-400">ID {candidate.candidateLocalId}</p>
                     <h3 className="mt-2 text-[18px] font-semibold leading-tight text-slate-900">{candidate.fullName}</h3>
                     <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-500">
@@ -891,7 +891,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
       </ScrollReveal>
 
       <ScrollReveal variant="fade-up" delay={200} duration={800}>
-        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(340px,400px)]">
+        <section className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(300px,340px)]">
         <div className="space-y-6">
           <section className="rounded-[32px] border border-slate-200 bg-white p-7 shadow-[0_16px_60px_rgba(15,23,42,0.08)]">
             <div className="flex items-center gap-3">
