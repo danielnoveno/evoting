@@ -143,28 +143,26 @@ export async function GET(request: NextRequest) {
   
   if (allWalletCandidates.length === 0) return NextResponse.json({ elections: [], _debug: { ...debug, stage: 'no-wallet-candidates' } })
 
-  // Query whitelist with all wallet candidates (ilike for case-insensitive match)
-  const whitelistOrFilter = allWalletCandidates
-    .map((wallet) => `wallet_address.ilike.${wallet}`)
-    .join(',')
+  // ponytail: normalize all wallets to lowercase for reliable .in() matching
+  // Previous .or() + ilike filter returned 0 matches despite wallet existing in DB
+  const normalizedWallets = allWalletCandidates.map((w) => w.toLowerCase().trim()).filter(Boolean)
 
   const { data: matchedWhitelist, error: whitelistError } = await client
     .from('proposal_whitelist_entries')
     .select('*')
-    .or(whitelistOrFilter)
+    .in('wallet_address', normalizedWallets)
 
   if (whitelistError) return jsonError('Gagal memeriksa whitelist voter.', 500)
 
   const proposalIds = Array.from(new Set((matchedWhitelist ?? []).map((entry) => entry.proposal_draft_id)))
 
-  // ponytail: debug logging — remove after voter dashboard issue is resolved
   console.log('[voter-elections] whitelist-match', {
     matchedCount: (matchedWhitelist ?? []).length,
     proposalIds,
     matchedEntries: (matchedWhitelist ?? []).slice(0, 5).map(e => ({ wallet: e.wallet_address, proposalId: e.proposal_draft_id })),
   })
 
-  if (proposalIds.length === 0) return NextResponse.json({ elections: [], _debug: { ...debug, stage: 'no-proposal-ids', matchedCount: (matchedWhitelist ?? []).length, whitelistOrFilter } })
+  if (proposalIds.length === 0) return NextResponse.json({ elections: [], _debug: { ...debug, stage: 'no-proposal-ids', matchedCount: (matchedWhitelist ?? []).length, normalizedWallets } })
 
   const { data: proposals, error: proposalError } = await client
     .from('proposal_drafts')
