@@ -17,7 +17,7 @@ begin
   end if;
 
   if not exists (select 1 from pg_type where typname = 'proposal_status') then
-    create type app.proposal_status as enum ('draft', 'submitted', 'revision_requested', 'approved', 'rejected', 'deployed', 'archived');
+    create type app.proposal_status as enum ('draft', 'submitted', 'revision_requested', 'approved', 'rejected', 'deployed', 'archived', 'suspended');
   end if;
 
   if not exists (select 1 from pg_type where typname = 'whitelist_source') then
