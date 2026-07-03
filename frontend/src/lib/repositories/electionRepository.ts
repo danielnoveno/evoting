@@ -316,7 +316,9 @@ export async function listVoterWhitelistedElections(walletAddress: string | stri
       console.log('[electionRepo] fetching', url)
       const response = await fetch(url, {
         method: 'GET',
+        cache: 'no-store',
         headers: {
+          'Cache-Control': 'no-store',
           Authorization: `Bearer ${accessToken}`,
           ...(walletParam ? { 'X-Wallet-Address': walletParam } : {}),
         },

@@ -6,6 +6,7 @@ import { formatDateTime } from '@/lib/voter-helpers'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 type CandidateRow = Database['app']['Tables']['proposal_candidates']['Row']
@@ -193,11 +194,41 @@ export async function GET(request: NextRequest) {
   if (candidatesError) return jsonError('Gagal memuat kandidat pemilihan.', 500)
   if (allWhitelistError) return jsonError('Gagal memuat jumlah whitelist pemilihan.', 500)
 
+  const [{ count: proposalCount }, { count: whitelistCount }] = await Promise.all([
+    client.from('proposal_drafts').select('id', { count: 'exact', head: true }),
+    client.from('proposal_whitelist_entries').select('id', { count: 'exact', head: true }),
+  ])
+
   return NextResponse.json({
     elections: rows.map((row) => mapElection(
       row,
       candidates ?? [],
       (allWhitelist ?? []).filter((entry) => entry.proposal_draft_id === row.id),
     )),
+    _debug: {
+      ...debug,
+      stage: 'success',
+      normalizedWallets,
+      matchedWhitelist: (matchedWhitelist ?? []).map((entry) => ({
+        proposalId: entry.proposal_draft_id,
+        wallet: entry.wallet_address,
+        validationStatus: entry.validation_status,
+      })),
+      proposals: rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        status: row.status,
+        deployedSpaceAddress: row.deployed_space_address,
+      })),
+      dbCounts: {
+        proposalDrafts: proposalCount ?? null,
+        proposalWhitelistEntries: whitelistCount ?? null,
+      },
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? null,
+    },
+  }, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+    },
   })
 }
