@@ -602,7 +602,7 @@ export function SuperadminMasterVoterPage() {
                 <SelectedCounter
                   compact
                   className="pointer-events-auto w-fit max-w-[calc(100%-32px)] overflow-x-auto border-slate-300 shadow-[0_12px_32px_rgba(15,23,42,0.18)]"
-                  title={`${selectedVoters.length} voter dipilih`}
+                  title={`${selectedVoters.length} Voter dipilih`}
                   hideLeadingIcon
                   hideClearButton
                   onClear={() => setSelectedVoterIds([])}

@@ -598,7 +598,7 @@ function SuperadminAdminManagementContent() {
                 <SelectedCounter
                   compact
                   className="pointer-events-auto w-fit max-w-[calc(100%-32px)] overflow-x-auto border-slate-300 shadow-[0_12px_32px_rgba(15,23,42,0.18)]"
-                  title={`${selectedAdmins.length} admin dipilih`}
+                  title={`${selectedAdmins.length} Admin dipilih`}
                   hideLeadingIcon
                   hideClearButton
                   onClear={() => setSelectedAdminEmails([])}
