@@ -86,11 +86,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
 
   const dbPhase = election?.phase ?? 'registration'
-  const effectivePhase: 'registration' | 'commit' | 'reveal' | 'ended' =
-    currentPhaseNumber === 1 ? 'commit'
-    : currentPhaseNumber === 2 ? 'reveal'
-    : currentPhaseNumber === 3 ? 'ended'
-    : dbPhase
+  // Use DB schedule as the user-facing source of truth. On-chain phase is used
+  // only as an extra safety guard while submitting a commit transaction.
+  const effectivePhase: 'registration' | 'commit' | 'reveal' | 'ended' = dbPhase
   const effectivePhaseNumber = effectivePhase === 'commit' ? 1 : effectivePhase === 'reveal' ? 2 : effectivePhase === 'ended' ? 3 : 0
   const onChainPhaseLabel = currentPhaseNumber === 0
     ? 'Persiapan'
@@ -122,6 +120,8 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     : effectivePhaseNumber !== 1
       ? effectivePhase === 'registration'
         ? 'Pencoblosan belum dimulai. Mulai memilih saat jadwal yang ditentukan.'
+        : effectivePhase === 'reveal'
+          ? 'Masa mencoblos sudah berakhir. Sistem sedang memasuki tahap pengesahan dan penghitungan suara.'
         : effectivePhase === 'ended'
           ? 'Pemilihan ini sudah selesai.'
           : 'Pencoblosan belum dibuka atau sudah selesai.'
@@ -272,6 +272,11 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   ]
 
   const handleSelectClick = (candidateId: string) => {
+    if (voteBlockedReason) {
+      showToast({ title: 'Belum bisa mencoblos', description: voteBlockedReason, tone: 'info' })
+      return
+    }
+
     if (!isWalletReady) {
       showToast({ title: 'ID voting belum siap', description: 'Sedang memuat ID voting Anda. Coba beberapa saat lagi.', tone: 'info' })
       return
@@ -452,7 +457,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             </span>
             <h1 className="mt-3 text-[26px] font-bold tracking-tight text-white md:text-[32px]">
               {voteBlockedReason
-                ? 'Belum Bisa Mencoblos'
+                ? effectivePhase === 'reveal'
+                  ? 'Masa Mencoblos Selesai'
+                  : 'Belum Bisa Mencoblos'
                 : !isWalletReady
                   ? 'Menyiapkan ID Voting'
                   : effectivePhaseNumber === 1
@@ -519,7 +526,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         </div>
       </section>
 
-      {!isWalletReady ? (
+      {!isWalletReady && effectivePhaseNumber === 1 ? (
         <section className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4 text-[13px] leading-7 text-blue-900">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
@@ -616,7 +623,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 <button
                   type="button"
                   onClick={() => handleSelectClick(candidate.id)}
-                  disabled={isWritePending || isConfirming || isServerSigning || isServerSubmitting || hasCommittedOnChain === true}
+                  disabled={Boolean(voteBlockedReason) || !isWalletReady || isWritePending || isConfirming || isServerSigning || isServerSubmitting || hasCommittedOnChain === true}
                   className="mt-4 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#0F172A] px-4 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label={`Pilih kandidat ${candidate.name}`}
                 >

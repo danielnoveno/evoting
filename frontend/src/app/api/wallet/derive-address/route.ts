@@ -13,8 +13,8 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import { deriveWalletAddress, isValidMasterSecret } from '@/lib/wallet-crypto'
+import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -43,21 +43,15 @@ export async function GET(request: NextRequest) {
     const token = authHeader.replace('Bearer ', '')
 
     // 3. Verify user with Supabase
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabase = getSupabaseServiceRoleClient()
 
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabase) {
       console.error('[WALLET] Supabase configuration missing')
       return NextResponse.json(
         { error: 'Sistem autentikasi belum siap.' },
         { status: 500 },
       )
     }
-
-    // Use service role to verify token (bypass RLS)
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
 
     // Verify the token and get user
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
