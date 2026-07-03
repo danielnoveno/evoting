@@ -274,9 +274,17 @@ function mergeLocalElectionState(live: VoterElection, local?: VoterElection): Vo
 
 async function buildLiveStore(): Promise<VoterStore> {
   const local = readStore()
-  const profile = await getCurrentProfile().catch(() => null)
+  const profile = await getCurrentProfile().catch((err) => {
+    console.error('[voter-store] getCurrentProfile failed:', err)
+    return null
+  })
   const activeWallets = Array.from(new Set([profile?.walletAddress, local.profile.wallet].filter((wallet): wallet is string => Boolean(wallet))))
-  const elections = await listVoterWhitelistedElections(activeWallets).catch(() => [])
+  console.log('[voter-store] buildLiveStore', { profileWallet: profile?.walletAddress ?? null, localWallet: local.profile.wallet, activeWallets })
+  const elections = await listVoterWhitelistedElections(activeWallets).catch((err) => {
+    console.error('[voter-store] listVoterWhitelistedElections failed:', err)
+    return []
+  })
+  console.log('[voter-store] elections loaded:', elections.length)
 
   const resultEntries = await Promise.all(elections.map(async (item) => ({
     id: item.id,

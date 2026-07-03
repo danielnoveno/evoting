@@ -21,6 +21,7 @@ function resolvePhase(row: ProposalRow) {
   const revealStart = row.reveal_start_at ? new Date(row.reveal_start_at).getTime() : Number.NaN
   const endedAt = row.ended_at ? new Date(row.ended_at).getTime() : Number.NaN
 
+  if (row.status === 'suspended') return 'suspended'
   if (row.status === 'archived' || (!Number.isNaN(endedAt) && now >= endedAt)) return 'ended'
   if (row.status !== 'deployed') return 'registration'
   if (!Number.isNaN(revealStart) && now >= revealStart) return 'reveal'
@@ -32,6 +33,7 @@ function phaseLabel(phase: string): string {
   if (phase === 'commit') return 'Tahap Memilih'
   if (phase === 'reveal') return 'Tahap Konfirmasi'
   if (phase === 'ended') return 'Selesai'
+  if (phase === 'suspended') return 'Ditangguhkan'
   return 'Persiapan'
 }
 

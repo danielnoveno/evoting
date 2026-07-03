@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Clock3, Eye, FileCheck2, PauseCircle, PlayCircle, Search, ShieldCheck } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
@@ -13,6 +13,7 @@ import {
 } from '@/components/superadmin/superadmin-shell'
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { useSuperadminProposalDrafts } from '@/hooks/use-proposal-draft'
+import { useAuthSession } from '@/hooks/use-auth-session'
 import { SuperadminElectionState, superadminElectionFilters } from '@/lib/superadmin-data'
 import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
 import type { SuperadminElectionRecord } from '@/lib/superadmin-data'
@@ -52,14 +53,15 @@ export default function SuperadminElectionManagementPage() {
   const [sortDirection, setSortDirection] = useState<TableSortDirection>(null)
   const { data: proposalRowsRaw, isLoading, error } = useSuperadminProposalDrafts()
   const { elections: storeElections, setElections } = useSuperadminElectionsStore()
+  const authSession = useAuthSession()
 
   const elections = useMemo(() => {
     if (!proposalRowsRaw) return []
     return proposalRowsRaw
-      .filter(p => p.status === 'approved' || p.status === 'deployed')
+      .filter(p => p.status === 'approved' || p.status === 'deployed' || p.status === 'suspended')
       .map(p => {
         const fromStore = storeElections.find(item => item.id === p.id)
-        const status = (fromStore?.status ?? (p.status === 'deployed' ? 'Aktif' : 'Selesai')) as SuperadminElectionState
+        const status = (fromStore?.status ?? (p.status === 'suspended' ? 'Ditangguhkan' : p.status === 'deployed' ? 'Aktif' : 'Selesai')) as SuperadminElectionState
         
         return {
           id: p.id,
@@ -141,19 +143,52 @@ export default function SuperadminElectionManagementPage() {
     setSortDirection('asc')
   }
 
-  const updateElectionStatus = (id: string, status: SuperadminElectionState, message: string) => {
+  const updateElectionStatus = useCallback(async (id: string, newStatus: SuperadminElectionState, message: string) => {
+    // Optimistic UI update
     setElections((current) => {
       const existing = current.find(item => item.id === id)
       if (existing) {
-        return current.map(item => item.id === id ? { ...item, status, note: status === 'Ditangguhkan' ? 'Halted' : 'Online' } : item)
+        return current.map(item => item.id === id ? { ...item, status: newStatus, note: newStatus === 'Ditangguhkan' ? 'Halted' : 'Online' } : item)
       } else {
         const election = elections.find(e => e.id === id)
         if (!election) return current
-        return [...current, { ...election, status, note: status === 'Ditangguhkan' ? 'Halted' : 'Online' } as unknown as SuperadminElectionRecord]
+        return [...current, { ...election, status: newStatus, note: newStatus === 'Ditangguhkan' ? 'Halted' : 'Online' } as unknown as SuperadminElectionRecord]
       }
     })
-    showToast({ tone: 'success', title: message, description: 'Perubahan berhasil diterapkan pada blockchain.' })
-  }
+
+    // Map SuperadminElectionState to proposal DB status
+    const apiStatus = newStatus === 'Ditangguhkan' ? 'suspended' : 'deployed'
+    const token = authSession.data?.access_token
+    if (!token) {
+      showToast({ tone: 'error', title: 'Sesi berakhir', description: 'Silakan masuk kembali.' })
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/proposals/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: apiStatus, message }),
+      })
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        throw new Error(typeof body.error === 'string' ? body.error : 'Gagal memperbarui status.')
+      }
+      showToast({ tone: 'success', title: message, description: 'Perubahan berhasil diterapkan.' })
+    } catch (err) {
+      // Revert optimistic update
+      setElections((current) => {
+        const election = elections.find(e => e.id === id)
+        if (!election) return current
+        return current.map(item => item.id === id ? { ...item, status: 'Aktif', note: 'Online' } : item)
+      })
+      const desc = err instanceof Error ? err.message : 'Gagal memperbarui status pemilihan.'
+      showToast({ tone: 'error', title: 'Gagal memperbarui', description: desc })
+    }
+  }, [authSession.data?.access_token, elections, setElections, showToast])
 
   const getCardTarget = (id: string, status: SuperadminElectionState) => {
     if (status === 'Aktif') return `/superadmin/manajemen-pemilihan/${id}/moderasi`

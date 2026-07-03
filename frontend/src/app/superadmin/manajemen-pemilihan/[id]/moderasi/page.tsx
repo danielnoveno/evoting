@@ -2,7 +2,7 @@
 
 import { Activity, AlertTriangle, ArrowRight, BadgeCheck, CalendarDays, ExternalLink, Hourglass, Lock, ShieldCheck, Wallet, Loader2, Users, CheckCircle2, XCircle, RefreshCw, UserRound, Youtube, Clock3 } from 'lucide-react'
 import { notFound, useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { SuperadminDetailIntro, SuperadminEmptyState, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
@@ -12,6 +12,7 @@ import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useProposalDraft, useProposalActivities } from '@/hooks/use-proposal-draft'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
+import { useAuthSession } from '@/hooks/use-auth-session'
 
 function getElectionStatusColor(status: SuperadminElectionState) {
   if (status === 'Ditangguhkan') return 'text-red-600'
@@ -45,6 +46,8 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
   const whitelistQuery = useProposalWhitelistEntries(params.id)
   const activitiesQuery = useProposalActivities(params.id)
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
+  const [suspending, setSuspending] = useState(false)
+  const authSession = useAuthSession()
 
   const election = useMemo(() => {
     const fromStore = elections.find((item) => item.id === params.id)
@@ -66,6 +69,39 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
     
     return null
   }, [elections, params.id, proposalQuery.data])
+
+  const handleSuspend = useCallback(async () => {
+    const token = authSession.data?.access_token
+    if (!token) {
+      showToast({ tone: 'error', title: 'Sesi berakhir', description: 'Silakan masuk kembali.' })
+      return
+    }
+    setSuspending(true)
+    try {
+      const response = await fetch(`/api/proposals/${params.id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: 'suspended', message: 'Pemilihan ditangguhkan oleh superadmin.' }),
+      })
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        throw new Error(typeof body.error === 'string' ? body.error : 'Gagal menangguhkan pemilihan.')
+      }
+      setElections((current) => current.map((item) => item.id === params.id ? { ...item, status: 'Ditangguhkan', note: 'Halted' } : item))
+      showToast({ tone: 'success', title: 'Pemilihan ditangguhkan', description: 'Status pemilihan berhasil diperbarui.' })
+      window.setTimeout(() => {
+        router.push('/superadmin/manajemen-pemilihan')
+      }, 500)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Gagal menangguhkan pemilihan.'
+      showToast({ tone: 'error', title: 'Gagal menangguhkan', description: message })
+    } finally {
+      setSuspending(false)
+    }
+  }, [authSession.data?.access_token, params.id, setElections, showToast, router])
 
   if (proposalQuery.isLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>
   if (!election) notFound()
@@ -493,11 +529,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
         onCancel={() => setSuspendDialogOpen(false)}
         onConfirm={() => {
           setSuspendDialogOpen(false)
-          setElections((current) => current.map((item) => item.id === election.id ? { ...item, status: 'Ditangguhkan', note: 'Halted' } : item))
-          showToast({ tone: 'success', title: 'Pemilihan ditangguhkan', description: 'Status pemilihan berhasil diperbarui.' })
-          window.setTimeout(() => {
-            router.push('/superadmin/manajemen-pemilihan')
-          }, 500)
+          handleSuspend()
         }}
       />
     </SuperadminShell>

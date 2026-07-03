@@ -201,7 +201,7 @@ export type Database = {
           rules_text: string | null
           candidate_count: number
           faculty: string | null
-          status: 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived'
+          status: 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived' | 'suspended'
           metadata_version: number
           onchain_proposal_id: number | null
           proposal_tx_hash: string | null
@@ -227,7 +227,7 @@ export type Database = {
           rules_text?: string | null
           candidate_count?: number
           faculty?: string | null
-          status?: 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived'
+          status?: 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived' | 'suspended'
           metadata_version?: number
           onchain_proposal_id?: number | null
           proposal_tx_hash?: string | null
@@ -253,7 +253,7 @@ export type Database = {
           rules_text?: string | null
           candidate_count?: number
           faculty?: string | null
-          status?: 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived'
+          status?: 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived' | 'suspended'
           metadata_version?: number
           onchain_proposal_id?: number | null
           proposal_tx_hash?: string | null

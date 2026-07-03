@@ -69,7 +69,7 @@ export interface AdminRegistryInput {
   walletAddress?: string | null
 }
 
-export type ProposalDraftStatus = 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived'
+export type ProposalDraftStatus = 'draft' | 'submitted' | 'revision_requested' | 'approved' | 'rejected' | 'deployed' | 'archived' | 'suspended'
 export type ProposalListStatus = 'DRAF' | 'MENUNGGU REVIEW' | 'PERLU REVISI' | 'DISETUJUI' | 'DITOLAK' | 'DIBATALKAN'
 
 export interface ProposalActivityRecord {

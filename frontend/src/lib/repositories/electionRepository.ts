@@ -300,9 +300,10 @@ export async function listVoterWhitelistedElections(walletAddress: string | stri
   if (typeof window !== 'undefined') {
     const { data: sessionData } = await client.auth.getSession()
     const accessToken = sessionData.session?.access_token
+    console.log('[electionRepo] browser path', { hasToken: !!accessToken, walletAddress })
     if (accessToken) {
       // Pass ALL wallet addresses as query params so the API can match them
-      // even when app_profiles.wallet_address is null
+      // even when app_profiles.wallet_address is not yet set
       const wallets = (Array.isArray(walletAddress) ? walletAddress : [walletAddress])
         .map((w) => w.trim())
         .filter(Boolean)
@@ -312,6 +313,7 @@ export async function listVoterWhitelistedElections(walletAddress: string | stri
       if (walletParam) params.set('wallet', walletParam)
       if (wallets.length > 1) params.set('wallets', allWalletsParam)
       const url = params.toString() ? `/api/voter/elections?${params.toString()}` : '/api/voter/elections'
+      console.log('[electionRepo] fetching', url)
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -320,12 +322,20 @@ export async function listVoterWhitelistedElections(walletAddress: string | stri
         },
       })
 
+      console.log('[electionRepo] API response', { status: response.status, ok: response.ok })
       if (response.ok) {
         const payload: unknown = await response.json()
         if (isRecord(payload) && Array.isArray(payload.elections)) {
+          console.log('[electionRepo] API elections count:', payload.elections.length)
           return payload.elections as PublicElectionRecord[]
         }
+        console.warn('[electionRepo] API response format unexpected:', payload)
+      } else {
+        const errorBody = await response.text().catch(() => '')
+        console.error('[electionRepo] API error', { status: response.status, body: errorBody })
       }
+    } else {
+      console.warn('[electionRepo] no access token — falling through to Supabase direct')
     }
   }
 

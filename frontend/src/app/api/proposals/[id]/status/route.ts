@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 type ProposalStatus = Database['app']['Tables']['proposal_drafts']['Row']['status']
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 
-const VALID_STATUSES: ProposalStatus[] = ['draft', 'submitted', 'revision_requested', 'approved', 'rejected', 'deployed', 'archived']
+const VALID_STATUSES: ProposalStatus[] = ['draft', 'submitted', 'revision_requested', 'approved', 'rejected', 'deployed', 'archived', 'suspended']
 
 function mapProposalRow(row: ProposalRow) {
   return {
@@ -48,6 +48,7 @@ function activityTitleForStatus(status: ProposalStatus) {
     case 'rejected': return 'Proposal ditolak'
     case 'deployed': return 'Pemilihan berhasil di-deploy'
     case 'archived': return 'Pengajuan proposal dibatalkan'
+    case 'suspended': return 'Pemilihan ditangguhkan'
     default: return 'Proposal diperbarui'
   }
 }
@@ -61,6 +62,7 @@ function activityDescriptionForStatus(status: ProposalStatus, message?: string |
     case 'rejected': return 'Proposal ditolak oleh superadmin.'
     case 'deployed': return 'Proposal sudah menjadi ruang pemilihan di blockchain.'
     case 'archived': return 'Admin organisasi membatalkan pengajuan proposal.'
+    case 'suspended': return 'Superadmin menangguhkan pemilihan karena aktivitas mencurigakan atau alasan keamanan.'
     default: return 'Proposal diperbarui.'
   }
 }
