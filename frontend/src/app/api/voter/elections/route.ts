@@ -126,6 +126,18 @@ export async function GET(request: NextRequest) {
   const masterVoterWallet = masterVoter?.wallet_address?.trim()
   const allWalletCandidates = Array.from(new Set([profileWallet, ...queryWallets, walletFromHeader, masterVoterWallet].filter((w): w is string => Boolean(w))))
   
+  // ponytail: debug logging — remove after voter dashboard issue is resolved
+  console.log('[voter-elections] wallet-resolution', {
+    userId: userData.user.id,
+    profileEmail,
+    profileWallet: profileWallet ?? null,
+    masterVoterWallet: masterVoterWallet ?? null,
+    walletFromHeader: walletFromHeader ?? null,
+    walletFromQuery: walletFromQuery ?? null,
+    walletsFromQuery: walletsFromQuery ?? null,
+    allWalletCandidates,
+  })
+  
   if (allWalletCandidates.length === 0) return NextResponse.json({ elections: [] })
 
   // Query whitelist with all wallet candidates (ilike for case-insensitive match)
@@ -141,6 +153,14 @@ export async function GET(request: NextRequest) {
   if (whitelistError) return jsonError('Gagal memeriksa whitelist voter.', 500)
 
   const proposalIds = Array.from(new Set((matchedWhitelist ?? []).map((entry) => entry.proposal_draft_id)))
+
+  // ponytail: debug logging — remove after voter dashboard issue is resolved
+  console.log('[voter-elections] whitelist-match', {
+    matchedCount: (matchedWhitelist ?? []).length,
+    proposalIds,
+    matchedEntries: (matchedWhitelist ?? []).slice(0, 5).map(e => ({ wallet: e.wallet_address, proposalId: e.proposal_draft_id })),
+  })
+
   if (proposalIds.length === 0) return NextResponse.json({ elections: [] })
 
   const { data: proposals, error: proposalError } = await client
@@ -153,6 +173,14 @@ export async function GET(request: NextRequest) {
   if (proposalError) return jsonError('Gagal memuat pemilihan voter.', 500)
 
   const rows = proposals ?? []
+
+  // ponytail: debug logging — remove after voter dashboard issue is resolved
+  console.log('[voter-elections] proposals', {
+    foundProposals: rows.length,
+    totalProposalIds: proposalIds.length,
+    statuses: rows.map(r => ({ id: r.id.slice(0, 8), status: r.status })),
+  })
+
   if (rows.length === 0) return NextResponse.json({ elections: [] })
 
   const ids = rows.map((row) => row.id)

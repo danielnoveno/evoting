@@ -597,19 +597,16 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                   <div className="mt-4 space-y-3.5">
                     <div>
                       <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Visi</h4>
-                      <RichTextRenderer value={candidate.vision} className="mt-1 text-[12.5px] leading-relaxed text-slate-700 line-clamp-3" />
+                      <RichTextRenderer value={candidate.vision} className="mt-1 text-[12.5px] leading-relaxed text-slate-700" />
                     </div>
 
                     <div>
                       <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Misi</h4>
-                      <ul className="mt-1.5 space-y-1">
+                      <div className="mt-1.5">
                         {candidate.mission.map((item, mIndex) => (
-                          <li key={mIndex} className="text-[12px] leading-relaxed text-slate-600 flex items-start gap-1.5">
-                            <span className="text-slate-400 font-bold select-none shrink-0">•</span>
-                            <RichTextRenderer value={item} className="line-clamp-2" />
-                          </li>
+                          <RichTextRenderer key={mIndex} value={item} className="text-[12px] leading-relaxed text-slate-600 line-clamp-2" />
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -652,7 +652,17 @@ function ConnectWalletContent() {
                       </div>
                     )}
 
-                    {((isConnected && !authSession) || (isAdminActivationFlow && !authSession)) && (
+                    {/* ponytail: tampilkan loading saat auth session masih dimuat, cegah SSO flash setelah wallet connect */}
+                    {isConnected && authSessionQuery.isLoading && (
+                      <div className="mt-8 w-full">
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <Loader2 className="h-8 w-8 animate-spin text-slate-900" />
+                          <p className="mt-4 text-[13px] font-medium text-slate-600">Memeriksa sesi akun kampus...</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {((isConnected && !authSession && !authSessionQuery.isLoading) || (isAdminActivationFlow && !authSession && !authSessionQuery.isLoading)) && (
                       <div className="mt-8 w-full">
                         <h2 className="text-[20px] font-semibold text-slate-900">{isAdminActivationFlow ? 'Tahap 1 — Masuk dengan Akun Kampus' : activationMode ? 'Tahap 2 — Masuk dengan Akun Kampus' : 'Masuk dengan Akun Kampus'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
@@ -838,7 +848,7 @@ function ConnectWalletContent() {
                       </button>
                     )}
 
-                    {((isConnected && !authSession) || (isAdminActivationFlow && !authSession)) && (
+                    {((isConnected && !authSession && !authSessionQuery.isLoading) || (isAdminActivationFlow && !authSession && !authSessionQuery.isLoading)) && (
                       <p className="text-right text-[12px] text-slate-400">Pilih salah satu metode masuk di atas.</p>
                     )}
 

@@ -859,19 +859,16 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                     <div className="mt-4 space-y-3 text-[12px] leading-5 text-slate-700">
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Visi</p>
-                        <RichTextRenderer value={candidate.vision} emptyFallback="Visi kandidat belum diisi." className="mt-1 line-clamp-4" />
+                        <RichTextRenderer value={candidate.vision} emptyFallback="Visi kandidat belum diisi." className="mt-1" />
                       </div>
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Misi</p>
                         {candidate.mission.length > 0 ? (
-                          <ul className="mt-1 space-y-1">
+                          <div className="mt-1">
                             {candidate.mission.slice(0, 3).map((mission, missionIndex) => (
-                              <li key={`${candidate.id}-${missionIndex}`} className="flex gap-2">
-                                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-slate-500" />
-                                <RichTextRenderer value={mission} className="line-clamp-2" />
-                              </li>
+                              <RichTextRenderer key={`${candidate.id}-${missionIndex}`} value={mission} className="line-clamp-2" />
                             ))}
-                          </ul>
+                          </div>
                         ) : <p className="mt-1 text-slate-500">Misi kandidat belum diisi.</p>}
                       </div>
                     </div>
