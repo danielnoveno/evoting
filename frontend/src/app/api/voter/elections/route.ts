@@ -129,18 +129,19 @@ export async function GET(request: NextRequest) {
   const allWalletCandidates = Array.from(new Set([profileWallet, ...queryWallets, walletFromHeader, masterVoterWallet].filter((w): w is string => Boolean(w))))
   
   // ponytail: debug logging — remove after voter dashboard issue is resolved
-  console.log('[voter-elections] wallet-resolution', {
+  // ponytail: debug — return in response so we can see it in browser
+  const debug = {
     userId: userData.user.id,
     profileEmail,
     profileWallet: profileWallet ?? null,
     masterVoterWallet: masterVoterWallet ?? null,
     walletFromHeader: walletFromHeader ?? null,
     walletFromQuery: walletFromQuery ?? null,
-    walletsFromQuery: walletsFromQuery ?? null,
     allWalletCandidates,
-  })
+  }
+  console.log('[voter-elections] wallet-resolution', debug)
   
-  if (allWalletCandidates.length === 0) return NextResponse.json({ elections: [] })
+  if (allWalletCandidates.length === 0) return NextResponse.json({ elections: [], _debug: { ...debug, stage: 'no-wallet-candidates' } })
 
   // Query whitelist with all wallet candidates (ilike for case-insensitive match)
   const whitelistOrFilter = allWalletCandidates
@@ -163,7 +164,7 @@ export async function GET(request: NextRequest) {
     matchedEntries: (matchedWhitelist ?? []).slice(0, 5).map(e => ({ wallet: e.wallet_address, proposalId: e.proposal_draft_id })),
   })
 
-  if (proposalIds.length === 0) return NextResponse.json({ elections: [] })
+  if (proposalIds.length === 0) return NextResponse.json({ elections: [], _debug: { ...debug, stage: 'no-proposal-ids', matchedCount: (matchedWhitelist ?? []).length, whitelistOrFilter } })
 
   const { data: proposals, error: proposalError } = await client
     .from('proposal_drafts')
@@ -183,7 +184,7 @@ export async function GET(request: NextRequest) {
     statuses: rows.map(r => ({ id: r.id.slice(0, 8), status: r.status })),
   })
 
-  if (rows.length === 0) return NextResponse.json({ elections: [] })
+  if (rows.length === 0) return NextResponse.json({ elections: [], _debug: { ...debug, stage: 'no-proposals', matchedCount: (matchedWhitelist ?? []).length, proposalIds, statuses: (proposals ?? []).map(r => r.status) } })
 
   const ids = rows.map((row) => row.id)
   const [{ data: candidates, error: candidatesError }, { data: allWhitelist, error: allWhitelistError }] = await Promise.all([

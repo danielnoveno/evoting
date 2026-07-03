@@ -327,6 +327,7 @@ export async function listVoterWhitelistedElections(walletAddress: string | stri
         const payload: unknown = await response.json()
         if (isRecord(payload) && Array.isArray(payload.elections)) {
           console.log('[electionRepo] API elections count:', payload.elections.length)
+          if (payload._debug) console.log('[electionRepo] API _debug:', JSON.stringify(payload._debug))
           return payload.elections as PublicElectionRecord[]
         }
         console.warn('[electionRepo] API response format unexpected:', payload)
