@@ -1,4 +1,6 @@
-import { BASE_SEPOLIA_CHAIN_ID, BASE_SEPOLIA_EXPLORER } from '../../../../shared/constants/network'
+// ponytail: inline constants dari shared/constants/network agar build Vercel tidak gagal (shared/ di luar konteks build)
+const BASE_SEPOLIA_CHAIN_ID = 84532
+const BASE_SEPOLIA_EXPLORER = 'https://sepolia.basescan.org'
 
 export function isSupabaseConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
