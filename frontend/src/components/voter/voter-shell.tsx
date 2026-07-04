@@ -17,6 +17,7 @@ import { useNotificationBadge } from '@/hooks/use-notification-badge'
 import { OnboardingTour } from './onboarding-tour'
 import { useLanguage } from '@/lib/contexts/language-context'
 import { useWelcomeToast } from '@/hooks/use-welcome-toast'
+import { LocalClock } from '@/components/ui/local-clock'
 
 export function VoterShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -122,6 +123,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
                     <span className="text-[12px]">⌘</span>K
                   </kbd>
                 </button>
+                <LocalClock className="rounded-md py-2" />
                 <div className="hidden items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 sm:flex md:text-[13px]">
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
                   <span className="truncate max-w-[120px] md:max-w-none">

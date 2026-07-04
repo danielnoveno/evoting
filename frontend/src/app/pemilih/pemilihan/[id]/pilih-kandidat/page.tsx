@@ -15,6 +15,7 @@ import { useServerWallet } from '@/hooks/use-server-wallet'
 import { useToast } from '@/components/ui/toast-provider'
 import { queueAutoRevealIntent } from '@/lib/auto-reveal-intents'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
+import { resolveSchedulePhase } from '@/lib/election-phase'
 
 async function fetchLatestContractAddress(electionId: string): Promise<string | null> {
   try {
@@ -87,7 +88,16 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     : null
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
 
-  const dbPhase = election?.phase ?? 'registration'
+  const hasSchedule = Boolean(election?.commitStartAt || election?.revealStartAt || election?.endedAt)
+  const liveSchedulePhase = election && hasSchedule
+    ? resolveSchedulePhase({
+        status: 'deployed',
+        commitStartAt: election.commitStartAt,
+        revealStartAt: election.revealStartAt,
+        endedAt: election.endedAt,
+      })
+    : null
+  const dbPhase = liveSchedulePhase?.phase ?? election?.phase ?? 'registration'
   // Use DB schedule as the user-facing source of truth. On-chain phase is used
   // only as an extra safety guard while submitting a commit transaction.
   const effectivePhase: 'registration' | 'commit' | 'reveal' | 'ended' = dbPhase
@@ -130,6 +140,21 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     : onChainCommitBlockedReason
       ? onChainCommitBlockedReason
       : ''
+
+  const countdownTargetIso = effectivePhase === 'registration'
+    ? election?.commitStartAt ?? election?.deadlineIso ?? null
+    : effectivePhase === 'commit'
+      ? election?.revealStartAt ?? election?.deadlineIso ?? null
+      : effectivePhase === 'reveal'
+        ? election?.endedAt ?? election?.deadlineIso ?? null
+        : null
+  const countdownLabel = effectivePhase === 'registration'
+    ? 'PENCOBLOSAN DIBUKA DALAM'
+    : effectivePhase === 'commit'
+      ? 'SISA WAKTU MENCOBLOS'
+      : effectivePhase === 'reveal'
+        ? 'PENGHITUNGAN BERAKHIR DALAM'
+        : 'WAKTU TERSISA'
 
   useEffect(() => {
     if (!isConfirmed || !hash || !receipt || !pendingCommit) return
@@ -223,9 +248,12 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   }, [isServerConfirmed, serverCommitResult, pendingCommit, actions, params.id, showToast])
 
   useEffect(() => {
-    if (!election?.deadlineIso) return
+    if (!countdownTargetIso) {
+      setTimeLeft({ hours: 0, minutes: 0, seconds: 0 })
+      return
+    }
 
-    const target = new Date(election.deadlineIso).getTime()
+    const target = new Date(countdownTargetIso).getTime()
     const updateTimer = () => {
       const now = new Date().getTime()
       const diff = target - now
@@ -242,7 +270,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
-  }, [election?.deadlineIso])
+  }, [countdownTargetIso])
 
   if (loading || !store) {
     return (
@@ -493,7 +521,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
           </div>
 
           <div className="flex flex-col items-center sm:items-end justify-center shrink-0 border-t border-slate-800 md:border-t-0 md:pl-6 pt-4 md:pt-0">
-            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">WAKTU TERSISA</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">{countdownLabel}</span>
             <div className="mt-2.5 flex items-center gap-1.5 font-mono">
               <div className="flex flex-col items-center">
                 <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-950 border border-slate-800 text-[18px] font-bold text-white shadow-inner">

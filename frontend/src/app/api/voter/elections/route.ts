@@ -3,6 +3,7 @@ import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/supabase/database.types'
 import { asStringArray } from '@/lib/repositories/helpers'
 import { formatDateTime } from '@/lib/voter-helpers'
+import { resolveSchedulePhase } from '@/lib/election-phase'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -14,20 +15,6 @@ type WhitelistRow = Database['app']['Tables']['proposal_whitelist_entries']['Row
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status })
-}
-
-function resolvePhase(row: ProposalRow) {
-  const now = Date.now()
-  const commitStart = row.commit_start_at ? new Date(row.commit_start_at).getTime() : Number.NaN
-  const revealStart = row.reveal_start_at ? new Date(row.reveal_start_at).getTime() : Number.NaN
-  const endedAt = row.ended_at ? new Date(row.ended_at).getTime() : Number.NaN
-
-  if (row.status === 'suspended') return 'suspended'
-  if (row.status === 'archived' || (!Number.isNaN(endedAt) && now >= endedAt)) return 'ended'
-  if (row.status !== 'deployed') return 'registration'
-  if (!Number.isNaN(revealStart) && now >= revealStart) return 'reveal'
-  if (!Number.isNaN(commitStart) && now >= commitStart) return 'commit'
-  return 'registration'
 }
 
 function phaseLabel(phase: string): string {
@@ -62,7 +49,14 @@ function mapCandidate(row: CandidateRow) {
 }
 
 function mapElection(row: ProposalRow, candidates: CandidateRow[], whitelistRows: WhitelistRow[]) {
-  const phase = resolvePhase(row)
+  const phase = row.status === 'suspended'
+    ? 'suspended'
+    : resolveSchedulePhase({
+        status: row.status,
+        commitStartAt: row.commit_start_at,
+        revealStartAt: row.reveal_start_at,
+        endedAt: row.ended_at,
+      }).phase
   return {
     id: row.id,
     title: row.title,

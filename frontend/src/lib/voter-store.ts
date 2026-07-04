@@ -60,6 +60,9 @@ export interface VoterElection {
   bannerPath?: string | null
   phase: VoterElectionPhase
   deadlineIso: string
+  commitStartAt: string | null
+  revealStartAt: string | null
+  endedAt: string | null
   totalParticipants: number
   committedCount: number
   revealedCount: number
@@ -173,6 +176,9 @@ function mapElectionFromSupabase(election: PublicElectionRecord): VoterElection 
     bannerPath: election.bannerImagePath,
     phase: election.phase,
     deadlineIso: deadlineFor(election) ?? new Date().toISOString(),
+    commitStartAt: election.commitStartAt,
+    revealStartAt: election.revealStartAt,
+    endedAt: election.endedAt,
     totalParticipants: election.participantCount,
     committedCount: 0,
     revealedCount: 0,

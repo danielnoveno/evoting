@@ -13,6 +13,7 @@ import { useCurrentProfile } from '@/hooks/use-profile'
 import { useLogoutSession } from '@/hooks/use-auth-session'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
 import { useWelcomeToast } from '@/hooks/use-welcome-toast'
+import { LocalClock } from '@/components/ui/local-clock'
 
 export type { SidebarNavItem as ConsoleNavItem }
 
@@ -142,6 +143,7 @@ export function ConsoleShell({
                     <span className="text-[12px]">⌘</span>K
                   </kbd>
                 </button>
+                <LocalClock />
                 <Link
                   href={notifHref}
                   className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-800 hover:bg-slate-100"

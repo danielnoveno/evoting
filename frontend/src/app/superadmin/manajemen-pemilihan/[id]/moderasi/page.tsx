@@ -2,7 +2,7 @@
 
 import { Activity, AlertTriangle, ArrowRight, BadgeCheck, CalendarDays, ExternalLink, Hourglass, Lock, ShieldCheck, Wallet, Loader2, Users, CheckCircle2, XCircle, RefreshCw, UserRound, Youtube, Clock3 } from 'lucide-react'
 import { notFound, useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SuperadminDetailIntro, SuperadminEmptyState, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
@@ -13,6 +13,7 @@ import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useProposalDraft, useProposalActivities } from '@/hooks/use-proposal-draft'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { useAuthSession } from '@/hooks/use-auth-session'
+import { resolveSchedulePhase } from '@/lib/election-phase'
 
 function getElectionStatusColor(status: SuperadminElectionState) {
   if (status === 'Ditangguhkan') return 'text-red-600'
@@ -22,19 +23,6 @@ function getElectionStatusColor(status: SuperadminElectionState) {
 
 function getInitials(name: string) {
   return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-}
-
-function resolvePhase(data: { status?: string; commitStartAt?: string | null; revealStartAt?: string | null; endedAt?: string | null }) {
-  const now = Date.now()
-  const commitStart = data.commitStartAt ? new Date(data.commitStartAt).getTime() : Number.NaN
-  const revealStart = data.revealStartAt ? new Date(data.revealStartAt).getTime() : Number.NaN
-  const endedAt = data.endedAt ? new Date(data.endedAt).getTime() : Number.NaN
-
-  if (data.status === 'archived' || (!Number.isNaN(endedAt) && now >= endedAt)) return { phase: 'ended', label: 'Selesai', next: '-', color: 'emerald' as const }
-  if (data.status !== 'deployed') return { phase: 'registration', label: 'Persiapan', next: 'Commit', color: 'blue' as const }
-  if (!Number.isNaN(revealStart) && now >= revealStart) return { phase: 'reveal', label: 'Konfirmasi (Reveal)', next: 'Selesai', color: 'amber' as const }
-  if (!Number.isNaN(commitStart) && now >= commitStart) return { phase: 'commit', label: 'Pencoblosan (Commit)', next: 'Reveal', color: 'teal' as const }
-  return { phase: 'registration', label: 'Persiapan', next: 'Commit', color: 'blue' as const }
 }
 
 export default function SuperadminElectionModerationPage({ params }: { params: { id: string } }) {
@@ -47,7 +35,13 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
   const activitiesQuery = useProposalActivities(params.id)
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
   const [suspending, setSuspending] = useState(false)
+  const [nowMs, setNowMs] = useState(Date.now())
   const authSession = useAuthSession()
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   const election = useMemo(() => {
     const fromStore = elections.find((item) => item.id === params.id)
@@ -55,13 +49,14 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
     
     if (proposalQuery.data) {
       const p = proposalQuery.data
+      const status = p.status === 'suspended' ? 'Ditangguhkan' : p.status === 'archived' ? 'Selesai' : 'Aktif'
       return {
         id: p.id,
         title: p.title,
         code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
-        status: (p.status === 'deployed' ? 'Aktif' : 'Selesai') as SuperadminElectionState,
-        note: p.status === 'deployed' ? 'Online' : 'Final',
-        phaseLabel: p.status === 'deployed' ? 'Fase Berjalan' : 'Pemilihan Selesai',
+        status: status as SuperadminElectionState,
+        note: p.status === 'suspended' ? 'Halted' : p.status === 'archived' ? 'Final' : 'Online',
+        phaseLabel: p.status === 'archived' ? 'Pemilihan Selesai' : 'Fase Berjalan',
         totalVoters: '0',
         participation: '0%'
       }
@@ -120,7 +115,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
     ? { commitStartAt: proposal.commitStartAt, revealStartAt: proposal.revealStartAt, endedAt: proposal.endedAt, registrationStartAt: proposal.registrationStartAt }
     : null
 
-  const phaseInfo = proposal ? resolvePhase(proposal) : { phase: 'registration', label: 'Persiapan', next: 'Commit', color: 'blue' as const }
+  const phaseInfo = proposal ? resolveSchedulePhase(proposal, nowMs) : { phase: 'registration' as const, label: 'Persiapan', next: 'Pencoblosan', deadlineIso: null, deadlineLabel: 'Pencoblosan dibuka dalam' }
 
   const validWhitelistCount = whitelistEntries.filter((e) => e.validationStatus === 'valid' || e.validationStatus === 'synced' || e.syncStatus === 'synced').length
   const syncedWhitelistCount = whitelistEntries.filter((e) => e.syncStatus === 'synced' || e.validationStatus === 'synced').length
@@ -204,7 +199,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
         </article>
 
         <article className="rounded-[24px] bg-[#11182a] p-6 text-white">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-300">Fase Pemilihan</p>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-300">Fase Pemilihan</p>
           <div className="mt-5 flex items-start justify-between gap-4">
             <div>
               <p className="text-[22px] font-semibold leading-tight">{phaseInfo.label}</p>
@@ -232,7 +227,10 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
           <div className="mt-6 rounded-[24px] border border-slate-200 bg-white p-6">
             <div className="flex items-center gap-3">
               <CalendarDays className="h-5 w-5 text-slate-700" />
-              <h2 className="text-[18px] font-semibold text-slate-900">Jadwal Pemilihan</h2>
+              <div>
+                <h2 className="text-[18px] font-semibold text-slate-900">Jadwal Pemilihan</h2>
+                <p className="mt-1 text-[12px] text-slate-500">Sumber fase tampilan: jadwal database aplikasi.</p>
+              </div>
             </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-4">
               {schedule.registrationStartAt && (
