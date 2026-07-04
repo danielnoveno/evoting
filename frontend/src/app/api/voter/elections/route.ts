@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
   }
   console.log('[voter-elections] wallet-resolution', debug)
   
-  if (allWalletCandidates.length === 0) return NextResponse.json({ elections: [], _debug: { ...debug, stage: 'no-wallet-candidates' } })
+  if (allWalletCandidates.length === 0) return NextResponse.json({ elections: [] })
 
   // ponytail: normalize all wallets to lowercase for reliable .in() matching
   // Previous .or() + ilike filter returned 0 matches despite wallet existing in DB
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
     matchedEntries: (matchedWhitelist ?? []).slice(0, 5).map(e => ({ wallet: e.wallet_address, proposalId: e.proposal_draft_id })),
   })
 
-  if (proposalIds.length === 0) return NextResponse.json({ elections: [], _debug: { ...debug, stage: 'no-proposal-ids', matchedCount: (matchedWhitelist ?? []).length, normalizedWallets } })
+  if (proposalIds.length === 0) return NextResponse.json({ elections: [] })
 
   const { data: proposals, error: proposalError } = await client
     .from('proposal_drafts')
@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
     statuses: rows.map(r => ({ id: r.id.slice(0, 8), status: r.status })),
   })
 
-  if (rows.length === 0) return NextResponse.json({ elections: [], _debug: { ...debug, stage: 'no-proposals', matchedCount: (matchedWhitelist ?? []).length, proposalIds, statuses: (proposals ?? []).map(r => r.status) } })
+  if (rows.length === 0) return NextResponse.json({ elections: [] })
 
   const ids = rows.map((row) => row.id)
   const [{ data: candidates, error: candidatesError }, { data: allWhitelist, error: allWhitelistError }] = await Promise.all([
@@ -199,27 +199,6 @@ export async function GET(request: NextRequest) {
       candidates ?? [],
       (allWhitelist ?? []).filter((entry) => entry.proposal_draft_id === row.id),
     )),
-    _debug: {
-      ...debug,
-      stage: 'success',
-      normalizedWallets,
-      matchedWhitelist: (matchedWhitelist ?? []).map((entry) => ({
-        proposalId: entry.proposal_draft_id,
-        wallet: entry.wallet_address,
-        validationStatus: entry.validation_status,
-      })),
-      proposals: rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        status: row.status,
-        deployedSpaceAddress: row.deployed_space_address,
-      })),
-      dbCounts: {
-        proposalDrafts: proposalCount ?? null,
-        proposalWhitelistEntries: whitelistCount ?? null,
-      },
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? null,
-    },
   }, {
     headers: {
       'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',

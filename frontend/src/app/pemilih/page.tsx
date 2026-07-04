@@ -84,7 +84,7 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
   const action = resolveElectionAction(election)
   const viewState = getElectionViewState(election)
   const isUpcoming = viewState.nextAction === 'wait'
-  const alreadyVoted = viewState.hasCommitted && election.phase === 'registration'
+  const alreadyVoted = viewState.hasCommitted
   const label = alreadyVoted
     ? 'Suara Sudah Tercatat'
     : isUpcoming

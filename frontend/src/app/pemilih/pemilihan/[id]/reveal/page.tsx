@@ -50,7 +50,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
     hasCommittedError,
     hasRevealedError,
     whitelistError
-  } = useElectionContract(contractAddress)
+  } = useElectionContract(contractAddress, { voterAddress: serverWalletAddress })
 
   const [confirmOpen, setConfirmOpen] = useState(false)
 

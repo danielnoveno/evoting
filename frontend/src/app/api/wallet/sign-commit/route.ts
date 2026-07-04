@@ -63,7 +63,7 @@ function getRelayerKey(): Hex | null {
     process.env.AUTO_REVEAL_RELAYER_PRIVATE_KEY?.trim()
   if (!raw) return null
   const value = raw.startsWith('0x') ? raw : `0x${raw}`
-  return /^[0-9a-fA-F]{64}$/.test(value) ? (value as Hex) : null
+  return /^0x[a-fA-F0-9]{64}$/.test(value) ? (value as Hex) : null
 }
 
 function generateSalt(): Hex {

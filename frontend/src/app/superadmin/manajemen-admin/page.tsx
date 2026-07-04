@@ -63,7 +63,6 @@ type SortField = 'name' | 'email' | 'access' | 'status' | 'activity'
 type AdminScope = 'all' | 'specific'
 
 const initialFormData = {
-  name: '',
   email: '',
   organizationName: '',
   scope: 'all' as AdminScope,
@@ -331,7 +330,7 @@ function SuperadminAdminManagementContent() {
   }
 
   const handleCreateAdmin = () => {
-    if (!formData.name.trim() || !formData.email.trim()) {
+    if (!formData.organizationName.trim() || !formData.email.trim()) {
       showToast({ tone: 'error', title: 'Data admin belum lengkap', description: 'Lengkapi nama dan email institusi admin terlebih dahulu.' })
       return
     }
@@ -355,7 +354,7 @@ function SuperadminAdminManagementContent() {
     // Use token activation flow with email for all admins
     createAdminInviteMutation.mutate(
       {
-        displayName: formData.name,
+        displayName: formData.organizationName,
         email: formData.email,
         walletAddress: formData.walletAddress, // this can be empty now
         organizationName: formData.organizationName,
@@ -392,7 +391,7 @@ function SuperadminAdminManagementContent() {
           showToast({
             tone: invite.emailStatus === 'sent' ? 'success' : 'info',
             title: 'Undangan Admin Dibuat',
-            description: `${formData.name} — ${emailMsg}`,
+            description: `${formData.organizationName} — ${emailMsg}`,
           })
         },
         onError: (error) => {

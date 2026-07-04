@@ -81,7 +81,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     phaseError,
     hasCommittedError,
     whitelistError,
-  } = useElectionContract(contractAddress, { checks: ['phase', 'hasCommitted', 'isWhitelisted'] })
+  } = useElectionContract(contractAddress, { checks: ['phase', 'hasCommitted', 'isWhitelisted'], voterAddress: serverWalletAddress })
 
   const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
     ? Number(currentPhase)

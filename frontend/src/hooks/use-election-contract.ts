@@ -12,6 +12,8 @@ type ElectionReadCheck = 'phase' | 'hasCommitted' | 'hasRevealed' | 'isWhitelist
 
 type UseElectionContractOptions = {
   checks?: ElectionReadCheck[]
+  /** Override wallet address for on-chain checks (e.g. server-derived wallet). Falls back to useAccount().address. */
+  voterAddress?: `0x${string}` | string | null
 }
 
 const DEFAULT_READ_QUERY_OPTIONS = {
@@ -25,7 +27,8 @@ const DEFAULT_READ_QUERY_OPTIONS = {
 } as const
 
 export function useElectionContract(address?: string, options: UseElectionContractOptions = {}) {
-  const { address: userAddress } = useAccount()
+  const { address: wagmiAddress } = useAccount()
+  const voterAddress = options.voterAddress || wagmiAddress || undefined
   const enabledChecks = new Set<ElectionReadCheck>(
     options.checks ?? ['phase', 'hasCommitted', 'hasRevealed', 'isWhitelisted']
   )
@@ -148,10 +151,10 @@ export function useElectionContract(address?: string, options: UseElectionContra
     abi: electionSpaceAbi,
     chainId: baseSepolia.id,
     functionName: 'hasCommitted',
-    args: userAddress ? [userAddress] : undefined,
+    args: voterAddress ? [voterAddress as `0x${string}`] : undefined,
     query: {
       ...DEFAULT_READ_QUERY_OPTIONS,
-      enabled: !!address && !!userAddress && enabledChecks.has('hasCommitted'),
+      enabled: !!address && !!voterAddress && enabledChecks.has('hasCommitted'),
     }
   })
 
@@ -160,10 +163,10 @@ export function useElectionContract(address?: string, options: UseElectionContra
     abi: electionSpaceAbi,
     chainId: baseSepolia.id,
     functionName: 'hasRevealed',
-    args: userAddress ? [userAddress] : undefined,
+    args: voterAddress ? [voterAddress as `0x${string}`] : undefined,
     query: {
       ...DEFAULT_READ_QUERY_OPTIONS,
-      enabled: !!address && !!userAddress && enabledChecks.has('hasRevealed'),
+      enabled: !!address && !!voterAddress && enabledChecks.has('hasRevealed'),
     }
   })
 
@@ -172,10 +175,10 @@ export function useElectionContract(address?: string, options: UseElectionContra
     abi: electionSpaceAbi,
     chainId: baseSepolia.id,
     functionName: 'isWhitelisted',
-    args: userAddress ? [userAddress] : undefined,
+    args: voterAddress ? [voterAddress as `0x${string}`] : undefined,
     query: {
       ...DEFAULT_READ_QUERY_OPTIONS,
-      enabled: !!address && !!userAddress && enabledChecks.has('isWhitelisted'),
+      enabled: !!address && !!voterAddress && enabledChecks.has('isWhitelisted'),
     }
   })
 

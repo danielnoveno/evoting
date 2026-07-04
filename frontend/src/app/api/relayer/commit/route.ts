@@ -101,8 +101,12 @@ function extractEcdsaSignature(rawSignature: string): string | null {
  */
 export async function POST(request: NextRequest) {
   // ── Auth: check API key ──
+  // RELAYER_API_KEY harus diset di production. Jika kosong, relayer tetap jalan
+  // tetapi catat warning — ini acceptable untuk local dev tetapi bukan production.
   const apiKey = getRelayerApiKey()
-  if (apiKey && request.headers.get('x-relayer-api-key') !== apiKey) {
+  if (!apiKey) {
+    console.warn('[RELAYER] RELAYER_API_KEY belum dikonfigurasi — relayer beroperasi tanpa autentikasi API key. Set environment variable untuk keamanan production.')
+  } else if (request.headers.get('x-relayer-api-key') !== apiKey) {
     return jsonError('Akses relayer tidak diizinkan.', 401)
   }
 

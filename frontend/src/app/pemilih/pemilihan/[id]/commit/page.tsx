@@ -10,6 +10,7 @@ import { VoterStepper } from '@/components/voter/voter-stepper'
 import { basescanTxUrl, findElection, formatDateTime, formatNumber, formatWallet, useVoterStore } from '@/lib/voter-store'
 import { loadVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
+import { useServerWallet } from '@/hooks/use-server-wallet'
 import { useToast } from '@/components/ui/toast-provider'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
@@ -40,6 +41,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const { store, loading: storeLoading, actions } = useVoterStore()
   const { showToast } = useToast()
   const { address: connectedWallet } = useAccount()
+  const { address: serverWalletAddress } = useServerWallet()
   
   const election = findElection(store, params.id)
   const contractAddress = election?.deployedSpaceAddress ?? undefined
@@ -64,7 +66,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     refetchPhase,
     refetchHasCommitted,
     refetchIsWhitelisted
-  } = useElectionContract(contractAddress, { checks: ['phase', 'hasCommitted', 'isWhitelisted'] })
+  } = useElectionContract(contractAddress, { checks: ['phase', 'hasCommitted', 'isWhitelisted'], voterAddress: serverWalletAddress })
 
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [isRefreshingOnChainStatus, setIsRefreshingOnChainStatus] = useState(false)
@@ -76,13 +78,12 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const profileWallet = store?.profile.wallet ?? ''
   const commitRoute = `/pemilih/pemilihan/${params.id}/commit`
   const connectWalletRoute = `/hubungkan-dompet?redirect=${encodeURIComponent(commitRoute)}`
-  const isConnectedWalletProfileWallet = sameWalletAddress(connectedWallet, profileWallet)
   const isCommitPhaseOnChain = currentPhaseNumber === 1
 
   // Deteksi apakah blockchain masih dalam proses loading
   const isBlockchainLoading = isPhaseFetching || isWhitelistedFetching || isHasCommittedFetching
 
-  const isOnChainStatusReady = Boolean(contractAddress) && Boolean(connectedWallet) && isConnectedWalletProfileWallet && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
+  const isOnChainStatusReady = Boolean(contractAddress) && Boolean(serverWalletAddress) && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
   // Ekstrak detail error untuk debugging (hanya tampil di dev atau jika error jelas)
   const onChainErrorDetail = onChainStatusError
@@ -213,10 +214,6 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           : 'Belum terbaca'
   const commitBlockedReason = !contractAddress
     ? 'Smart contract untuk pemilihan ini belum tersedia di Supabase.'
-    : !connectedWallet
-      ? 'Dompet digital belum tersambung. Sambungkan dompet yang tertaut ke akun ini sebelum mencoblos.'
-    : profileWallet && !isConnectedWalletProfileWallet
-      ? `Dompet tersambung (${formatWallet(connectedWallet)}) berbeda dari dompet akun ini (${formatWallet(profileWallet)}). Sambungkan dompet yang sama agar pengecekan whitelist sesuai.`
     : onChainStatusError
       ? `Jaringan blockchain belum merespons. (${onChainErrorDetail})`
     : isBlockchainLoading
@@ -393,9 +390,9 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
               <p>
                 {commitBlockedReason} {!isBlockchainLoading && 'Tombol dinonaktifkan agar dompet tidak membuka transaksi yang pasti gagal.'}
               </p>
-              {(connectedWallet || profileWallet) ? (
+              {(serverWalletAddress || profileWallet) ? (
                 <p className="mt-2 text-[12px] text-amber-800/90">
-                  Dompet tersambung: <span className="font-mono font-semibold">{connectedWallet ? formatWallet(connectedWallet) : 'Belum tersambung'}</span>
+                  Dompet server: <span className="font-mono font-semibold">{serverWalletAddress ? formatWallet(serverWalletAddress) : 'Belum tersambung'}</span>
                   {' · '}Dompet akun: <span className="font-mono font-semibold">{profileWallet ? formatWallet(profileWallet) : 'Belum tertaut'}</span>
                 </p>
               ) : null}
