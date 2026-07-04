@@ -54,6 +54,8 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     isLoading: isWalletLoading,
     isReady: isWalletReady,
     error: walletError,
+    isAuthLoading,
+    isAuthMissing,
     commitVote: serverCommitVote,
     isPending: isServerSigning,
     isSubmitting: isServerSubmitting,
@@ -277,6 +279,11 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       return
     }
 
+    if (isAuthMissing) {
+      showToast({ title: 'Belum masuk', description: 'Silakan masuk terlebih dahulu untuk mencoblos.', tone: 'info' })
+      return
+    }
+
     if (!isWalletReady) {
       showToast({ title: 'ID voting belum siap', description: 'Sedang memuat ID voting Anda. Coba beberapa saat lagi.', tone: 'info' })
       return
@@ -460,20 +467,28 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 ? effectivePhase === 'reveal'
                   ? 'Masa Mencoblos Selesai'
                   : 'Belum Bisa Mencoblos'
-                : !isWalletReady
-                  ? 'Menyiapkan ID Voting'
-                  : effectivePhaseNumber === 1
-                    ? 'Saatnya Mencoblos'
-                    : 'Menunggu Jadwal'}
+                : isAuthLoading
+                  ? 'Memuat Sesi'
+                  : isAuthMissing
+                    ? 'Silakan Masuk'
+                    : !isWalletReady
+                      ? 'Menyiapkan ID Voting'
+                      : effectivePhaseNumber === 1
+                        ? 'Saatnya Mencoblos'
+                        : 'Menunggu Jadwal'}
             </h1>
             <p className="mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-slate-300">
               {voteBlockedReason
                 ? voteBlockedReason
-                : !isWalletReady
-                  ? 'Sistem sedang menyiapkan ID voting Anda. Tunggu sebentar...'
-                : effectivePhaseNumber === 1
-                  ? 'Pilih satu kandidat lalu konfirmasi. Setelah itu selesai; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.'
-                  : 'Pencoblosan belum dimulai. Kamu bisa melihat kandidat terlebih dahulu, lalu coblos saat masa pencoblosan dibuka.'}
+                : isAuthLoading
+                  ? 'Sistem sedang memuat sesi Anda. Tunggu sebentar...'
+                  : isAuthMissing
+                    ? 'Anda belum masuk. Silakan masuk terlebih dahulu untuk mencoblos.'
+                    : !isWalletReady
+                      ? 'Sistem sedang menyiapkan ID voting Anda. Tunggu sebentar...'
+                    : effectivePhaseNumber === 1
+                      ? 'Pilih satu kandidat lalu konfirmasi. Setelah itu selesai; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.'
+                      : 'Pencoblosan belum dimulai. Kamu bisa melihat kandidat terlebih dahulu, lalu coblos saat masa pencoblosan dibuka.'}
             </p>
           </div>
 
@@ -526,7 +541,30 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         </div>
       </section>
 
-      {!isWalletReady && effectivePhaseNumber === 1 ? (
+      {isAuthLoading ? (
+        <section className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-[13px] leading-7 text-slate-600">
+          <div className="flex items-start gap-3">
+            <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-slate-500" />
+            <div>
+              <p className="font-semibold">Memuat sesi akun</p>
+              <p className="mt-1">Sistem sedang memverifikasi sesi Anda. Tunggu sebentar...</p>
+            </div>
+          </div>
+        </section>
+      ) : isAuthMissing && effectivePhaseNumber === 1 ? (
+        <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-[13px] leading-7 text-amber-900">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div>
+              <p className="font-semibold">Anda belum masuk</p>
+              <p className="mt-1">Silakan masuk terlebih dahulu untuk mencoblos. ID voting tidak bisa disiapkan tanpa sesi akun yang aktif.</p>
+              <Link href="/" className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-900">
+                Masuk Sekarang <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      ) : !isWalletReady && effectivePhaseNumber === 1 ? (
         <section className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4 text-[13px] leading-7 text-blue-900">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />

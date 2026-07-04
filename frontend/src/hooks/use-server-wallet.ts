@@ -26,6 +26,13 @@ export type ServerWalletState = {
   isReady: boolean
 }
 
+export type ServerWalletReturn = ServerWalletState & {
+  /** Auth session sedang dimuat (belum bisa tentukan login/tidak) */
+  isAuthLoading: boolean
+  /** Auth session sudah selesai dimuat tapi tidak ada session (belum login) */
+  isAuthMissing: boolean
+}
+
 export type CommitResult = {
   txHash: string
   blockNumber: number
@@ -99,10 +106,20 @@ export function useServerWallet() {
     revealError: null,
   })
 
+  // Track auth query status for consumers
+  const isAuthLoading = authSessionQuery.status === 'pending'
+  const isAuthMissing = authSessionQuery.status === 'success' && !session?.access_token
+
   // Fetch wallet address saat session tersedia
   const fetchAddress = useCallback(async () => {
     if (!session?.access_token) {
-      setState({ address: null, isLoading: false, error: null, isReady: false })
+      setState(prev => ({
+        ...prev,
+        address: null,
+        isLoading: false,
+        error: null,
+        isReady: false,
+      }))
       return
     }
 
@@ -318,8 +335,10 @@ export function useServerWallet() {
   )
 
   return {
-    // Wallet state
+    // Wallet state (override auth flags with computed values for accuracy)
     ...state,
+    isAuthLoading,
+    isAuthMissing,
     // Commit state & function
     ...commitState,
     commitVote,
