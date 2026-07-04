@@ -3,9 +3,15 @@ import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, max-age=0, must-revalidate',
+  Pragma: 'no-cache',
+}
 
 function jsonError(message: string, status = 400) {
-  return NextResponse.json({ error: message }, { status })
+  return NextResponse.json({ error: message }, { status, headers: NO_STORE_HEADERS })
 }
 
 async function requireSuperadmin(request: NextRequest) {
@@ -54,10 +60,22 @@ export async function GET(request: NextRequest) {
   const firstError = activeAdminRegistry.error ?? adminProfiles.error ?? activeSpaces.error ?? pendingProposals.error ?? voterProfiles.error
   if (firstError) return jsonError('Gagal memuat statistik dashboard superadmin.', 500)
 
+  const debug = request.nextUrl.searchParams.get('debug') === '1'
   return NextResponse.json({
     totalAdmins: Math.max(activeAdminRegistry.count ?? 0, adminProfiles.count ?? 0),
     activeSpaces: activeSpaces.count ?? 0,
     pendingProposals: pendingProposals.count ?? 0,
     totalVoters: voterProfiles.count ?? 0,
-  })
+    ...(debug
+      ? {
+          _debug: {
+            activeAdminRegistry: activeAdminRegistry.count ?? 0,
+            adminProfiles: adminProfiles.count ?? 0,
+            deployedProposalDrafts: activeSpaces.count ?? 0,
+            submittedProposalDrafts: pendingProposals.count ?? 0,
+            voterProfiles: voterProfiles.count ?? 0,
+          },
+        }
+      : {}),
+  }, { headers: NO_STORE_HEADERS })
 }

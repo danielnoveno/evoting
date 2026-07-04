@@ -72,6 +72,7 @@ async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
 
   const response = await fetch('/api/superadmin/dashboard-metrics', {
     headers: { Authorization: `Bearer ${accessToken}` },
+    cache: 'no-store',
   })
   if (!response.ok) throw new Error('Gagal memuat statistik dashboard superadmin.')
 
@@ -156,6 +157,8 @@ export default function SuperadminDashboardPage() {
     queryKey: ['superadmin', 'dashboard-metrics'],
     queryFn: fetchDashboardMetrics,
     retry: false,
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 
   const [days, setDays] = useState<7 | 30>(7)
