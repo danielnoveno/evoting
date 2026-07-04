@@ -82,7 +82,44 @@ export async function GET(request: NextRequest) {
       // Non-fatal: address derivation still works
     }
 
-    // 6. Return address (public only, no private key)
+    // 6. Sync app_profiles.wallet_address to match derived wallet
+    //    This ensures the voter's profile wallet always matches the server-derived
+    //    wallet, preventing "ID voting berbeda dari dompet akun" mismatches.
+    const { data: currentProfile } = await supabase
+      .schema('app')
+      .from('app_profiles')
+      .select('wallet_address')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const currentWallet = (currentProfile as Record<string, unknown> | null)?.wallet_address as string | null
+    if (!currentWallet || currentWallet.toLowerCase() !== walletAddress.toLowerCase()) {
+      // Check if derived wallet is already used by another profile
+      const { data: existingOwner } = await supabase
+        .schema('app')
+        .from('app_profiles')
+        .select('user_id')
+        .ilike('wallet_address', walletAddress)
+        .neq('user_id', user.id)
+        .maybeSingle()
+
+      if (!existingOwner) {
+        const { error: syncError } = await supabase
+          .schema('app')
+          .from('app_profiles')
+          .update({ wallet_address: walletAddress })
+          .eq('user_id', user.id)
+
+        if (syncError) {
+          console.error('[WALLET] Profile wallet sync error:', syncError)
+          // Non-fatal: derivation still works, just profile might show old wallet
+        }
+      } else {
+        console.warn('[WALLET] Derived wallet already used by another profile, skipping sync')
+      }
+    }
+
+    // 7. Return address (public only, no private key)
     return NextResponse.json({
       address: walletAddress,
       userId: user.id,
