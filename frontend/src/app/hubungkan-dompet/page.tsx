@@ -258,7 +258,7 @@ function ConnectWalletContent() {
           ? 'Tahap 2 dari 2'
           : 'Aktivasi selesai'
       : !isConnected
-        ? activationMode ? 'Tahap 1 dari 3' : 'Buat ID Voting'
+        ? activationMode ? 'Tahap 1 dari 3' : 'Buat/Masukkan ID Voting'
         : !authSession
           ? activationMode ? 'Tahap 2 dari 3' : 'Masuk dengan Akun Kampus'
           : !isWalletBound
@@ -563,7 +563,7 @@ function ConnectWalletContent() {
                         {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-[14px] font-semibold text-slate-900">{isReturningVoter && isConnected ? 'ID Voting Terdeteksi' : 'Buat ID Voting'}</h2>
+                        <h2 className="text-[14px] font-semibold text-slate-900">{isReturningVoter && isConnected ? 'ID Voting Terdeteksi' : 'Buat/Masukkan ID Voting'}</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
                           {isConnected
                             ? isReturningVoter
@@ -613,12 +613,12 @@ function ConnectWalletContent() {
                       <div className="mt-8 w-full">
                         <h2 className="text-[20px] font-semibold text-slate-900">
                           {isAdminActivationFlow
-                            ? 'Tahap 2 — Buat ID Voting'
+                            ? 'Tahap 2 — Buat/Masukkan ID Voting'
                             : isReturningVoter
                               ? 'Buat/Masukan ID Voting'
                               : activationMode
-                                ? isVoterSsoFirstFlow ? 'Tahap 2 — Buat ID Voting' : 'Tahap 1 — Buat ID Voting'
-                                : 'Buat ID Voting'}
+                                ? isVoterSsoFirstFlow ? 'Tahap 2 — Buat/Masukkan ID Voting' : 'Tahap 1 — Buat/Masukkan ID Voting'
+                                : 'Buat/Masukkan ID Voting'}
                         </h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {isReturningVoter

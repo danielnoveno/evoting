@@ -1581,3 +1581,28 @@ CREATE TRIGGER trigger_update_user_wallet_timestamp
 -- Grant permissions
 GRANT SELECT ON app.user_wallets TO authenticated;
 GRANT ALL ON app.user_wallets TO service_role;
+
+--
+-- From: 20260705T000000_admin_access_scope_default_specific.sql
+--
+
+-- Migration: Change admin access_scope default from 'all' to 'specific'
+-- Description: Ensures new admins only see their own elections by default.
+--              Existing admins with 'all' scope are changed to 'specific'
+--              so superadmin must explicitly assign spaces to each admin.
+
+-- 1. Change column default
+ALTER TABLE app.admin_registry
+  ALTER COLUMN access_scope SET DEFAULT 'specific';
+
+-- 2. Update all existing admins from 'all' to 'specific'
+--    This forces superadmin to re-assign spaces via the admin edit page.
+UPDATE app.admin_registry
+SET access_scope = 'specific'
+WHERE access_scope = 'all';
+
+-- 3. Log the change for auditability
+DO $$
+BEGIN
+  RAISE NOTICE 'Admin access_scope default changed from all to specific. All existing admins updated to specific.';
+END $$;

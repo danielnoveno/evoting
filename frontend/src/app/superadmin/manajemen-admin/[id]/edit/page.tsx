@@ -106,10 +106,8 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
       return
     }
 
-    if (formData.scope === 'specific' && selectedSpaceIds.length === 0) {
-      showToast({ tone: 'error', title: 'Akses pemilihan belum dipilih', description: 'Pilih minimal satu pemilihan untuk admin dengan akses terbatas.' })
-      return
-    }
+    // ponytail: removed — admin with specific scope can have zero assigned spaces;
+    // they will only see proposals they create (enforced by RLS created_by check).
 
     setConfirmOpen(true)
   }
@@ -235,7 +233,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
           </SuperadminSectionCard>
 
           <SuperadminSectionCard>
-            <SuperadminSectionHeading title="Cakupan Akses" description="Pilih cakupan akses admin untuk ruang pemilihan." />
+            <SuperadminSectionHeading title="Cakupan Akses" description="Tentukan ruang lingkup pemilihan yang dapat dikelola oleh admin ini. Admin dengan akses terbatas hanya melihat pemilihan yang dibuatnya sendiri atau yang ditugaskan secara spesifik." />
             <div className="mt-8 space-y-4">
               <SuperadminRadioCard
                 active={formData.scope === 'all'}
@@ -246,14 +244,15 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
               <SuperadminRadioCard
                 active={formData.scope === 'specific'}
                 title="Pemilihan Tertentu"
-                description="Admin hanya mengelola ruang pemilihan yang telah ditentukan." 
+                description="Admin hanya mengelola pemilihan yang dibuatnya sendiri. Superadmin dapat menugaskan akses ke pemilihan lain secara opsional."
                 onClick={() => handleChange('scope', 'specific')}
               />
             </div>
 
             {formData.scope === 'specific' && (
               <div className="mt-8 border-t border-slate-100 pt-8">
-                <SuperadminFieldLabel>Daftar Pemilihan Tersedia</SuperadminFieldLabel>
+                <SuperadminFieldLabel>Tugaskan Pemilihan Tambahan (Opsional)</SuperadminFieldLabel>
+                <p className="mt-2 text-[13px] text-slate-500">Admin secara otomatis dapat mengelola pemilihan yang ia buat sendiri. Daftar di bawah hanya untuk memberikan akses ke pemilihan yang dibuat admin lain.</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {proposalDraftsQuery.isLoading ? (
                     Array.from({ length: 4 }).map((_, i) => (
