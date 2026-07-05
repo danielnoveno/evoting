@@ -143,7 +143,7 @@ function ConnectWalletContent() {
     return 'voter'
   }, [currentProfile?.role, adminRegistryByWalletQuery.data, connectedWalletProfile?.role, adminInviteTokenFromRedirect, activateParam, redirectParam])
 
-  const activationMode = activateParam === '1' || activateParam === 'admin' || activateParam === 'voter' || Boolean(adminInviteTokenFromRedirect) || (Boolean(authSession) && activationContext === 'admin')
+  const activationMode = activateParam === '1' || activateParam === 'admin' || activateParam === 'voter' || Boolean(adminInviteTokenFromRedirect) || activationContext === 'admin'
   const voterActivationMissingToken = activationMode && activationContext === 'voter' && !activationToken
   const adminActivationMissingToken = activateParam === 'admin' && activationContext === 'admin' && !activationToken && !currentProfile
   const redirectTarget = useMemo(() => {
@@ -765,7 +765,7 @@ function ConnectWalletContent() {
 
                     {isConnected && authSession && !isWalletBound && (
                       <div className="mt-8 w-full">
-                          <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? `Tahap ${isVoterSsoFirstFlow ? 2 : 3} — ${activationContext === 'admin' ? 'Aktifkan Akses Admin' : 'Aktifkan Hak Suara'}` : activationContext === 'admin' ? 'Aktifkan Akses Admin' : 'Aktifkan Hak Suara'}</h2>
+                          <h2 className="text-[20px] font-semibold text-slate-900">{activationMode ? `Tahap ${isVoterSsoFirstFlow ? 2 : 3} — ${activationContext === 'admin' ? 'Aktifkan Akses Admin' : 'Aktifkan Hak Suara'}` : 'Aktifkan Hak Suara'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationContext === 'admin'
                             ? 'Tautkan akun kampus dan ID voting untuk mengaktifkan akses admin.'
