@@ -615,7 +615,7 @@ function ConnectWalletContent() {
                           {isAdminActivationFlow
                             ? 'Tahap 2 — Buat ID Voting'
                             : isReturningVoter
-                              ? 'Hubungkan ID Voting'
+                              ? 'Buat/Masukan ID Voting'
                               : activationMode
                                 ? isVoterSsoFirstFlow ? 'Tahap 2 — Buat ID Voting' : 'Tahap 1 — Buat ID Voting'
                                 : 'Buat ID Voting'}
@@ -877,7 +877,7 @@ function ConnectWalletContent() {
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
                       >
                         {isConnectPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        Sambungkan ID Voting
+                        Buat/Masukan ID Voting
                         {!isConnectPending ? <ChevronRight className="h-4 w-4" /> : null}
                       </button>
                     )}
