@@ -128,11 +128,22 @@ function ActivationContent() {
                   <AlertTriangle className="mx-auto h-7 w-7 text-red-600" />
                   <h3 className="mt-3 font-semibold text-red-900">Link Aktivasi Tidak Valid</h3>
                   <p className="mt-2 text-[13px] leading-relaxed text-red-700">
-                    {getRepositoryErrorMessage(invitePreviewQuery.error, 'Undangan mungkin sudah kadaluwarsa atau sudah digunakan.')}
+                    {(() => {
+                      const msg = (invitePreviewQuery.error as Error)?.message ?? ''
+                      if (msg.includes('sudah aktif') || msg.includes('sudah digunakan')) {
+                        return 'Akun admin ini sudah aktif. Silakan masuk langsung melalui halaman hubungkan dompet.'
+                      }
+                      return getRepositoryErrorMessage(invitePreviewQuery.error, 'Undangan mungkin sudah kadaluwarsa atau sudah digunakan.')
+                    })()}
                   </p>
-                  <Link href="/portal-admin" className="mt-5 inline-flex text-[13px] font-semibold text-slate-900 hover:underline">
-                    Kembali ke Login Portal →
-                  </Link>
+                  <div className="mt-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                    <Link href="/hubungkan-dompet?activate=admin" className="inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white hover:bg-[#1E293B]">
+                      Masuk sebagai Admin
+                    </Link>
+                    <Link href="/portal-admin" className="text-[13px] font-semibold text-slate-600 hover:underline">
+                      Kembali ke Login Portal →
+                    </Link>
+                  </div>
                 </div>
               ) : invitePreview || isActivationSuccess ? (
                 <>
