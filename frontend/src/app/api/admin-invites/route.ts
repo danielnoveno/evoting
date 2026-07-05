@@ -153,7 +153,8 @@ export async function POST(request: NextRequest) {
   }
 
   const assignedRole = payload.role
-  const accessScope = payload.accessScope === 'specific' ? 'specific' as const : 'all' as const
+  // ponytail: always 'specific' — admin only sees proposals they create (RLS enforced)
+  const accessScope = 'specific' as const
 
   if (!organizationName || !email) return jsonError('Nama dan email wajib diisi.', 400)
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError('Format email institusi tidak valid.', 400)

@@ -224,37 +224,6 @@ export function SuperadminSelectInput(
   )
 }
 
-export function SuperadminRadioCard({
-  active,
-  title,
-  description,
-  onClick,
-}: {
-  active: boolean
-  title: string
-  description: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full items-start gap-4 rounded-[24px] border px-5 py-4 text-left transition focus:outline-none focus:ring-2 focus:ring-slate-900/10 ${
-        active ? 'border-slate-900 bg-white' : 'border-slate-200 bg-white/70 hover:border-slate-300 hover:bg-white'
-      }`}
-      aria-pressed={active}
-    >
-      <span className={`mt-1 flex h-5 w-5 items-center justify-center rounded-full border ${active ? 'border-slate-900' : 'border-slate-300'}`}>
-        <span className={`h-2.5 w-2.5 rounded-full ${active ? 'bg-slate-900' : 'bg-transparent'}`} />
-      </span>
-      <span>
-        <span className="block text-[16px] font-medium text-slate-900">{title}</span>
-        <span className="mt-1 block text-[14px] leading-6 text-slate-500">{description}</span>
-      </span>
-    </button>
-  )
-}
-
 export function SuperadminBackButton({ href, label = 'Kembali' }: { href: string; label?: string }) {
   return (
     <Link

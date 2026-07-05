@@ -19,7 +19,6 @@ export type CreateAdminInviteInput = {
   walletAddress?: string
   role?: 'admin' | 'super_admin'
   organizationName?: string
-  accessScope?: 'all' | 'specific'
 }
 
 export type CreateAdminInviteResult = AdminInvitePreview & {
@@ -103,7 +102,6 @@ export async function createAdminInvite(input: CreateAdminInviteInput): Promise<
   if (input.walletAddress) body.walletAddress = input.walletAddress
   if (input.role) body.role = input.role
   if (input.organizationName) body.organizationName = input.organizationName
-  if (input.accessScope) body.accessScope = input.accessScope
 
   const response = await fetch('/api/admin-invites', {
     method: 'POST',

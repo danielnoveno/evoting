@@ -10,7 +10,6 @@ import {
   SuperadminAvatar,
   SuperadminEmptyState,
   SuperadminFilterChip,
-  SuperadminRadioCard,
   SuperadminSectionHeading,
   SuperadminShell,
   SuperadminStatusBadge,
@@ -51,21 +50,14 @@ import { resendAdminInvite } from '@/lib/repositories/adminInviteRepository'
 import { deleteAdminRegistry, updateAdminRegistry } from '@/lib/repositories/profileRepository'
 import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
 import { profileQueryKeys } from '@/hooks/use-profile'
-import { syncAdminSpaces } from '@/lib/repositories/adminAccessRepository'
-import { useAdminProposalList } from '@/hooks/use-admin-proposal-list'
 import { useFormDraft } from '@/hooks/use-form-draft'
-import { Checkbox } from '@/components/ui/checkbox'
-import type { ProposalDraftRecord } from '@/lib/repositories/types'
 
 type AdminTabKey = (typeof superadminAdminTabs)[number]['key']
 type SortField = 'name' | 'email' | 'access' | 'status' | 'activity'
 
-type AdminScope = 'all' | 'specific'
-
 const initialFormData = {
   email: '',
   organizationName: '',
-  scope: 'specific' as AdminScope,
   walletAddress: '',
 }
 
@@ -86,8 +78,6 @@ function SuperadminAdminManagementContent() {
   const createAdminInviteMutation = useCreateAdminInvite()
   const [formData, setFormData] = useState(initialFormData)
   const { clearDraft: clearAdminDraft } = useFormDraft('admin-create', formData, setFormData)
-  const [selectedSpaceIds, setSelectedSpaceIds] = useState<string[]>([])
-  const proposalDraftsQuery = useAdminProposalList()
   const [activationLink, setActivationLink] = useState('')
   const [selectedAdminEmails, setSelectedAdminEmails] = useState<string[]>([])
   const [selectionBarDismissed, setSelectionBarDismissed] = useState(false)
@@ -269,7 +259,6 @@ function SuperadminAdminManagementContent() {
       email: record.email,
       displayName: record.displayName,
       organizationName: record.organizationName,
-      accessScope: record.accessScope,
       status,
       description: record.description,
       walletAddress: record.walletAddress,
@@ -356,28 +345,16 @@ function SuperadminAdminManagementContent() {
         email: formData.email,
         walletAddress: formData.walletAddress, // this can be empty now
         organizationName: formData.organizationName,
-        accessScope: formData.scope,
         role: 'admin',
       },
       {
         onSuccess: async (invite) => {
-          // Sync specific space access if needed
-          if (formData.scope === 'specific' && selectedSpaceIds.length > 0) {
-            try {
-              await syncAdminSpaces(invite.email, selectedSpaceIds)
-            } catch (error) {
-              console.error('Failed to sync spaces:', error)
-              showToast({ tone: 'info', title: 'Akses pemilihan gagal disimpan', description: 'Admin dibuat, tetapi daftar akses pemilihan gagal dikonfigurasi.' })
-            }
-          }
-
           updateTab('daftar')
           setActiveStatus('Semua Status')
           if (invite.activationLink) {
             setActivationLink(invite.activationLink)
           }
           setFormData(initialFormData)
-          setSelectedSpaceIds([])
           clearAdminDraft()
 
           const emailMsg = invite.emailStatus === 'sent'
@@ -690,76 +667,9 @@ function SuperadminAdminManagementContent() {
             </div>
           </AppSectionCard>
 
-          <AppSectionCard>
-            <SuperadminSectionHeading
-              title="Akses Space"
-              description="Tentukan ruang lingkup pemilihan yang dapat dikelola oleh admin ini. Admin dengan akses terbatas hanya melihat pemilihan yang dibuatnya sendiri atau yang ditugaskan secara spesifik."
-            />
-            <div className="mt-8 space-y-4">
-              {[
-                {
-                  value: 'all' as const,
-                  label: 'Semua Pemilihan',
-                  description: 'Admin dapat memantau dan mengelola seluruh pemilihan yang tersedia.',
-                },
-                {
-                  value: 'specific' as const,
-                  label: 'Pemilihan Tertentu',
-                  description: 'Admin hanya mengelola pemilihan yang dibuatnya sendiri. Superadmin dapat menugaskan akses ke pemilihan lain secara opsional.',
-                },
-              ].map((option) => (
-                <SuperadminRadioCard
-                  key={option.value}
-                  active={formData.scope === option.value}
-                  title={option.label}
-                  description={option.description}
-                  onClick={() => setFormData((current) => ({ ...current, scope: option.value }))}
-                />
-              ))}
-            </div>
-
-            {formData.scope === 'specific' && (
-              <div className="mt-8 border-t border-slate-100 pt-8">
-                <SuperadminFieldLabel>Tugaskan Pemilihan Tambahan (Opsional)</SuperadminFieldLabel>
-                <p className="mt-2 text-[13px] text-slate-500">Admin secara otomatis dapat mengelola pemilihan yang ia buat sendiri. Daftar di bawah hanya untuk memberikan akses ke pemilihan yang dibuat admin lain.</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {proposalDraftsQuery.isLoading ? (
-                    Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-50" />
-                    ))
-                  ) : (proposalDraftsQuery.data as ProposalDraftRecord[] | undefined)?.length === 0 ? (
-                    <p className="col-span-full text-[14px] text-slate-500 italic">Belum ada pemilihan yang dibuat di sistem.</p>
-                  ) : (
-                    (proposalDraftsQuery.data as ProposalDraftRecord[] | undefined)?.map((proposal) => (
-                      <label
-                        key={proposal.id}
-                        className={`flex cursor-pointer items-center gap-4 rounded-2xl border p-4 transition ${
-                          selectedSpaceIds.includes(proposal.id)
-                            ? 'border-black bg-slate-50'
-                            : 'border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        <Checkbox
-                          checked={selectedSpaceIds.includes(proposal.id)}
-                          onCheckedChange={(checked) => {
-                            setSelectedSpaceIds(current =>
-                              checked
-                                ? [...current, proposal.id]
-                                : current.filter(id => id !== proposal.id)
-                            )
-                          }}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[14px] font-semibold text-slate-900">{proposal.title}</p>
-                          <p className="truncate text-[12px] text-slate-500">{proposal.organizationName || 'Tanpa Organisasi'}</p>
-                        </div>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </AppSectionCard>
+          {/* ponytail: Akses Space section removed — access is now fully automatic.
+              Each admin only sees proposals they created (enforced by RLS created_by check).
+              No manual scope selection needed. */}
 
           <AppSectionCard>
             <SuperadminSectionHeading

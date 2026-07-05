@@ -13,14 +13,6 @@ export interface AppProfileRecord {
   updatedAt: string
 }
 
-export interface AdminSpaceAccessRecord {
-  id: string
-  adminEmail: string
-  proposalDraftId: string
-  createdAt: string
-  proposalTitle?: string // Optional for display convenience
-}
-
 export interface AdminDirectoryRecord {
   email: string
   role: Extract<AppRole, 'admin' | 'super_admin'>
@@ -35,7 +27,6 @@ export interface AdminDirectoryRecord {
   createdAt: string
   updatedAt: string | null
   profile: AppProfileRecord | null
-  assignedSpaces?: AdminSpaceAccessRecord[]
 }
 
 export interface AdminRegistryRecord {
@@ -63,7 +54,6 @@ export interface AdminRegistryInput {
   email: string
   displayName?: string | null
   organizationName?: string | null
-  accessScope?: 'all' | 'specific'
   status?: 'pending' | 'active' | 'inactive'
   description?: string | null
   walletAddress?: string | null

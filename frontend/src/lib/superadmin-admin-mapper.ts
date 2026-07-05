@@ -34,20 +34,13 @@ export function mapDirectoryAdmin(record: AdminDirectoryRecord): SuperadminAdmin
       : 'Menunggu'
   const accessLabel = isSuperAdmin ? 'Super Admin' : 'Admin Organisasi'
   const accessDetail = record.description
-    ?? (isSuperAdmin ? 'Akses Platform' : record.accessScope === 'all' ? 'Semua Pemilihan' : 'Pemilihan Tertentu')
+    ?? (isSuperAdmin ? 'Akses Platform' : 'Pemilihan sendiri')
 
-  // Map assigned spaces from database if available
-  const mappedSpaces = record.assignedSpaces?.map(access => ({
-    id: access.proposalDraftId,
-    title: access.proposalTitle || 'Pemilihan Terbatas',
-    subtitle: 'Akses pengelolaan pemilihan spesifik',
-    role: accessLabel
-  })) || []
-
-  // If scope is 'all' or no specific assignments, use the default organization-based display
-  const finalSpaces = record.accessScope === 'all' || mappedSpaces.length === 0
-    ? (record.organizationName ? [{ id: record.organizationName, title: record.organizationName, subtitle: record.accessScope === 'all' ? 'Akses semua ruang pemilihan organisasi' : 'Belum ada ruang pemilihan spesifik ditugaskan', role: accessLabel }] : [])
-    : mappedSpaces
+  // ponytail: access is automatic — admin only sees proposals they created.
+  // No manual space assignment needed.
+  const finalSpaces = isSuperAdmin
+    ? [{ id: 'superadmin', title: 'Akses Penuh', subtitle: 'Superadmin dapat mengakses seluruh pemilihan', role: 'Super Admin' }]
+    : [{ id: record.email, title: record.organizationName || 'Admin Organisasi', subtitle: 'Hanya mengelola pemilihan sendiri', role: accessLabel }]
 
   return {
     id: record.email,

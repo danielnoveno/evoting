@@ -3,7 +3,7 @@
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import type { Database } from '@/lib/supabase/database.types'
-import type { AdminDirectoryRecord, AdminRegistryInput, AdminRegistryRecord, AdminSpaceAccessRecord, AppProfileRecord, AppRole, CurrentAdminRegistryStatus, ProfileUpsertInput } from '@/lib/repositories/types'
+import type { AdminDirectoryRecord, AdminRegistryInput, AdminRegistryRecord, AppProfileRecord, AppRole, CurrentAdminRegistryStatus, ProfileUpsertInput } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
 import { clearLocalAuthSession, isInvalidStoredSession, sameWalletAddress } from './helpers'
 
@@ -463,7 +463,7 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
   const client = getSupabaseBrowserClient()
   if (!client) return []
 
-  const [profilesResult, registryResult, accessResult] = await Promise.all([
+  const [profilesResult, registryResult] = await Promise.all([
     client
       .schema('app')
       .from('app_profiles')
@@ -476,33 +476,14 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
       .select('*')
       .in('assigned_role', ['admin', 'super_admin'])
       .order('created_at', { ascending: false }),
-    client
-      .schema('app')
-      .from('admin_space_access')
-      .select('*, proposal_drafts(title)')
   ])
 
   if (profilesResult.error) throw new RepositoryError('Gagal memuat profil admin. Coba lagi.')
   if (registryResult.error) throw new RepositoryError('Gagal memuat registry admin. Coba lagi.')
-  if (accessResult.error) throw new RepositoryError('Gagal memuat data akses space admin.')
 
   const registryByEmail = new Map<string, AdminRegistryRow>()
   registryResult.data.forEach((row) => {
     registryByEmail.set(row.email.toLowerCase(), row)
-  })
-
-  const accessByEmail = new Map<string, AdminSpaceAccessRecord[]>()
-  accessResult.data?.forEach((row: any) => {
-    const email = row.admin_email.toLowerCase()
-    const current = accessByEmail.get(email) || []
-    current.push({
-      id: row.id,
-      adminEmail: row.admin_email,
-      proposalDraftId: row.proposal_draft_id,
-      createdAt: row.created_at,
-      proposalTitle: row.proposal_drafts?.title || 'Pemilihan tidak dikenal'
-    })
-    accessByEmail.set(email, current)
   })
 
   const directoryByEmail = new Map<string, AdminDirectoryRecord>()
@@ -512,14 +493,13 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
     const email = profile.email?.trim() || profile.walletAddress
     const lowerEmail = email.toLowerCase()
     const registry = profile.email ? registryByEmail.get(lowerEmail) : undefined
-    const assignedSpaces = accessByEmail.get(lowerEmail) || []
 
     directoryByEmail.set(lowerEmail, {
       email,
       role: profile.role === 'super_admin' ? 'super_admin' : 'admin',
       displayName: firstNonEmptyText(profile.displayName, registry?.organization_name, email.split('@')[0]),
       organizationName: registry?.organization_name ?? null,
-      accessScope: registry?.access_scope ?? 'all',
+      accessScope: registry?.access_scope ?? 'specific',
       registryStatus: registry?.status ?? null,
       description: registry?.description ?? null,
       walletAddress: firstNonEmptyText(profile.walletAddress, registry?.wallet_address),
@@ -528,7 +508,6 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
       createdAt: profile.createdAt ?? registry?.created_at ?? '',
       updatedAt: profile.updatedAt ?? registry?.updated_at ?? null,
       profile,
-      assignedSpaces,
     })
   })
 
@@ -536,8 +515,6 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
     const key = row.email.toLowerCase()
     if (directoryByEmail.has(key)) return
     if (row.assigned_role !== 'admin' && row.assigned_role !== 'super_admin') return
-
-    const assignedSpaces = accessByEmail.get(key) || []
 
     directoryByEmail.set(key, {
       email: row.email,
@@ -553,7 +530,6 @@ export async function listAdminDirectory(): Promise<AdminDirectoryRecord[]> {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       profile: null,
-      assignedSpaces,
     })
   })
 
@@ -598,7 +574,7 @@ export async function createAdminRegistry(input: AdminRegistryInput): Promise<Ad
     email,
     assigned_role: 'admin',
     organization_name: input.organizationName?.trim() || input.displayName?.trim() || null,
-    access_scope: input.accessScope ?? 'all',
+    access_scope: 'specific',
     status: input.status ?? 'pending',
     description: input.description?.trim() || null,
     wallet_address: input.walletAddress?.trim() || null,
@@ -649,7 +625,7 @@ export async function updateAdminRegistry(currentEmail: string, input: AdminRegi
   const payload: Database['app']['Tables']['admin_registry']['Update'] = {
     email: nextEmail,
     organization_name: input.organizationName?.trim() || input.displayName?.trim() || null,
-    access_scope: input.accessScope ?? 'all',
+    access_scope: 'specific',
     status: input.status ?? 'pending',
     description: input.description?.trim() || null,
     wallet_address: input.walletAddress?.trim() || null,

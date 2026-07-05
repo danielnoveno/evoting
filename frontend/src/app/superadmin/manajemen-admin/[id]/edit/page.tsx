@@ -2,11 +2,10 @@
 
 import { ShieldCheck, UserCog } from 'lucide-react'
 import { notFound, useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   SuperadminFieldLabel,
   SuperadminPageHeader,
-  SuperadminRadioCard,
   SuperadminSectionCard,
   SuperadminSectionHeading,
   SuperadminSelectInput,
@@ -21,17 +20,8 @@ import { useSuperadminAdminDirectory, useUpdateAdminRegistry } from '@/hooks/use
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { mapDirectoryAdmin } from '@/lib/superadmin-admin-mapper'
-import { useAdminProposalList } from '@/hooks/use-admin-proposal-list'
-import { syncAdminSpaces } from '@/lib/repositories/adminAccessRepository'
-import { Checkbox } from '@/components/ui/checkbox'
-import type { ProposalDraftRecord } from '@/lib/repositories/types'
 
-type AdminScope = 'all' | 'specific'
 type AdminStatus = 'Aktif' | 'Menunggu' | 'Nonaktif'
-
-function inferScope(accessDetail: string): AdminScope {
-  return accessDetail === 'Pemilihan Tertentu' || accessDetail.includes('Space') ? 'specific' : 'all'
-}
 
 export default function SuperadminAdminEditPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -40,7 +30,6 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
   const adminId = decodeURIComponent(params.id)
   const adminDirectoryQuery = useSuperadminAdminDirectory()
   const updateAdminMutation = useUpdateAdminRegistry()
-  const proposalDraftsQuery = useAdminProposalList()
   const directoryRecord = useMemo(() => adminDirectoryQuery.data?.find((item) => item.email === adminId && item.role === 'admin') ?? null, [adminDirectoryQuery.data, adminId])
   const admin = useMemo(() => directoryRecord ? mapDirectoryAdmin(directoryRecord) : null, [directoryRecord])
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -50,26 +39,21 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
     name: admin?.name ?? '',
     email: admin?.email ?? '',
     organizationName: directoryRecord?.organizationName ?? '',
-    scope: directoryRecord?.accessScope ?? (admin ? inferScope(admin.accessDetail) : 'all' as AdminScope),
     status: (admin?.status ?? 'Menunggu') as AdminStatus,
     accessLabel: admin?.accessLabel ?? 'Admin Organisasi',
-    accessDetail: admin?.accessDetail ?? 'Pemilihan Tertentu',
+    accessDetail: admin?.accessDetail ?? 'Pemilihan sendiri',
   }), [admin, directoryRecord])
 
   const [formData, setFormData] = useState(initialForm)
-  const [selectedSpaceIds, setSelectedSpaceIds] = useState<string[]>([])
   const editSource = searchParams.get('from')
   const backHref = editSource === 'list'
     ? '/superadmin/manajemen-admin'
     : `/superadmin/manajemen-admin/${encodeURIComponent(adminId)}`
   const backLabel = editSource === 'list' ? 'Kembali ke Manajemen Admin' : 'Kembali ke Detail Admin'
 
-  useEffect(() => {
+  useMemo(() => {
     setFormData(initialForm)
-    if (directoryRecord?.assignedSpaces) {
-      setSelectedSpaceIds(directoryRecord.assignedSpaces.map(s => s.proposalDraftId))
-    }
-  }, [initialForm, directoryRecord])
+  }, [initialForm])
 
   if (adminDirectoryQuery.isLoading) {
     return (
@@ -83,13 +67,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
 
   if (!admin || !directoryRecord) notFound()
 
-  const isSpacesDirty = useMemo(() => {
-    const initialIds = (directoryRecord.assignedSpaces || []).map(s => s.proposalDraftId).sort()
-    const currentIds = [...selectedSpaceIds].sort()
-    return JSON.stringify(initialIds) !== JSON.stringify(currentIds)
-  }, [directoryRecord.assignedSpaces, selectedSpaceIds])
-
-  const isDirty = JSON.stringify(formData) !== JSON.stringify(initialForm) || isSpacesDirty
+  const isDirty = JSON.stringify(formData) !== JSON.stringify(initialForm)
 
   const handleChange = <K extends keyof typeof formData>(key: K, value: (typeof formData)[K]) => {
     setFormData((current) => ({ ...current, [key]: value }))
@@ -106,9 +84,6 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
       return
     }
 
-    // ponytail: removed — admin with specific scope can have zero assigned spaces;
-    // they will only see proposals they create (enforced by RLS created_by check).
-
     setConfirmOpen(true)
   }
 
@@ -120,30 +95,12 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
           email: formData.email,
           displayName: formData.name,
           organizationName: formData.organizationName,
-          accessScope: formData.scope,
           status: formData.status === 'Nonaktif' ? 'inactive' : formData.status === 'Aktif' ? 'active' : 'pending',
           description: formData.accessDetail,
         },
       },
       {
         onSuccess: async (updated) => {
-          // Sync specific space access if needed
-          if (formData.scope === 'specific') {
-            try {
-              await syncAdminSpaces(updated.email, selectedSpaceIds)
-            } catch (error) {
-              console.error('Failed to sync spaces:', error)
-              showToast({ tone: 'info', title: 'Akses pemilihan gagal disimpan', description: 'Profil diperbarui, tetapi daftar akses pemilihan gagal disinkronkan.' })
-            }
-          } else if (formData.scope === 'all' && isSpacesDirty) {
-            // Clear spaces if scope changed to 'all'
-            try {
-              await syncAdminSpaces(updated.email, [])
-            } catch (error) {
-              console.error('Failed to clear spaces:', error)
-            }
-          }
-
           setConfirmOpen(false)
           showToast({
             tone: 'success',
@@ -227,69 +184,24 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
 
               <label className="block xl:col-span-2">
                 <SuperadminFieldLabel>Detail Akses</SuperadminFieldLabel>
-                <SuperadminTextInput value={formData.accessDetail} onChange={(event) => handleChange('accessDetail', event.target.value)} placeholder="Contoh: Semua Pemilihan" maxLength={200} />
+                <SuperadminTextInput value={formData.accessDetail} onChange={(event) => handleChange('accessDetail', event.target.value)} placeholder="Contoh: Pemilihan sendiri" maxLength={200} />
               </label>
             </div>
           </SuperadminSectionCard>
 
           <SuperadminSectionCard>
-            <SuperadminSectionHeading title="Cakupan Akses" description="Tentukan ruang lingkup pemilihan yang dapat dikelola oleh admin ini. Admin dengan akses terbatas hanya melihat pemilihan yang dibuatnya sendiri atau yang ditugaskan secara spesifik." />
-            <div className="mt-8 space-y-4">
-              <SuperadminRadioCard
-                active={formData.scope === 'all'}
-                title="Semua Pemilihan"
-                description="Admin dapat mengakses seluruh ruang pemilihan yang tersedia."
-                onClick={() => handleChange('scope', 'all')}
-              />
-              <SuperadminRadioCard
-                active={formData.scope === 'specific'}
-                title="Pemilihan Tertentu"
-                description="Admin hanya mengelola pemilihan yang dibuatnya sendiri. Superadmin dapat menugaskan akses ke pemilihan lain secara opsional."
-                onClick={() => handleChange('scope', 'specific')}
-              />
-            </div>
-
-            {formData.scope === 'specific' && (
-              <div className="mt-8 border-t border-slate-100 pt-8">
-                <SuperadminFieldLabel>Tugaskan Pemilihan Tambahan (Opsional)</SuperadminFieldLabel>
-                <p className="mt-2 text-[13px] text-slate-500">Admin secara otomatis dapat mengelola pemilihan yang ia buat sendiri. Daftar di bawah hanya untuk memberikan akses ke pemilihan yang dibuat admin lain.</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {proposalDraftsQuery.isLoading ? (
-                    Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-50" />
-                    ))
-                  ) : (proposalDraftsQuery.data as ProposalDraftRecord[] | undefined)?.length === 0 ? (
-                    <p className="col-span-full text-[14px] text-slate-500 italic">Belum ada pemilihan yang dibuat di sistem.</p>
-                  ) : (
-                    (proposalDraftsQuery.data as ProposalDraftRecord[] | undefined)?.map((proposal) => (
-                      <label
-                        key={proposal.id}
-                        className={`flex cursor-pointer items-center gap-4 rounded-2xl border p-4 transition ${
-                          selectedSpaceIds.includes(proposal.id)
-                            ? 'border-black bg-slate-50'
-                            : 'border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        <Checkbox
-                          checked={selectedSpaceIds.includes(proposal.id)}
-                          onCheckedChange={(checked) => {
-                            setSelectedSpaceIds(current =>
-                              checked
-                                ? [...current, proposal.id]
-                                : current.filter(id => id !== proposal.id)
-                            )
-                          }}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[14px] font-semibold text-slate-900">{proposal.title}</p>
-                          <p className="truncate text-[12px] text-slate-500">{proposal.organizationName || 'Tanpa Organisasi'}</p>
-                        </div>
-                      </label>
-                    ))
-                  )}
+            <SuperadminSectionHeading title="Cakupan Akses" description="Admin hanya dapat mengelola pemilihan yang dibuatnya sendiri. Akses ini diterapkan secara otomatis oleh sistem." />
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[14px] font-semibold text-slate-900">Pemilihan Sendiri</p>
+                  <p className="text-[13px] text-slate-500">Admin hanya melihat dan mengelola proposal pemilihan yang ia buat sendiri.</p>
                 </div>
               </div>
-            )}
+            </div>
           </SuperadminSectionCard>
 
           <SuperadminSectionCard>
@@ -323,10 +235,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
               <div className="mt-5 space-y-3 text-[14px] text-slate-800">
                 <p><span className="font-semibold text-slate-900">Identitas wallet:</span> {admin.blockchainIdentity}</p>
                 <p><span className="font-semibold text-slate-900">Akses saat ini:</span> {formData.accessLabel} · {formData.accessDetail}</p>
-                <p><span className="font-semibold text-slate-900">Mode akses:</span> {formData.scope === 'all' ? 'Semua Pemilihan' : 'Pemilihan Tertentu'}</p>
-                {formData.scope === 'specific' && (
-                  <p className="text-emerald-600 font-medium">· {selectedSpaceIds.length} pemilihan dipilih</p>
-                )}
+                <p><span className="font-semibold text-slate-900">Mode akses:</span> Pemilihan sendiri</p>
               </div>
             </div>
           </SuperadminSectionCard>
