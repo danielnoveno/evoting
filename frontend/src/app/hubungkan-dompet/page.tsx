@@ -213,6 +213,9 @@ function ConnectWalletContent() {
   }, [mounted, currentProfileQuery.error])
 
   const isWalletBound = sameWalletAddress(currentProfile?.walletAddress, address)
+  // ponytail: user yang sudah aktif — wallet sudah punya profil di database (voter atau admin)
+  const isReturningUser = Boolean(currentProfile || connectedWalletProfile || adminRegistryByWalletQuery.data)
+  const isReturningVoter = isReturningUser && activationContext === 'voter'
   const accountHasDifferentWallet = Boolean(address && currentProfile?.walletAddress && !isWalletBound)
   const connectedWalletOwnedByOther = Boolean(
     authSession?.user?.id &&
@@ -279,6 +282,12 @@ function ConnectWalletContent() {
 
       if (!redirectParam && currentProfile.role === 'admin') {
          router.replace('/admin')
+         return
+      }
+
+      // ponytail: voter yang sudah aktif → langsung ke halaman pemilih
+      if (!redirectParam && currentProfile.role === 'voter' && isWalletBound) {
+         router.replace('/pemilih')
          return
       }
     }
@@ -464,7 +473,9 @@ function ConnectWalletContent() {
                           ? activationContext === 'admin'
                             ? 'Ikuti 3 langkah untuk membuka akses dashboard pengelolaan organisasi.'
                             : 'Ikuti 3 langkah untuk mulai memilih di Votein.'
-                          : 'Ikuti 3 langkah untuk mulai menggunakan Votein.'}
+                          : isReturningVoter
+                            ? 'ID voting Anda sudah terdaftar. Masuk untuk melanjutkan.'
+                            : 'Ikuti 3 langkah untuk mulai menggunakan Votein.'}
                       </p>
                     </div>
 
@@ -552,9 +563,13 @@ function ConnectWalletContent() {
                         {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-[14px] font-semibold text-slate-900">Buat ID Voting</h2>
+                        <h2 className="text-[14px] font-semibold text-slate-900">{isReturningVoter && isConnected ? 'ID Voting Terdeteksi' : 'Buat ID Voting'}</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isConnected ? 'ID voting sudah aktif.' : 'Buat ID voting untuk membuktikan identitas Anda.'}
+                          {isConnected
+                            ? isReturningVoter
+                              ? 'ID voting Anda sudah aktif di sistem.'
+                              : 'ID voting sudah aktif.'
+                            : 'Buat ID voting untuk membuktikan identitas Anda.'}
                         </p>
                       </div>
                       {!isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -596,13 +611,23 @@ function ConnectWalletContent() {
 
                     {((!isAdminActivationFlow && !isVoterSsoFirstFlow && !isConnected) || (isAdminActivationFlow && authSession && !isConnected) || (isVoterSsoFirstFlow && !isConnected)) && (
                       <div className="mt-8 w-full">
-                        <h2 className="text-[20px] font-semibold text-slate-900">{isAdminActivationFlow ? 'Tahap 2 — Buat ID Voting' : activationMode ? isVoterSsoFirstFlow ? 'Tahap 2 — Buat ID Voting' : 'Tahap 1 — Buat ID Voting' : 'Buat ID Voting'}</h2>
+                        <h2 className="text-[20px] font-semibold text-slate-900">
+                          {isAdminActivationFlow
+                            ? 'Tahap 2 — Buat ID Voting'
+                            : isReturningVoter
+                              ? 'Hubungkan ID Voting'
+                              : activationMode
+                                ? isVoterSsoFirstFlow ? 'Tahap 2 — Buat ID Voting' : 'Tahap 1 — Buat ID Voting'
+                                : 'Buat ID Voting'}
+                        </h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                          {activationMode
-                            ? activationContext === 'admin'
-                              ? 'Buat ID voting untuk mengelola pemilihan organisasi Anda.'
-                              : 'Buat ID voting untuk mulai memilih. Gratis, tanpa biaya apapun.'
-                            : 'Cukup buat ID voting, dan sistem akan mengenali Anda secara otomatis.'}
+                          {isReturningVoter
+                            ? 'ID voting Anda sudah terdaftar. Sambungkan dompet digital untuk melanjutkan masuk.'
+                            : activationMode
+                              ? activationContext === 'admin'
+                                ? 'Buat ID voting untuk mengelola pemilihan organisasi Anda.'
+                                : 'Buat ID voting untuk mulai memilih. Gratis, tanpa biaya apapun.'
+                              : 'Cukup buat ID voting, dan sistem akan mengenali Anda secara otomatis.'}
                         </p>
 
                         {activationMode && (
@@ -626,7 +651,16 @@ function ConnectWalletContent() {
                         )}
 
                         <div className="mt-8 space-y-4">
-                          {[
+                          {isReturningVoter ? [
+                            'ID voting Anda sudah terdaftar di sistem.',
+                            'Cukup sambungkan dompet dan masuk dengan akun kampus.',
+                            'Tidak perlu membuat ID voting lagi.',
+                          ].map((item) => (
+                            <div key={item} className="flex items-center gap-3 text-[13px] text-slate-600">
+                              <span className="h-3 w-3 rounded-full border-2 border-blue-500 bg-blue-50" />
+                              {item}
+                            </div>
+                          )) : [
                             'ID voting dibuat otomatis — tidak perlu install aplikasi tambahan.',
                             'Tidak ada biaya apapun, gratis seluruhnya.',
                             activationContext === 'admin' ? 'Anda perlu email kampus dan ID voting yang cocok.' : 'Pilihan Anda tetap terjaga sampai fase reveal.',
