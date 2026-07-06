@@ -1632,3 +1632,17 @@ $$;
 -- Allow any client (including unauthenticated) to call this function.
 -- The function itself is security definer, so RLS is bypassed inside.
 grant execute on function app.admin_role_by_wallet(text) to anon, authenticated, service_role;
+
+-- Public REST wrapper for Supabase client RPC.
+-- Supabase exposes `public` by default; keep data lookup inside `app` schema.
+create or replace function public.admin_role_by_wallet(wallet_addr text)
+returns table(assigned_role app.app_role, organization_name text)
+language sql
+stable
+security definer
+set search_path = public, app
+as $$
+  select * from app.admin_role_by_wallet(wallet_addr);
+$$;
+
+grant execute on function public.admin_role_by_wallet(text) to anon, authenticated, service_role;

@@ -4,7 +4,15 @@ export type Database = {
   public: {
     Tables: Record<string, never>
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      admin_role_by_wallet: {
+        Args: { wallet_addr: string }
+        Returns: {
+          assigned_role: 'voter' | 'admin' | 'super_admin'
+          organization_name: string | null
+        }[]
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }
@@ -805,7 +813,15 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      admin_role_by_wallet: {
+        Args: { wallet_addr: string }
+        Returns: {
+          assigned_role: 'voter' | 'admin' | 'super_admin'
+          organization_name: string | null
+        }[]
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

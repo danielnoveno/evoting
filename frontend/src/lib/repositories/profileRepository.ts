@@ -299,7 +299,6 @@ export async function getAdminRegistryByWalletAddress(walletAddress: string): Pr
   if (!normalizedWallet) return null
 
   const { data, error } = await client
-    .schema('app')
     .rpc('admin_role_by_wallet', { wallet_addr: normalizedWallet })
 
   if (error) return null
