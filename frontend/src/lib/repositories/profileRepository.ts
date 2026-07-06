@@ -289,28 +289,26 @@ export async function getProfileByWalletAddress(walletAddress: string): Promise<
   return data ? mapProfileRow(data) : null
 }
 
-// ponytail: pakai security definer RPC — bypass RLS supaya admin context bisa dideteksi
-// SEBELUM user login (chicken-and-egg: perlu tahu admin sebelum login, tapi RLS butuh login dulu)
+// ponytail: pakai API internal service-role — stabil tanpa bergantung PostgREST RPC cache.
+// Perlu deteksi admin SEBELUM user login, sementara RLS admin_registry butuh login dulu.
 export async function getAdminRegistryByWalletAddress(walletAddress: string): Promise<{ role: AppRole; organizationName: string | null } | null> {
-  const client = getSupabaseBrowserClient()
-  if (!client) return null
-
   const normalizedWallet = walletAddress.trim()
   if (!normalizedWallet) return null
 
-  const { data, error } = await client
-    .rpc('admin_role_by_wallet', { wallet_addr: normalizedWallet })
+  const response = await fetch(`/api/admin-role-by-wallet?wallet=${encodeURIComponent(normalizedWallet)}`, {
+    cache: 'no-store',
+  })
+  if (!response.ok) return null
 
-  if (error) return null
-  if (!data) return null
+  const data: unknown = await response.json()
+  if (!isObjectRecord(data)) return null
 
-  // RPC returns a single row or empty array
-  const row = Array.isArray(data) ? data[0] : data
-  if (!row) return null
+  const role = data.role
+  if (role !== 'admin' && role !== 'super_admin') return null
 
   return {
-    role: row.assigned_role as AppRole,
-    organizationName: row.organization_name,
+    role,
+    organizationName: typeof data.organizationName === 'string' ? data.organizationName : null,
   }
 }
 
