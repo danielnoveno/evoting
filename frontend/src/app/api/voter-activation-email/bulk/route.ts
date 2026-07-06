@@ -26,6 +26,14 @@ function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex')
 }
 
+function isAllowedVoterEmail(email: string) {
+  if (/^[a-zA-Z0-9._%+-]+@(students\.uajy\.ac\.id|uajy\.ac\.id)$/.test(email)) return true
+  // Testing only: enable in Vercel with ALLOW_TEST_VOTER_EMAILS=true.
+  // Keep disabled for thesis/demo claims that require institutional voters.
+  return process.env.ALLOW_TEST_VOTER_EMAILS === 'true'
+    && /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)
+}
+
 async function requireSuperadmin(request: NextRequest) {
   const client = getSupabaseServiceRoleClient()
   if (!client) return { error: jsonError('Service role Supabase belum dikonfigurasi.', 503), client: null }
@@ -81,7 +89,7 @@ export async function POST(request: NextRequest) {
   const dedupedRecipients = Array.from(new Map(recipients.map((item) => [item.email, item])).values())
 
   const results = await Promise.all(dedupedRecipients.map(async (recipient) => {
-    if (!/^[a-zA-Z0-9._%+-]+@(students\.uajy\.ac\.id|uajy\.ac\.id)$/.test(recipient.email)) {
+    if (!isAllowedVoterEmail(recipient.email)) {
       return { email: recipient.email, success: false, error: 'Email institusi voter tidak valid.' }
     }
 
