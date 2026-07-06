@@ -330,11 +330,11 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Misi</p>
                             {candidate.mission.length > 0 ? (
-                              <div className="mt-1">
-                                {candidate.mission.slice(0, 3).map((mission, missionIndex) => (
-                                  <RichTextRenderer key={`${candidate.id}-mission-${missionIndex}`} value={mission} className="line-clamp-2" />
-                                ))}
-                              </div>
+                              <RichTextRenderer
+                                value={candidate.mission.join('\n')}
+                                emptyFallback="Misi belum diisi."
+                                className="mt-1"
+                              />
                             ) : <p className="mt-1 text-slate-500">Misi belum diisi.</p>}
                           </div>
                         </div>

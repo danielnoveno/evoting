@@ -8,13 +8,12 @@ import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
-import { basescanTxUrl, findElection, formatDateTime, formatWallet, useVoterStore } from '@/lib/voter-store'
+import { basescanTxUrl, findElection, formatDateTime, useVoterStore } from '@/lib/voter-store'
 import { saveVoteCommitment, type VoteCommitmentRecord } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useServerWallet } from '@/hooks/use-server-wallet'
 import { useToast } from '@/components/ui/toast-provider'
 import { queueAutoRevealIntent } from '@/lib/auto-reveal-intents'
-import { sameWalletAddress } from '@/lib/repositories/helpers'
 import { resolveSchedulePhase } from '@/lib/election-phase'
 
 async function fetchLatestContractAddress(electionId: string): Promise<string | null> {
@@ -125,8 +124,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
   const voteBlockedReason = !contractAddress
     ? 'Pemilihan ini belum memiliki smart contract aktif.'
-    : store?.profile.wallet && serverWalletAddress && !sameWalletAddress(serverWalletAddress, store.profile.wallet)
-      ? `ID voting (${formatWallet(serverWalletAddress ?? '')}) berbeda dari dompet akun ini (${formatWallet(store.profile.wallet)}).`
+    // ponytail: wallet mismatch check removed — server-derived wallet is the voting identity,
+    // profile wallet is display-only. Race condition between profile load and derivation
+    // caused permanent mismatch on page load.
     : onChainStatusError
       ? 'Status blockchain belum terbaca. Coba muat ulang halaman sebelum mencoblos.'
     : effectivePhaseNumber !== 1
@@ -349,11 +349,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         return
       }
 
-      if (serverWalletAddress && store.profile.wallet && !sameWalletAddress(serverWalletAddress, store.profile.wallet)) {
-        setConfirmOpen(false)
-        showToast({ title: 'ID voting tidak sesuai', description: 'ID voting yang di-derive tidak sesuai dengan profil pemilih.', tone: 'error' })
-        return
-      }
+      // ponytail: wallet mismatch check removed — server-derived wallet is the voting identity
 
       if (!candidate || candidateNumber <= 0) {
         setConfirmOpen(false)
@@ -675,11 +671,10 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
                     <div>
                       <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">Misi</h4>
-                      <div className="mt-1.5">
-                        {candidate.mission.map((item, mIndex) => (
-                          <RichTextRenderer key={mIndex} value={item} className="text-[12px] leading-relaxed text-slate-600 line-clamp-2" />
-                        ))}
-                      </div>
+                      <RichTextRenderer
+                        value={candidate.mission.join('\n')}
+                        className="mt-1.5 text-[12px] leading-relaxed text-slate-600"
+                      />
                     </div>
                   </div>
                 </div>

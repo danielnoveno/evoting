@@ -521,7 +521,7 @@ function ConnectWalletContent() {
                         {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className={authSession ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Buat ID Voting</h2>
+                        <h2 className={authSession ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Buat/Masukkan ID Voting</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
                           {isConnected ? 'ID voting sudah aktif.' : 'Buat ID voting untuk mengelola pemilihan.'}
                         </p>
@@ -548,7 +548,7 @@ function ConnectWalletContent() {
                         {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-[14px] font-semibold text-slate-900">Buat ID Voting</h2>
+                        <h2 className="text-[14px] font-semibold text-slate-900">Buat/Masukkan ID Voting</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
                           {isConnected ? 'ID voting sudah aktif.' : 'Buat ID voting untuk membuktikan identitas Anda.'}
                         </p>

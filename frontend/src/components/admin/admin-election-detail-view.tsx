@@ -693,11 +693,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">Misi</p>
                     {candidate.mission.trim() ? (
-                      <div className="mt-1">
-                        {candidate.mission.split('\n').map((item) => item.trim()).filter(Boolean).slice(0, 3).map((mission, missionIndex) => (
-                          <RichTextRenderer key={`${candidate.id}-mission-${missionIndex}`} value={mission} className="line-clamp-2" />
-                        ))}
-                      </div>
+                      <RichTextRenderer value={candidate.mission} emptyFallback="Misi belum diisi." className="mt-1" />
                     ) : <p className="mt-1 text-slate-500">Misi belum diisi.</p>}
                   </div>
                 </div>

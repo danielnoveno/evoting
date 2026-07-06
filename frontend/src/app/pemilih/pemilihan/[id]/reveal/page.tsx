@@ -11,7 +11,6 @@ import { clearVoteCommitment, loadVoteCommitment } from '@/lib/vote-commitment-s
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useServerWallet } from '@/hooks/use-server-wallet'
 import { useToast } from '@/components/ui/toast-provider'
-import { sameWalletAddress } from '@/lib/repositories/helpers'
 
 export default function VoterRevealPage({ params }: { params: { id: string } }) {
   const { store, loading: storeLoading, actions } = useVoterStore()
@@ -148,7 +147,6 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
     ? Number(currentPhase)
     : null
   const profileWallet = store.profile.wallet
-  const isServerWalletProfileWallet = sameWalletAddress(serverWalletAddress, profileWallet)
   const isRevealPhaseOnChain = currentPhaseNumber === 2
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? hasRevealedError ?? null
   const onChainPhaseLabel = currentPhaseNumber === 0
@@ -162,7 +160,6 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
           : 'Belum terbaca'
   const isOnChainStatusReady = Boolean(contractAddress)
     && Boolean(serverWalletAddress)
-    && isServerWalletProfileWallet
     && currentPhaseNumber !== null
     && typeof isWhitelistedOnChain === 'boolean'
     && typeof hasCommittedOnChain === 'boolean'
@@ -171,8 +168,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
     ? 'Smart contract untuk pemilihan ini belum tersedia.'
     : !isWalletReady
       ? 'ID voting sedang disiapkan. Tunggu sebentar sebelum mengesahkan suara.'
-    : profileWallet && !isServerWalletProfileWallet
-      ? `ID voting (${formatWallet(serverWalletAddress ?? '')}) berbeda dari dompet akun ini (${formatWallet(profileWallet)}).`
+    // ponytail: wallet mismatch check removed — server-derived wallet is the voting identity
     : onChainStatusError
       ? 'Jaringan Base Sepolia belum merespons. Coba muat ulang status sebelum mengesahkan suara.'
     : !isOnChainStatusReady
