@@ -289,7 +289,8 @@ export async function getProfileByWalletAddress(walletAddress: string): Promise<
   return data ? mapProfileRow(data) : null
 }
 
-// ponytail: cek admin_registry langsung by wallet_address — admin mungkin belum punya app_profiles
+// ponytail: pakai security definer RPC — bypass RLS supaya admin context bisa dideteksi
+// SEBELUM user login (chicken-and-egg: perlu tahu admin sebelum login, tapi RLS butuh login dulu)
 export async function getAdminRegistryByWalletAddress(walletAddress: string): Promise<{ role: AppRole; organizationName: string | null } | null> {
   const client = getSupabaseBrowserClient()
   if (!client) return null
@@ -299,19 +300,18 @@ export async function getAdminRegistryByWalletAddress(walletAddress: string): Pr
 
   const { data, error } = await client
     .schema('app')
-    .from('admin_registry')
-    .select('assigned_role, organization_name, status')
-    .ilike('wallet_address', normalizedWallet)
-    .eq('status', 'active')
-    .limit(1)
-    .maybeSingle()
+    .rpc('admin_role_by_wallet', { wallet_addr: normalizedWallet })
 
   if (error) return null
   if (!data) return null
 
+  // RPC returns a single row or empty array
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row) return null
+
   return {
-    role: data.assigned_role as AppRole,
-    organizationName: data.organization_name,
+    role: row.assigned_role as AppRole,
+    organizationName: row.organization_name,
   }
 }
 

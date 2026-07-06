@@ -1606,3 +1606,29 @@ DO $$
 BEGIN
   RAISE NOTICE 'Admin access_scope default changed from all to specific. All existing admins updated to specific.';
 END $$;
+
+--
+-- From: 20260706T000000_admin_role_by_wallet_function.sql
+--
+
+-- Security definer function: lookup admin status by wallet address.
+-- Bypasses RLS so the hubungkan-dompet page can detect admin context
+-- BEFORE the user logs in with campus account (chicken-and-egg problem).
+-- Returns only role + org name — no sensitive data exposed.
+create or replace function app.admin_role_by_wallet(wallet_addr text)
+returns table(assigned_role app.app_role, organization_name text)
+language sql
+stable
+security definer
+set search_path = app
+as $$
+  select ar.assigned_role, ar.organization_name
+  from app.admin_registry ar
+  where lower(ar.wallet_address) = lower(wallet_addr)
+    and ar.status = 'active'
+  limit 1;
+$$;
+
+-- Allow any client (including unauthenticated) to call this function.
+-- The function itself is security definer, so RLS is bypassed inside.
+grant execute on function app.admin_role_by_wallet(text) to anon, authenticated, service_role;
