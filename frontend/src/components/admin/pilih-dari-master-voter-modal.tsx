@@ -14,10 +14,12 @@ interface PilihDariMasterVoterModalProps {
   onClose: () => void
   proposalDraftId: string
   existingWallets: Set<string>
+  existingWhitelistStatus?: Map<string, string>
+  pendingOnChainCount?: number
   onSuccess: () => void
 }
 
-export function PilihDariMasterVoterModal({ open, onClose, proposalDraftId, existingWallets, onSuccess }: PilihDariMasterVoterModalProps) {
+export function PilihDariMasterVoterModal({ open, onClose, proposalDraftId, existingWallets, existingWhitelistStatus, pendingOnChainCount = 0, onSuccess }: PilihDariMasterVoterModalProps) {
   const { showToast } = useToast()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [searchTerm, setSearchTerm] = useState('')
@@ -79,7 +81,18 @@ export function PilihDariMasterVoterModal({ open, onClose, proposalDraftId, exis
   }
 
   const handleAdd = () => {
-    if (selectedAvailable.length === 0) return
+    if (selectedAvailable.length === 0) {
+      if (pendingOnChainCount > 0) {
+        showToast({
+          tone: 'info',
+          title: 'Sinkronisasi dilanjutkan',
+          description: `${pendingOnChainCount} pemilih sudah ada di database dan akan didaftarkan ke kontrak.`,
+        })
+        onSuccess()
+        onClose()
+      }
+      return
+    }
 
     addToWhitelistMutation.mutate(
       { proposalDraftId, masterVoterIds: selectedAvailable.map((v) => v.id) },
@@ -150,10 +163,16 @@ export function PilihDariMasterVoterModal({ open, onClose, proposalDraftId, exis
               </span>
             )}
           </button>
-          <span className="text-[12px] text-slate-500">
-            {available.length} tersedia / {voters.length} total
+          <span className="text-right text-[12px] text-slate-500">
+            {available.length} baru tersedia / {pendingOnChainCount} pending on-chain
           </span>
         </div>
+
+        {pendingOnChainCount > 0 ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] leading-6 text-amber-800">
+            Ada {pendingOnChainCount} pemilih yang sudah masuk whitelist database tetapi belum terdaftar di kontrak. Jika pemilih yang dicari sudah ada, lanjutkan dengan sinkronisasi on-chain, bukan tambah ulang.
+          </div>
+        ) : null}
 
         {/* Prodi Filter */}
         {showFilters && (
@@ -276,8 +295,21 @@ export function PilihDariMasterVoterModal({ open, onClose, proposalDraftId, exis
               {alreadyWhitelisted.length > 0 && (
                 <div className="border-t border-slate-100 bg-slate-50 px-4 py-3">
                   <p className="text-[12px] font-medium text-slate-500">
-                    {alreadyWhitelisted.length} voter tidak dapat dipilih (sudah di whitelist atau belum punya wallet)
+                    {alreadyWhitelisted.length} voter tidak dapat dipilih karena sudah ada di whitelist database atau belum punya wallet.
                   </p>
+                  <div className="mt-3 space-y-2">
+                    {alreadyWhitelisted.slice(0, 4).map((voter) => {
+                      const syncStatus = voter.walletAddress ? existingWhitelistStatus?.get(voter.walletAddress.toLowerCase()) : null
+                      return (
+                        <div key={voter.id} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2 text-[12px]">
+                          <span className="truncate text-slate-700">{voter.fullName}</span>
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 font-semibold ${syncStatus === 'synced' ? 'bg-emerald-50 text-emerald-700' : syncStatus ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                            {syncStatus === 'synced' ? 'Sudah on-chain' : syncStatus ? 'Belum on-chain' : 'Tanpa wallet'}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </>
@@ -297,7 +329,7 @@ export function PilihDariMasterVoterModal({ open, onClose, proposalDraftId, exis
           <button
             type="button"
             onClick={handleAdd}
-            disabled={selectedAvailable.length === 0 || addToWhitelistMutation.isPending}
+            disabled={(selectedAvailable.length === 0 && pendingOnChainCount === 0) || addToWhitelistMutation.isPending}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {addToWhitelistMutation.isPending ? (
@@ -308,7 +340,7 @@ export function PilihDariMasterVoterModal({ open, onClose, proposalDraftId, exis
             ) : (
               <>
                 <Users className="h-4 w-4" />
-                Tambahkan {selectedAvailable.length > 0 ? `${selectedAvailable.length} ` : ''}Pemilih
+                {selectedAvailable.length > 0 ? `Tambahkan ${selectedAvailable.length} Pemilih` : 'Sinkronkan Pending'}
               </>
             )}
           </button>

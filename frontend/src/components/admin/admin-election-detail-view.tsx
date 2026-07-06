@@ -1664,6 +1664,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         onClose={() => setMasterVoterModalOpen(false)}
         proposalDraftId={election.id}
         existingWallets={new Set(whitelistRecords.map((r) => r.wallet.toLowerCase()))}
+        existingWhitelistStatus={new Map(whitelistRecords.map((r) => [r.wallet.toLowerCase(), r.syncStatus]))}
+        pendingOnChainCount={unsyncedValidAddresses.length}
         onSuccess={() => { void syncPendingWhitelistAfterMasterAdd() }}
       />
     </AdminShell>
