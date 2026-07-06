@@ -22,7 +22,7 @@ import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { PilihDariMasterVoterModal } from '@/components/admin/pilih-dari-master-voter-modal'
 import { useMasterVoterByWallet } from '@/hooks/use-master-voters'
-import type { PublicElectionCandidateResultRecord } from '@/lib/repositories/types'
+import type { PublicElectionCandidateResultRecord, WhitelistEntryRecord } from '@/lib/repositories/types'
 import { resolveSchedulePhase } from '@/lib/election-phase'
 import { useAccount, useConnect } from 'wagmi'
 
@@ -226,8 +226,9 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     revealStartAt: election.schedule?.revealStartAt ?? null,
     endedAt: election.schedule?.endedAt ?? null,
   }, nowMs)
-  const getUnsyncedValidAddresses = (extraAddresses: string[] = []) => normalizeWhitelistAddresses([
-    ...(whitelistQuery.data ?? [])
+  const getUnsyncedValidAddresses = (extraAddresses: string[] = []) => getUnsyncedValidAddressesFromRecords(whitelistQuery.data ?? [], extraAddresses)
+  const getUnsyncedValidAddressesFromRecords = (records: WhitelistEntryRecord[], extraAddresses: string[] = []) => normalizeWhitelistAddresses([
+    ...records
       .filter((record) => record.syncStatus !== 'synced' && record.validationStatus === 'valid')
       .map((record) => record.walletAddress),
     ...extraAddresses,
@@ -686,6 +687,12 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     startWhitelistSync(getUnsyncedValidAddresses(), 'manual')
   }
 
+  const syncPendingWhitelistAfterMasterAdd = async () => {
+    const result = await whitelistQuery.refetch()
+    const pendingAddresses = getUnsyncedValidAddressesFromRecords(result.data ?? [])
+    startWhitelistSync(pendingAddresses, 'auto')
+  }
+
   const handleOpenImportFile = (filePath: string) => {
 
     whitelistImportSignedUrl.mutate(filePath, {
@@ -867,6 +874,17 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 {(isWritePending || isConfirming || isSyncing) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
                 Daftarkan Pemilih
               </button>
+              {!isAddressValid ? (
+                <button
+                  type="button"
+                  onClick={() => { setManualWhitelistOpen(true); setManualNameAutoFilled(false); setManualWallet(''); setManualName(''); setDebouncedWallet('') }}
+                  disabled={!canManageWhitelist}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[13px] font-semibold text-slate-900 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <CirclePlus className="h-4 w-4" />
+                  Tambah Manual
+                </button>
+              ) : null}
               <div className="inline-flex h-11 items-center gap-3 rounded-2xl bg-slate-100 px-4 text-slate-400 md:w-[260px]">
                 <Link2 className="h-4 w-4" />
                 <input
@@ -961,27 +979,35 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-[20px] font-semibold text-slate-900">Whitelisting Pemilih</h2>
-              <p className="mt-3 max-w-[300px] text-[15px] leading-7 text-slate-500">Unggah berkas atau pilih dari data master voter untuk mendaftarkan identitas digital pemilih.</p>
+              <p className="mt-3 max-w-[300px] text-[15px] leading-7 text-slate-500">
+                {isAddressValid
+                  ? 'Pemilihan sudah terdeploy. Tambah pemilih baru hanya dari master voter agar identitas tetap terkontrol.'
+                  : 'Unggah berkas, tambah manual, atau pilih dari data master voter untuk mendaftarkan identitas digital pemilih.'}
+              </p>
             </div>
             <div className="flex flex-col gap-2">
               <button type="button" onClick={() => setMasterVoterModalOpen(true)} disabled={!canManageWhitelist} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 text-[14px] font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
                 <Users className="h-4 w-4" />
                 Pilih dari Master Voter
               </button>
-              <button type="button" onClick={() => { setManualWhitelistOpen(true); setManualNameAutoFilled(false); setManualWallet(''); setManualName(''); setDebouncedWallet('') }} disabled={!canManageWhitelist} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50">
-                <CirclePlus className="h-4 w-4" />
-                Tambah Manual
-              </button>
+              {!isAddressValid ? (
+                <button type="button" onClick={() => { setManualWhitelistOpen(true); setManualNameAutoFilled(false); setManualWallet(''); setManualName(''); setDebouncedWallet('') }} disabled={!canManageWhitelist} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50">
+                  <CirclePlus className="h-4 w-4" />
+                  Tambah Manual
+                </button>
+              ) : null}
             </div>
           </div>
-          <button type="button" onClick={() => setUploadModalOpen(true)} disabled={!canManageWhitelist} className="mt-8 block w-full rounded-[28px] border border-dashed border-slate-300 p-8 text-center hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-700">
-              <Upload className="h-7 w-7" />
-            </div>
-            <h3 className="mt-6 text-[28px] font-semibold text-slate-900">Unggah Daftar Pemilih (.csv)</h3>
-            <p className="mt-3 text-[15px] leading-7 text-slate-500">Maksimal 10.000 alamat wallet per unggahan.</p>
-            <span className="mt-5 inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{election.detail.whitelist.uploadSupport}</span>
-          </button>
+          {!isAddressValid ? (
+            <button type="button" onClick={() => setUploadModalOpen(true)} disabled={!canManageWhitelist} className="mt-8 block w-full rounded-[28px] border border-dashed border-slate-300 p-8 text-center hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-700">
+                <Upload className="h-7 w-7" />
+              </div>
+              <h3 className="mt-6 text-[28px] font-semibold text-slate-900">Unggah Daftar Pemilih (.csv)</h3>
+              <p className="mt-3 text-[15px] leading-7 text-slate-500">Maksimal 10.000 alamat wallet per unggahan.</p>
+              <span className="mt-5 inline-flex rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{election.detail.whitelist.uploadSupport}</span>
+            </button>
+          ) : null}
 
           <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-5">
             <div className="flex items-center justify-between gap-4">
@@ -1638,10 +1664,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         onClose={() => setMasterVoterModalOpen(false)}
         proposalDraftId={election.id}
         existingWallets={new Set(whitelistRecords.map((r) => r.wallet.toLowerCase()))}
-        onSuccess={() => {
-          void whitelistQuery.refetch()
-          startWhitelistSync(getUnsyncedValidAddresses(), 'auto')
-        }}
+        onSuccess={() => { void syncPendingWhitelistAfterMasterAdd() }}
       />
     </AdminShell>
   )

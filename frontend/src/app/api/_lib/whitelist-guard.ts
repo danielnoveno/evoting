@@ -26,8 +26,20 @@ export async function ensureWhitelistMutable(client: ServiceClient, proposalDraf
   }
 
   if (state.status === 'deployed') {
+    if (state.deployed_space_address) {
+      const phase = await readElectionPhase(state.deployed_space_address)
+      if (phase !== null) {
+        if (phase !== 0) {
+          return { error: jsonError('Whitelist sudah dikunci karena kontrak tidak lagi berada di tahap persiapan.', 409), proposal: state }
+        }
+
+        return { proposal: state }
+      }
+    }
+
+    // Fallback only when on-chain phase cannot be read.
     if (!state.commit_start_at) {
-      return { error: jsonError('Jadwal pencoblosan belum lengkap; whitelist tidak dapat diubah dengan aman.', 409), proposal: state }
+      return { error: jsonError('Fase kontrak belum terbaca dan jadwal pencoblosan belum lengkap; whitelist tidak dapat diubah dengan aman.', 409), proposal: state }
     }
 
     if (Date.now() >= new Date(state.commit_start_at).getTime()) {
@@ -36,6 +48,20 @@ export async function ensureWhitelistMutable(client: ServiceClient, proposalDraf
   }
 
   return { proposal: state }
+}
+
+async function readElectionPhase(contractAddress: string) {
+  try {
+    const phase = await createBaseSepoliaClient().readContract({
+      address: contractAddress as Hex,
+      abi: ElectionSpaceArtifact.abi,
+      functionName: 'phase',
+    })
+
+    return typeof phase === 'bigint' || typeof phase === 'number' ? Number(phase) : null
+  } catch {
+    return null
+  }
 }
 
 export async function ensureSuccessfulContractTx(txHash: string, contractAddress: string | null) {
