@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { ensureCanManageProposal, jsonError, requireProfile } from '@/app/api/_lib/auth'
+import { ensureWhitelistMutable } from '@/app/api/_lib/whitelist-guard'
 import type { Database } from '@/lib/supabase/database.types'
 import { isRecord } from '@/lib/repositories/helpers'
 
@@ -29,6 +30,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   const { id } = await context.params
   const permissionError = await ensureCanManageProposal(auth.client, auth.profile, id)
   if (permissionError) return permissionError
+  const whitelistGuard = await ensureWhitelistMutable(auth.client, id)
+  if ('error' in whitelistGuard) return whitelistGuard.error
 
   const body: unknown = await request.json().catch(() => null)
   if (!isRecord(body)) return jsonError('Payload whitelist tidak valid.')

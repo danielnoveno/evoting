@@ -438,5 +438,4 @@ contract ElectionSpace {
         status = ElectionStatus.Terminated;
         emit ElectionStatusChanged(spaceId, status, actor, reasonCode);
     }
-
 }

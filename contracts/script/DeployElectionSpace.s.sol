@@ -26,9 +26,12 @@ contract DeployElectionSpace is Script {
             candidateCount,
             title,
             metadataURI,
-            msg.sender,           // initialActor = deployer
-            new address[](0),     // no initial voters
-            0, 0, 0, 0           // no phase schedule yet
+            msg.sender, // initialActor = deployer
+            new address[](0), // no initial voters
+            0,
+            0,
+            0,
+            0 // no phase schedule yet
         );
 
         console.log("ElectionSpace deployed to:", address(space));

@@ -91,15 +91,21 @@ contract VoteChainRegistryTest is Test {
     function test_non_super_admin_cannot_deploy_space() external {
         vm.prank(spaceAdmin);
         vm.expectRevert(VoteChainRegistry.NotSuperAdmin.selector);
-        registry.createElectionForAdminWithConfig(spaceAdmin, "Pemilihan", "ipfs://x", 2, new address[](0), 0, 0, 0, 0);
+        registry.createElectionForAdminWithConfig(
+            spaceAdmin, "Pemilihan", "ipfs://x", 2, new address[](0), 0, 0, 0, 0
+        );
     }
 
     function test_create_election_rejects_invalid_admin_and_candidate_count() external {
         vm.expectRevert(VoteChainRegistry.InvalidAdmin.selector);
-        registry.createElectionForAdminWithConfig(address(0), "Pemilihan", "ipfs://x", 2, new address[](0), 0, 0, 0, 0);
+        registry.createElectionForAdminWithConfig(
+            address(0), "Pemilihan", "ipfs://x", 2, new address[](0), 0, 0, 0, 0
+        );
 
         vm.expectRevert(VoteChainRegistry.InvalidCandidateCount.selector);
-        registry.createElectionForAdminWithConfig(spaceAdmin, "Pemilihan", "ipfs://x", 0, new address[](0), 0, 0, 0, 0);
+        registry.createElectionForAdminWithConfig(
+            spaceAdmin, "Pemilihan", "ipfs://x", 0, new address[](0), 0, 0, 0, 0
+        );
     }
 
     function test_suspend_unsuspend_and_terminate_space() external {

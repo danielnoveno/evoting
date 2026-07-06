@@ -387,7 +387,8 @@ contract FullFlowTest is Test {
 
         VoteChainRegistry r2 = new VoteChainRegistry(superAdmin);
         r2.setAdmin(admin2, true);
-        (,, address sAddr) = r2.createElectionForAdminWithConfig(admin2, "test", "", 2, new address[](0), 0, 0, 0, 0);
+        (,, address sAddr) =
+            r2.createElectionForAdminWithConfig(admin2, "test", "", 2, new address[](0), 0, 0, 0, 0);
         ElectionSpace s2 = ElectionSpace(sAddr);
 
         vm.prank(admin2);

@@ -92,6 +92,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   
   const { 
     registerVoters, 
+    unregisterVoterAsync,
     setPhaseScheduleAsync,
     transitionToNextPhase,
     isWritePending, 
@@ -406,6 +407,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       wallet: record.walletAddress,
       name: record.voterName ?? 'Nama belum diisi',
       status: record.syncStatus === 'synced' ? 'synced' as const : record.validationStatus === 'valid' ? 'valid' as const : 'pending' as const,
+      syncStatus: record.syncStatus,
       addedAt: new Intl.DateTimeFormat('id-ID', {
         day: '2-digit',
         month: 'short',
@@ -541,7 +543,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     )
   }
 
-  const handleDeleteWhitelistEntry = (recordId: string, wallet: string, isFallback: boolean) => {
+  const handleDeleteWhitelistEntry = async (recordId: string, wallet: string, isFallback: boolean, syncStatus?: string) => {
     if (isFallback) {
       showToast({
         tone: 'info',
@@ -551,12 +553,47 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       return
     }
 
-    deleteWhitelistEntry.mutate(recordId, {
+    if (!canManageWhitelist) {
+      showToast({
+        tone: 'error',
+        title: 'Whitelist sudah dikunci',
+        description: 'Pemilih hanya dapat dihapus saat tahap persiapan, sebelum pencoblosan dimulai.',
+      })
+      return
+    }
+
+    let unregisterTxHash: string | null = null
+    if (syncStatus === 'synced') {
+      if (!isAddressValid) {
+        showToast({ tone: 'error', title: 'Kontrak tidak valid', description: 'Pemilih tersinkron on-chain harus dihapus melalui kontrak pemilihan.' })
+        return
+      }
+
+      if (!isConnected) {
+        requestWalletConnection('Dompet admin tersambung. Klik hapus lagi untuk mengirim transaksi unregister on-chain.')
+        return
+      }
+
+      try {
+        unregisterTxHash = await unregisterVoterAsync(deployedAddress, wallet)
+      } catch (error) {
+        showToast({
+          tone: 'error',
+          title: 'Unregister on-chain gagal',
+          description: error instanceof Error ? error.message : 'Transaksi penghapusan pemilih di kontrak gagal.',
+        })
+        return
+      }
+    }
+
+    deleteWhitelistEntry.mutate({ id: recordId, unregisterTxHash }, {
       onSuccess: () => {
         showToast({
           tone: 'success',
           title: 'Pemilih dihapus',
-          description: `Wallet ${wallet} berhasil dihapus dari whitelist.`,
+          description: syncStatus === 'synced'
+            ? `Wallet ${wallet} berhasil dihapus dari kontrak dan database whitelist.`
+            : `Wallet ${wallet} berhasil dihapus dari whitelist database.`,
         })
       },
       onError: (error) => {
@@ -893,8 +930,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                     <td className="px-6 py-5 text-right">
                       <button
                         type="button"
-                        onClick={() => handleDeleteWhitelistEntry(record.id, record.wallet, record.isFallback)}
-                        disabled={!canManageWhitelist || deleteWhitelistEntry.isPending}
+                        onClick={() => void handleDeleteWhitelistEntry(record.id, record.wallet, record.isFallback, record.syncStatus)}
+                        disabled={!canManageWhitelist || deleteWhitelistEntry.isPending || isWritePending || isConfirming}
                         className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-50"
                         aria-label={`Hapus pemilih ${record.wallet}`}
                       >

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { ensureCanManageProposal, jsonError, requireProfile } from '@/app/api/_lib/auth'
+import { ensureWhitelistMutable } from '@/app/api/_lib/whitelist-guard'
 import { logAudit, getActorInfo } from '@/lib/audit-logger'
 import { isRecord } from '@/lib/repositories/helpers'
 
@@ -21,6 +22,8 @@ export async function POST(request: NextRequest) {
 
   const permissionError = await ensureCanManageProposal(auth.client, auth.profile, proposalDraftId)
   if (permissionError) return permissionError
+  const whitelistGuard = await ensureWhitelistMutable(auth.client, proposalDraftId)
+  if ('error' in whitelistGuard) return whitelistGuard.error
 
   // Fetch master voters by IDs
   const { data: masterVoters, error: fetchError } = await auth.client

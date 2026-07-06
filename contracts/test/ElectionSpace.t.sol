@@ -19,7 +19,15 @@ contract AdminClient {
     {
         address[] memory voters = new address[](0);
         return registry.createElectionForAdminWithConfig(
-            spaceAdmin, "Pemilihan Ketua HIMAFORKA", "supabase://proposal-drafts/example", 2, voters, 0, 0, 0, 0
+            spaceAdmin,
+            "Pemilihan Ketua HIMAFORKA",
+            "supabase://proposal-drafts/example",
+            2,
+            voters,
+            0,
+            0,
+            0,
+            0
         );
     }
 
@@ -111,7 +119,15 @@ contract VoteChainMVPTest {
         require(registry.isPlatformAdmin(address(admin)), "admin should be active");
 
         (, uint256 spaceId, address spaceAddress) = registry.createElectionForAdminWithConfig(
-            address(admin), "Pemilihan Ketua HIMAFORKA", "supabase://proposal-drafts/example", 2, new address[](0), 0, 0, 0, 0
+            address(admin),
+            "Pemilihan Ketua HIMAFORKA",
+            "supabase://proposal-drafts/example",
+            2,
+            new address[](0),
+            0,
+            0,
+            0,
+            0
         );
 
         require(spaceId == 1, "spaceId should be 1");
@@ -124,7 +140,15 @@ contract VoteChainMVPTest {
         AdminClient admin = new AdminClient();
 
         (uint256 proposalId, uint256 spaceId, address spaceAddress) = registry.createElectionForAdminWithConfig(
-            address(admin), "Pemilihan Ketua HIMAFORKA", "supabase://proposal-drafts/example", 2, new address[](0), 0, 0, 0, 0
+            address(admin),
+            "Pemilihan Ketua HIMAFORKA",
+            "supabase://proposal-drafts/example",
+            2,
+            new address[](0),
+            0,
+            0,
+            0,
+            0
         );
 
         ElectionSpace space = ElectionSpace(spaceAddress);
@@ -307,7 +331,9 @@ contract VoteChainMVPTest {
         VoteChainRegistry registry = new VoteChainRegistry(address(this));
         AdminClient nonAdmin = new AdminClient();
 
-        try nonAdmin.deployElectionForAdmin(registry, address(nonAdmin)) returns (uint256, uint256, address) {
+        try nonAdmin.deployElectionForAdmin(registry, address(nonAdmin)) returns (
+            uint256, uint256, address
+        ) {
             revert("expected non-superadmin deploy revert");
         } catch { }
     }

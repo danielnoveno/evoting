@@ -160,7 +160,9 @@ export async function createWhitelistEntry(input: {
   return payload.entry as WhitelistEntryRecord
 }
 
-export async function deleteWhitelistEntry(id: string): Promise<void> {
+export async function deleteWhitelistEntry(input: string | { id: string; unregisterTxHash?: string | null }): Promise<void> {
+  const id = typeof input === 'string' ? input : input.id
+  const unregisterTxHash = typeof input === 'string' ? null : input.unregisterTxHash ?? null
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
   const { data: sessionData } = await client.auth.getSession()
@@ -169,7 +171,8 @@ export async function deleteWhitelistEntry(id: string): Promise<void> {
 
   const response = await fetch(`/api/admin/whitelist/${id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ unregisterTxHash }),
   })
   if (!response.ok) {
     const payload: unknown = await response.json().catch(() => ({}))

@@ -257,6 +257,25 @@ export function useElectionContract(address?: string, options: UseElectionContra
     return txHash
   }, [publicClient, writeContractAsync])
 
+  const unregisterVoterAsync = useCallback(async (targetAddress: string, voter: string) => {
+    if (!targetAddress) throw new Error('Alamat kontrak pemilihan belum tersedia.')
+    if (!/^0x[a-fA-F0-9]{40}$/.test(voter)) throw new Error('Alamat wallet pemilih tidak valid.')
+    if (!publicClient) throw new Error('Koneksi Base Sepolia belum siap.')
+
+    const capabilities = PAYMASTER_URL ? { paymasterService: { url: PAYMASTER_URL } } : undefined;
+    const txHash = await writeContractAsync({
+      address: targetAddress as `0x${string}`,
+      abi: electionSpaceAbi,
+      chainId: baseSepolia.id,
+      functionName: 'unregisterVoter',
+      args: [voter as `0x${string}`],
+      // @ts-ignore - capabilities EIP-5792
+      capabilities,
+    })
+    await publicClient.waitForTransactionReceipt({ hash: txHash })
+    return txHash
+  }, [publicClient, writeContractAsync])
+
   const setPhaseScheduleAsync = useCallback(async (
     targetAddress: string,
     commitStartsAt: bigint,
@@ -318,6 +337,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
     revealVote,
     registerVoters,
     registerVotersAsync,
+    unregisterVoterAsync,
     setPhaseScheduleAsync,
     transitionToNextPhase,
     
