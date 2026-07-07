@@ -348,7 +348,7 @@ contract VoteChainMVPTest {
         ) = _createApprovedElection(2);
 
         admin.registerVoter(space, address(voter1));
-        admin.transitionToNextPhase(space);
+        // No transition needed — phase is already Commit after deploy
 
         bytes32 salt = bytes32(uint256(111));
         bytes32 commitment = _commitment(space, address(voter1), 1, salt);
@@ -356,12 +356,12 @@ contract VoteChainMVPTest {
         voter1.commit(space, commitment);
         require(space.hasCommitted(address(voter1)), "voter should be committed");
 
-        admin.transitionToNextPhase(space);
+        admin.transitionToNextPhase(space); // Commit → Reveal
         voter1.reveal(space, 1, salt);
         require(space.hasRevealed(address(voter1)), "voter should be revealed");
         require(space.voteCount(1) == 1, "vote count should be 1");
 
-        admin.transitionToNextPhase(space);
+        admin.transitionToNextPhase(space); // Reveal → Ended
         uint256 result = space.getResult(1);
         require(result == 1, "final result mismatch");
 
@@ -376,7 +376,7 @@ contract VoteChainMVPTest {
         (, AdminClient admin,, VoterClient voter2,, ElectionSpace space) =
             _createApprovedElection(2);
 
-        admin.transitionToNextPhase(space);
+        // No transition needed — phase is already Commit after deploy
 
         bytes32 salt = bytes32(uint256(5));
         bytes32 commitment = _commitment(space, address(voter2), 1, salt);
@@ -391,6 +391,7 @@ contract VoteChainMVPTest {
             _createApprovedElection(2);
 
         admin.registerVoter(space, address(voter1));
+        admin.transitionToNextPhase(space); // Commit → Reveal
 
         bytes32 salt = bytes32(uint256(7));
         bytes32 commitment = _commitment(space, address(voter1), 1, salt);
@@ -405,7 +406,7 @@ contract VoteChainMVPTest {
             _createApprovedElection(2);
 
         admin.registerVoter(space, address(voter1));
-        admin.transitionToNextPhase(space);
+        // No transition needed — phase is already Commit
 
         bytes32 salt = bytes32(uint256(9));
         bytes32 commitment = _commitment(space, address(voter1), 1, salt);
@@ -422,7 +423,7 @@ contract VoteChainMVPTest {
             _createApprovedElection(2);
 
         admin.registerVoter(space, address(voter1));
-        admin.transitionToNextPhase(space);
+        // No transition needed — phase is already Commit
 
         bytes32 correctSalt = bytes32(uint256(123));
         bytes32 wrongSalt = bytes32(uint256(456));
@@ -430,7 +431,7 @@ contract VoteChainMVPTest {
 
         voter1.commit(space, commitment);
 
-        admin.transitionToNextPhase(space);
+        admin.transitionToNextPhase(space); // Commit → Reveal
 
         try voter1.reveal(space, 1, wrongSalt) {
             revert("expected commitment mismatch revert");
@@ -443,13 +444,13 @@ contract VoteChainMVPTest {
         RelayerClient relayer = new RelayerClient();
 
         admin.registerVoter(space, address(voter1));
-        admin.transitionToNextPhase(space);
+        // No transition needed — phase is already Commit
 
         bytes32 salt = bytes32(uint256(2026));
         bytes32 commitment = _commitment(space, address(voter1), 2, salt);
 
         voter1.commit(space, commitment);
-        admin.transitionToNextPhase(space);
+        admin.transitionToNextPhase(space); // Commit → Reveal
 
         relayer.revealFor(space, address(voter1), 2, salt);
 
@@ -463,13 +464,13 @@ contract VoteChainMVPTest {
         RelayerClient relayer = new RelayerClient();
 
         admin.registerVoter(space, address(voter1));
-        admin.transitionToNextPhase(space);
+        // No transition needed — phase is already Commit
 
         bytes32 salt = bytes32(uint256(2027));
         bytes32 commitment = _commitment(space, address(voter1), 1, salt);
 
         voter1.commit(space, commitment);
-        admin.transitionToNextPhase(space);
+        admin.transitionToNextPhase(space); // Commit → Reveal
 
         try relayer.revealFor(space, address(voter1), 2, salt) {
             revert("expected relayed reveal mismatch");
@@ -483,7 +484,7 @@ contract VoteChainMVPTest {
         admin.registerVoter(space, address(voter1));
         space.setPhaseSchedule(1_000, 2_000, 2_000, 3_000);
 
-        require(uint8(space.phase()) == uint8(ElectionSpace.Phase.Registration), "starts setup");
+        require(uint8(space.phase()) == uint8(ElectionSpace.Phase.Commit), "starts commit");
 
         _warp(1_100);
         require(uint8(space.phase()) == uint8(ElectionSpace.Phase.Commit), "commit by time");
@@ -506,7 +507,7 @@ contract VoteChainMVPTest {
 
         admin.registerVoter(space, address(voter1));
         admin.registerVoter(space, address(voter2));
-        admin.transitionToNextPhase(space);
+        // No transition needed — phase is already Commit
 
         bytes32 salt = bytes32(uint256(777));
         bytes32 voter1Commitment = _commitment(space, address(voter1), 1, salt);
@@ -514,7 +515,7 @@ contract VoteChainMVPTest {
         voter1.commit(space, voter1Commitment);
         voter2.commit(space, voter1Commitment);
 
-        admin.transitionToNextPhase(space);
+        admin.transitionToNextPhase(space); // Commit → Reveal
         voter1.reveal(space, 1, salt);
 
         try voter2.reveal(space, 1, salt) {
@@ -532,7 +533,7 @@ contract VoteChainMVPTest {
         ) = _createApprovedElection(2);
 
         admin.registerVoter(space, address(voter1));
-        admin.transitionToNextPhase(space);
+        // No transition needed — phase is already Commit
 
         registry.suspendSpace(spaceId, "RULE_VIOLATION");
         require(
@@ -562,7 +563,7 @@ contract VoteChainMVPTest {
         ) = _createApprovedElection(2);
 
         admin.registerVoter(space, address(voter1));
-        admin.transitionToNextPhase(space);
+        // No transition needed — phase is already Commit
 
         registry.terminateSpace(spaceId, "TERMINATED_BY_POLICY");
         require(

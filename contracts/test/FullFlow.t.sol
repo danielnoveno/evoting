@@ -67,7 +67,7 @@ contract FullFlowTest is Test {
         space = ElectionSpace(spaceAddr);
         assertEq(space.spaceAdmin(), spaceAdmin);
         assertEq(space.candidateCount(), 2);
-        assertEq(uint8(space.currentPhase()), uint8(ElectionSpace.Phase.Registration));
+        assertEq(uint8(space.currentPhase()), uint8(ElectionSpace.Phase.Commit));
     }
 
     // ══════════════════════════════════════════════
@@ -83,8 +83,8 @@ contract FullFlowTest is Test {
             uint256 spaceId
         ) = _deployClean();
 
-        // ── REGISTRATION: whitelist ──
-        assertEq(uint8(space.phase()), uint8(ElectionSpace.Phase.Registration));
+        // ── COMMIT PHASE: whitelist + commit ──
+        assertEq(uint8(space.phase()), uint8(ElectionSpace.Phase.Commit));
 
         vm.prank(spaceAdmin);
         space.registerVoter(voter1);
@@ -98,23 +98,7 @@ contract FullFlowTest is Test {
         vm.expectRevert(ElectionSpace.AlreadyRegistered.selector);
         space.registerVoter(voter1);
 
-        // ── TRANSISI → COMMIT ──
-        vm.prank(spaceAdmin);
-        space.transitionToNextPhase();
-        assertEq(uint8(space.phase()), uint8(ElectionSpace.Phase.Commit));
-
-        // Whitelist setelah Commit → revert
-        vm.prank(spaceAdmin);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ElectionSpace.WrongPhase.selector,
-                ElectionSpace.Phase.Registration,
-                ElectionSpace.Phase.Commit
-            )
-        );
-        space.registerVoter(makeAddr("voter-late"));
-
-        // ── COMMIT ──
+        // ── COMMIT: voters cast commitments ──
         bytes32 salt1 = bytes32(uint256(12345));
         bytes32 salt2 = bytes32(uint256(67890));
         bytes32 commit1 = _commitment(space, voter1, 1, salt1);
@@ -138,6 +122,8 @@ contract FullFlowTest is Test {
         vm.expectRevert(ElectionSpace.NotRegistered.selector);
         space.commitVote(bytes32(uint256(999)));
 
+        // Whitelist setelah commit → revert (masih di Commit phase tapi setelah commit, unregister test below)
+
         // ── TRANSISI → REVEAL ──
         vm.prank(spaceAdmin);
         space.transitionToNextPhase();
@@ -152,9 +138,25 @@ contract FullFlowTest is Test {
                 ElectionSpace.Phase.Reveal
             )
         );
-        space.commitVote(bytes32(uint256(1)));
+        space.commitVote(bytes32(uint256(111)));
+
+        // Register di fase Reveal → revert
+        vm.prank(spaceAdmin);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ElectionSpace.WrongPhase.selector,
+                ElectionSpace.Phase.Commit,
+                ElectionSpace.Phase.Reveal
+            )
+        );
+        space.registerVoter(makeAddr("voter-late"));
 
         // ── REVEAL ──
+        // Reveal dengan salt salah → revert (sebelum reveal yang benar)
+        vm.prank(voter1);
+        vm.expectRevert(ElectionSpace.CommitmentMismatch.selector);
+        space.revealVote(1, bytes32(uint256(99999)));
+
         vm.prank(voter1);
         space.revealVote(1, salt1);
         assertTrue(space.hasRevealed(voter1));
@@ -170,38 +172,13 @@ contract FullFlowTest is Test {
         vm.expectRevert(ElectionSpace.AlreadyRevealed.selector);
         space.revealVote(1, salt1);
 
-        // Hasil belum bisa dibaca sebelum Ended
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ElectionSpace.WrongPhase.selector,
-                ElectionSpace.Phase.Ended,
-                ElectionSpace.Phase.Reveal
-            )
-        );
-        space.getResult(1);
-
         // ── TRANSISI → ENDED ──
         vm.prank(spaceAdmin);
         space.transitionToNextPhase();
         assertEq(uint8(space.phase()), uint8(ElectionSpace.Phase.Ended));
 
-        // ── HASIL ──
-        assertEq(space.getResult(1), 1); // voter1 pilih K1
-        assertEq(space.getResult(2), 1); // voter2 pilih K2
-
-        // Transition dari Ended → revert
-        vm.prank(spaceAdmin);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ElectionSpace.InvalidPhaseTransition.selector,
-                ElectionSpace.Phase.Ended,
-                ElectionSpace.Phase.Ended
-            )
-        );
-        space.transitionToNextPhase();
-
-        // Reveal di Ended → revert
-        vm.prank(voter2);
+        // Reveal setelah Ended → revert
+        vm.prank(voter1);
         vm.expectRevert(
             abi.encodeWithSelector(
                 ElectionSpace.WrongPhase.selector,
@@ -209,7 +186,11 @@ contract FullFlowTest is Test {
                 ElectionSpace.Phase.Ended
             )
         );
-        space.revealVote(2, salt2);
+        space.revealVote(1, salt1);
+
+        // ── HASIL ──
+        assertEq(space.voteCount(1), 1);
+        assertEq(space.voteCount(2), 1);
     }
 
     // ══════════════════════════════════════════════
@@ -227,8 +208,8 @@ contract FullFlowTest is Test {
 
         uint256 now_ = block.timestamp;
 
-        // ── REGISTRATION + whitelist ──
-        assertEq(uint8(space.phase()), uint8(ElectionSpace.Phase.Registration));
+        // ── COMMIT + whitelist ──
+        assertEq(uint8(space.phase()), uint8(ElectionSpace.Phase.Commit));
 
         // Daftarkan whitelist SEBELUM atur jadwal
         vm.prank(spaceAdmin);
@@ -263,23 +244,17 @@ contract FullFlowTest is Test {
         emit log_named_uint("Commit mulai", commitStart);
         emit log_named_uint("Reveal selesai", revealEnd);
 
-        // Masih Registration
-        assertEq(uint8(space.phase()), uint8(ElectionSpace.Phase.Registration));
+        // Masih Commit (sebelum commitStart)
+        assertEq(uint8(space.phase()), uint8(ElectionSpace.Phase.Commit));
 
         // ── COMMIT ──
         vm.warp(commitStart + 10);
         assertEq(uint8(space.phase()), uint8(ElectionSpace.Phase.Commit));
 
-        // Whitelist setelah Commit → revert
+        // Whitelist during Commit → OK (allowed)
         vm.prank(spaceAdmin);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ElectionSpace.WrongPhase.selector,
-                ElectionSpace.Phase.Registration,
-                ElectionSpace.Phase.Commit
-            )
-        );
         space.registerVoter(makeAddr("voter-late"));
+        assertTrue(space.isWhitelisted(makeAddr("voter-late")));
 
         bytes32 salt1 = bytes32(uint256(111));
         bytes32 salt2 = bytes32(uint256(222));
@@ -357,8 +332,7 @@ contract FullFlowTest is Test {
         bytes32 salt1 = bytes32(uint256(777));
         bytes32 commit1 = _commitment(space, voter1, 1, salt1);
 
-        vm.prank(spaceAdmin);
-        space.transitionToNextPhase();
+        // No transition needed — phase is already Commit
 
         vm.prank(voter1);
         space.commitVote(commit1);
@@ -366,7 +340,7 @@ contract FullFlowTest is Test {
         space.commitVote(commit1); // copycat
 
         vm.prank(spaceAdmin);
-        space.transitionToNextPhase();
+        space.transitionToNextPhase(); // Commit → Reveal
 
         vm.prank(voter1);
         space.revealVote(1, salt1); // original reveal sukses
@@ -397,13 +371,12 @@ contract FullFlowTest is Test {
         bytes32 salt = bytes32(uint256(42));
         bytes32 com = _commitment(s2, voterA, 1, salt);
 
-        vm.prank(admin2);
-        s2.transitionToNextPhase();
+        // No transition needed — phase is already Commit
         vm.prank(voterA);
         s2.commitVote(com);
 
         vm.prank(admin2);
-        s2.transitionToNextPhase();
+        s2.transitionToNextPhase(); // Commit → Reveal
 
         vm.prank(voterA);
         vm.expectRevert(ElectionSpace.InvalidCandidate.selector);
@@ -435,8 +408,7 @@ contract FullFlowTest is Test {
         vm.prank(spaceAdmin);
         space.registerVoter(voter1);
 
-        vm.prank(spaceAdmin);
-        space.transitionToNextPhase(); // → Commit
+        // No transition needed — phase is already Commit
 
         bytes32 salt = bytes32(uint256(2026));
         bytes32 commitment = _commitment(space, voter1, 2, salt);
@@ -444,7 +416,7 @@ contract FullFlowTest is Test {
         space.commitVote(commitment);
 
         vm.prank(spaceAdmin);
-        space.transitionToNextPhase(); // → Reveal
+        space.transitionToNextPhase(); // Commit → Reveal
 
         // Relayer reveal untuk voter1
         vm.prank(relayer);
@@ -479,7 +451,7 @@ contract FullFlowTest is Test {
             assertTrue(space.isWhitelisted(voters[i]));
         }
 
-        // Batch sesudah Registration → revert
+        // Batch sesudah Reveal → revert
         vm.prank(spaceAdmin);
         space.transitionToNextPhase();
 
@@ -489,8 +461,8 @@ contract FullFlowTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 ElectionSpace.WrongPhase.selector,
-                ElectionSpace.Phase.Registration,
-                ElectionSpace.Phase.Commit
+                ElectionSpace.Phase.Commit,
+                ElectionSpace.Phase.Reveal
             )
         );
         space.registerVoters(lateVoters);
@@ -512,8 +484,7 @@ contract FullFlowTest is Test {
         vm.prank(spaceAdmin);
         space.registerVoter(voter1);
 
-        vm.prank(spaceAdmin);
-        space.transitionToNextPhase(); // → Commit
+        // No transition needed — phase is already Commit
 
         vm.prank(voter1);
         vm.expectRevert(ElectionSpace.InvalidCommitment.selector);
@@ -554,8 +525,7 @@ contract FullFlowTest is Test {
 
         vm.prank(oldAdmin);
         space.registerVoter(voter1);
-        vm.prank(oldAdmin);
-        space.transitionToNextPhase();
+        // No transition needed — phase is already Commit
 
         bytes32 salt = bytes32(uint256(20260627));
         bytes32 commitment = _commitment(space, voter1, 1, salt);

@@ -24,7 +24,7 @@ export {
   getRecentLogs,
 } from './voter-helpers'
 
-export type VoterElectionPhase = 'registration' | 'commit' | 'reveal' | 'ended' | 'suspended'
+export type VoterElectionPhase = 'commit' | 'reveal' | 'ended' | 'suspended'
 
 export interface VoterCandidate {
   id: string

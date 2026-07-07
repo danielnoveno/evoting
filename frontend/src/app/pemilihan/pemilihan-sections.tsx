@@ -34,7 +34,7 @@ export function PemilihanSections() {
 
   const elections = electionsQuery.data ?? []
   const activeElections = elections.filter((item) => item.phase === 'commit' || item.phase === 'reveal')
-  const upcoming = elections.filter((item) => item.phase === 'registration')
+  const upcoming = elections.filter((item) => item.phase === 'commit')
   const finished = elections.filter((item) => item.phase === 'ended')
 
   return (

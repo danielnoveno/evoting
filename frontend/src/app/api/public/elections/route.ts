@@ -26,7 +26,6 @@ function phaseLabel(phase: string): string {
 function deadlineLabel(row: ProposalRow, phase: string): string {
   if (phase === 'commit') return `Batas memilih ${formatDateTime(row.reveal_start_at)}`
   if (phase === 'reveal') return `Batas konfirmasi ${formatDateTime(row.ended_at)}`
-  if (phase === 'registration') return `Mulai memilih ${formatDateTime(row.commit_start_at)}`
   return row.ended_at ? `Selesai ${formatDateTime(row.ended_at)}` : 'Selesai'
 }
 

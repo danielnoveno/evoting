@@ -142,7 +142,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const [phaseConfirmOpen, setPhaseConfirmOpen] = useState(false)
   const [phaseScheduleForm, setPhaseScheduleForm] = useState({
     commitStart: '',
-    commitEnd: '',
     revealStart: '',
     revealEnd: '',
   })
@@ -210,13 +209,11 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const onChainPhaseNumber = typeof onChainPhase === 'number' || typeof onChainPhase === 'bigint'
     ? Number(onChainPhase)
     : null
-  const isRegistrationPhaseOnChain = onChainPhaseNumber === 0
   // ponytail: candidates are set before deployment; no editing after deploy
   const canAddCandidate = false
-  // Whitelist can be modified only during registration phase (phase 0).
-  // Once voting starts, changing the voter list would be inconsistent.
-  const canManageWhitelist = election.status === 'aktif' && isRegistrationPhaseOnChain
-  const phaseLabels = ['Persiapan', 'Pencoblosan', 'Konfirmasi Suara', 'Selesai'] as const
+  // ponytail: whitelist is managed at deploy-time only; no post-deploy editing
+  const canManageWhitelist = false
+  const phaseLabels = ['Pencoblosan', 'Konfirmasi Suara', 'Selesai'] as const
   const onChainPhaseLabel = onChainPhaseNumber !== null && phaseLabels[onChainPhaseNumber]
     ? phaseLabels[onChainPhaseNumber]
     : 'Belum terbaca'
@@ -288,16 +285,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         tone: 'error',
         title: 'Alamat Kontrak Tidak Valid',
         description: 'Pemilihan ini belum dideploy ke blockchain.',
-      })
-      setSyncOnchainConfirmOpen(false)
-      return
-    }
-
-    if (!isRegistrationPhaseOnChain) {
-      showToast({
-        tone: mode === 'manual' ? 'error' : 'info',
-        title: 'Sinkronisasi Ditunda',
-        description: 'Daftar pemilih on-chain hanya bisa didaftarkan saat tahap persiapan, sebelum pencoblosan dibuka.',
       })
       setSyncOnchainConfirmOpen(false)
       return
@@ -465,12 +452,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             title: 'Belum bisa sinkron otomatis',
             description: 'Alamat kontrak belum valid. Finalisasi pemilihan terlebih dahulu, lalu daftarkan daftar pemilih.',
           }
-        : !isRegistrationPhaseOnChain
-          ? {
-              tone: 'amber' as const,
-              title: 'Sinkronisasi otomatis ditahan',
-              description: 'Daftar pemilih hanya bisa didaftarkan saat tahap persiapan, sebelum pencoblosan dibuka.',
-            }
           : {
               tone: 'amber' as const,
               title: 'Ada pemilih belum terdaftar di kontrak',
@@ -1061,12 +1042,14 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
     try {
       const commitStart = Math.floor(new Date(phaseScheduleForm.commitStart).getTime() / 1000)
-      const commitEnd = Math.floor(new Date(phaseScheduleForm.commitEnd).getTime() / 1000)
       const revealStart = Math.floor(new Date(phaseScheduleForm.revealStart).getTime() / 1000)
       const revealEnd = Math.floor(new Date(phaseScheduleForm.revealEnd).getTime() / 1000)
 
-      if (commitStart >= commitEnd || commitEnd >= revealStart || revealStart >= revealEnd) {
-        showToast({ tone: 'error', title: 'Jadwal tidak valid', description: 'Urutan waktu harus: Commit Mulai < Commit Selesai < Reveal Mulai < Reveal Selesai.' })
+      // Instant transition: commitEndsAt = revealStartsAt
+      const commitEnd = revealStart
+
+      if (commitStart >= commitEnd || revealStart >= revealEnd) {
+        showToast({ tone: 'error', title: 'Jadwal tidak valid', description: 'Urutan waktu harus: Mulai Pencoblosan < Mulai Konfirmasi Suara < Selesai Pemilihan.' })
         return
       }
 
@@ -1096,9 +1079,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   }
 
   const phaseScheduleItems = [
-    { label: 'Mulai Pencoblosan', value: formatScheduleTime(election.schedule?.commitStartAt), active: dbPhaseInfo.phase === 'registration' },
-    { label: 'Batas Pencoblosan', value: formatScheduleTime(election.schedule?.revealStartAt), active: dbPhaseInfo.phase === 'commit' },
-    { label: 'Mulai Pengesahan', value: formatScheduleTime(election.schedule?.revealStartAt), active: dbPhaseInfo.phase === 'reveal' },
+    { label: 'Mulai Pencoblosan', value: formatScheduleTime(election.schedule?.commitStartAt), active: dbPhaseInfo.phase === 'commit' },
+    { label: 'Mulai Konfirmasi Suara', value: formatScheduleTime(election.schedule?.revealStartAt), active: dbPhaseInfo.phase === 'reveal' },
     { label: 'Pemilihan Selesai', value: formatScheduleTime(election.schedule?.endedAt), active: dbPhaseInfo.phase === 'ended' },
   ]
 
@@ -1120,36 +1102,24 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             </div>
             <p className="mt-4 text-[13px] leading-6 text-slate-600">
               {dbPhaseInfo.phase === 'commit'
-                ? 'Pemilih sudah bisa mencoblos sampai batas pencoblosan. Setelah itu sistem masuk tahap pengesahan suara.'
+                ? 'Pemilih sudah bisa mencoblos. Setelah waktu konfirmasi suara tiba, sistem otomatis masuk tahap pengesahan.'
                 : dbPhaseInfo.phase === 'reveal'
-                  ? 'Masa mencoblos sudah berakhir. Sistem sedang mengesahkan dan menghitung suara otomatis.'
-                  : dbPhaseInfo.phase === 'ended'
-                    ? 'Pemilihan selesai. Hasil dapat diaudit setelah suara yang sah dikonfirmasi.'
-                    : 'Tahap persiapan sebelum pemilih mencoblos. Pastikan daftar pemilih dan kontrak sudah siap.'}
+                  ? 'Masa mencoblos sudah berakhir. Pemilih sedang mengonfirmasi pilihan sebelum dihitung.'
+                  : 'Pemilihan selesai. Hasil dapat diaudit melalui bukti transaksi on-chain.'}
             </p>
           </div>
         </article>
 
-        {/* Quick Transition */}
+        {/* Contract Status */}
         <article className="rounded-[28px] border border-slate-200 bg-white p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Status Kontrak</p>
           <div className="mt-5 space-y-4">
             <p className="text-[13px] leading-6 text-slate-600">
-              Status kontrak saat ini: <span className="font-semibold text-slate-900">{onChainPhaseLabel}</span>. Status ini dipakai sebagai pengaman saat transaksi dikirim ke blockchain.
+              Status kontrak saat ini: <span className="font-semibold text-slate-900">{onChainPhaseLabel}</span>. Fase berjalan otomatis sesuai jadwal yang diatur.
             </p>
-            <button
-              type="button"
-              onClick={handleTransitionPhase}
-              disabled={!isAddressValid || onChainPhaseNumber === 3 || isWritePending || isConfirming}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-black px-6 text-[14px] font-semibold text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isWritePending || isConfirming ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-              {onChainPhaseNumber === 3 ? 'Selesai' : `Sinkron ke Fase ${phaseLabels[Math.min((onChainPhaseNumber ?? 0) + 1, 3)]}`}
-            </button>
+            <div className="rounded-xl bg-slate-50 px-4 py-3 text-[13px] leading-6 text-slate-600">
+              Tidak ada tombol transisi manual. Semua fase berganti otomatis berdasarkan waktu yang telah ditentukan saat proposal disetujui.
+            </div>
           </div>
         </article>
       </div>
@@ -1195,12 +1165,12 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       <ModalShell
         open={phaseConfirmOpen}
         title="Atur Jadwal Fase"
-        description="Tetapkan waktu untuk setiap fase pemilihan di smart contract. Hanya bisa diubah saat fase Registration (Persiapan)."
+        description="Tetapkan waktu pencoblosan, konfirmasi suara, dan selesai pemilihan di smart contract."
         onClose={() => setPhaseConfirmOpen(false)}
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-[13px] font-medium text-slate-700">Commit Mulai</label>
+            <label className="block text-[13px] font-medium text-slate-700">Mulai Pencoblosan</label>
             <input
               type="datetime-local"
               value={phaseScheduleForm.commitStart}
@@ -1209,16 +1179,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             />
           </div>
           <div>
-            <label className="block text-[13px] font-medium text-slate-700">Commit Selesai</label>
-            <input
-              type="datetime-local"
-              value={phaseScheduleForm.commitEnd}
-              onChange={(e) => setPhaseScheduleForm({ ...phaseScheduleForm, commitEnd: e.target.value })}
-              className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-[14px] text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-            />
-          </div>
-          <div>
-            <label className="block text-[13px] font-medium text-slate-700">Reveal Mulai</label>
+            <label className="block text-[13px] font-medium text-slate-700">Mulai Konfirmasi Suara</label>
             <input
               type="datetime-local"
               value={phaseScheduleForm.revealStart}
@@ -1227,7 +1188,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             />
           </div>
           <div>
-            <label className="block text-[13px] font-medium text-slate-700">Reveal Selesai</label>
+            <label className="block text-[13px] font-medium text-slate-700">Selesai Pemilihan</label>
             <input
               type="datetime-local"
               value={phaseScheduleForm.revealEnd}
@@ -1476,11 +1437,9 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             </span>
             {isAddressValid && (
               <span className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-medium ${
-                isRegistrationPhaseOnChain
-                  ? 'bg-blue-50 text-blue-700'
-                  : onChainPhaseNumber === 3
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'bg-amber-50 text-amber-700'
+                onChainPhaseNumber === 2
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'bg-amber-50 text-amber-700'
               }`}>
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Kontrak: {onChainPhaseLabel}

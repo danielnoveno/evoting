@@ -96,25 +96,23 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         endedAt: election.endedAt,
       })
     : null
-  const dbPhase = liveSchedulePhase?.phase ?? election?.phase ?? 'registration'
+  const dbPhase = liveSchedulePhase?.phase ?? election?.phase ?? 'commit'
   // Use DB schedule as the user-facing source of truth. On-chain phase is used
   // only as an extra safety guard while submitting a commit transaction.
-  const effectivePhase: 'registration' | 'commit' | 'reveal' | 'ended' | 'suspended' = dbPhase === 'suspended' ? 'suspended' : dbPhase
+  const effectivePhase: 'commit' | 'reveal' | 'ended' | 'suspended' = dbPhase === 'suspended' ? 'suspended' : dbPhase
   const effectivePhaseNumber = effectivePhase === 'commit' ? 1 : effectivePhase === 'reveal' ? 2 : effectivePhase === 'ended' ? 3 : 0
   const onChainPhaseLabel = currentPhaseNumber === 0
-    ? 'Persiapan'
+    ? 'Pencoblosan'
     : currentPhaseNumber === 1
-      ? 'Pencoblosan'
+      ? 'Konfirmasi Suara'
       : currentPhaseNumber === 2
-        ? 'Konfirmasi Suara'
-        : currentPhaseNumber === 3
-          ? 'Selesai'
-          : 'belum terbaca'
+        ? 'Selesai'
+        : 'belum terbaca'
   const onChainCommitBlockedReason = !serverWalletAddress
     ? ''
     : currentPhaseNumber === null
       ? 'Status fase blockchain belum terbaca. Coba muat ulang halaman sebelum mencoblos.'
-    : currentPhaseNumber !== 1
+    : currentPhaseNumber !== 0
       ? `Jadwal aplikasi sudah masuk masa pencoblosan, tetapi fase blockchain masih ${onChainPhaseLabel}. Admin perlu sinkronkan jadwal ke blockchain terlebih dahulu.`
     : isWhitelistedOnChain === false
       ? 'Wallet ini belum masuk whitelist on-chain. Admin perlu sinkronkan daftar pemilih ke blockchain terlebih dahulu.'
@@ -132,9 +130,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     : onChainStatusError
       ? 'Status blockchain belum terbaca. Coba muat ulang halaman sebelum mencoblos.'
     : effectivePhaseNumber !== 1
-      ? effectivePhase === 'registration'
-        ? 'Pencoblosan belum dimulai. Mulai memilih saat jadwal yang ditentukan.'
-        : effectivePhase === 'reveal'
+      ? effectivePhase === 'reveal'
           ? 'Masa mencoblos sudah berakhir. Sistem sedang memasuki tahap pengesahan dan penghitungan suara.'
         : effectivePhase === 'ended'
           ? 'Pemilihan ini sudah selesai.'
@@ -145,18 +141,14 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
   const countdownTargetIso = effectivePhase === 'suspended'
     ? null
-    : effectivePhase === 'registration'
-      ? election?.commitStartAt ?? election?.deadlineIso ?? null
-      : effectivePhase === 'commit'
-        ? election?.revealStartAt ?? election?.deadlineIso ?? null
-        : effectivePhase === 'reveal'
-          ? election?.endedAt ?? election?.deadlineIso ?? null
-          : null
+    : effectivePhase === 'commit'
+      ? election?.revealStartAt ?? election?.deadlineIso ?? null
+      : effectivePhase === 'reveal'
+        ? election?.endedAt ?? election?.deadlineIso ?? null
+        : null
   const countdownLabel = effectivePhase === 'suspended'
     ? 'PEMILIHAN DITANGGUHKAN'
-    : effectivePhase === 'registration'
-      ? 'PENCOBLOSAN DIBUKA DALAM'
-      : effectivePhase === 'commit'
+    : effectivePhase === 'commit'
         ? 'SISA WAKTU MENCOBLOS'
         : effectivePhase === 'reveal'
           ? 'PENGHITUNGAN BERAKHIR DALAM'

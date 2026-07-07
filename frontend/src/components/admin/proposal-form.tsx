@@ -26,9 +26,11 @@ export interface ProposalFormData {
   bannerImageDataUrl: string
   candidateCount: number
   voterCount: number
-  registrationDate: string
+  /** Mulai Pencoblosan — kapan pemilih mulai bisa memilih */
   commitDate: string
+  /** Mulai Konfirmasi Suara — kapan pemilih mulai mengonfirmasi pilihan */
   revealDate: string
+  /** Selesai Pemilihan — kapan pemilihan ditutup */
   endedDate: string
   candidateEntries: ProposalCandidateInput[]
   whitelistWallets: string
@@ -46,7 +48,7 @@ const EMPTY_CANDIDATE: ProposalCandidateInput = {
   avatarPath: '',
 }
 
-type ProposalFormErrors = Partial<Record<'title' | 'candidateCount' | 'voterCount' | 'registrationDate' | 'commitDate' | 'revealDate' | 'endedDate' | 'dateRange', string>>
+type ProposalFormErrors = Partial<Record<'title' | 'candidateCount' | 'voterCount' | 'commitDate' | 'revealDate' | 'endedDate' | 'dateRange', string>>
 type ValidationIssue = {
   fieldKey: string
   label: string
@@ -137,7 +139,6 @@ export function ProposalForm({
     bannerImageDataUrl: initialData?.bannerImageDataUrl || '',
     candidateCount: initialData?.candidateCount ?? 2,
     voterCount: initialData?.voterCount ?? 0,
-    registrationDate: initialData?.registrationDate || '',
     commitDate: initialData?.commitDate || '',
     revealDate: initialData?.revealDate || '',
     endedDate: initialData?.endedDate || '',
@@ -176,10 +177,11 @@ export function ProposalForm({
   const canAdvanceStep = (step: number): boolean => {
     if (step === 0) {
       if (!formData.title.trim()) return false
-      if (!formData.commitDate || !formData.endedDate) return false
+      if (!formData.commitDate || !formData.revealDate || !formData.endedDate) return false
       const commitTime = new Date(formData.commitDate).getTime()
+      const revealTime = new Date(formData.revealDate).getTime()
       const endedTime = new Date(formData.endedDate).getTime()
-      if (endedTime <= commitTime) return false
+      if (commitTime >= revealTime || revealTime >= endedTime) return false
       return true
     }
     if (step === 1) {
@@ -222,7 +224,6 @@ export function ProposalForm({
         bannerImageDataUrl: initialData.bannerImageDataUrl || '',
         candidateCount: initialData.candidateCount ?? 2,
         voterCount: initialData.voterCount ?? 0,
-        registrationDate: initialData.registrationDate || '',
         commitDate: initialData.commitDate || '',
         revealDate: initialData.revealDate || '',
         endedDate: initialData.endedDate || '',
@@ -266,27 +267,36 @@ export function ProposalForm({
       nextErrors.candidateCount = `NPM/NIM ${duplicateStudentId} sudah digunakan oleh kandidat lain dalam pemilihan yang sama.`
     }
 
-    if (!data.registrationDate) nextErrors.registrationDate = 'Wajib diisi.'
     if (!data.commitDate) nextErrors.commitDate = 'Wajib diisi.'
+    if (!data.revealDate) nextErrors.revealDate = 'Wajib diisi.'
     if (!data.endedDate) nextErrors.endedDate = 'Wajib diisi.'
 
     // Reject past dates (safety net behind the HTML min attribute)
     const nowTs = Date.now()
-    if (data.registrationDate && new Date(data.registrationDate).getTime() < nowTs) {
-      nextErrors.registrationDate = 'Tanggal dan jam tidak boleh di masa lampau.'
-    }
     if (data.commitDate && new Date(data.commitDate).getTime() < nowTs) {
       nextErrors.commitDate = 'Tanggal dan jam tidak boleh di masa lampau.'
+    }
+    if (data.revealDate && new Date(data.revealDate).getTime() < nowTs) {
+      nextErrors.revealDate = 'Tanggal dan jam tidak boleh di masa lampau.'
     }
     if (data.endedDate && new Date(data.endedDate).getTime() < nowTs) {
       nextErrors.endedDate = 'Tanggal dan jam tidak boleh di masa lampau.'
     }
 
-    if (data.registrationDate && data.commitDate) {
-      const registrationTime = new Date(data.registrationDate).getTime()
+    // Validate ordering: commitDate < revealDate < endedDate
+    if (data.commitDate && data.revealDate) {
       const commitTime = new Date(data.commitDate).getTime()
-      if (registrationTime >= commitTime) {
-        nextErrors.dateRange = 'Mulai Persiapan harus sebelum Mulai Pencoblosan.'
+      const revealTime = new Date(data.revealDate).getTime()
+      if (commitTime >= revealTime) {
+        nextErrors.dateRange = 'Mulai Pencoblosan harus sebelum Mulai Konfirmasi Suara.'
+      }
+    }
+
+    if (data.revealDate && data.endedDate) {
+      const revealTime = new Date(data.revealDate).getTime()
+      const endedTime = new Date(data.endedDate).getTime()
+      if (revealTime >= endedTime) {
+        nextErrors.dateRange = 'Mulai Konfirmasi Suara harus sebelum Selesai Pemilihan.'
       }
     }
 
@@ -329,8 +339,8 @@ export function ProposalForm({
 
     if (nextErrors.candidateCount) issues.push({ fieldKey: 'candidates', label: 'Kandidat', message: nextErrors.candidateCount })
     if (nextErrors.title) issues.push({ fieldKey: 'title', label: 'Nama Pemilihan', message: nextErrors.title })
-    if (nextErrors.registrationDate) issues.push({ fieldKey: 'registrationDate', label: 'Mulai Persiapan', message: nextErrors.registrationDate })
     if (nextErrors.commitDate) issues.push({ fieldKey: 'commitDate', label: 'Mulai Pencoblosan', message: nextErrors.commitDate })
+    if (nextErrors.revealDate) issues.push({ fieldKey: 'revealDate', label: 'Mulai Konfirmasi Suara', message: nextErrors.revealDate })
     if (nextErrors.endedDate) issues.push({ fieldKey: 'endedDate', label: 'Selesai Pemilihan', message: nextErrors.endedDate })
     if (nextErrors.dateRange) issues.push({ fieldKey: 'commitDate', label: 'Urutan Waktu', message: nextErrors.dateRange })
 
@@ -741,11 +751,9 @@ export function ProposalForm({
       description: formData.description,
       bannerImagePath: bannerImagePath || null,
       candidateCount: candidateEntries.length,
-      registrationStartAt: formData.registrationDate ? new Date(formData.registrationDate).toISOString() : null,
       commitStartAt: new Date(formData.commitDate).toISOString(),
-      revealStartAt: new Date(
-        (new Date(formData.commitDate).getTime() + new Date(formData.endedDate).getTime()) / 2
-      ).toISOString(),
+      // Instant transition: commit ends when reveal starts (commitEndsAt = revealStartsAt on-chain)
+      revealStartAt: new Date(formData.revealDate).toISOString(),
       endedAt: new Date(formData.endedDate).toISOString(),
       status: submitStatus,
       candidates: candidateEntries,
@@ -943,24 +951,24 @@ export function ProposalForm({
               <div>
                 <h2 className="text-[14px] font-bold uppercase tracking-widest">Jadwal Pemilihan</h2>
                 <p className="mt-2 text-[14px] leading-6 text-slate-500">
-                  Atur kapan persiapan dimulai, kapan pencoblosan dimulai, dan kapan pemilihan selesai. Konfirmasi suara (reveal) akan dimulai otomatis di tengah jangka waktu pencoblosan.
+                  Atur kapan pencoblosan dimulai, kapan konfirmasi suara dimulai, dan kapan pemilihan selesai. Semua fase berjalan otomatis sesuai jadwal.
                 </p>
               </div>
               <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-[13px] leading-6 text-blue-800">
-                Tahap persiapan (registration) adalah waktu untuk menyiapkan daftar pemilih sebelum pencoblosan dibuka. Tahap konfirmasi suara (reveal) dihitung otomatis sebagai titik tengah antara mulai pencoblosan dan selesai pemilihan.
+                Pencoblosan dan konfirmasi suara berjalan secara berurutan tanpa jeda. Setelah waktu konfirmasi suara tiba, pemilih akan otomatis masuk ke tahap pengesahan suara.
               </div>
               <div className="grid sm:grid-cols-3 gap-4">
                 <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Persiapan <RequiredAsterisk /></span>
-                  <input data-validation-field="registrationDate" type="datetime-local" name="registrationDate" value={formData.registrationDate} onChange={handleChange} disabled={isReadOnly} min={nowString} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-                  <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Admin mulai menyiapkan daftar pemilih (whitelist).</p>
-                  {errors.registrationDate && <p className="mt-1 text-[12px] text-red-500">{errors.registrationDate}</p>}
-                </label>
-                <label className="block">
                   <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Pencoblosan <RequiredAsterisk /></span>
                   <input data-validation-field="commitDate" type="datetime-local" name="commitDate" value={formData.commitDate} onChange={handleChange} disabled={isReadOnly} min={nowString} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
-                  <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Pemilih mulai bisa memilih dan mengunci suara.</p>
+                  <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Pemilih mulai bisa memilih kandidat.</p>
                   {errors.commitDate && <p className="mt-1 text-[12px] text-red-500">{errors.commitDate}</p>}
+                </label>
+                <label className="block">
+                  <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Mulai Konfirmasi Suara <RequiredAsterisk /></span>
+                  <input data-validation-field="revealDate" type="datetime-local" name="revealDate" value={formData.revealDate} onChange={handleChange} disabled={isReadOnly} min={nowString} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-[14px] text-slate-900 outline-none transition focus:border-slate-900 focus:ring-4 focus:ring-slate-900/5 disabled:bg-slate-100 disabled:text-slate-400" />
+                  <p className="mt-1.5 text-[12px] leading-5 text-slate-500">Pemilih mengonfirmasi pilihan sebelum dihitung.</p>
+                  {errors.revealDate && <p className="mt-1 text-[12px] text-red-500">{errors.revealDate}</p>}
                 </label>
                 <label className="block">
                   <span className="mb-1.5 block text-[12px] font-semibold text-slate-600">Selesai Pemilihan <RequiredAsterisk /></span>
@@ -969,16 +977,6 @@ export function ProposalForm({
                   {errors.endedDate && <p className="mt-1 text-[12px] text-red-500">{errors.endedDate}</p>}
                 </label>
               </div>
-              {formData.commitDate && formData.endedDate && new Date(formData.endedDate).getTime() > new Date(formData.commitDate).getTime() && (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[13px] leading-6 text-slate-600">
-                  <span className="font-medium text-slate-700">Konfirmasi suara (reveal)</span> otomatis dimulai pada{' '}
-                  <span className="font-medium text-slate-900">
-                    {new Date(
-                      (new Date(formData.commitDate).getTime() + new Date(formData.endedDate).getTime()) / 2
-                    ).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              )}
               {errors.dateRange && <p className="text-red-500 text-[12px]">{errors.dateRange}</p>}
             </section>
           </div>

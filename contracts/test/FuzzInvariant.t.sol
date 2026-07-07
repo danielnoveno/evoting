@@ -67,7 +67,7 @@ contract FuzzInvariantTest is Test {
 
         uint256 boundedCandidateId = bound(fuzzId, 1, 3);
 
-        // Register ALL voters during Registration phase
+        // Register ALL voters during Commit phase
         vm.startPrank(spaceAdmin);
         space.registerVoter(voter);
         space.registerVoter(voter2);

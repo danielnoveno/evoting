@@ -297,7 +297,7 @@ export default function VoterDashboardPage() {
       </VoterShell>
     )
   }
-  const upcomingElections = elections.filter((election) => election.phase === 'registration')
+  const upcomingElections = elections.filter((election) => election.phase === 'commit')
   const pastElections = elections.filter((election) => election.phase === 'ended')
   const onlyPastElections = pastElections.length === elections.length
   const featuredElection = upcomingElections[0]

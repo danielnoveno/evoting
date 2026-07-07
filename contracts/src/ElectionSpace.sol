@@ -8,7 +8,6 @@ interface IRegistryRoleOracle {
 
 contract ElectionSpace {
     enum Phase {
-        Registration,
         Commit,
         Reveal,
         Ended
@@ -136,7 +135,7 @@ contract ElectionSpace {
         title = _title;
         metadataURI = _metadataURI;
 
-        currentPhase = Phase.Registration;
+        currentPhase = Phase.Commit;
         status = ElectionStatus.Active;
 
         if (_initialVoters.length > 0) {
@@ -211,7 +210,7 @@ contract ElectionSpace {
         uint256 _commitEndsAt,
         uint256 _revealStartsAt,
         uint256 _revealEndsAt
-    ) external onlySpaceAdminOrSuperAdmin onlyActive onlyPhase(Phase.Registration) {
+    ) external onlySpaceAdminOrSuperAdmin onlyActive onlyPhase(Phase.Commit) {
         _setPhaseSchedule(
             _commitStartsAt, _commitEndsAt, _revealStartsAt, _revealEndsAt, msg.sender
         );
@@ -289,12 +288,12 @@ contract ElectionSpace {
 
     function phase() public view returns (Phase) {
         if (commitStartsAt == 0) return currentPhase;
-        if (block.timestamp < commitStartsAt) return Phase.Registration;
+        if (block.timestamp < commitStartsAt) return Phase.Commit;
         if (block.timestamp < commitEndsAt) return Phase.Commit;
         if (block.timestamp < revealEndsAt && block.timestamp >= revealStartsAt) {
             return Phase.Reveal;
         }
-        if (block.timestamp < revealStartsAt) return Phase.Registration;
+        if (block.timestamp < revealStartsAt) return Phase.Commit;
         return Phase.Ended;
     }
 
@@ -302,7 +301,7 @@ contract ElectionSpace {
         external
         onlySpaceAdminOrSuperAdmin
         onlyActive
-        onlyPhase(Phase.Registration)
+        onlyPhase(Phase.Commit)
     {
         if (voter == address(0)) revert InvalidVoter();
         if (isWhitelisted[voter]) revert AlreadyRegistered();
@@ -315,7 +314,7 @@ contract ElectionSpace {
         external
         onlySpaceAdminOrSuperAdmin
         onlyActive
-        onlyPhase(Phase.Registration)
+        onlyPhase(Phase.Commit)
     {
         for (uint256 i = 0; i < voters.length; i++) {
             address voter = voters[i];
@@ -330,7 +329,7 @@ contract ElectionSpace {
         external
         onlySpaceAdminOrSuperAdmin
         onlyActive
-        onlyPhase(Phase.Registration)
+        onlyPhase(Phase.Commit)
     {
         if (_removeWhitelistedVoter(voter)) {
             emit WhitelistUpdated(spaceId, voter, false, msg.sender);

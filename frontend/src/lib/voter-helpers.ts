@@ -43,15 +43,13 @@ export function shortenHash(hash: string | null | undefined): string {
 }
 
 export function getPhaseLabel(phase: VoterElectionPhase) {
-  if (phase === 'registration') return 'Persiapan'
-  if (phase === 'commit') return 'Tahap Memilih'
-  if (phase === 'reveal') return 'Tahap Penghitungan'
+  if (phase === 'commit') return 'Pencoblosan'
+  if (phase === 'reveal') return 'Konfirmasi Suara'
   if (phase === 'suspended') return 'Ditangguhkan'
   return 'Selesai'
 }
 
 export function getPhaseTone(phase: VoterElectionPhase) {
-  if (phase === 'registration') return 'warning'
   if (phase === 'commit') return 'success'
   if (phase === 'reveal') return 'info'
   if (phase === 'suspended') return 'warning'
@@ -87,10 +85,9 @@ export function sortDashboardElections(elections: VoterElection[]) {
     if (viewState.nextAction === 'commit') return 0
     if (viewState.nextAction === 'reveal') return 1
     if (election.phase === 'suspended') return 2
-    if (election.phase === 'registration') return 3
-    if (election.phase === 'commit') return 4
-    if (election.phase === 'reveal') return 5
-    return 6
+    if (election.phase === 'commit') return 3
+    if (election.phase === 'reveal') return 4
+    return 5
   }
 
   return [...elections].sort((left, right) => {

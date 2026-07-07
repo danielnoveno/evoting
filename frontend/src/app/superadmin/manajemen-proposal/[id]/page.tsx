@@ -773,7 +773,6 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
           {liveProposal?.status !== 'deployed' && (() => {
             const now = Date.now()
             const pastDates: string[] = []
-            if (liveProposal?.registrationStartAt && new Date(liveProposal.registrationStartAt).getTime() < now) pastDates.push('Mulai Persiapan')
             if (liveProposal?.commitStartAt && new Date(liveProposal.commitStartAt).getTime() < now) pastDates.push('Mulai Pencoblosan')
             if (liveProposal?.endedAt && new Date(liveProposal.endedAt).getTime() < now) pastDates.push('Selesai Pemilihan')
             if (pastDates.length === 0) return null

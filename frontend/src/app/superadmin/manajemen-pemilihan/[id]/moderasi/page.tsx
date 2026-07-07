@@ -112,10 +112,10 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
     : 'https://sepolia.basescan.org/'
 
   const schedule = proposal
-    ? { commitStartAt: proposal.commitStartAt, revealStartAt: proposal.revealStartAt, endedAt: proposal.endedAt, registrationStartAt: proposal.registrationStartAt }
+    ? { commitStartAt: proposal.commitStartAt, revealStartAt: proposal.revealStartAt, endedAt: proposal.endedAt }
     : null
 
-  const phaseInfo = proposal ? resolveSchedulePhase(proposal, nowMs) : { phase: 'registration' as const, label: 'Persiapan', next: 'Pencoblosan', deadlineIso: null, deadlineLabel: 'Pencoblosan dibuka dalam' }
+  const phaseInfo = proposal ? resolveSchedulePhase(proposal, nowMs) : { phase: 'commit' as const, label: 'Pencoblosan', next: 'Konfirmasi', deadlineIso: null, deadlineLabel: 'Pencoblosan dibuka dalam' }
 
   const validWhitelistCount = whitelistEntries.filter((e) => e.validationStatus === 'valid' || e.validationStatus === 'synced' || e.syncStatus === 'synced').length
   const syncedWhitelistCount = whitelistEntries.filter((e) => e.syncStatus === 'synced' || e.validationStatus === 'synced').length
@@ -232,16 +232,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
                 <p className="mt-1 text-[12px] text-slate-500">Sumber fase tampilan: jadwal database aplikasi.</p>
               </div>
             </div>
-            <div className="mt-5 grid gap-4 sm:grid-cols-4">
-              {schedule.registrationStartAt && (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Persiapan</p>
-                  <p className="mt-2 text-[14px] font-semibold text-slate-900">
-                    {new Date(schedule.registrationStartAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                  <p className="mt-1 text-[12px] text-slate-500">Whitelist & registrasi</p>
-                </div>
-              )}
+            <div className="mt-5 grid gap-4 sm:grid-cols-3">
               {schedule.commitStartAt && (
                 <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-600">Mulai Pencoblosan</p>
