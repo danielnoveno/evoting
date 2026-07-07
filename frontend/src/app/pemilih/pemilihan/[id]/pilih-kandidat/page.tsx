@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertCircle, ArrowRight, CheckCircle2, Clock3, Info, Loader2 } from 'lucide-react'
+import { AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock3, Info, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -99,7 +99,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const dbPhase = liveSchedulePhase?.phase ?? election?.phase ?? 'registration'
   // Use DB schedule as the user-facing source of truth. On-chain phase is used
   // only as an extra safety guard while submitting a commit transaction.
-  const effectivePhase: 'registration' | 'commit' | 'reveal' | 'ended' = dbPhase
+  const effectivePhase: 'registration' | 'commit' | 'reveal' | 'ended' | 'suspended' = dbPhase === 'suspended' ? 'suspended' : dbPhase
   const effectivePhaseNumber = effectivePhase === 'commit' ? 1 : effectivePhase === 'reveal' ? 2 : effectivePhase === 'ended' ? 3 : 0
   const onChainPhaseLabel = currentPhaseNumber === 0
     ? 'Persiapan'
@@ -124,6 +124,8 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
   const voteBlockedReason = !contractAddress
     ? 'Pemilihan ini belum memiliki smart contract aktif.'
+    : effectivePhase === 'suspended'
+      ? 'Pemilihan ini sedang ditangguhkan oleh superadmin. Pencoblosan dihentikan sementara hingga proses tinjauan selesai.'
     // ponytail: wallet mismatch check removed — server-derived wallet is the voting identity,
     // profile wallet is display-only. Race condition between profile load and derivation
     // caused permanent mismatch on page load.
@@ -141,20 +143,24 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       ? onChainCommitBlockedReason
       : ''
 
-  const countdownTargetIso = effectivePhase === 'registration'
-    ? election?.commitStartAt ?? election?.deadlineIso ?? null
-    : effectivePhase === 'commit'
-      ? election?.revealStartAt ?? election?.deadlineIso ?? null
-      : effectivePhase === 'reveal'
-        ? election?.endedAt ?? election?.deadlineIso ?? null
-        : null
-  const countdownLabel = effectivePhase === 'registration'
-    ? 'PENCOBLOSAN DIBUKA DALAM'
-    : effectivePhase === 'commit'
-      ? 'SISA WAKTU MENCOBLOS'
-      : effectivePhase === 'reveal'
-        ? 'PENGHITUNGAN BERAKHIR DALAM'
-        : 'WAKTU TERSISA'
+  const countdownTargetIso = effectivePhase === 'suspended'
+    ? null
+    : effectivePhase === 'registration'
+      ? election?.commitStartAt ?? election?.deadlineIso ?? null
+      : effectivePhase === 'commit'
+        ? election?.revealStartAt ?? election?.deadlineIso ?? null
+        : effectivePhase === 'reveal'
+          ? election?.endedAt ?? election?.deadlineIso ?? null
+          : null
+  const countdownLabel = effectivePhase === 'suspended'
+    ? 'PEMILIHAN DITANGGUHKAN'
+    : effectivePhase === 'registration'
+      ? 'PENCOBLOSAN DIBUKA DALAM'
+      : effectivePhase === 'commit'
+        ? 'SISA WAKTU MENCOBLOS'
+        : effectivePhase === 'reveal'
+          ? 'PENGHITUNGAN BERAKHIR DALAM'
+          : 'WAKTU TERSISA'
 
   useEffect(() => {
     if (!isConfirmed || !hash || !receipt || !pendingCommit) return
@@ -487,32 +493,36 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
               STATUS SAAT INI
             </span>
             <h1 className="mt-3 text-[26px] font-bold tracking-tight text-white md:text-[32px]">
-              {voteBlockedReason
-                ? effectivePhase === 'reveal'
-                  ? 'Masa Mencoblos Selesai'
-                  : 'Belum Bisa Mencoblos'
-                : isAuthLoading
-                  ? 'Memuat Sesi'
-                  : isAuthMissing
-                    ? 'Silakan Masuk'
-                    : !isWalletReady
-                      ? 'Menyiapkan ID Voting'
-                      : effectivePhaseNumber === 1
-                        ? 'Saatnya Mencoblos'
-                        : 'Menunggu Jadwal'}
+              {effectivePhase === 'suspended'
+                ? 'Pemilihan Ditangguhkan'
+                : voteBlockedReason
+                  ? effectivePhase === 'reveal'
+                    ? 'Masa Mencoblos Selesai'
+                    : 'Belum Bisa Mencoblos'
+                  : isAuthLoading
+                    ? 'Memuat Sesi'
+                    : isAuthMissing
+                      ? 'Silakan Masuk'
+                      : !isWalletReady
+                        ? 'Menyiapkan ID Voting'
+                        : effectivePhaseNumber === 1
+                          ? 'Saatnya Mencoblos'
+                          : 'Menunggu Jadwal'}
             </h1>
             <p className="mt-2.5 max-w-xl text-[13.5px] leading-relaxed text-slate-300">
-              {voteBlockedReason
-                ? voteBlockedReason
-                : isAuthLoading
-                  ? 'Sistem sedang memuat sesi Anda. Tunggu sebentar...'
-                  : isAuthMissing
-                    ? 'Anda belum masuk. Silakan masuk terlebih dahulu untuk mencoblos.'
-                    : !isWalletReady
-                      ? 'Sistem sedang menyiapkan ID voting Anda. Tunggu sebentar...'
-                    : effectivePhaseNumber === 1
-                      ? 'Pilih satu kandidat lalu konfirmasi. Setelah itu selesai; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.'
-                      : 'Pencoblosan belum dimulai. Kamu bisa melihat kandidat terlebih dahulu, lalu coblos saat masa pencoblosan dibuka.'}
+              {effectivePhase === 'suspended'
+                ? 'Pemilihan ini sedang ditangguhkan oleh superadmin. Pencoblosan dihentikan sementara hingga proses tinjauan selesai. Hubungi admin atau superadmin untuk informasi lebih lanjut.'
+                : voteBlockedReason
+                  ? voteBlockedReason
+                  : isAuthLoading
+                    ? 'Sistem sedang memuat sesi Anda. Tunggu sebentar...'
+                    : isAuthMissing
+                      ? 'Anda belum masuk. Silakan masuk terlebih dahulu untuk mencoblos.'
+                      : !isWalletReady
+                        ? 'Sistem sedang menyiapkan ID voting Anda. Tunggu sebentar...'
+                      : effectivePhaseNumber === 1
+                        ? 'Pilih satu kandidat lalu konfirmasi. Setelah itu selesai; sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka.'
+                        : 'Pencoblosan belum dimulai. Kamu bisa melihat kandidat terlebih dahulu, lalu coblos saat masa pencoblosan dibuka.'}
             </p>
           </div>
 
@@ -564,6 +574,23 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
           </p>
         </div>
       </section>
+
+      {effectivePhase === 'suspended' && (
+        <section className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5 text-[13px] leading-7 text-red-900">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+            <div>
+              <p className="font-semibold text-red-800">Pemilihan Ditangguhkan</p>
+              <p className="mt-1">
+                Pemilihan ini sedang ditangguhkan oleh superadmin. Pencoblosan dihentikan sementara hingga proses tinjauan selesai.
+              </p>
+              <p className="mt-2 text-[12px] text-red-700">
+                Hubungi admin organisasi atau superadmin untuk informasi lebih lanjut mengenai alasan penangguhan dan kapan pemilihan akan dilanjutkan.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {isAuthLoading ? (
         <section className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-[13px] leading-7 text-slate-600">

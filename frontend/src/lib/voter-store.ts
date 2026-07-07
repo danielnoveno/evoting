@@ -24,7 +24,7 @@ export {
   getRecentLogs,
 } from './voter-helpers'
 
-export type VoterElectionPhase = 'registration' | 'commit' | 'reveal' | 'ended'
+export type VoterElectionPhase = 'registration' | 'commit' | 'reveal' | 'ended' | 'suspended'
 
 export interface VoterCandidate {
   id: string
@@ -161,6 +161,7 @@ function persistStore(store: VoterStore) {
 }
 
 function deadlineFor(election: PublicElectionRecord) {
+  if (election.phase === 'suspended') return election.commitStartAt
   if (election.phase === 'commit') return election.revealStartAt
   if (election.phase === 'reveal') return election.endedAt
   if (election.phase === 'ended') return election.endedAt

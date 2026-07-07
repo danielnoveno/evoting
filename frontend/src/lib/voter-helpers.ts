@@ -46,6 +46,7 @@ export function getPhaseLabel(phase: VoterElectionPhase) {
   if (phase === 'registration') return 'Persiapan'
   if (phase === 'commit') return 'Tahap Memilih'
   if (phase === 'reveal') return 'Tahap Penghitungan'
+  if (phase === 'suspended') return 'Ditangguhkan'
   return 'Selesai'
 }
 
@@ -53,12 +54,14 @@ export function getPhaseTone(phase: VoterElectionPhase) {
   if (phase === 'registration') return 'warning'
   if (phase === 'commit') return 'success'
   if (phase === 'reveal') return 'info'
+  if (phase === 'suspended') return 'warning'
   return 'success'
 }
 
 export function getElectionProgress(election: VoterElection) {
   if (!election.totalParticipants) return 0
   if (election.phase === 'ended') return 100
+  if (election.phase === 'suspended') return 0
   const counted = election.phase === 'reveal' ? election.revealedCount : election.committedCount
   return Math.min(100, Math.round((counted / election.totalParticipants) * 100))
 }
@@ -66,6 +69,8 @@ export function getElectionProgress(election: VoterElection) {
 export function getElectionViewState(election: VoterElection): VoterElectionViewState {
   const hasCommitted = Boolean(election.commitProof && election.committedCandidateId)
   const hasRevealed = Boolean(election.revealProof)
+  // Suspended elections block all actions
+  if (election.phase === 'suspended') return { hasCommitted, hasRevealed, canCommit: false, canReveal: false, canViewResults: false, nextAction: 'wait' }
   const canCommit = election.phase === 'commit' && !hasCommitted
   const canReveal = election.phase === 'reveal' && hasCommitted && !hasRevealed
   const canViewResults = election.phase === 'ended' || election.phase === 'reveal' || hasRevealed
@@ -81,10 +86,11 @@ export function sortDashboardElections(elections: VoterElection[]) {
     const viewState = getElectionViewState(election)
     if (viewState.nextAction === 'commit') return 0
     if (viewState.nextAction === 'reveal') return 1
-    if (election.phase === 'registration') return 2
-    if (election.phase === 'commit') return 3
-    if (election.phase === 'reveal') return 4
-    return 5
+    if (election.phase === 'suspended') return 2
+    if (election.phase === 'registration') return 3
+    if (election.phase === 'commit') return 4
+    if (election.phase === 'reveal') return 5
+    return 6
   }
 
   return [...elections].sort((left, right) => {
@@ -96,6 +102,7 @@ export function sortDashboardElections(elections: VoterElection[]) {
 
 export function resolveElectionAction(election: VoterElection) {
   const viewState = getElectionViewState(election)
+  if (election.phase === 'suspended') return { label: 'Ditangguhkan', href: `/pemilih/pemilihan/${election.id}/pilih-kandidat` }
   if (viewState.nextAction === 'commit') return { label: 'Berikan Suara', href: `/pemilih/pemilihan/${election.id}/pilih-kandidat` }
   if (viewState.nextAction === 'reveal') return { label: 'Menunggu Penghitungan', href: `/pemilih/pemilihan/${election.id}/hasil` }
   if (viewState.nextAction === 'results') return { label: 'Lihat Hasil', href: `/pemilih/pemilihan/${election.id}/hasil` }

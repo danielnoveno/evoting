@@ -111,7 +111,7 @@ export interface ProposalDocumentRecord {
   createdAt: string
 }
 
-export type PublicElectionPhase = 'registration' | 'commit' | 'reveal' | 'ended'
+export type PublicElectionPhase = 'registration' | 'commit' | 'reveal' | 'ended' | 'suspended'
 
 export interface PublicElectionCandidateRecord {
   id: string

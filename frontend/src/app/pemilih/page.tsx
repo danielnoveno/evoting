@@ -84,25 +84,30 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
   const action = resolveElectionAction(election)
   const viewState = getElectionViewState(election)
   const isUpcoming = viewState.nextAction === 'wait'
+  const isSuspended = election.phase === 'suspended'
   const alreadyVoted = viewState.hasCommitted
   const label = alreadyVoted
     ? 'Suara Sudah Tercatat'
-    : isUpcoming
-      ? 'Acara Pemilihan Mendatang'
-      : election.phase === 'reveal'
-        ? 'Fase Penghitungan Suara'
-        : election.phase === 'ended'
-          ? 'Pemilihan Selesai'
-          : 'Pemilihan Sedang Berlangsung'
+    : election.phase === 'suspended'
+      ? 'Pemilihan Ditangguhkan'
+      : isUpcoming
+        ? 'Acara Pemilihan Mendatang'
+        : election.phase === 'reveal'
+          ? 'Fase Penghitungan Suara'
+          : election.phase === 'ended'
+            ? 'Pemilihan Selesai'
+            : 'Pemilihan Sedang Berlangsung'
   const countdownLabel = alreadyVoted
     ? 'Menunggu pembukaan fase berikutnya:'
-    : isUpcoming
-      ? 'Hitung mundur ke pembukaan suara:'
-      : election.phase === 'reveal'
-        ? 'Batas penghitungan suara:'
-        : election.phase === 'ended'
-          ? 'Pemilihan telah selesai:'
-          : 'Sisa waktu memilih:'
+    : election.phase === 'suspended'
+      ? 'Pencoblosan dihentikan sementara:'
+      : isUpcoming
+        ? 'Hitung mundur ke pembukaan suara:'
+        : election.phase === 'reveal'
+          ? 'Batas penghitungan suara:'
+          : election.phase === 'ended'
+            ? 'Pemilihan telah selesai:'
+            : 'Sisa waktu memilih:'
   const dateLabel = isUpcoming ? 'Waktu Mulai' : election.phase === 'ended' ? 'Selesai Pada' : 'Batas Waktu'
 
   return (
@@ -146,6 +151,10 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
             <div className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-emerald-300/40 bg-emerald-500/10 px-5 text-[13px] font-semibold text-emerald-200">
               ✓ Suara Sudah Dicoblos
             </div>
+          ) : isSuspended ? (
+            <div className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-red-300/40 bg-red-500/10 px-5 text-[13px] font-semibold text-red-200">
+              ⚠ Pemilihan Ditangguhkan
+            </div>
           ) : isUpcoming ? (
             <button type="button" disabled className="mt-5 inline-flex h-10 w-full cursor-not-allowed items-center justify-center rounded-md border border-amber-300/60 bg-white/5 px-5 text-[13px] font-semibold text-amber-100">
               Belum Dibuka
@@ -166,7 +175,8 @@ function OtherElectionCard({ election }: { election: VoterElection }) {
   const action = resolveElectionAction(election)
   const viewState = getElectionViewState(election)
   const isUpcoming = viewState.nextAction === 'wait'
-  const statusLabel = isUpcoming ? 'Mendatang' : election.phase === 'ended' ? 'Selesai' : 'Aktif'
+  const isSuspended = election.phase === 'suspended'
+  const statusLabel = isSuspended ? 'Ditangguhkan' : isUpcoming ? 'Mendatang' : election.phase === 'ended' ? 'Selesai' : 'Aktif'
   
   return (
     <article className="group flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-slate-300 hover:shadow-md">
@@ -181,13 +191,15 @@ function OtherElectionCard({ election }: { election: VoterElection }) {
       )}
       <div className="p-5">
         <div className="flex items-center justify-between gap-3">
-          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] ${isUpcoming ? 'bg-amber-50 text-amber-700' : election.phase === 'ended' ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700'}`}>
+          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] ${isSuspended ? 'bg-red-50 text-red-600' : isUpcoming ? 'bg-amber-50 text-amber-700' : election.phase === 'ended' ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700'}`}>
             {statusLabel}
           </span>
           <span className="text-[12px] text-slate-400 font-mono">ID: {election.id.slice(0, 4).toUpperCase()}</span>
         </div>
         <h3 className="mt-4 text-[18px] font-semibold leading-tight text-slate-900 group-hover:text-blue-600">{election.title}</h3>
-        <p className="mt-2 line-clamp-2 text-[13px] leading-6 text-slate-500">{election.summary}</p>
+        <p className="mt-2 line-clamp-2 text-[13px] leading-6 text-slate-500">
+          {isSuspended ? 'Pemilihan ditangguhkan oleh superadmin. Pencoblosan dihentikan sementara.' : election.summary}
+        </p>
         
         <div className="mt-5 space-y-2 text-[12px] text-slate-600">
           <div className="flex items-center gap-2">
@@ -203,7 +215,11 @@ function OtherElectionCard({ election }: { election: VoterElection }) {
 
       <div className="px-5 pb-5">
         <div className="border-t border-slate-100 pt-4">
-          {isUpcoming ? (
+          {isSuspended ? (
+            <button type="button" disabled className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-lg border border-red-200 bg-red-50 py-2 text-[12px] font-semibold text-red-500">
+              Ditangguhkan
+            </button>
+          ) : isUpcoming ? (
             <button type="button" disabled className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-lg bg-slate-50 py-2 text-[12px] font-semibold text-slate-400">
               Belum Dibuka
             </button>

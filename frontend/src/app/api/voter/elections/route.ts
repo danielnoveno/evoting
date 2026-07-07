@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
     .from('proposal_drafts')
     .select('*')
     .in('id', proposalIds)
-    .in('status', ['approved', 'deployed', 'archived'])
+    .in('status', ['approved', 'deployed', 'archived', 'suspended'])
     .order('created_at', { ascending: false })
 
   if (proposalError) return jsonError('Gagal memuat pemilihan voter.', 500)
