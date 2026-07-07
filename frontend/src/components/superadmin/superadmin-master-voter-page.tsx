@@ -181,10 +181,11 @@ export function SuperadminMasterVoterPage() {
 
     sendVoterActivationEmailsMutation.mutate({ recipients }, {
       onSuccess: (result) => {
+        const firstFailure = result.failures[0]?.error
         showToast({
-          tone: result.failedCount > 0 ? 'info' : 'success',
-          title: 'Email aktivasi diproses',
-          description: `${result.sentCount} terkirim, ${result.failedCount} gagal.`,
+          tone: result.sentCount === 0 ? 'error' : result.failedCount > 0 ? 'info' : 'success',
+          title: result.sentCount === 0 ? 'Email aktivasi gagal dikirim' : 'Email aktivasi diproses',
+          description: `${result.sentCount} terkirim, ${result.failedCount} gagal.${firstFailure ? ` Penyebab pertama: ${firstFailure}` : ''}`,
         })
       },
       onError: (error) => {

@@ -364,8 +364,8 @@ function SuperadminAdminManagementContent() {
               : 'Link aktivasi tersedia untuk disalin.'
 
           showToast({
-            tone: invite.emailStatus === 'sent' ? 'success' : 'info',
-            title: 'Undangan Admin Dibuat',
+            tone: invite.emailStatus === 'sent' ? 'success' : invite.emailStatus === 'failed' ? 'error' : 'info',
+            title: invite.emailStatus === 'sent' ? 'Undangan Admin Dikirim' : 'Undangan dibuat, email belum terkirim',
             description: `${formData.organizationName} — ${emailMsg}`,
           })
         },

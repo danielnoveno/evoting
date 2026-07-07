@@ -239,7 +239,11 @@ export default function SuperadminAdminDetailPage({ params }: { params: { id: st
                       setActivationLink(data.activationLink)
                       setLastEmailStatus(data.emailStatus)
                       setLastEmailError(data.emailError ?? null)
-                      showToast({ tone: 'success', title: 'Undangan dikirim', description: 'Link aktivasi baru telah dibuat.' })
+                      showToast({
+                        tone: data.emailStatus === 'sent' ? 'success' : 'error',
+                        title: data.emailStatus === 'sent' ? 'Undangan dikirim' : 'Email undangan gagal dikirim',
+                        description: data.emailStatus === 'sent' ? 'Email aktivasi sudah dikirim.' : `Link aktivasi dibuat, tetapi email gagal: ${data.emailError ?? 'periksa konfigurasi SMTP.'}`,
+                      })
                     },
                     onError: (error) => showToast({ tone: 'error', title: 'Gagal mengirim undangan', description: getRepositoryErrorMessage(error) }),
                   })
