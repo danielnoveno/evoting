@@ -191,6 +191,12 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
                   onClick={() => {
                     resendInviteMutation.mutate(seedRecord.email, {
                       onSuccess: (data) => {
+                        console.info('[activation-email][superadmin:resend]', {
+                          email: seedRecord.email,
+                          emailStatus: data.emailStatus,
+                          emailError: data.emailError ?? null,
+                          hasActivationLink: Boolean(data.activationLink),
+                        })
                         setActivationLink(data.activationLink)
                         setLastEmailStatus(data.emailStatus)
                         setLastEmailError(data.emailError ?? null)
@@ -200,7 +206,10 @@ export default function SuperadminSuperadminDetailPage({ params }: { params: { i
                           description: data.emailStatus === 'sent' ? 'Email aktivasi sudah dikirim.' : `Link aktivasi dibuat, tetapi email gagal: ${data.emailError ?? 'periksa konfigurasi SMTP.'}`,
                         })
                       },
-                      onError: (error) => showToast({ tone: 'error', title: 'Gagal mengirim undangan', description: getRepositoryErrorMessage(error) }),
+                      onError: (error) => {
+                        console.error('[activation-email][superadmin:resend] request failed', error)
+                        showToast({ tone: 'error', title: 'Gagal mengirim undangan', description: getRepositoryErrorMessage(error) })
+                      },
                     })
                   }}
                   className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 text-[15px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50"

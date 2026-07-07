@@ -279,6 +279,7 @@ function SuperadminManagementContent() {
 
     setBulkActionLoading('send')
     const results = await Promise.allSettled(pendingItems.map((admin) => resendInviteMutation.mutateAsync(admin.email)))
+    console.info('[activation-email][superadmin:bulk-resend]', { results })
     const successCount = results.filter((result) => result.status === 'fulfilled' && result.value.emailStatus === 'sent').length
     const failedCount = results.length - successCount
     setBulkActionLoading(null)
@@ -393,6 +394,12 @@ function SuperadminManagementContent() {
       },
       {
         onSuccess: (invite) => {
+          console.info('[activation-email][superadmin:create]', {
+            email: formData.email,
+            emailStatus: invite.emailStatus,
+            emailError: invite.emailError ?? null,
+            hasActivationLink: Boolean(invite.activationLink),
+          })
           if (invite.activationLink) setActivationLink(invite.activationLink)
           setLastEmailStatus(invite.emailStatus ?? 'skipped')
           setLastEmailError(invite.emailError ?? null)
@@ -412,6 +419,7 @@ function SuperadminManagementContent() {
           clearSuperadminDraft()
         },
         onError: (err) => {
+          console.error('[activation-email][superadmin:create] request failed', err)
           showToast({ tone: 'error', title: 'Undangan Gagal Dibuat', description: getRepositoryErrorMessage(err) })
         },
       },

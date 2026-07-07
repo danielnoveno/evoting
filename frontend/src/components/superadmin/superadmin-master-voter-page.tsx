@@ -181,6 +181,7 @@ export function SuperadminMasterVoterPage() {
 
     sendVoterActivationEmailsMutation.mutate({ recipients }, {
       onSuccess: (result) => {
+        console.info('[activation-email][voter:bulk]', result)
         const firstFailure = result.failures[0]?.error
         showToast({
           tone: result.sentCount === 0 ? 'error' : result.failedCount > 0 ? 'info' : 'success',
@@ -189,6 +190,7 @@ export function SuperadminMasterVoterPage() {
         })
       },
       onError: (error) => {
+        console.error('[activation-email][voter:bulk] request failed', error)
         showToast({ tone: 'error', title: 'Gagal mengirim email aktivasi', description: error.message })
       },
     })
