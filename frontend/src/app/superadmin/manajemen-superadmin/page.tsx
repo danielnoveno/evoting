@@ -279,7 +279,13 @@ function SuperadminManagementContent() {
 
     setBulkActionLoading('send')
     const results = await Promise.allSettled(pendingItems.map((admin) => resendInviteMutation.mutateAsync(admin.email)))
-    console.info('[activation-email][superadmin:bulk-resend]', { results })
+    console.table(results.map((result, index) => ({
+      email: pendingItems[index]?.email,
+      promiseStatus: result.status,
+      emailStatus: result.status === 'fulfilled' ? result.value.emailStatus : 'request_failed',
+      emailError: result.status === 'fulfilled' ? result.value.emailError ?? '' : String(result.reason),
+      hasActivationLink: result.status === 'fulfilled' ? Boolean(result.value.activationLink) : false,
+    })))
     const successCount = results.filter((result) => result.status === 'fulfilled' && result.value.emailStatus === 'sent').length
     const failedCount = results.length - successCount
     setBulkActionLoading(null)

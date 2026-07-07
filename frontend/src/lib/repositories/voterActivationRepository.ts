@@ -49,6 +49,14 @@ export async function sendVoterActivationEmails(input: SendVoterActivationEmailI
   }
 
   if (!isRecord(payload)) throw new RepositoryError('Respons email aktivasi voter tidak valid.')
+  console.info('[activation-email][api:voter-bulk]', {
+    ok: response.ok,
+    status: response.status,
+    total: typeof payload.total === 'number' ? payload.total : 0,
+    sentCount: typeof payload.sentCount === 'number' ? payload.sentCount : 0,
+    failedCount: typeof payload.failedCount === 'number' ? payload.failedCount : 0,
+    failures: Array.isArray(payload.failures) ? payload.failures : [],
+  })
 
   return {
     total: typeof payload.total === 'number' ? payload.total : 0,

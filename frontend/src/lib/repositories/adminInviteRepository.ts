@@ -116,6 +116,13 @@ export async function createAdminInvite(input: CreateAdminInviteInput): Promise<
 
   const payload: unknown = await response.json()
   if (!isRecord(payload)) throw new RepositoryError('Respons tidak valid dari server.')
+  console.info('[activation-email][api:create-admin-invite]', {
+    ok: response.ok,
+    status: response.status,
+    emailStatus: typeof payload.emailStatus === 'string' ? payload.emailStatus : null,
+    emailError: typeof payload.emailError === 'string' ? payload.emailError : null,
+    hasActivationLink: typeof payload.activationLink === 'string' && payload.activationLink.length > 0,
+  })
 
   const activationLink = typeof payload.activationLink === 'string' ? payload.activationLink : null
 
@@ -151,6 +158,13 @@ export async function resendAdminInvite(email: string): Promise<ResendInviteResu
 
   const payload: unknown = await response.json()
   if (!isRecord(payload)) throw new RepositoryError('Respons tidak valid.')
+  console.info('[activation-email][api:resend-admin-invite]', {
+    ok: response.ok,
+    status: response.status,
+    emailStatus: typeof payload.emailStatus === 'string' ? payload.emailStatus : null,
+    emailError: typeof payload.emailError === 'string' ? payload.emailError : null,
+    hasActivationLink: typeof payload.activationLink === 'string' && payload.activationLink.length > 0,
+  })
 
   return {
     activationLink: typeof payload.activationLink === 'string' ? payload.activationLink : '',
