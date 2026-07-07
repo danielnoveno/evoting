@@ -124,7 +124,7 @@ export function useAdminElectionList() {
     if (!query.data || query.data.proposals.length === 0) return []
     
     return query.data.proposals
-      .filter(p => p.status === 'deployed')
+      .filter(p => p.status === 'deployed' || p.status === 'suspended')
       .map((p, index) => {
         const whitelistRows = query.data.whitelistByProposalId.get(p.id) ?? []
         const voterTarget = String(whitelistRows.length)
@@ -134,17 +134,21 @@ export function useAdminElectionList() {
           name: row.voter_name ?? row.wallet_address,
         }))
 
+        const isSuspended = p.status === 'suspended'
+
         return {
           id: p.id,
           title: p.title,
           code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
-          status: p.status === 'deployed' ? 'aktif' : 'selesai',
-          badge: p.status === 'deployed' ? 'Active' : 'Approved',
-          meta: p.description ?? 'Ruang pemilihan blockchain.',
-          iconTone: p.status === 'deployed' ? 'emerald' : 'blue',
-          actionLabel: p.status === 'deployed' ? 'Monitoring' : 'Review Draft',
+          status: isSuspended ? 'ditangguhkan' : 'aktif',
+          badge: isSuspended ? 'Ditangguhkan' : 'Active',
+          meta: isSuspended
+            ? 'Pemilihan ditangguhkan oleh superadmin. Hubungi superadmin untuk informasi lebih lanjut.'
+            : (p.description ?? 'Ruang pemilihan blockchain.'),
+          iconTone: isSuspended ? 'orange' : 'emerald',
+          actionLabel: isSuspended ? 'Ditangguhkan' : 'Monitoring',
           secondaryActionLabel: whitelistRows.length > 0 ? `${whitelistRows.length} pemilih` : 'Belum ada pemilih',
-          actionTone: 'blue',
+          actionTone: isSuspended ? 'slate' : 'blue',
           periodLabel: 'Mei - Juni 2026',
           turnoutLabel: p.deployedSpaceAddress ? `${whitelistRows.length} pemilih whitelist` : 'Belum deploy',
           whitelistCount: whitelistRows.length,
@@ -155,7 +159,7 @@ export function useAdminElectionList() {
             endedAt: p.endedAt,
           },
           detail: makeEmptyDetail(p, voterTarget),
-          commits: p.status === 'deployed' ? {
+          commits: !isSuspended ? {
             total: '0',
             target: voterTarget,
             hash: p.deploymentTxHash ? `${p.deploymentTxHash.slice(0, 10)}...` : 'Belum ada tx',

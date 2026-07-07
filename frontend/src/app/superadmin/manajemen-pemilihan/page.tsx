@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Clock3, Eye, FileCheck2, PauseCircle, PlayCircle, Search, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, Clock3, Eye, FileCheck2, PauseCircle, PlayCircle, Search, ShieldCheck, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
@@ -54,6 +54,12 @@ export default function SuperadminElectionManagementPage() {
   const { data: proposalRowsRaw, isLoading, error } = useSuperadminProposalDrafts()
   const { elections: storeElections, setElections } = useSuperadminElectionsStore()
   const authSession = useAuthSession()
+
+  // Halt dialog state
+  const [haltDialogOpen, setHaltDialogOpen] = useState(false)
+  const [haltNote, setHaltNote] = useState('')
+  const [haltingElectionId, setHaltingElectionId] = useState<string | null>(null)
+  const [haltingElectionTitle, setHaltingElectionTitle] = useState('')
 
   const elections = useMemo(() => {
     if (!proposalRowsRaw) return []
@@ -196,6 +202,21 @@ export default function SuperadminElectionManagementPage() {
     return `/superadmin/manajemen-pemilihan/${id}/laporan-final`
   }
 
+  const openHaltDialog = (id: string, title: string) => {
+    setHaltingElectionId(id)
+    setHaltingElectionTitle(title)
+    setHaltNote('')
+    setHaltDialogOpen(true)
+  }
+
+  const handleHaltConfirm = () => {
+    if (!haltingElectionId || !haltNote.trim()) return
+    updateElectionStatus(haltingElectionId, 'Ditangguhkan', haltNote.trim())
+    setHaltDialogOpen(false)
+    setHaltingElectionId(null)
+    setHaltNote('')
+  }
+
   return (
     <SuperadminShell>
       <SuperadminOnboardingTour />
@@ -320,7 +341,7 @@ export default function SuperadminElectionManagementPage() {
                             <button
                               type="button"
                               aria-label={`Tangguhkan ${election.title}`}
-                              onClick={() => updateElectionStatus(election.id, 'Ditangguhkan', 'Pemilihan ditangguhkan')}
+                              onClick={() => openHaltDialog(election.id, election.title)}
                               className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-200 bg-white text-red-600 transition hover:bg-red-50"
                             >
                               <PauseCircle className="h-4 w-4" />
@@ -370,6 +391,69 @@ export default function SuperadminElectionManagementPage() {
           />
         </DataTableShell>
       </StaggerContainer>
+
+      {/* Halt Confirmation Dialog */}
+      {haltDialogOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 px-4">
+          <button type="button" aria-label="Tutup dialog" className="absolute inset-0" onClick={() => setHaltDialogOpen(false)} />
+          <div className="relative w-full max-w-[480px] rounded-xl border border-slate-200 bg-white p-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-[15px] font-semibold text-slate-900">Tangguhkan Pemilihan?</h2>
+                <p className="mt-1 text-[13px] text-slate-500">{haltingElectionTitle}</p>
+              </div>
+              <button type="button" onClick={() => setHaltDialogOpen(false)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+                <div>
+                  <p className="text-[13px] font-medium text-amber-800">Perhatian</p>
+                  <p className="mt-1 text-[12px] leading-5 text-amber-700">
+                    Pemilihan yang ditangguhkan akan segera berhenti menerima transaksi. Pemilih tidak akan bisa melakukan commit/reveal.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <label htmlFor="halt-note" className="block text-[13px] font-medium text-slate-700">
+                Alasan Penangguhan <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="halt-note"
+                rows={3}
+                value={haltNote}
+                onChange={(e) => setHaltNote(e.target.value)}
+                placeholder="Contoh: Ditemukan aktivitas mencurigakan pada fase commit, perlu investigasi lebih lanjut."
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[13px] text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-300 focus:ring-2 focus:ring-black"
+              />
+              <p className="mt-1.5 text-[11px] text-slate-400">Catatan ini akan dikirim ke admin yang membuat pemilihan sebagai notifikasi.</p>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setHaltDialogOpen(false)}
+                className="inline-flex h-10 items-center justify-center rounded-md px-4 text-[13px] font-medium text-slate-800 hover:bg-slate-100"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleHaltConfirm}
+                disabled={!haltNote.trim()}
+                className="inline-flex h-10 items-center justify-center rounded-md border border-red-200 bg-white px-4 text-[13px] font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Ya, Tangguhkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </SuperadminShell>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { BriefcaseBusiness, ChartNoAxesColumn, Grid2x2, Plus, Settings2, ShieldCheck, UsersRound } from 'lucide-react'
+import { BriefcaseBusiness, ChartNoAxesColumn, Grid2x2, PauseCircle, Plus, Settings2, ShieldCheck, UsersRound } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
@@ -17,7 +17,7 @@ import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 
 function getToneClasses(tone: AdminElectionRecord['iconTone']) {
   if (tone === 'emerald') return 'bg-emerald-50 text-emerald-700'
-  if (tone === 'orange') return 'bg-orange-50 text-orange-600'
+  if (tone === 'orange') return 'bg-red-50 text-red-600'
   return 'bg-blue-50 text-blue-600'
 }
 
@@ -29,11 +29,56 @@ function getActionToneClasses(tone: AdminElectionRecord['actionTone']) {
 
 function ElectionIcon({ status }: { status: AdminElectionStatus }) {
   if (status === 'aktif') return <BriefcaseBusiness className="h-5 w-5" />
+  if (status === 'ditangguhkan') return <PauseCircle className="h-5 w-5" />
   return <ShieldCheck className="h-5 w-5" />
 }
 
 function ElectionCard({ election }: { election: AdminElectionRecord }) {
   const router = useRouter()
+
+  if (election.status === 'ditangguhkan') {
+    return (
+      <AppSectionCard className="flex h-full min-h-[388px] flex-col opacity-75">
+        <div className="flex h-full flex-1 flex-col">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                <ElectionIcon status={election.status} />
+              </div>
+              <div className="min-w-0 pt-1">
+                <h2 className="max-w-[16ch] text-[20px] font-semibold text-slate-900 2xl:max-w-[12ch]">{election.title}</h2>
+                <p className="mt-3 max-w-[420px] text-[15px] leading-7 text-slate-500 2xl:max-w-[340px]">{election.meta}</p>
+              </div>
+            </div>
+            <div className="flex min-h-[84px] flex-col justify-between gap-4 sm:items-end">
+              <span className="inline-flex items-center gap-2 self-start rounded-full bg-red-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-red-600 sm:self-auto">
+                <PauseCircle className="h-3.5 w-3.5" />
+                Ditangguhkan
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-8 border-t border-slate-100 pt-6">
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
+              <p className="text-[14px] font-semibold text-red-700">Pemilihan Ditangguhkan</p>
+              <p className="mt-2 text-[13px] leading-6 text-red-600">
+                Pemilihan ini telah ditangguhkan oleh superadmin. Hubungi superadmin untuk informasi lebih lanjut mengenai alasan penangguhan.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-auto flex items-end justify-between gap-3 pt-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-400 sm:px-5">
+                <ChartNoAxesColumn className="h-4 w-4" />
+                Monitoring Tidak Tersedia
+              </span>
+            </div>
+          </div>
+        </div>
+      </AppSectionCard>
+    )
+  }
 
   if (election.status === 'aktif' && election.commits) {
     return (

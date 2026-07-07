@@ -135,7 +135,7 @@ export async function findMasterVoterByWallet(walletAddress: string): Promise<{ 
 export async function addMasterVoterToWhitelist(input: {
   proposalDraftId: string
   masterVoterIds: string[]
-}): Promise<{ added: number; skipped: number }> {
+}): Promise<{ added: number; skipped: number; message?: string }> {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
   const { data: sessionData } = await client.auth.getSession()
@@ -158,5 +158,5 @@ export async function addMasterVoterToWhitelist(input: {
   if (!payload || typeof payload !== 'object' || !('added' in payload)) {
     throw new RepositoryError('Respons tidak dikenali.')
   }
-  return payload as { added: number; skipped: number }
+  return payload as { added: number; skipped: number; message?: string }
 }

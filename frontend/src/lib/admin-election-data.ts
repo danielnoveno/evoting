@@ -1,4 +1,4 @@
-export type AdminElectionStatus = 'aktif' | 'selesai'
+export type AdminElectionStatus = 'aktif' | 'selesai' | 'ditangguhkan'
 
 export type AdminElectionRecord = {
   id: string
@@ -132,6 +132,7 @@ export const adminElectionFilters: Array<{ key: 'semua' | AdminElectionStatus; l
   { key: 'semua', label: 'Semua' },
   { key: 'aktif', label: 'Aktif' },
   { key: 'selesai', label: 'Selesai' },
+  { key: 'ditangguhkan', label: 'Ditangguhkan' },
 ]
 
 export const adminElectionDetailTabs = [

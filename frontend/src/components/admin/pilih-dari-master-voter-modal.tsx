@@ -99,9 +99,9 @@ export function PilihDariMasterVoterModal({ open, onClose, proposalDraftId, exis
       {
         onSuccess: (result) => {
           showToast({
-            tone: 'success',
+            tone: result.added > 0 ? 'success' : 'info',
             title: 'Pemilih ditambahkan dari master data',
-            description: `${result.added} pemilih berhasil ditambahkan ke whitelist.${result.skipped > 0 ? ` ${result.skipped} dilewati (sudah ada atau tanpa wallet).` : ''}`,
+            description: result.message ?? `${result.added} pemilih berhasil ditambahkan ke whitelist.${result.skipped > 0 ? ` ${result.skipped} dilewati (sudah ada atau tanpa wallet).` : ''}`,
           })
           setSelectedIds(new Set())
           setSearchTerm('')

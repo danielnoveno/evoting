@@ -35,8 +35,13 @@ export async function POST(request: NextRequest) {
   if (fetchError) return jsonError('Gagal memuat data master voter.', 500)
   if (!masterVoters || masterVoters.length === 0) return jsonError('Tidak ada data master voter yang ditemukan.')
 
+  const normalizedMasterVoters = masterVoters.map((v) => ({
+    ...v,
+    wallet_address: v.wallet_address?.trim().toLowerCase() ?? null,
+  }))
+
   // Filter voters that have a wallet address
-  const votersWithWallet = masterVoters.filter((v) => v.wallet_address && /^0x[a-f0-9]{40}$/.test(v.wallet_address))
+  const votersWithWallet = normalizedMasterVoters.filter((v) => v.wallet_address && /^0x[a-f0-9]{40}$/.test(v.wallet_address))
   const skipped = masterVoters.length - votersWithWallet.length
 
   if (votersWithWallet.length === 0) {
@@ -44,7 +49,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Check which wallets are already in whitelist
-  const wallets = votersWithWallet.map((v) => v.wallet_address!.toLowerCase())
+  const wallets = votersWithWallet.map((v) => v.wallet_address!)
   const { data: existingEntries } = await auth.client
     .schema('app')
     .from('proposal_whitelist_entries')
@@ -53,16 +58,16 @@ export async function POST(request: NextRequest) {
     .in('wallet_address', wallets)
 
   const existingWallets = new Set((existingEntries ?? []).map((e) => e.wallet_address))
-  const newVoters = votersWithWallet.filter((v) => !existingWallets.has(v.wallet_address!.toLowerCase()))
+  const newVoters = votersWithWallet.filter((v) => !existingWallets.has(v.wallet_address!))
 
   if (newVoters.length === 0) {
-    return NextResponse.json({ added: 0, skipped: skipped + votersWithWallet.length, message: 'Semua voter terpilih sudah ada di whitelist.' })
+    return NextResponse.json({ added: 0, skipped: skipped + votersWithWallet.length, message: 'Semua voter terpilih sudah ada di whitelist proposal ini.' })
   }
 
   // Bulk insert new whitelist entries
   const entries = newVoters.map((v) => ({
     proposal_draft_id: proposalDraftId,
-    wallet_address: v.wallet_address!.toLowerCase(),
+    wallet_address: v.wallet_address!,
     voter_name: v.full_name,
     source: 'manual' as const,
     validation_status: 'valid' as const,
@@ -97,5 +102,9 @@ export async function POST(request: NextRequest) {
     source: 'server_api',
   })
 
-  return NextResponse.json({ added: newVoters.length, skipped: addedSkipped })
+  return NextResponse.json({
+    added: newVoters.length,
+    skipped: addedSkipped,
+    message: `${newVoters.length} pemilih berhasil ditambahkan ke whitelist.${addedSkipped > 0 ? ` ${addedSkipped} dilewati karena sudah ada di proposal ini atau wallet belum valid.` : ''}`,
+  })
 }
