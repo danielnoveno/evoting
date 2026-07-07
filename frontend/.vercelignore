@@ -1,0 +1,11 @@
+.next/
+node_modules/
+.netlify/
+.vercel/cache/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+**/.next/**
+**/node_modules/**
+**/.netlify/**
