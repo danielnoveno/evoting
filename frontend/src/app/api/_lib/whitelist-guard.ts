@@ -71,7 +71,7 @@ export async function ensureSuccessfulContractTx(txHash: string, contractAddress
     const receipt = await client.getTransactionReceipt({ hash: txHash as Hex })
     if (receipt.status !== 'success') return jsonError('Transaksi whitelist ditemukan, tetapi statusnya gagal.', 409)
 
-    if (contractAddress && receipt.to?.toLowerCase() !== contractAddress.toLowerCase()) {
+    if (contractAddress && !receiptTouchesContract(receipt, contractAddress)) {
       return jsonError('Hash transaksi tidak menuju kontrak pemilihan ini.', 409)
     }
   } catch {
@@ -79,6 +79,15 @@ export async function ensureSuccessfulContractTx(txHash: string, contractAddress
   }
 
   return null
+}
+
+type BaseSepoliaReceipt = Awaited<ReturnType<ReturnType<typeof createBaseSepoliaClient>['getTransactionReceipt']>>
+
+function receiptTouchesContract(receipt: BaseSepoliaReceipt, contractAddress: string) {
+  const target = contractAddress.toLowerCase()
+  return receipt.to?.toLowerCase() === target
+    || receipt.contractAddress?.toLowerCase() === target
+    || receipt.logs.some((log) => log.address.toLowerCase() === target)
 }
 
 export async function ensureWalletWhitelistState(contractAddress: string | null, walletAddresses: string[], expected: boolean) {

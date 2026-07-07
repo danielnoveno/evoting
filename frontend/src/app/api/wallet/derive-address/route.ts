@@ -88,11 +88,39 @@ export async function GET(request: NextRequest) {
     const { data: currentProfile } = await supabase
       .schema('app')
       .from('app_profiles')
-      .select('wallet_address')
+      .select('wallet_address,email')
       .eq('user_id', user.id)
       .maybeSingle()
 
     const currentWallet = (currentProfile as Record<string, unknown> | null)?.wallet_address as string | null
+    const profileEmail = ((currentProfile as Record<string, unknown> | null)?.email as string | null)?.trim().toLowerCase()
+      || user.email?.trim().toLowerCase()
+      || ''
+    const staleWallets = new Set<string>()
+    if (currentWallet && currentWallet.toLowerCase() !== walletAddress.toLowerCase()) {
+      staleWallets.add(currentWallet.toLowerCase())
+    }
+
+    if (profileEmail) {
+      const { data: masterVoter } = await supabase
+        .schema('app')
+        .from('master_voters')
+        .select('wallet_address')
+        .eq('email', profileEmail)
+        .maybeSingle()
+
+      const masterWallet = (masterVoter as Record<string, unknown> | null)?.wallet_address as string | null
+      if (masterWallet && masterWallet.toLowerCase() !== walletAddress.toLowerCase()) {
+        staleWallets.add(masterWallet.toLowerCase())
+      }
+
+      await supabase
+        .schema('app')
+        .from('master_voters')
+        .update({ wallet_address: walletAddress, status: 'active' })
+        .eq('email', profileEmail)
+    }
+
     if (!currentWallet || currentWallet.toLowerCase() !== walletAddress.toLowerCase()) {
       // Check if derived wallet is already used by another profile
       const { data: existingOwner } = await supabase
@@ -116,6 +144,21 @@ export async function GET(request: NextRequest) {
         }
       } else {
         console.warn('[WALLET] Derived wallet already used by another profile, skipping sync')
+      }
+    }
+
+    // Keep not-yet-synced whitelist drafts aligned with the server-derived voting wallet.
+    // Synced rows are intentionally left untouched because they already represent on-chain state.
+    if (staleWallets.size > 0) {
+      const { error: whitelistSyncError } = await supabase
+        .schema('app')
+        .from('proposal_whitelist_entries')
+        .update({ wallet_address: walletAddress, sync_status: 'pending', validation_status: 'valid' })
+        .in('wallet_address', Array.from(staleWallets))
+        .neq('sync_status', 'synced')
+
+      if (whitelistSyncError) {
+        console.error('[WALLET] Pending whitelist wallet sync error:', whitelistSyncError)
       }
     }
 

@@ -25,6 +25,7 @@ import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import type { SuperadminProposalDetail } from '@/lib/superadmin-data'
 import { isAddress, type Address } from 'viem'
 import { useConnect, useDisconnect } from 'wagmi'
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
 type DecisionType = 'approve' | 'revise' | 'reject' | 'deploy' | null
 
@@ -286,9 +287,14 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             // Auto-verify contract di Basescan (fire-and-forget)
             let verifyMessage = ''
             try {
+              const supabase = getSupabaseBrowserClient()
+              const accessToken = (await supabase?.auth.getSession())?.data.session?.access_token
               const verifyResponse = await fetch('/api/verify-contract', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+                },
                 body: JSON.stringify({
                   contractAddress: deployment.spaceAddress,
                   contractType: 'election-space',

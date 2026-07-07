@@ -365,7 +365,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
               description: 'Daftar pemilih telah berhasil didaftarkan on-chain.',
             })
           },
-          onError: () => {
+          onError: (error) => {
             lastProcessedSyncHash.current = null // Allow retry
             setIsSyncing(false)
             setSyncMode(null)
@@ -373,7 +373,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             showToast({
               tone: 'error',
               title: 'Status Sinkronisasi Gagal Disimpan',
-              description: 'Transaksi sudah selesai, tetapi status database belum berhasil diperbarui. Coba sinkron manual atau periksa koneksi admin.',
+              description: error instanceof Error ? error.message : 'Transaksi sudah selesai, tetapi status database belum berhasil diperbarui. Coba sinkron manual atau periksa koneksi admin.',
             })
           }
         })
