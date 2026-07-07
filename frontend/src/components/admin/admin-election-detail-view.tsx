@@ -1648,7 +1648,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         open={syncOnchainConfirmOpen}
         title="Daftarkan Pemilih ke Kontrak?"
         description={`Sebanyak ${unsyncedValidAddresses.length} dompet valid akan didaftarkan sebagai daftar pemilih di kontrak. Proses ini membutuhkan konfirmasi dompet admin dan hanya bisa dilakukan saat tahap persiapan, sebelum pencoblosan dibuka.`}
-        confirmLabel={(isWritePending || isConfirming) ? "Memproses..." : "Ya, Daftarkan Pemilih"}
+        confirmLabel={(isWritePending || isConfirming || isSyncing || updateWhitelistSyncStatus.isPending) ? "Memproses..." : "Ya, Daftarkan Pemilih"}
+        disabled={isWritePending || isConfirming || isSyncing || updateWhitelistSyncStatus.isPending}
         onCancel={() => {
           if (!isWritePending && !isConfirming) {
             setSyncOnchainConfirmOpen(false)
