@@ -33,8 +33,10 @@ export function useNotificationBadge() {
       if (isPersonal && profileId) {
         const client = getSupabaseBrowserClient()
         const token = client ? (await client.auth.getSession()).data.session?.access_token : null
+        // ponytail: jangan kirim request tanpa token — API akan return 401
+        if (!token) return []
         const res = await fetch('/api/notifications/list', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: { Authorization: `Bearer ${token}` },
         })
         if (!res.ok) return []
         const payload = await res.json()

@@ -92,6 +92,9 @@ export interface VoterStore {
   profile: VoterProfile
   elections: VoterElection[]
   selectedProofElectionId: string
+  // ponytail: simpan semua wallet yang pernah dipakai — mencegah dashboard hilang setelah refresh
+  // karena Supabase profile wallet ≠ whitelist wallet
+  historicalWallets: string[]
 }
 
 export type VoterElectionAction = 'commit' | 'reveal' | 'results' | 'wait'
@@ -120,6 +123,7 @@ const voterStoreInitial: VoterStore = {
   profile: emptyProfile,
   selectedProofElectionId: '',
   elections: [],
+  historicalWallets: [],
 }
 
 function cloneStore(seed: VoterStore) {
@@ -148,7 +152,13 @@ function readStore() {
 
   try {
     const parsed = JSON.parse(raw) as VoterStore
-    return { ...voterStoreInitial, ...parsed, profile: sanitizeProfile(parsed.profile), elections: parsed.elections ?? [] }
+    return {
+      ...voterStoreInitial,
+      ...parsed,
+      profile: sanitizeProfile(parsed.profile),
+      elections: parsed.elections ?? [],
+      historicalWallets: Array.isArray(parsed.historicalWallets) ? parsed.historicalWallets : [],
+    }
   } catch {
     return cloneStore(voterStoreInitial)
   }
@@ -285,7 +295,13 @@ async function buildLiveStore(): Promise<VoterStore> {
     console.error('[voter-store] getCurrentProfile failed:', err)
     return null
   })
-  const activeWallets = Array.from(new Set([profile?.walletAddress, local.profile.wallet].filter((wallet): wallet is string => Boolean(wallet))))
+  // ponytail: gabungkan semua wallet yang pernah dikenal — Supabase profile, localStorage, dan historical
+  // ini mencegah pemilihan hilang setelah refresh karena wallet di whitelist ≠ profile wallet
+  const activeWallets = Array.from(new Set([
+    profile?.walletAddress,
+    local.profile.wallet,
+    ...(Array.isArray(local.historicalWallets) ? local.historicalWallets : []),
+  ].filter((wallet): wallet is string => Boolean(wallet))))
   console.log('[voter-store] buildLiveStore', { profileWallet: profile?.walletAddress ?? null, localWallet: local.profile.wallet, activeWallets })
   const elections = await listVoterWhitelistedElections(activeWallets).catch((err) => {
     console.error('[voter-store] listVoterWhitelistedElections failed:', err)
@@ -322,6 +338,12 @@ async function buildLiveStore(): Promise<VoterStore> {
     selectedProofElectionId: liveElections.some((election) => election.id === local.selectedProofElectionId)
       ? local.selectedProofElectionId
       : liveElections[0]?.id ?? '',
+    // ponytail: pertahankan semua wallet yang pernah dikenal + tambah yang baru
+    historicalWallets: Array.from(new Set([
+      ...(Array.isArray(local.historicalWallets) ? local.historicalWallets : []),
+      profile?.walletAddress,
+      local.profile.wallet,
+    ].filter((wallet): wallet is string => Boolean(wallet)))),
   }
 }
 
@@ -397,7 +419,14 @@ export function useVoterStore() {
       return proof
     },
     updateProfile(payload: Partial<VoterProfile>) {
-      applyStore((current) => ({ ...current, profile: { ...current.profile, ...payload } }))
+      applyStore((current) => {
+        const next = { ...current, profile: { ...current.profile, ...payload } }
+        // ponytail: track wallet baru ke historicalWallets
+        if (payload.wallet && payload.wallet !== current.profile.wallet) {
+          next.historicalWallets = Array.from(new Set([...(current.historicalWallets ?? []), payload.wallet]))
+        }
+        return next
+      })
     },
     selectProofElection(electionId: string) {
       applyStore((current) => ({ ...current, selectedProofElectionId: electionId }))

@@ -333,7 +333,7 @@ export async function upsertCurrentProfile(input: ProfileUpsertInput): Promise<A
   const nextRole = currentProfile?.role === 'super_admin' && assignedRole === 'voter' ? 'super_admin' : assignedRole
   const payload: Database['app']['Tables']['app_profiles']['Insert'] = {
     user_id: user.id,
-    wallet_address: input.walletAddress,
+    wallet_address: input.walletAddress.trim().toLowerCase(),
     display_name: input.displayName ?? null,
     email: profileEmail,
     role: nextRole,
@@ -356,7 +356,8 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
 
-  const normalizedWallet = input.walletAddress.trim()
+  // ponytail: normalize ke lowercase — Supabase .in() query case-sensitive, pastikan konsisten
+  const normalizedWallet = input.walletAddress.trim().toLowerCase()
   if (!normalizedWallet) throw new RepositoryError('Wallet belum terhubung.')
 
   const user = await requireUser()
