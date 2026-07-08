@@ -75,6 +75,7 @@ delete from app.app_profiles where email = '220711663@students.uajy.ac.id';
 
 -- Master Voters: HIMAFORKA (Informatika)
 insert into app.master_voters (nim, full_name, email, prodi, fakultas, angkatan, wallet_address, status) values
+('1234567890', 'Voter 2', 'hipopotamuss04@gmail.com', 'Informatika', 'FTI', '2022', null, 'pending'),
 ('2207116630', 'Daniel Noveno Windanu', '220711663@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'pending'),
 ('2207116631', 'Alexander Prasetyo', '2207116631@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'active'),
 ('2207116632', 'Maria Consiglia', '2207116632@students.uajy.ac.id', 'Informatika', 'FTI', '2022', null, 'active'),

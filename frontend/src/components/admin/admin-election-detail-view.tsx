@@ -440,18 +440,24 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             ? 'Transaksi sudah dikirim dan sedang menunggu konfirmasi Base Sepolia.'
             : 'Menyiapkan transaksi pendaftaran daftar pemilih ke kontrak.',
       }
-    : unsyncedValidAddresses.length === 0
+    : !canManageWhitelist
       ? {
           tone: 'emerald' as const,
-          title: 'Daftar pemilih sudah terdaftar',
-          description: 'Semua dompet valid di database sudah ditandai terdaftar di kontrak.',
+          title: 'Whitelist dikunci',
+          description: 'Pemilihan sudah terdeploy. Daftar pemilih tidak dapat diubah untuk menjaga konsistensi data on-chain.',
         }
-      : !isAddressValid
+      : unsyncedValidAddresses.length === 0
         ? {
-            tone: 'amber' as const,
-            title: 'Belum bisa sinkron otomatis',
-            description: 'Alamat kontrak belum valid. Finalisasi pemilihan terlebih dahulu, lalu daftarkan daftar pemilih.',
+            tone: 'emerald' as const,
+            title: 'Daftar pemilih sudah terdaftar',
+            description: 'Semua dompet valid di database sudah ditandai terdaftar di kontrak.',
           }
+        : !isAddressValid
+          ? {
+              tone: 'amber' as const,
+              title: 'Belum bisa sinkron otomatis',
+              description: 'Alamat kontrak belum valid. Finalisasi pemilihan terlebih dahulu, lalu daftarkan daftar pemilih.',
+            }
           : {
               tone: 'amber' as const,
               title: 'Ada pemilih belum terdaftar di kontrak',
@@ -843,24 +849,29 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-6 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-[20px] font-semibold text-slate-900">Daftar Pemilih Tetap (Whitelist)</h2>
-              <p className="mt-2 text-[13px] text-slate-500">Status database dan kontrak dipantau terpisah agar admin tahu dompet mana yang masih perlu didaftarkan.</p>
+              <p className="mt-2 text-[13px] text-slate-500">
+                {canManageWhitelist
+                  ? 'Status database dan kontrak dipantau terpisah agar admin tahu dompet mana yang masih perlu didaftarkan.'
+                  : 'Daftar pemilih sudah final. Data ditampilkan untuk referensi dan audit saja.'}
+              </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={() => setSyncOnchainConfirmOpen(true)}
-                disabled={!canManageWhitelist || isWritePending || isConfirming || isSyncing || updateWhitelistSyncStatus.isPending || unsyncedValidAddresses.length === 0}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 text-[13px] font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {(isWritePending || isConfirming || isSyncing) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
-                Daftarkan Pemilih
-              </button>
-              {!isAddressValid ? (
+              {canManageWhitelist && unsyncedValidAddresses.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSyncOnchainConfirmOpen(true)}
+                  disabled={isWritePending || isConfirming || isSyncing || updateWhitelistSyncStatus.isPending}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 text-[13px] font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {(isWritePending || isConfirming || isSyncing) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                  Daftarkan Pemilih
+                </button>
+              )}
+              {canManageWhitelist && !isAddressValid ? (
                 <button
                   type="button"
                   onClick={() => { setManualWhitelistOpen(true); setManualNameAutoFilled(false); setManualWallet(''); setManualName(''); setDebouncedWallet('') }}
-                  disabled={!canManageWhitelist}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[13px] font-semibold text-slate-900 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[13px] font-semibold text-slate-900 hover:bg-slate-200"
                 >
                   <CirclePlus className="h-4 w-4" />
                   Tambah Manual
@@ -884,9 +895,11 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 <p className="font-semibold">{whitelistSyncStatus.title}</p>
                 <p className="mt-1 leading-6">{whitelistSyncStatus.description}</p>
               </div>
-              <span className="inline-flex w-fit rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em]">
-                {unsyncedValidAddresses.length} belum terdaftar di kontrak
-              </span>
+              {unsyncedValidAddresses.length > 0 && (
+                <span className="inline-flex w-fit rounded-full bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em]">
+                  {unsyncedValidAddresses.length} belum terdaftar di kontrak
+                </span>
+              )}
             </div>
           </div>
           {whitelistQuery.error ? (
@@ -907,14 +920,14 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                   <th className="px-6 py-4">Nama (Opsional)</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">Tanggal Ditambahkan</th>
-                  <th className="px-6 py-4 text-right">Aksi</th>
+                  {canManageWhitelist && <th className="px-6 py-4 text-right">Aksi</th>}
                 </tr>
               </thead>
               <tbody>
                 {whitelistQuery.isLoading ? (
                   Array.from({ length: 3 }).map((_, index) => (
                     <tr key={`whitelist-loading-${index}`} className="border-b border-slate-100">
-                      <td className="px-6 py-5" colSpan={5}>
+                      <td className="px-6 py-5" colSpan={canManageWhitelist ? 5 : 4}>
                         <div className="h-10 animate-pulse rounded-2xl bg-slate-100" />
                       </td>
                     </tr>
@@ -927,21 +940,23 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                     <td className="px-6 py-5"><StatusBadge status={record.status} /></td>
                     <td className="px-6 py-5 text-slate-500">{record.addedAt}</td>
                     <td className="px-6 py-5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => void handleDeleteWhitelistEntry(record.id, record.wallet, record.isFallback, record.syncStatus)}
-                        disabled={!canManageWhitelist || deleteWhitelistEntry.isPending || isWritePending || isConfirming}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-50"
-                        aria-label={`Hapus pemilih ${record.wallet}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {canManageWhitelist && (
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteWhitelistEntry(record.id, record.wallet, record.isFallback, record.syncStatus)}
+                          disabled={deleteWhitelistEntry.isPending || isWritePending || isConfirming}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-50"
+                          aria-label={`Hapus pemilih ${record.wallet}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
                 {!whitelistQuery.isLoading && filteredWhitelistRecords.length === 0 ? (
                   <tr>
-                    <td className="px-6 py-8 text-center text-[14px] text-slate-500" colSpan={5}>Tidak ada data whitelist yang ditampilkan.</td>
+                    <td className="px-6 py-8 text-center text-[14px] text-slate-500" colSpan={canManageWhitelist ? 5 : 4}>Tidak ada data whitelist yang ditampilkan.</td>
                   </tr>
                 ) : null}
               </tbody>
@@ -949,38 +964,46 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           </div>
           <div className="flex items-center justify-between px-6 py-5 text-[14px] text-slate-500">
             <p>Menampilkan {filteredWhitelistRecords.length} dari {whitelistRecords.length} pemilih</p>
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Pagination', description: 'Navigasi halaman sedang disiapkan.' })} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">‹</button>
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Pagination', description: 'Navigasi halaman sedang disiapkan.' })} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">›</button>
-            </div>
+            {whitelistRecords.length > 10 && (
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Pagination', description: 'Navigasi halaman sedang disiapkan.' })} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">‹</button>
+                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Pagination', description: 'Navigasi halaman sedang disiapkan.' })} className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">›</button>
+              </div>
+            )}
           </div>
         </article>
 
         <article className="rounded-[30px] bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-[20px] font-semibold text-slate-900">Whitelisting Pemilih</h2>
+              <h2 className="text-[20px] font-semibold text-slate-900">
+                {canManageWhitelist ? 'Whitelisting Pemilih' : 'Whitelisting Dikunci'}
+              </h2>
               <p className="mt-3 max-w-[300px] text-[15px] leading-7 text-slate-500">
-                {isAddressValid
-                  ? 'Pemilihan sudah terdeploy. Tambah pemilih baru hanya dari master voter agar identitas tetap terkontrol.'
-                  : 'Unggah berkas, tambah manual, atau pilih dari data master voter untuk mendaftarkan identitas digital pemilih.'}
+                {canManageWhitelist
+                  ? (isAddressValid
+                      ? 'Pemilihan sudah terdeploy. Tambah pemilih baru hanya dari master voter agar identitas tetap terkontrol.'
+                      : 'Unggah berkas, tambah manual, atau pilih dari data master voter untuk mendaftarkan identitas digital pemilih.')
+                  : 'Whitelist sudah dikunci karena pemilihan sudah terdeploy. Pemilih tidak dapat ditambahkan atau diubah untuk menjaga konsistensi on-chain.'}
               </p>
             </div>
-            <div className="flex flex-col gap-2">
-              <button type="button" onClick={() => setMasterVoterModalOpen(true)} disabled={!canManageWhitelist} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 text-[14px] font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
-                <Users className="h-4 w-4" />
-                Pilih dari Master Voter
-              </button>
-              {!isAddressValid ? (
-                <button type="button" onClick={() => { setManualWhitelistOpen(true); setManualNameAutoFilled(false); setManualWallet(''); setManualName(''); setDebouncedWallet('') }} disabled={!canManageWhitelist} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50">
-                  <CirclePlus className="h-4 w-4" />
-                  Tambah Manual
+            {canManageWhitelist && (
+              <div className="flex flex-col gap-2">
+                <button type="button" onClick={() => setMasterVoterModalOpen(true)} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 text-[14px] font-medium text-white hover:bg-slate-800">
+                  <Users className="h-4 w-4" />
+                  Pilih dari Master Voter
                 </button>
-              ) : null}
-            </div>
+                {!isAddressValid ? (
+                  <button type="button" onClick={() => { setManualWhitelistOpen(true); setManualNameAutoFilled(false); setManualWallet(''); setManualName(''); setDebouncedWallet('') }} className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
+                    <CirclePlus className="h-4 w-4" />
+                    Tambah Manual
+                  </button>
+                ) : null}
+              </div>
+            )}
           </div>
-          {!isAddressValid ? (
-            <button type="button" onClick={() => setUploadModalOpen(true)} disabled={!canManageWhitelist} className="mt-8 block w-full rounded-[28px] border border-dashed border-slate-300 p-8 text-center hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-50">
+          {canManageWhitelist && !isAddressValid ? (
+            <button type="button" onClick={() => setUploadModalOpen(true)} className="mt-8 block w-full rounded-[28px] border border-dashed border-slate-300 p-8 text-center hover:border-slate-400">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-700">
                 <Upload className="h-7 w-7" />
               </div>
@@ -994,7 +1017,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Riwayat Import</p>
-                <p className="mt-2 text-[14px] text-slate-700">Pantau file CSV yang pernah diproses untuk whitelist draft.</p>
+                <p className="mt-2 text-[14px] text-slate-700">Pantau file CSV yang pernah diproses untuk pemilihan ini.</p>
               </div>
             </div>
 
