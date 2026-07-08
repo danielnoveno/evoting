@@ -81,7 +81,8 @@ begin
 
   insert into app.master_voters (nim, full_name, email, prodi, fakultas, angkatan, wallet_address, status)
   values
-    ('220711663', 'Daniel Noveno Windanu', '220711663@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0xB8064e95d190777C16D1795aA872B259df4B8930', 'active'),
+    -- Keep the same NIM as seed.sql/activation flow to avoid duplicate voter rows.
+    ('2207116630', 'Daniel Noveno Windanu', '220711663@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0xB8064e95d190777C16D1795aA872B259df4B8930', 'active'),
     ('220711664', 'Alexander Prasetyo', 'alexander.prasetyo@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0x0000000000000000000000000000000000001001', 'active'),
     ('220711665', 'Maria Consiglia', 'maria.consiglia@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0x0000000000000000000000000000000000001002', 'active'),
     ('220711666', 'Budi Santoso', 'budi.santoso@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0x0000000000000000000000000000000000001003', 'active'),
