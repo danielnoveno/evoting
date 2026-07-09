@@ -31,7 +31,7 @@ export function resolveSchedulePhase(input: ScheduleInput, now = Date.now()): Sc
     return { phase: 'ended', label: 'Selesai', next: '-', deadlineIso: input.endedAt ?? null, deadlineLabel: 'Pemilihan selesai' }
   }
   if (input.status !== 'deployed') {
-    return { phase: 'commit', label: 'Menunggu Dibuka', next: 'Pencoblosan', deadlineIso: input.commitStartAt ?? null, deadlineLabel: 'Pencoblosan dibuka dalam' }
+    return { phase: 'registration', label: 'Menunggu Dibuka', next: 'Pencoblosan', deadlineIso: input.commitStartAt ?? null, deadlineLabel: 'Pencoblosan dibuka dalam' }
   }
   if (!Number.isNaN(revealStart) && now >= revealStart) {
     return { phase: 'reveal', label: 'Konfirmasi Suara', next: 'Selesai', deadlineIso: input.endedAt ?? null, deadlineLabel: 'Penghitungan berakhir dalam' }

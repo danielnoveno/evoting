@@ -8,7 +8,7 @@ import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
-import { basescanTxUrl, findElection, formatDateTime, useVoterStore } from '@/lib/voter-store'
+import { basescanTxUrl, findElection, formatDateTime, formatWallet, useVoterStore } from '@/lib/voter-store'
 import { saveVoteCommitment, type VoteCommitmentRecord } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useServerWallet } from '@/hooks/use-server-wallet'
@@ -99,7 +99,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const dbPhase = liveSchedulePhase?.phase ?? election?.phase ?? 'commit'
   // Use DB schedule as the user-facing source of truth. On-chain phase is used
   // only as an extra safety guard while submitting a commit transaction.
-  const effectivePhase: 'commit' | 'reveal' | 'ended' | 'suspended' = dbPhase === 'suspended' ? 'suspended' : dbPhase
+  const effectivePhase: 'commit' | 'reveal' | 'ended' | 'suspended' | 'registration' = dbPhase === 'suspended' ? 'suspended' : dbPhase
   const effectivePhaseNumber = effectivePhase === 'commit' ? 1 : effectivePhase === 'reveal' ? 2 : effectivePhase === 'ended' ? 3 : 0
   const onChainPhaseLabel = currentPhaseNumber === 0
     ? 'Pencoblosan'
@@ -455,6 +455,37 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             </article>
           </div>
 
+          {/* Transaction Proof Section */}
+          <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-slate-200 bg-slate-50 p-5 text-left">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Bukti Transaksi Blockchain</p>
+            <div className="mt-4 space-y-3">
+              {serverWalletAddress && (
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                  <span className="text-[12px] font-semibold text-slate-500 min-w-[140px]">Alamat Pemilih</span>
+                  <span className="font-mono text-[12px] text-slate-700 break-all" title={serverWalletAddress}>{formatWallet(serverWalletAddress)}</span>
+                </div>
+              )}
+              {commitProof?.txHash && (
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                  <span className="text-[12px] font-semibold text-slate-500 min-w-[140px]">Tx Hash</span>
+                  <span className="font-mono text-[12px] text-slate-700 break-all" title={commitProof.txHash}>{formatWallet(commitProof.txHash)}</span>
+                </div>
+              )}
+              {commitProof?.blockNumber && (
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                  <span className="text-[12px] font-semibold text-slate-500 min-w-[140px]">Block Number</span>
+                  <span className="font-mono text-[12px] text-slate-700">#{commitProof.blockNumber}</span>
+                </div>
+              )}
+              {contractAddress && (
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                  <span className="text-[12px] font-semibold text-slate-500 min-w-[140px]">Kontrak</span>
+                  <span className="font-mono text-[12px] text-slate-700 break-all" title={contractAddress}>{formatWallet(contractAddress)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             {commitProof ? (
               <a
@@ -464,6 +495,16 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 hover:bg-slate-50"
               >
                 Lihat Transaksi di Basescan
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            ) : hasCommittedOnChain && contractAddress ? (
+              <a
+                href={`https://sepolia.basescan.org/address/${contractAddress}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 hover:bg-slate-50"
+              >
+                Lihat Kontrak di Basescan
                 <ExternalLink className="h-4 w-4" />
               </a>
             ) : null}
