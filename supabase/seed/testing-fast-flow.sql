@@ -37,11 +37,14 @@ begin
       v_voter_user_id is null;
   end if;
 
-  select lower(coalesce(uw.wallet_address, p.wallet_address, '0xb8064e95d190777c16d1795aa872b259df4b8930'))
+  select lower(uw.wallet_address)
   into v_voter_wallet
   from (select v_voter_user_id as user_id) u
-  left join app.user_wallets uw on uw.user_id = u.user_id
-  left join app.app_profiles p on p.user_id = u.user_id;
+  left join app.user_wallets uw on uw.user_id = u.user_id;
+
+  if v_voter_wallet is null then
+    raise exception 'Server wallet voter belum ada. Login sebagai voter lalu buka /pemilih sampai app.user_wallets terisi, baru jalankan seed testing.';
+  end if;
 
   -- Idempotent cleanup for this testing scenario only.
   delete from app.proposal_drafts where title = any(v_titles);

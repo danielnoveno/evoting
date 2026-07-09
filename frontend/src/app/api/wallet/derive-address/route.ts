@@ -15,6 +15,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { deriveWalletAddress, isValidMasterSecret } from '@/lib/wallet-crypto'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
+import { getSupabaseServerClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -31,18 +32,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 2. Get auth token from header
+    // 2. Get auth user from bearer token, or from Supabase SSR cookies when called directly in browser.
     const authHeader = request.headers.get('Authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Tidak terautentikasi.' },
-        { status: 401 },
-      )
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-
-    // 3. Verify user with Supabase
     const supabase = getSupabaseServiceRoleClient()
 
     if (!supabase) {
@@ -53,8 +44,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Verify the token and get user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : null
+    const cookieClient = token ? null : getSupabaseServerClient()
+    const { data: { user }, error: authError } = token
+      ? await supabase.auth.getUser(token)
+      : cookieClient
+        ? await cookieClient.auth.getUser()
+        : { data: { user: null }, error: new Error('Tidak terautentikasi.') }
 
     if (authError || !user) {
       return NextResponse.json(
