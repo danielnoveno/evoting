@@ -339,13 +339,14 @@ export async function listVoterWhitelistedElections(walletAddress: string | stri
     .filter(Boolean)
   // ponytail: normalize to lowercase for reliable .in() matching (same fix as API route)
   const normalizedWallets = Array.from(new Set(walletAddresses.map((address) => address.toLowerCase())))
+    .filter((address) => /^0x[a-f0-9]{40}$/.test(address))
   if (normalizedWallets.length === 0) return []
 
   const { data: matchedWhitelist, error: matchedWhitelistError } = await client
     .schema('app')
     .from('proposal_whitelist_entries')
     .select('*')
-    .in('wallet_address', normalizedWallets)
+    .or(normalizedWallets.map((wallet) => `wallet_address.ilike.${wallet}`).join(','))
 
   if (matchedWhitelistError) throw new RepositoryError('Gagal memeriksa whitelist pemilih. Coba lagi.')
 

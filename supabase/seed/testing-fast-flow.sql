@@ -15,6 +15,7 @@ declare
   v_superadmin_profile_id uuid;
   v_admin_profile_id uuid;
   v_voter_profile_id uuid;
+  v_voter_wallet text;
   v_main_proposal_id uuid;
   v_control_proposal_id uuid;
   v_boundary_proposal_id uuid;
@@ -35,6 +36,12 @@ begin
       v_admin_user_id is null,
       v_voter_user_id is null;
   end if;
+
+  select lower(coalesce(uw.wallet_address, p.wallet_address, '0xb8064e95d190777c16d1795aa872b259df4b8930'))
+  into v_voter_wallet
+  from (select v_voter_user_id as user_id) u
+  left join app.user_wallets uw on uw.user_id = u.user_id
+  left join app.app_profiles p on p.user_id = u.user_id;
 
   -- Idempotent cleanup for this testing scenario only.
   delete from app.proposal_drafts where title = any(v_titles);
@@ -58,7 +65,7 @@ begin
   values
     (v_superadmin_user_id, '0xF41b1a84FF93C6074fD76860EA1351e2A7197004', 'SuperAdmin VoteChain', 'dnw022003@gmail.com', 'super_admin', 'Pengelola sistem dan deploy proposal'),
     (v_admin_user_id, '0x1599bbE21aBeBee96183317bf77059fC2452E1a4', 'Admin HIMAFORKA', 'novenoow@gmail.com', 'admin', 'Pembuat proposal pemilihan'),
-    (v_voter_user_id, '0xB8064e95d190777C16D1795aA872B259df4B8930', 'Daniel Noveno Windanu', '220711663@students.uajy.ac.id', 'voter', 'Pemilih terdaftar')
+    (v_voter_user_id, v_voter_wallet, 'Daniel Noveno Windanu', '220711663@students.uajy.ac.id', 'voter', 'Pemilih terdaftar')
   on conflict (user_id) do update set
     wallet_address = excluded.wallet_address,
     display_name = excluded.display_name,
@@ -74,7 +81,7 @@ begin
   values
     (v_superadmin_user_id, '0xF41b1a84FF93C6074fD76860EA1351e2A7197004'),
     (v_admin_user_id, '0x1599bbE21aBeBee96183317bf77059fC2452E1a4'),
-    (v_voter_user_id, '0xB8064e95d190777C16D1795aA872B259df4B8930')
+    (v_voter_user_id, v_voter_wallet)
   on conflict (user_id) do update set
     wallet_address = excluded.wallet_address,
     updated_at = timezone('utc', now());
@@ -82,7 +89,7 @@ begin
   insert into app.master_voters (nim, full_name, email, prodi, fakultas, angkatan, wallet_address, status)
   values
     -- Keep the same NIM as seed.sql/activation flow to avoid duplicate voter rows.
-    ('2207116630', 'Daniel Noveno Windanu', '220711663@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0xB8064e95d190777C16D1795aA872B259df4B8930', 'active'),
+    ('2207116630', 'Daniel Noveno Windanu', '220711663@students.uajy.ac.id', 'Informatika', 'FTI', '2022', v_voter_wallet, 'active'),
     ('220711664', 'Alexander Prasetyo', 'alexander.prasetyo@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0x0000000000000000000000000000000000001001', 'active'),
     ('220711665', 'Maria Consiglia', 'maria.consiglia@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0x0000000000000000000000000000000000001002', 'active'),
     ('220711666', 'Budi Santoso', 'budi.santoso@students.uajy.ac.id', 'Informatika', 'FTI', '2022', '0x0000000000000000000000000000000000001003', 'active'),
@@ -107,13 +114,13 @@ begin
   ) values (
     v_admin_profile_id,
     'Pemilihan Ketua HIMAFORKA FTI UAJY 2026',
-    'Data uji BAB IV/V/VI untuk alur proposal, whitelist, commit, reveal, hasil, dan audit. Proposal ini belum deployed on-chain.',
+    'Data uji BAB IV/V/VI untuk alur pengajuan proposal, review SuperAdmin, whitelist, commit, reveal, hasil, dan audit.',
     'HIMAFORKA FTI UAJY',
     'FTI',
     '#0F172A',
     'Satu wallet terdaftar hanya boleh melakukan satu commit dan satu reveal. Periode waktu dipercepat untuk kebutuhan pengujian lokal.',
     3,
-    'approved',
+    'submitted',
     v_now,
     v_commit_start,
     v_reveal_start,
@@ -126,13 +133,13 @@ begin
   ) values (
     v_admin_profile_id,
     'Pemilihan Koordinator Divisi Akademik HIMAFORKA 2026',
-    'Data uji pembanding untuk daftar proposal siap deploy oleh SuperAdmin.',
+    'Data uji pembanding untuk daftar proposal yang menunggu review SuperAdmin.',
     'HIMAFORKA FTI UAJY',
     'FTI',
     '#0F172A',
     'Satu pemilih hanya dapat memilih satu kandidat pada periode yang tersedia.',
     2,
-    'approved',
+    'submitted',
     v_now,
     v_commit_start,
     v_reveal_start,
@@ -151,7 +158,7 @@ begin
     '#0F172A',
     'Hanya wallet yang tercatat pada whitelist proposal yang berhak mengikuti pemilihan.',
     2,
-    'approved',
+    'submitted',
     v_now,
     v_commit_start,
     v_reveal_start,
@@ -179,7 +186,7 @@ begin
 
   insert into app.proposal_whitelist_entries (proposal_draft_id, wallet_address, voter_name, source, validation_status, sync_status)
   values
-    (v_main_proposal_id, '0xB8064e95d190777C16D1795aA872B259df4B8930', 'Daniel Noveno Windanu', 'manual', 'valid', 'pending'),
+    (v_main_proposal_id, v_voter_wallet, 'Daniel Noveno Windanu', 'manual', 'valid', 'pending'),
     (v_main_proposal_id, '0x0000000000000000000000000000000000001001', 'Alexander Prasetyo', 'manual', 'valid', 'pending'),
     (v_main_proposal_id, '0x0000000000000000000000000000000000001002', 'Maria Consiglia', 'manual', 'valid', 'pending'),
     (v_main_proposal_id, '0x0000000000000000000000000000000000001003', 'Budi Santoso', 'manual', 'valid', 'pending'),
@@ -190,11 +197,11 @@ begin
     (v_main_proposal_id, '0x0000000000000000000000000000000000001008', 'Angela Florencia', 'manual', 'valid', 'pending'),
     (v_main_proposal_id, '0x0000000000000000000000000000000000001009', 'David Chen', 'manual', 'valid', 'pending'),
 
-    (v_control_proposal_id, '0xB8064e95d190777C16D1795aA872B259df4B8930', 'Daniel Noveno Windanu', 'manual', 'valid', 'pending'),
+    (v_control_proposal_id, v_voter_wallet, 'Daniel Noveno Windanu', 'manual', 'valid', 'pending'),
     (v_control_proposal_id, '0x0000000000000000000000000000000000001001', 'Alexander Prasetyo', 'manual', 'valid', 'pending'),
     (v_control_proposal_id, '0x0000000000000000000000000000000000001002', 'Maria Consiglia', 'manual', 'valid', 'pending'),
 
-    (v_boundary_proposal_id, '0xB8064e95d190777C16D1795aA872B259df4B8930', 'Daniel Noveno Windanu', 'manual', 'valid', 'pending')
+    (v_boundary_proposal_id, v_voter_wallet, 'Daniel Noveno Windanu', 'manual', 'valid', 'pending')
   on conflict (proposal_draft_id, wallet_address) do update set
     voter_name = excluded.voter_name,
     source = excluded.source,
@@ -204,8 +211,8 @@ begin
   insert into app.notification_jobs (target_profile_id, channel, template_key, status, payload)
   values
     (v_superadmin_profile_id, 'in_app', 'testing_proposals_ready', 'queued', jsonb_build_object(
-      'title', 'Proposal uji siap deploy',
-      'description', 'Seed testing menyiapkan proposal approved. Deploy hanya jika transaksi Base Sepolia benar-benar dilakukan.',
+      'title', 'Proposal uji menunggu review',
+      'description', 'Seed testing menyiapkan proposal submitted. SuperAdmin perlu menyetujui sebelum deploy Base Sepolia.',
       'type', 'info',
       'link', '/superadmin'
     )),
@@ -216,7 +223,7 @@ begin
       'link', '/pemilihan'
     ));
 
-  raise notice 'VoteChain testing seed ready. commit_start=%, reveal_start=%, ended_at=%. Proposal status remains approved/off-chain.',
+  raise notice 'VoteChain testing seed ready. commit_start=%, reveal_start=%, ended_at=%. Proposal status is submitted/menunggu review.',
     v_commit_start, v_reveal_start, v_ended_at;
 end $$;
 

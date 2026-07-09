@@ -139,12 +139,14 @@ export async function GET(request: NextRequest) {
 
   // ponytail: normalize all wallets to lowercase for reliable .in() matching
   // Previous .or() + ilike filter returned 0 matches despite wallet existing in DB
-  const normalizedWallets = allWalletCandidates.map((w) => w.toLowerCase().trim()).filter(Boolean)
+  const normalizedWallets = allWalletCandidates
+    .map((w) => w.toLowerCase().trim())
+    .filter((w) => /^0x[a-f0-9]{40}$/.test(w))
 
   const { data: matchedWhitelist, error: whitelistError } = await client
     .from('proposal_whitelist_entries')
     .select('*')
-    .in('wallet_address', normalizedWallets)
+    .or(normalizedWallets.map((wallet) => `wallet_address.ilike.${wallet}`).join(','))
 
   if (whitelistError) return jsonError('Gagal memeriksa whitelist voter.', 500)
 

@@ -455,6 +455,36 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
         return
       }
 
+      if (proposalWhitelistQuery.isLoading) {
+        showToast({
+          title: 'Whitelist belum siap',
+          description: 'Tunggu daftar pemilih selesai dimuat sebelum deploy ke blockchain.',
+          tone: 'error',
+        })
+        setDecisionType(null)
+        return
+      }
+
+      if (proposalWhitelistQuery.error) {
+        showToast({
+          title: 'Whitelist gagal dimuat',
+          description: 'Muat ulang halaman dan pastikan daftar pemilih valid sebelum deploy.',
+          tone: 'error',
+        })
+        setDecisionType(null)
+        return
+      }
+
+      if (initialWhitelistWallets.length === 0) {
+        showToast({
+          title: 'Whitelist awal kosong',
+          description: 'Tambahkan minimal satu wallet pemilih valid sebelum deploy agar ruang on-chain memiliki daftar pemilih.',
+          tone: 'error',
+        })
+        setDecisionType(null)
+        return
+      }
+
       setDecisionType(null)
       setPendingOnchainDecision(activeDecision)
       resetWrite()

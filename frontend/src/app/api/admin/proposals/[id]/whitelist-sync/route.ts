@@ -29,11 +29,24 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   const whitelistStateError = await ensureWalletWhitelistState(whitelistGuard.proposal.deployed_space_address, walletAddresses, true)
   if (whitelistStateError) return whitelistStateError
 
+  const wantedWallets = new Set(walletAddresses)
+  const { data: existingRows, error: existingRowsError } = await auth.client
+    .from('proposal_whitelist_entries')
+    .select('id,wallet_address')
+    .eq('proposal_draft_id', id)
+
+  if (existingRowsError) return jsonError('Gagal membaca data whitelist proposal.', 500)
+
+  const matchingIds = (existingRows ?? [])
+    .filter((row) => wantedWallets.has(row.wallet_address.trim().toLowerCase()))
+    .map((row) => row.id)
+
+  if (matchingIds.length === 0) return jsonError('Tidak ada entri whitelist yang cocok untuk disinkronkan.', 404)
+
   const { error } = await auth.client
     .from('proposal_whitelist_entries')
     .update({ validation_status: 'synced', sync_status: 'synced', latest_sync_tx_hash: txHash })
-    .eq('proposal_draft_id', id)
-    .in('wallet_address', Array.from(new Set(walletAddresses)))
+    .in('id', matchingIds)
 
   if (error) return jsonError('Gagal memperbarui status sinkronisasi whitelist.', 500)
 
@@ -46,10 +59,10 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     actor_role: actor.role,
     entity_type: 'proposal_whitelist',
     entity_id: id,
-    details: { syncedCount: walletAddresses.length, txHash },
+    details: { syncedCount: matchingIds.length, requestedCount: walletAddresses.length, txHash },
     related_tx_hash: txHash,
     source: 'server_api',
   })
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, syncedCount: matchingIds.length })
 }
