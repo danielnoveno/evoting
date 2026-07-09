@@ -12,7 +12,7 @@ type ElectionReadCheck = 'phase' | 'hasCommitted' | 'hasRevealed' | 'isWhitelist
 
 type UseElectionContractOptions = {
   checks?: ElectionReadCheck[]
-  /** Override wallet address for on-chain checks (e.g. server-derived wallet). Falls back to useAccount().address. */
+  /** Override wallet address for on-chain checks. Falls back to the connected wallet address. */
   voterAddress?: `0x${string}` | string | null
 }
 

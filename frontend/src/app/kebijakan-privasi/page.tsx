@@ -28,7 +28,7 @@ export default function KebijakanPrivasiPage() {
               <p className="mb-4 leading-relaxed font-medium">Kami mengumpulkan informasi terbatas yang diperlukan untuk validasi hak pilih dan operasional sistem:</p>
               <ul className="list-disc space-y-3 pl-6 leading-relaxed">
                 <li><strong className="text-black">Data Identitas:</strong> Alamat email institusi (UAJY) yang digunakan untuk proses login dan pengiriman notifikasi.</li>
-                <li><strong className="text-black">Data Blockchain:</strong> Alamat dompet digital (wallet address) yang dihasilkan secara otomatis untuk mewakili identitas Anda di jaringan blockchain.</li>
+                <li><strong className="text-black">Data Blockchain:</strong> Alamat dompet digital (wallet address) yang Anda pakai saat aktivasi voter untuk mewakili identitas Anda di jaringan blockchain.</li>
                 <li><strong className="text-black">Data Pemilihan:</strong> Bukti komitmen suara (*commit hash*) dan pilihan suara yang diungkapkan (*reveal data*) pada fase yang ditentukan.</li>
                 <li><strong className="text-black">Data Teknis:</strong> Informasi browser, alamat IP (untuk keamanan sesi), dan log aktivitas transaksi blockchain.</li>
               </ul>

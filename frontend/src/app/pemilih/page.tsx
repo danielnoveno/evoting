@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react'
 import { VoterPageSkeleton, VoterShell } from '@/components/voter/voter-shell'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import type { VoterElection } from '@/lib/voter-store'
-import { useServerWallet } from '@/hooks/use-server-wallet'
 import {
   getElectionViewState,
   formatNumber,
@@ -267,8 +266,6 @@ function ScheduleStateBanner({ hasUpcoming, onlyPast, upcomingCount }: { hasUpco
 }
 
 export default function VoterDashboardPage() {
-  // Ensure deterministic voting wallet is created as soon as voter opens dashboard.
-  useServerWallet()
   const { store, loading, refresh } = useVoterStore()
 
   if (loading || !store) {

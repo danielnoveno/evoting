@@ -10,7 +10,6 @@ import { VoterStepper } from '@/components/voter/voter-stepper'
 import { basescanTxUrl, findElection, formatDateTime, formatNumber, formatWallet, useVoterStore } from '@/lib/voter-store'
 import { loadVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
-import { useServerWallet } from '@/hooks/use-server-wallet'
 import { useToast } from '@/components/ui/toast-provider'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
@@ -41,10 +40,14 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const { store, loading: storeLoading, actions } = useVoterStore()
   const { showToast } = useToast()
   const { address: connectedWallet } = useAccount()
-  const { address: serverWalletAddress } = useServerWallet()
   
   const election = findElection(store, params.id)
   const contractAddress = election?.deployedSpaceAddress ?? undefined
+  const profileWallet = store?.profile.wallet ?? ''
+  const isActivationWalletConnected = Boolean(profileWallet && connectedWallet && sameWalletAddress(profileWallet, connectedWallet))
+  const walletMismatchError = connectedWallet && profileWallet && !sameWalletAddress(profileWallet, connectedWallet)
+    ? 'Dompet tersambung berbeda dari dompet aktivasi voter. Putuskan koneksi lalu sambungkan dompet yang dipakai saat aktivasi.'
+    : null
 
   const { 
     commitVote, 
@@ -66,7 +69,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     refetchPhase,
     refetchHasCommitted,
     refetchIsWhitelisted
-  } = useElectionContract(contractAddress, { checks: ['phase', 'hasCommitted', 'isWhitelisted'], voterAddress: serverWalletAddress })
+  } = useElectionContract(contractAddress, { checks: ['phase', 'hasCommitted', 'isWhitelisted'], voterAddress: profileWallet })
 
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [isRefreshingOnChainStatus, setIsRefreshingOnChainStatus] = useState(false)
@@ -75,7 +78,6 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
     ? Number(currentPhase)
     : null
-  const profileWallet = store?.profile.wallet ?? ''
   const commitRoute = `/pemilih/pemilihan/${params.id}/commit`
   const connectWalletRoute = `/hubungkan-dompet?redirect=${encodeURIComponent(commitRoute)}`
   const isCommitPhaseOnChain = currentPhaseNumber === 1
@@ -83,7 +85,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   // Deteksi apakah blockchain masih dalam proses loading
   const isBlockchainLoading = isPhaseFetching || isWhitelistedFetching || isHasCommittedFetching
 
-  const isOnChainStatusReady = Boolean(contractAddress) && Boolean(serverWalletAddress) && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
+  const isOnChainStatusReady = Boolean(contractAddress) && Boolean(profileWallet) && currentPhaseNumber !== null && typeof isWhitelistedOnChain === 'boolean'
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
   // Ekstrak detail error untuk debugging (hanya tampil di dev atau jika error jelas)
   const onChainErrorDetail = onChainStatusError
@@ -173,13 +175,13 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     ? [
         { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
         { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
-        { label: 'Hitung otomatis', description: 'Dikerjakan sistem' },
+        { label: 'Sahkan suara', description: 'Saat tahap reveal' },
         { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
     : [
         { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
         { label: 'Kunci pilihan', description: 'Tercatat di blockchain', active: true },
-        { label: 'Hitung otomatis', description: 'Dikerjakan sistem' },
+        { label: 'Sahkan suara', description: 'Saat tahap reveal' },
         { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
 
@@ -214,6 +216,8 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           : 'Belum terbaca'
   const commitBlockedReason = !contractAddress
     ? 'Smart contract untuk pemilihan ini belum tersedia di Supabase.'
+    : !isActivationWalletConnected
+      ? walletMismatchError ?? 'Sambungkan dompet yang dipakai saat aktivasi voter sebelum mencoblos.'
     : onChainStatusError
       ? `Jaringan blockchain belum merespons. (${onChainErrorDetail})`
     : isBlockchainLoading
@@ -274,7 +278,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
 
           <h1 className="mt-5 text-center text-[24px] font-semibold text-slate-900">Pilihan berhasil disimpan aman</h1>
           <p className="mx-auto mt-3 max-w-2xl text-center text-[14px] leading-7 text-slate-700">
-            Pilihanmu sudah dikunci sebagai bukti suara. Sistem akan mengesahkan dan menghitung suara otomatis saat jadwal penghitungan dibuka.
+            Pilihanmu sudah dikunci sebagai bukti suara. Saat tahap penghitungan dibuka, sahkan suara memakai dompet aktivasi yang sama.
           </p>
 
           <div className="mt-8 grid gap-4 xl:grid-cols-2">
@@ -286,7 +290,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
                 </div>
                 <div>
                   <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate?.name ?? 'Pilihan tersimpan terdeteksi'}</h2>
-                  <RichTextRenderer value={selectedCandidate?.vision} emptyFallback="Detail kandidat asli tetap tersimpan untuk penghitungan otomatis." className="mt-1 text-[14px] text-slate-600" />
+                  <RichTextRenderer value={selectedCandidate?.vision} emptyFallback="Detail kandidat asli tetap tersimpan untuk tahap reveal." className="mt-1 text-[14px] text-slate-600" />
                 </div>
               </div>
             </article>
@@ -325,7 +329,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
               </Link>
             ) : (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] leading-6 text-amber-900">
-                Pilihan sudah pernah disimpan. Jika penghitungan otomatis belum berjalan, hubungi admin/TU untuk pengecekan antrean reveal.
+                Pilihan sudah pernah disimpan. Jika tahap reveal sudah dibuka tetapi pengesahan belum berhasil, hubungi admin/TU untuk pengecekan fase dan whitelist.
               </div>
             )}
           </div>
@@ -390,10 +394,9 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
               <p>
                 {commitBlockedReason} {!isBlockchainLoading && 'Tombol dinonaktifkan agar dompet tidak membuka transaksi yang pasti gagal.'}
               </p>
-              {(serverWalletAddress || profileWallet) ? (
+              {profileWallet ? (
                 <p className="mt-2 text-[12px] text-amber-800/90">
-                  Dompet server: <span className="font-mono font-semibold">{serverWalletAddress ? formatWallet(serverWalletAddress) : 'Belum tersambung'}</span>
-                  {' · '}Dompet akun: <span className="font-mono font-semibold">{profileWallet ? formatWallet(profileWallet) : 'Belum tertaut'}</span>
+                  Dompet aktivasi: <span className="font-mono font-semibold">{formatWallet(profileWallet)}</span>
                 </p>
               ) : null}
               {onChainStatusError ? (
@@ -449,7 +452,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           </div>
           <h2 className="mt-8 text-[18px] font-semibold text-white">Ringkasan Penyimpanan Suara</h2>
           <p className="mt-4 text-[16px] leading-8 text-slate-300">
-            Sistem sudah menyiapkan kode bukti. Pilihan aslimu akan dihitung otomatis saat tahap penghitungan dibuka.
+            Sistem sudah menyiapkan kode bukti. Pilihan aslimu baru dihitung setelah kamu mengesahkan suara pada tahap reveal.
           </p>
 
           <div className="mt-8 space-y-3">
@@ -465,7 +468,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           <div>
             <h2 className="text-[18px] font-semibold text-slate-900">Privasi pilihan</h2>
             <p className="mt-2 text-[14px] leading-7 text-slate-700">
-              Setelah pilihan disimpan, suara baru dihitung saat sistem relayer tepercaya mengesahkannya pada jadwal penghitungan.
+              Setelah pilihan disimpan, suara baru dihitung saat dompet aktivasi yang sama mengesahkannya pada jadwal penghitungan.
             </p>
           </div>
         </div>
@@ -475,9 +478,9 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         <div className="flex gap-3">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
           <div>
-            <h2 className="text-[18px] font-semibold text-amber-900">Penghitungan otomatis</h2>
+            <h2 className="text-[18px] font-semibold text-amber-900">Pengesahan suara</h2>
             <p className="mt-2 text-[14px] leading-7 text-amber-900/90">
-              Sistem menyimpan data pengesahan suara untuk relayer tepercaya. Karena itu, pemilih tidak perlu kembali untuk konfirmasi manual.
+              Simpan browser dan dompet aktivasi yang sama. Saat tahap reveal dibuka, kirim transaksi pengesahan; gas dapat disponsori paymaster.
             </p>
           </div>
         </div>
@@ -515,7 +518,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
       <ConfirmDialog
         open={confirmOpen}
         title="Coblos dan kunci pilihan sekarang?"
-        description="Setelah disimpan, sistem akan menghitung suara otomatis saat jadwal penghitungan dibuka. Pilihan tidak bisa diubah."
+        description="Setelah disimpan, sahkan suara saat jadwal penghitungan dibuka. Pilihan tidak bisa diubah."
         confirmLabel="Ya, Simpan Pilihan"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleCommit}

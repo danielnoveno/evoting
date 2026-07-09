@@ -31,17 +31,17 @@ const faqs = [
   {
     id: 'faq-1',
     question: 'Kenapa suara harus dikunci dulu sebelum dihitung?',
-    answer: 'Saat mencoblos, pilihanmu dikunci dulu di blockchain. Saat jadwal penghitungan dibuka, sistem mencocokkan dan mengesahkan pilihan tersebut secara otomatis agar suara bisa dihitung.',
+    answer: 'Saat mencoblos, pilihanmu dikunci dulu di blockchain. Saat jadwal penghitungan dibuka, kamu mengesahkan pilihan tersebut dengan dompet aktivasi yang sama agar suara bisa dihitung.',
   },
   {
     id: 'faq-2',
-    question: 'Apakah saya perlu konfirmasi suara manual?',
-    answer: 'Tidak. Setelah mencoblos dan transaksi berhasil, Votein menyiapkan antrean penghitungan otomatis. Kamu cukup menunggu hasil saat jadwal penghitungan dibuka.',
+    question: 'Apakah saya perlu mengesahkan suara?',
+    answer: 'Ya. Setelah mencoblos dan transaksi commit berhasil, buka tahap pengesahan saat jadwal reveal dibuka. Transaksi tetap memakai dompet aktivasi yang sama dan gas dapat disponsori paymaster.',
   },
   {
     id: 'faq-3',
-    question: 'Bagaimana jika status penghitungan otomatis bermasalah?',
-    answer: 'Jika transaksi coblos berhasil tetapi status penghitungan belum berubah saat waktunya tiba, hubungi admin/TU agar antrean reveal otomatis diperiksa.',
+    question: 'Bagaimana jika pengesahan suara bermasalah?',
+    answer: 'Jika transaksi coblos berhasil tetapi tombol pengesahan belum bisa dipakai saat waktunya tiba, hubungi admin/TU untuk memeriksa fase blockchain dan whitelist dompet aktivasi.',
   },
 ]
 

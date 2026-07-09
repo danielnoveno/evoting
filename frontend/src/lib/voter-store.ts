@@ -404,7 +404,7 @@ export function useVoterStore() {
         committedCount: Math.min(election.totalParticipants, election.committedCount + 1),
         commitmentHash: commitmentHash ?? election.commitmentHash,
         commitProof: proof,
-        lastTransactionLabel: 'Suara terkunci. Penghitungan otomatis akan berjalan sesuai jadwal.',
+        lastTransactionLabel: 'Suara terkunci. Sahkan suara saat tahap reveal dibuka.',
       })))
       return proof
     },
