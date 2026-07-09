@@ -1,5 +1,7 @@
 'use client'
 
+import type { ReactNode } from 'react'
+
 export function ConfirmDialog({
   open,
   title,
@@ -13,7 +15,7 @@ export function ConfirmDialog({
 }: {
   open: boolean
   title: string
-  description: string
+  description: ReactNode
   confirmLabel?: string
   cancelLabel?: string
   tone?: 'default' | 'danger'
@@ -28,7 +30,7 @@ export function ConfirmDialog({
       <button type="button" aria-label="Tutup dialog konfirmasi" className="absolute inset-0" onClick={onCancel} />
       <div className="relative w-full max-w-[400px] rounded-xl border border-slate-200 bg-white p-6">
         <h2 className="text-[15px] font-semibold text-slate-900">{title}</h2>
-        <p className="mt-3 text-[14px] leading-7 text-slate-800">{description}</p>
+        <div className="mt-3 text-[14px] leading-7 text-slate-800">{description}</div>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
           <button type="button" onClick={onCancel} className="inline-flex h-10 items-center justify-center rounded-md px-4 text-[13px] font-medium text-slate-800 hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2">
             {cancelLabel}

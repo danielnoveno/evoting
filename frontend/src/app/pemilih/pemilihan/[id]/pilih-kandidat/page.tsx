@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock3, Info, Loader2 } from 'lucide-react'
+import { AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock3, ExternalLink, Info, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -397,6 +397,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   }
 
   const formatTimeVal = (val: number) => String(val).padStart(2, '0')
+  const candidateBeingConfirmed = election.candidates.find((candidate) => candidate.id === candidateToConfirm)
   const committedCandidate = election.candidates.find((candidate) => candidate.id === (pendingCommit?.candidateUuid ?? election.committedCandidateId ?? election.selectedCandidateId))
   const commitProof = election.commitProof || (isConfirmed && hash && receipt ? {
     txHash: receipt.transactionHash,
@@ -460,9 +461,10 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 href={basescanTxUrl(commitProof.txHash)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 hover:bg-slate-50"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-[13px] font-semibold text-slate-900 hover:bg-slate-50"
               >
-                Lihat Bukti Transaksi
+                Lihat Transaksi di Basescan
+                <ExternalLink className="h-4 w-4" />
               </a>
             ) : null}
             <Link href="/pemilih" className="inline-flex h-11 items-center justify-center rounded-xl bg-[#0F172A] px-5 text-[13px] font-semibold text-white hover:bg-[#1E293B]">
@@ -751,9 +753,23 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Coblos kandidat ini?"
-        description="Setelah kamu konfirmasi di dompet, pilihan akan dikunci di blockchain dan sistem akan menghitung otomatis saat jadwal penghitungan dibuka. Pilihan tidak bisa diubah."
-        confirmLabel="Ya, Coblos Sekarang"
+        title="Pastikan pilihan sudah benar"
+        description={(
+          <div className="space-y-4">
+            <p>
+              Kamu akan mencoblos kandidat berikut. Setelah dikunci di blockchain, pilihan tidak bisa diubah.
+            </p>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat yang dipilih</p>
+              <p className="mt-2 text-[16px] font-semibold text-slate-900">{candidateBeingConfirmed?.name ?? 'Kandidat belum dipilih'}</p>
+              <p className="mt-1 text-[12px] font-medium text-slate-600">{candidateBeingConfirmed?.faculty ?? 'Data kandidat belum tersedia'}</p>
+            </div>
+            <p className="text-[13px] text-slate-600">
+              Sistem akan mengirim transaksi commit melalui ID voting kamu dan relayer tepercaya.
+            </p>
+          </div>
+        )}
+        confirmLabel="Ya, Pilihan Sudah Benar"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleConfirm}
       />
