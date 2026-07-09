@@ -552,7 +552,8 @@ export async function getElectionResultsFromIndexer(spaceAddress?: string | null
 export async function listVoterOnchainProofs(walletAddress?: string | null, spaceAddresses: string[] = []): Promise<VoterOnchainProofRecord[]> {
   const graphqlUrl = getPonderGraphqlUrl()
   const wallet = walletAddress?.trim()
-  if (!graphqlUrl || !wallet) return []
+  if (!wallet) return []
+  if (!graphqlUrl) return listVoterProofsFromAuditLog(wallet, spaceAddresses)
 
   const addressVariants = Array.from(new Set(spaceAddresses.flatMap((address) => [address, address.toLowerCase()])))
   const voterVariants = Array.from(new Set([wallet, wallet.toLowerCase()]))
@@ -589,13 +590,13 @@ export async function listVoterOnchainProofs(walletAddress?: string | null, spac
 
   if (!response.ok) {
     markIndexerUnavailable(response.status)
-    if (response.status === 404 || response.status === 503) return []
+    if (response.status === 404 || response.status === 503) return listVoterProofsFromAuditLog(wallet, spaceAddresses)
     throw new RepositoryError('Gagal memuat bukti pemilih dari indexer Ponder.')
   }
 
   const payload: unknown = await response.json()
   if (!isPonderVoterProofResponse(payload)) throw new RepositoryError('Format bukti pemilih indexer tidak dikenali.')
-  if (payload.errors && payload.errors.length > 0) throw new RepositoryError('Indexer belum siap menyajikan bukti pemilih.')
+  if (payload.errors && payload.errors.length > 0) return listVoterProofsFromAuditLog(wallet, spaceAddresses)
 
   const bySpace = new Map<string, VoterOnchainProofRecord>()
   const ensureRecord = (spaceAddress: string) => {
@@ -627,6 +628,67 @@ export async function listVoterOnchainProofs(walletAddress?: string | null, spac
         blockNumber: asFiniteNumber(item.blockNumber),
         createdAt: timestampToIso(item.timestamp),
         candidateId: asFiniteNumber(item.candidateId),
+      }
+    }
+  }
+
+  return Array.from(bySpace.values())
+}
+
+async function listVoterProofsFromAuditLog(walletAddress: string, spaceAddresses: string[] = []): Promise<VoterOnchainProofRecord[]> {
+  const client = getSupabaseBrowserClient()
+  if (!client) return []
+
+  const wallet = walletAddress.trim().toLowerCase()
+  if (!/^0x[a-f0-9]{40}$/.test(wallet)) return []
+
+  const allowedSpaces = new Set(spaceAddresses.map((address) => address.toLowerCase()))
+  const { data, error } = await client
+    .schema('app')
+    .from('tx_audit_log')
+    .select('*')
+    .ilike('wallet_address', wallet)
+    .in('action_type', ['commit_vote_server_signed', 'reveal_vote_server_signed', 'commit_vote', 'reveal_vote'])
+    .eq('status', 'success')
+    .order('created_at', { ascending: false })
+    .limit(100)
+
+  if (error) {
+    console.warn('Voter proof audit log fetch error:', error.message)
+    return []
+  }
+
+  const bySpace = new Map<string, VoterOnchainProofRecord>()
+  const ensureRecord = (spaceAddress: string) => {
+    const key = spaceAddress.toLowerCase()
+    const existing = bySpace.get(key)
+    if (existing) return existing
+    const next: VoterOnchainProofRecord = { spaceAddress, commitProof: null, revealProof: null }
+    bySpace.set(key, next)
+    return next
+  }
+
+  for (const row of data ?? []) {
+    const metadata = asObject(row.metadata)
+    const contractAddress = typeof metadata.contractAddress === 'string' ? metadata.contractAddress : null
+    if (!contractAddress || !/^0x[a-fA-F0-9]{40}$/.test(contractAddress)) continue
+    if (allowedSpaces.size > 0 && !allowedSpaces.has(contractAddress.toLowerCase())) continue
+
+    const record = ensureRecord(contractAddress)
+    if ((row.action_type === 'commit_vote_server_signed' || row.action_type === 'commit_vote') && !record.commitProof) {
+      record.commitProof = {
+        txHash: row.tx_hash,
+        blockNumber: asFiniteNumber(row.block_number),
+        createdAt: row.created_at,
+        commitment: typeof metadata.commitment === 'string' ? metadata.commitment : '',
+      }
+    }
+    if ((row.action_type === 'reveal_vote_server_signed' || row.action_type === 'reveal_vote') && !record.revealProof) {
+      record.revealProof = {
+        txHash: row.tx_hash,
+        blockNumber: asFiniteNumber(row.block_number),
+        createdAt: row.created_at,
+        candidateId: asFiniteNumber(metadata.candidateId),
       }
     }
   }

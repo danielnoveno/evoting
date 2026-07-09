@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
 
     // 5. Upsert to user_wallets table (store public address only)
     const { error: upsertError } = await supabase
+      .schema('app')
       .from('user_wallets')
       .upsert(
         {
@@ -75,7 +76,10 @@ export async function GET(request: NextRequest) {
 
     if (upsertError) {
       console.error('[WALLET] Upsert error:', upsertError)
-      // Non-fatal: address derivation still works
+      return NextResponse.json(
+        { error: 'Gagal menyimpan ID voting.', details: upsertError.message },
+        { status: 500 },
+      )
     }
 
     // 6. Sync app_profiles.wallet_address to match derived wallet
