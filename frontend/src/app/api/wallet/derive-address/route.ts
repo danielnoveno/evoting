@@ -97,10 +97,11 @@ export async function GET(request: NextRequest) {
       || user.email?.trim().toLowerCase()
       || ''
     const staleWallets = new Set<string>()
-    if (currentWallet && currentWallet.toLowerCase() !== walletAddress.toLowerCase()) {
-      staleWallets.add(currentWallet.toLowerCase())
-    }
 
+    // ponytail: SELALU sync master_voters dan whitelist ke derived wallet.
+    // Derived wallet adalah satu-satunya wallet yang bisa sign transaksi on-chain
+    // (karena private key di-derive dari user_id + master_secret).
+    // Profile wallet (app_profiles) bisa berbeda (MetaMask), itu hanya untuk display.
     if (profileEmail) {
       const { data: masterVoter } = await supabase
         .schema('app')
@@ -114,6 +115,7 @@ export async function GET(request: NextRequest) {
         staleWallets.add(masterWallet.toLowerCase())
       }
 
+      // Sync master_voters ke derived wallet (bukan MetaMask)
       await supabase
         .schema('app')
         .from('master_voters')
@@ -121,8 +123,13 @@ export async function GET(request: NextRequest) {
         .eq('email', profileEmail)
     }
 
-    if (!currentWallet || currentWallet.toLowerCase() !== walletAddress.toLowerCase()) {
-      // Check if derived wallet is already used by another profile
+    // ponytail: JANGAN overwrite app_profiles.wallet_address jika user sudah bind
+    // wallet sendiri (e.g. MetaMask). Overwrite menyebabkan "ID voting tidak cocok"
+    // saat login berikutnya karena profile wallet ≠ connected wallet.
+    // Profile wallet hanya untuk display di hubungkan-dompet.
+    // Derived wallet selalu dipakai untuk signing on-chain.
+    if (!currentWallet) {
+      // Profile belum punya wallet — sync pertama kali
       const { data: existingOwner } = await supabase
         .schema('app')
         .from('app_profiles')
@@ -140,14 +147,21 @@ export async function GET(request: NextRequest) {
 
         if (syncError) {
           console.error('[WALLET] Profile wallet sync error:', syncError)
-          // Non-fatal: derivation still works, just profile might show old wallet
         }
       } else {
         console.warn('[WALLET] Derived wallet already used by another profile, skipping sync')
       }
+    } else if (currentWallet.toLowerCase() !== walletAddress.toLowerCase()) {
+      // Profile sudah punya wallet tapi beda dari derived — user sudah bind
+      // wallet sendiri. Jangan overwrite. Catat untuk debugging.
+      console.info('[WALLET] Profile has user-bound wallet, skipping derive-address sync:', {
+        profileWallet: currentWallet,
+        derivedWallet: walletAddress,
+      })
     }
 
-    // Keep not-yet-synced whitelist drafts aligned with the server-derived voting wallet.
+    // Keep not-yet-synced whitelist drafts aligned with the derived voting wallet.
+    // Derived wallet is the ONLY wallet that can sign on-chain transactions.
     // Synced rows are intentionally left untouched because they already represent on-chain state.
     if (staleWallets.size > 0) {
       const { error: whitelistSyncError } = await supabase
@@ -162,7 +176,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 7. Return address (public only, no private key)
+    // 7. Return derived wallet (always) — this is the wallet used for on-chain signing.
+    //    Profile wallet may differ (user-bound MetaMask) but that's for display only.
     return NextResponse.json({
       address: walletAddress,
       userId: user.id,

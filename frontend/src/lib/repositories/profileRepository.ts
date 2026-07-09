@@ -371,9 +371,10 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
 
   if (currentProfileError) throw new RepositoryError('Gagal memuat profil akun kampus. Coba lagi.')
 
-  if (currentProfile && !sameWalletAddress(currentProfile.wallet_address, normalizedWallet)) {
-    throw new RepositoryError('Akun kampus ini sudah tertaut ke wallet lain. Putuskan dompet tersambung, lalu sambungkan wallet yang sesuai.')
-  }
+  // ponytail: izinkan re-bind jika profile sudah milik user ini.
+  // Wallet mismatch terjadi karena derive-address mungkin mengoverwrite
+  // profile wallet ke derived wallet. User yang sama berhak bind ulang.
+  // Cek keamanan ada di bawah (existingWalletOwner.user_id !== user.id).
 
   const { data: existingWalletOwner, error: ownerError } = await client
     .schema('app')
