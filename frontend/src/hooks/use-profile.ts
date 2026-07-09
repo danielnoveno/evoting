@@ -1,8 +1,38 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { bindCurrentUserWallet, createAdminRegistry, deleteAdminRegistry, getCurrentAdminRegistryStatus, getCurrentProfile, getAdminRegistryByWalletAddress, getProfileByWalletAddress, listAdminDirectory, updateAdminRegistry, upsertCurrentProfile } from '@/lib/repositories/profileRepository'
-import type { AdminRegistryInput, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
+import { bindCurrentUserWallet, getCurrentAdminRegistryStatus, getCurrentProfile, getAdminRegistryByWalletAddress, getProfileByWalletAddress, listAdminDirectory, upsertCurrentProfile } from '@/lib/repositories/profileRepository'
+import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
+import { RepositoryError } from '@/lib/repositories/errors'
+import type { AdminRegistryInput, AdminDirectoryRecord, AppProfileRecord, ProfileUpsertInput } from '@/lib/repositories/types'
+
+async function getAccessToken() {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+  const { data, error } = await client.auth.getSession()
+  if (error || !data.session?.access_token) throw new RepositoryError('Sesi superadmin tidak ditemukan. Silakan masuk ulang.')
+  return data.session.access_token
+}
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = await getAccessToken()
+  const response = await fetch(path, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...init?.headers,
+    },
+  })
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null)
+    const message = payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+      ? payload.error
+      : 'Terjadi kesalahan pada server.'
+    throw new RepositoryError(message)
+  }
+  return response.json() as Promise<T>
+}
 
 export const profileQueryKeys = {
   current: ['profile', 'current'] as const,
@@ -66,7 +96,11 @@ export function useCreateAdminRegistry() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (input: AdminRegistryInput) => createAdminRegistry(input),
+    mutationFn: (input: AdminRegistryInput) =>
+      apiFetch<{ admin: AdminDirectoryRecord }>('/api/superadmin/admin-directory', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
     onSuccess: () => {
       invalidateProfileDirectoryViews(queryClient)
       void queryClient.invalidateQueries({ queryKey: ['profile'] })
@@ -78,7 +112,11 @@ export function useUpdateAdminRegistry() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ currentEmail, input }: { currentEmail: string; input: AdminRegistryInput }) => updateAdminRegistry(currentEmail, input),
+    mutationFn: ({ currentEmail, input }: { currentEmail: string; input: AdminRegistryInput }) =>
+      apiFetch<{ admin: AdminDirectoryRecord }>(`/api/superadmin/admin-directory/${encodeURIComponent(currentEmail)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }),
     onSuccess: () => {
       invalidateProfileDirectoryViews(queryClient)
       void queryClient.invalidateQueries({ queryKey: ['profile'] })
@@ -90,7 +128,10 @@ export function useDeleteAdminRegistry() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (email: string) => deleteAdminRegistry(email),
+    mutationFn: (email: string) =>
+      apiFetch<{ success: boolean }>(`/api/superadmin/admin-directory/${encodeURIComponent(email)}`, {
+        method: 'DELETE',
+      }),
     onSuccess: () => {
       invalidateProfileDirectoryViews(queryClient)
       void queryClient.invalidateQueries({ queryKey: ['profile'] })

@@ -105,7 +105,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
   if (!data) return jsonError('Data voter tidak ditemukan.', 404)
 
-  // Log the update
   const actor = await getActorInfo(auth.client)
   await logAudit({
     action_name: 'update_voter',
@@ -120,4 +119,66 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   })
 
   return NextResponse.json({ voter: mapVoter(data) })
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireProfile(request, ['super_admin'])
+  if ('error' in auth) return auth.error
+
+  // 1. Ambil data voter yang akan dihapus
+  const { data: voter, error: fetchError } = await auth.client
+    .from('master_voters')
+    .select('*')
+    .eq('id', params.id)
+    .maybeSingle()
+
+  if (fetchError) return jsonError('Gagal memuat data voter.', 500)
+  if (!voter) return jsonError('Data voter tidak ditemukan.', 404)
+
+  // 2. Cascade delete: bersihkan app_profiles, user_wallets, activation_tokens
+  //    Tanpa cascade ini, wallet di app_profiles tetap hidup sehingga
+  //    voter re-add menunjukkan "Sudah ada address wallet" atau "ID voting sudah tertaut".
+  const email = voter.email?.trim().toLowerCase()
+  if (email) {
+    const { data: profiles } = await auth.client
+      .from('app_profiles')
+      .select('id, user_id')
+      .ilike('email', email)
+
+    if (profiles && profiles.length > 0) {
+      const userIds = profiles.map((p) => p.user_id).filter(Boolean)
+
+      if (userIds.length > 0) {
+        await auth.client.from('user_wallets').delete().in('user_id', userIds)
+      }
+
+      await auth.client.from('app_profiles').delete().in('id', profiles.map((p) => p.id))
+    }
+
+    await auth.client.from('activation_tokens').delete().ilike('email', email)
+  }
+
+  // 3. Hapus master_voters
+  const { error: deleteError } = await auth.client
+    .from('master_voters')
+    .delete()
+    .eq('id', params.id)
+
+  if (deleteError) return jsonError('Gagal menghapus data voter.', 500)
+
+  // 4. Log audit
+  const actor = await getActorInfo(auth.client)
+  await logAudit({
+    action_name: 'delete_voter',
+    actor_wallet: actor.wallet,
+    actor_email: actor.email,
+    actor_role: actor.role,
+    entity_type: 'master_voter',
+    entity_id: params.id,
+    details: { email: voter.email, nim: voter.nim, full_name: voter.full_name },
+    related_tx_hash: null,
+    source: 'server_api',
+  })
+
+  return NextResponse.json({ success: true })
 }

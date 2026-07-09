@@ -116,7 +116,7 @@ export default function SuperadminEditPage({ params }: { params: { id: string } 
           showToast({ tone: 'success', title: 'Perubahan superadmin berhasil disimpan', description: 'Data otoritas sudah diperbarui pada registry.' })
           router.push(editSource === 'list'
             ? '/superadmin/manajemen-superadmin'
-            : `/superadmin/manajemen-superadmin/${encodeURIComponent(updated.email)}`)
+            : `/superadmin/manajemen-superadmin/${encodeURIComponent(updated.admin.email)}`)
         },
         onError: (error) => {
           setConfirmOpen(false)

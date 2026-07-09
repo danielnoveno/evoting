@@ -161,30 +161,30 @@ export function useAddMasterVoter() {
       angkatan?: string
       walletAddress?: string
     }) => {
-      const client = getSupabaseBrowserClient()
-      if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
-
-      const { data, error } = await client
-        .schema('app')
-        .from('master_voters')
-        .insert({
+      const token = await getAccessToken()
+      const response = await fetch('/api/superadmin/master-voters', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: 'add',
           nim: input.nim,
-          full_name: input.fullName,
+          fullName: input.fullName,
           email: input.email,
           prodi: input.prodi,
-          fakultas: input.fakultas ?? 'FTI',
-          angkatan: input.angkatan ?? null,
-          wallet_address: input.walletAddress ?? null,
-          status: 'active',
-        })
-        .select('*')
-        .single()
+          fakultas: input.fakultas,
+          angkatan: input.angkatan,
+          walletAddress: input.walletAddress,
+        }),
+      })
 
-      if (error) {
-        if (error.code === '23505') throw new RepositoryError('NIM sudah terdaftar di sistem.')
-        throw new RepositoryError('Gagal menambahkan mahasiswa. Periksa data yang diisi.')
-      }
-      return mapRow(data)
+      if (!response.ok) throw new RepositoryError(await readApiError(response, 'Gagal menambahkan mahasiswa. Periksa data yang diisi.'))
+
+      const payload: unknown = await response.json()
+      if (!payload || typeof payload !== 'object' || !('voter' in payload)) throw new RepositoryError('Respons tambah voter tidak valid.')
+      return (payload as { voter: MasterVoter }).voter
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['master-voters', 'all'] })
@@ -197,16 +197,13 @@ export function useDeleteMasterVoter() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const client = getSupabaseBrowserClient()
-      if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+      const token = await getAccessToken()
+      const response = await fetch(`/api/superadmin/master-voters/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
 
-      const { error } = await client
-        .schema('app')
-        .from('master_voters')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw new RepositoryError('Gagal menghapus data voter.')
+      if (!response.ok) throw new RepositoryError(await readApiError(response, 'Gagal menghapus data voter.'))
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['master-voters', 'all'] })
@@ -254,16 +251,17 @@ export function useBulkDeleteMasterVoters() {
 
   return useMutation({
     mutationFn: async (ids: string[]) => {
-      const client = getSupabaseBrowserClient()
-      if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+      const token = await getAccessToken()
+      const response = await fetch('/api/superadmin/master-voters/bulk-delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ ids }),
+      })
 
-      const { error } = await client
-        .schema('app')
-        .from('master_voters')
-        .delete()
-        .in('id', ids)
-
-      if (error) throw new RepositoryError('Gagal menghapus data voter terpilih.')
+      if (!response.ok) throw new RepositoryError(await readApiError(response, 'Gagal menghapus data voter terpilih.'))
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['master-voters', 'all'] })

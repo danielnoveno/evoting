@@ -109,7 +109,7 @@ export default function SuperadminAdminEditPage({ params }: { params: { id: stri
           })
           router.push(editSource === 'list'
             ? '/superadmin/manajemen-admin'
-            : `/superadmin/manajemen-admin/${encodeURIComponent(updated.email)}`)
+            : `/superadmin/manajemen-admin/${encodeURIComponent(updated.admin.email)}`)
         },
         onError: (error) => {
           setConfirmOpen(false)

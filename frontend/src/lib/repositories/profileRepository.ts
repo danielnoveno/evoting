@@ -675,29 +675,25 @@ export async function updateDirectoryRegistryStatus(email: string, status: 'pend
   const normalizedEmail = normalizeEmail(email)
   if (!normalizedEmail) throw new RepositoryError('Email akses wajib diisi.')
 
-  const { data: current, error: fetchError } = await client
-    .schema('app')
-    .from('admin_registry')
-    .select('*')
-    .eq('email', normalizedEmail)
-    .maybeSingle()
+  // Use server-side API route for audit logging and proper authorization
+  const { data: sessionData } = await client.auth.getSession()
+  const token = sessionData.session?.access_token
+  if (!token) throw new RepositoryError('Sesi superadmin tidak ditemukan. Silakan masuk ulang.')
 
-  if (fetchError) throw new RepositoryError('Gagal memuat registry akses. Coba lagi.')
-  if (!current) throw new RepositoryError('Registry akses tidak ditemukan untuk email ini.')
+  const response = await fetch(`/api/superadmin/admin-directory/${encodeURIComponent(normalizedEmail)}/status`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
+  })
 
-  const actorProfileId = await getCurrentProfileId()
-  const payload: Database['app']['Tables']['admin_registry']['Update'] = {
-    status,
-    updated_by: actorProfileId,
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => null)
+    const message = payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+      ? payload.error
+      : 'Gagal memperbarui status akses. Coba lagi.'
+    throw new RepositoryError(message)
   }
-
-  const { error } = await client
-    .schema('app')
-    .from('admin_registry')
-    .update(payload)
-    .eq('email', normalizedEmail)
-
-  if (error) throw new RepositoryError('Gagal memperbarui status akses. Coba lagi.')
-
-  await syncProfileRoleForEmail(normalizedEmail, current.assigned_role)
 }
