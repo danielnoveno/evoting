@@ -156,7 +156,47 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     setAutoRevealQueueStatus('saving')
     setAutoRevealQueueError(null)
 
-    setAutoRevealQueueStatus('saved')
+    // Save salt to server for auto-reveal (fire-and-forget)
+    ;(async () => {
+      try {
+        const { getSupabaseBrowserClient } = await import('@/lib/supabase/browser')
+        const client = getSupabaseBrowserClient()
+        const { data: sessionData } = await client?.auth.getSession() ?? { data: { session: null } }
+        const accessToken = sessionData?.session?.access_token
+
+        if (accessToken && election?.deployedSpaceAddress) {
+          const res = await fetch('/api/voter/commit-store', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+            body: JSON.stringify({
+              electionId: params.id,
+              spaceAddress: election.deployedSpaceAddress,
+              voterAddress: profileWallet,
+              candidateId: pendingCommit.candidateNumber,
+              salt: pendingCommit.record.salt,
+              commitmentHash: pendingCommit.record.commitment,
+              commitTxHash: receipt.transactionHash,
+            }),
+          })
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({ message: 'Gagal menyimpan ke server' }))
+            console.error('[commit-store] Failed:', err)
+            setAutoRevealQueueStatus('failed')
+            setAutoRevealQueueError('Gagal menyimpan data ke server. Reveal manual mungkin diperlukan.')
+          } else {
+            setAutoRevealQueueStatus('saved')
+          }
+        } else {
+          setAutoRevealQueueStatus('failed')
+          setAutoRevealQueueError('Tidak dapat mengakses sesi. Reveal manual mungkin diperlukan.')
+        }
+      } catch (err) {
+        console.error('[commit-store] Error:', err)
+        setAutoRevealQueueStatus('failed')
+        setAutoRevealQueueError('Gagal menyimpan data ke server. Reveal manual mungkin diperlukan.')
+      }
+    })()
+
     showToast({
       title: 'Suara berhasil dicoblos',
       description: 'Pilihanmu sudah terkunci. Saat tahap penghitungan dibuka, sahkan suara dengan dompet aktivasi yang sama.',

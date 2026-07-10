@@ -5,9 +5,9 @@
 do $$
 declare
   v_now timestamptz := now();
-  v_commit_start timestamptz := v_now + interval '5 minutes';
-  v_reveal_start timestamptz := v_now + interval '10 minutes';
-  v_ended_at timestamptz := v_now + interval '11 minutes';
+  v_commit_start timestamptz := v_now + interval '2 minutes';
+  v_reveal_start timestamptz := v_now + interval '12 minutes';
+  v_ended_at timestamptz := v_now + interval '17 minutes';
 
   v_superadmin_user_id uuid;
   v_admin_user_id uuid;
@@ -121,7 +121,7 @@ begin
     'HIMAFORKA FTI UAJY',
     'FTI',
     '#0F172A',
-    'Satu wallet terdaftar hanya boleh melakukan satu commit dan satu reveal. Periode waktu dipercepat untuk kebutuhan pengujian lokal.',
+    'Satu wallet terdaftar hanya boleh melakukan satu commit dan satu reveal. Commit phase: 10 menit, Reveal phase: 5 menit.',
     3,
     'submitted',
     v_now,
@@ -226,7 +226,7 @@ begin
       'link', '/pemilihan'
     ));
 
-  raise notice 'VoteChain testing seed ready. commit_start=%, reveal_start=%, ended_at=%. Proposal status is submitted/menunggu review.',
+  raise notice 'VoteChain testing seed ready. commit_start=% (10 min window), reveal_start=% (5 min window), ended_at=%. Proposal status is submitted/menunggu review.',
     v_commit_start, v_reveal_start, v_ended_at;
 end $$;
 

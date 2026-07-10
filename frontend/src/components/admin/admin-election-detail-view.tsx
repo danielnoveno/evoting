@@ -1346,9 +1346,15 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                   <p className="text-[14px] text-slate-500 py-4 text-center italic">Menunggu transaksi pertama...</p>
                 )}
               </div>
-              <button type="button" onClick={() => showToast({ tone: 'info', title: 'Explorer Blockchain', description: 'Tautan ke Basescan explorer akan tersedia pada versi produksi.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:text-slate-900">
+              <a
+                href={`https://sepolia.basescan.org/address/${deployedAddress}#events`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:text-slate-900"
+              >
                 Lihat Semua Transaksi
-              </button>
+                <ExternalLink className="h-4 w-4" />
+              </a>
             </article>
 
             <article className="rounded-[30px] bg-slate-100 p-6">

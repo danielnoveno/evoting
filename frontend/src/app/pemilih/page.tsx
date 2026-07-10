@@ -86,28 +86,33 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
   const isUpcoming = viewState.nextAction === 'wait'
   const isSuspended = election.phase === 'suspended'
   const alreadyVoted = viewState.hasCommitted
-  const label = alreadyVoted
-    ? 'Suara Sudah Tercatat'
-    : election.phase === 'suspended'
-      ? 'Pemilihan Ditangguhkan'
-      : isUpcoming
-        ? 'Acara Pemilihan Mendatang'
-        : election.phase === 'reveal'
-          ? 'Fase Penghitungan Suara'
-          : election.phase === 'ended'
-            ? 'Pemilihan Selesai'
-            : 'Pemilihan Sedang Berlangsung'
-  const countdownLabel = alreadyVoted
-    ? 'Menunggu pembukaan fase berikutnya:'
-    : election.phase === 'suspended'
-      ? 'Pencoblosan dihentikan sementara:'
-      : isUpcoming
-        ? 'Hitung mundur ke pembukaan suara:'
-        : election.phase === 'reveal'
-          ? 'Batas penghitungan suara:'
-          : election.phase === 'ended'
-            ? 'Pemilihan telah selesai:'
-            : 'Sisa waktu memilih:'
+  const isRevealMissed = alreadyVoted && !election.revealProof && (election.phase === 'ended')
+  const label = isRevealMissed
+    ? 'Komitmen Tercatat'
+    : alreadyVoted
+      ? 'Suara Sudah Tercatatype'
+      : election.phase === 'suspended'
+        ? 'Pemilihan Ditangguhkan'
+        : isUpcoming
+          ? 'Acara Pemilihan Mendatang'
+          : election.phase === 'reveal'
+            ? 'Fase Penghitungan Suara'
+            : election.phase === 'ended'
+              ? 'Pemilihan Selesai'
+              : 'Pemilihan Sedang Berlangsung'
+  const countdownLabel = isRevealMissed
+    ? 'Komitmen suara tercatat, tetapi konfirmasi (reveal) belum dilakukan:'
+    : alreadyVoted
+      ? 'Menunggu pembukaan fase berikutnya:'
+      : election.phase === 'suspended'
+        ? 'Pencoblosan dihentikan sementara:'
+        : isUpcoming
+          ? 'Hitung mundur ke pembukaan suara:'
+          : election.phase === 'reveal'
+            ? 'Batas penghitungan suara:'
+            : election.phase === 'ended'
+              ? 'Pemilihan telah selesai:'
+              : 'Sisa waktu memilih:'
   const dateLabel = isUpcoming ? 'Waktu Mulai' : election.phase === 'ended' ? 'Selesai Pada' : 'Batas Waktu'
 
   return (
@@ -127,7 +132,7 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
         <div className="min-w-0 flex-1">
           <p className="text-[16px] font-semibold uppercase tracking-[0.04em] text-white md:text-[18px]">{label}</p>
           <h2 className="mt-3 text-[44px] font-semibold leading-none tracking-[-0.05em] text-white md:text-[60px]">{election.title}</h2>
-          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-slate-200">{alreadyVoted ? 'Pilihanmu sudah dikunci di blockchain. Menunggu waktu penghitungan dibuka oleh sistem.' : election.summary}</p>
+          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-slate-200">{isRevealMissed ? 'Komitmen suara kamu sudah tercatat di blockchain, tetapi tahap konfirmasi (reveal) belum dilakukan sebelum jadwal berakhir. Akibatnya, suara belum dihitung.' : alreadyVoted ? 'Pilihanmu sudah dikunci di blockchain. Menunggu waktu penghitungan dibuka oleh sistem.' : election.summary}</p>
 
           <div className="mt-6 grid gap-2 text-[14px] leading-7 text-slate-100">
             <p>
@@ -147,7 +152,11 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
             <CountdownTile label="Menit" value={countdown.minutes} />
             <CountdownTile label="Detik" value={countdown.seconds} />
           </div>
-          {alreadyVoted ? (
+          {isRevealMissed ? (
+            <div className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-amber-300/40 bg-amber-500/10 px-5 text-[13px] font-semibold text-amber-200">
+              ⚠ Komitmen Tercatat, Reveal Belum Dilakukan
+            </div>
+          ) : alreadyVoted ? (
             <div className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-emerald-300/40 bg-emerald-500/10 px-5 text-[13px] font-semibold text-emerald-200">
               ✓ Suara Sudah Dicoblos
             </div>
@@ -279,6 +288,26 @@ function ScheduleStateBanner({ hasUpcoming, onlyPast, upcomingCount }: { hasUpco
 
 export default function VoterDashboardPage() {
   const { store, loading, refresh } = useVoterStore()
+
+  // Auto-reveal: trigger when voter opens dashboard during Reveal phase
+  useEffect(() => {
+    if (loading || !store) return
+    const needsReveal = store.elections.some((e) =>
+      e.phase === 'reveal' && e.commitProof && !e.revealProof
+    )
+    if (!needsReveal) return
+
+    // Fire-and-forget: call auto-reveal API
+    fetch('/api/cron/auto-reveal', { method: 'POST' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.revealed > 0) {
+          console.log(`[auto-reveal] Revealed ${data.revealed} votes`)
+          refresh()
+        }
+      })
+      .catch((err) => console.error('[auto-reveal] Failed:', err))
+  }, [loading, store, refresh])
 
   if (loading || !store) {
     return (

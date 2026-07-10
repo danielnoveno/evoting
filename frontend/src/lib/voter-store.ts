@@ -323,7 +323,12 @@ async function buildLiveStore(): Promise<VoterStore> {
   const liveElections = elections.map((item) => {
     const mapped = mergePonderResult(mapElectionFromSupabase(item), resultByElection.get(item.id))
     const withProof = mergeVoterProof(mapped, item.deployedSpaceAddress ? proofByAddress.get(item.deployedSpaceAddress.toLowerCase()) : undefined)
-    return mergeLocalElectionState(withProof, local.elections.find((election) => election.id === mapped.id))
+    const merged = mergeLocalElectionState(withProof, local.elections.find((election) => election.id === mapped.id))
+    // ponytail: perbaiki label jika commit ada tapi reveal terlewat di fase ended
+    if (merged.commitProof && !merged.revealProof && merged.phase === 'ended') {
+      return { ...merged, lastTransactionLabel: 'Komitmen suara tercatat, tetapi konfirmasi (reveal) belum dilakukan sebelum jadwal berakhir.' }
+    }
+    return merged
   })
 
   return {
