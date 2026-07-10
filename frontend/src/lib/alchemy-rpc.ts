@@ -16,7 +16,7 @@ function getRpcUrl(): string | null {
 }
 
 function encodeUint256(value: number): string {
-  return '0x' + value.toString(16).padStart(64, '0')
+  return value.toString(16).padStart(64, '0')
 }
 
 function decodeUint256(hex: string): number {
