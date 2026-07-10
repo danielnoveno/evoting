@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, ArrowRight, CalendarDays, CircleCheck, ExternalLink, Hourglass, LayoutGrid } from 'lucide-react'
+import { Archive, ArrowRight, CalendarDays, CircleCheck, ExternalLink, Hourglass, LayoutGrid, Link2 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { VoterPageSkeleton, VoterShell } from '@/components/voter/voter-shell'
@@ -164,6 +164,18 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
               {action.label}
               <ArrowRight className="h-4 w-4" />
             </Link>
+          )}
+          {election.deployedSpaceAddress && (
+            <a
+              href={`https://sepolia.basescan.org/address/${election.deployedSpaceAddress}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-white/15 bg-white/5 px-5 text-[13px] font-semibold text-slate-200 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <Link2 className="h-4 w-4" />
+              Lihat Smart Contract
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
           )}
         </div>
       </div>

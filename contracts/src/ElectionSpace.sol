@@ -188,6 +188,13 @@ contract ElectionSpace {
         _;
     }
 
+    modifier onlyCommitWindow() {
+        if (commitStartsAt != 0 && (block.timestamp < commitStartsAt || block.timestamp >= commitEndsAt)) {
+            revert WrongPhase(Phase.Commit, phase());
+        }
+        _;
+    }
+
     modifier onlyActive() {
         if (status == ElectionStatus.Suspended) revert ElectionSuspended();
         if (status == ElectionStatus.Terminated) revert ElectionTerminated();
@@ -341,6 +348,7 @@ contract ElectionSpace {
         onlyRegistered
         onlyActive
         onlyPhase(Phase.Commit)
+        onlyCommitWindow
     {
         if (hasCommitted[msg.sender]) revert AlreadyCommitted();
         if (commitment == bytes32(0)) revert InvalidCommitment();
@@ -358,6 +366,7 @@ contract ElectionSpace {
         external
         onlyActive
         onlyPhase(Phase.Commit)
+        onlyCommitWindow
     {
         if (voter == address(0)) revert InvalidVoter();
         if (!isWhitelisted[voter]) revert NotRegistered();

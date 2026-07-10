@@ -80,7 +80,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     : null
   const commitRoute = `/pemilih/pemilihan/${params.id}/commit`
   const connectWalletRoute = `/hubungkan-dompet?redirect=${encodeURIComponent(commitRoute)}`
-  const isCommitPhaseOnChain = currentPhaseNumber === 1
+  const isCommitPhaseOnChain = currentPhaseNumber === 0
 
   // Deteksi apakah blockchain masih dalam proses loading
   const isBlockchainLoading = isPhaseFetching || isWhitelistedFetching || isHasCommittedFetching
@@ -206,14 +206,12 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   }
 
   const onChainPhaseLabel = currentPhaseNumber === 0
-    ? 'Registrasi'
+    ? 'Memilih'
     : currentPhaseNumber === 1
-      ? 'Memilih'
-      : currentPhaseNumber === 2
-        ? 'Konfirmasi suara'
-        : currentPhaseNumber === 3
-          ? 'Selesai'
-          : 'Belum terbaca'
+      ? 'Konfirmasi suara'
+    : currentPhaseNumber === 2
+        ? 'Selesai'
+        : 'Belum terbaca'
   const commitBlockedReason = !contractAddress
     ? 'Smart contract untuk pemilihan ini belum tersedia di Supabase.'
     : !isActivationWalletConnected

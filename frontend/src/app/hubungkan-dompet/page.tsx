@@ -258,11 +258,11 @@ function ConnectWalletContent() {
           ? 'Tahap 2 dari 2'
           : 'Aktivasi selesai'
       : !isConnected
-        ? activationMode ? 'Tahap 1 dari 3' : 'ID Voting'
+        ? activationMode ? 'Tahap 2 dari 3' : 'Tahap 1 dari 3'
         : !authSession
-          ? activationMode ? 'Tahap 2 dari 3' : 'Masuk dengan Akun Kampus'
+          ? activationMode ? 'Tahap 2 dari 3' : 'Tahap 1 dari 3'
           : !isWalletBound
-            ? activationMode ? 'Tahap 3 dari 3' : 'Aktifkan Hak Suara'
+            ? activationMode ? 'Tahap 3 dari 3' : 'Tahap 2 dari 3'
             : activationMode ? 'Aktivasi selesai' : 'Selesai'
 
   // Auto-bind if both are ready but not yet bound
@@ -313,21 +313,22 @@ function ConnectWalletContent() {
   }, [mounted, isConnected, authSession, isWalletBound, router, redirectParam, redirectTarget, currentProfile, showToast, activationMode])
 
   const handleBack = () => {
+    // ponytail: unified SSO-first flow — always: SSO → wallet → bind
     // If on step 3 (wallet connected, user logged in, but not bound)
     if (isConnected && authSession && !isWalletBound) {
-      // Go back to step 2 by signing out.
+      // Go back to step 2 by disconnecting wallet.
+      disconnect()
+      return
+    }
+
+    // If on step 2 (logged in, but wallet not connected)
+    if (authSession && !isConnected) {
+      // Go back to step 1 by signing out.
       signOutMutation.mutate()
       return
     }
 
-    // If on step 2 (wallet connected, but user not logged in)
-    if (isConnected && !authSession) {
-      // Go back to step 1 by disconnecting wallet.
-      disconnect()
-      return
-    }
-    
-    // If on step 1 (wallet not connected), or if flow is complete, go to home.
+    // If on step 1 (not logged in), or if flow is complete, go to home.
     router.push('/')
   }
 
@@ -558,34 +559,30 @@ function ConnectWalletContent() {
                       </>
                     ) : (
                       <>
-                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${!isConnected ? 'bg-slate-100' : 'bg-white'}`}>
-                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isConnected ? 'bg-emerald-50 text-emerald-600' : 'bg-[#0F172A] text-white'}`}>
-                        {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h2 className="text-[14px] font-semibold text-slate-900">{isReturningVoter && isConnected ? 'ID Voting Terdeteksi' : 'ID Voting'}</h2>
-                        <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isConnected
-                            ? isReturningVoter
-                              ? 'ID voting Anda sudah aktif di sistem.'
-                              : 'ID voting sudah aktif.'
-                            : 'Buat ID voting untuk membuktikan identitas Anda.'}
-                        </p>
-                      </div>
-                      {!isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
-                    </div>
-
-                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${isConnected && !authSession ? 'bg-slate-100' : 'bg-white'} ${!isConnected ? 'opacity-50' : ''}`}>
-                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${authSession ? 'bg-emerald-50 text-emerald-600' : isConnected ? 'bg-[#0F172A] text-white' : 'bg-slate-100 text-slate-400'}`}>
+                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${!authSession ? 'bg-slate-100' : 'bg-white'}`}>
+                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${authSession ? 'bg-emerald-50 text-emerald-600' : 'bg-[#0F172A] text-white'}`}>
                         {authSession ? <Check className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className={isConnected ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>Masuk dengan Akun Kampus</h2>
+                        <h2 className="text-[14px] font-semibold text-slate-900">Masuk dengan Akun Kampus</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {authSession ? 'Akun kampus sudah terverifikasi.' : 'Pastikan yang masuk benar mahasiswa UAJY.'}
+                          {authSession ? 'Akun kampus sudah terverifikasi.' : 'Masuk untuk verifikasi identitas Anda.'}
                         </p>
                       </div>
-                      {isConnected && !authSession && <ChevronRight className="h-4 w-4 text-slate-400" />}
+                      {!authSession && <ChevronRight className="h-4 w-4 text-slate-400" />}
+                    </div>
+
+                    <div className={`relative flex items-center gap-4 rounded-lg p-4 ${authSession && !isConnected ? 'bg-slate-100' : 'bg-white'} ${!authSession ? 'opacity-50' : ''}`}>
+                      <div className={`z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isConnected ? 'bg-emerald-50 text-emerald-600' : authSession ? 'bg-[#0F172A] text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        {isConnected ? <Check className="h-4 w-4" /> : <WalletIcon className="h-4 w-4" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className={authSession ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>ID Voting</h2>
+                        <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
+                          {isConnected ? 'ID voting sudah aktif.' : 'Buat ID voting untuk membuktikan identitas Anda.'}
+                        </p>
+                      </div>
+                      {authSession && !isConnected && <ChevronRight className="h-4 w-4 text-slate-400" />}
                     </div>
                       </>
                     )}
@@ -609,85 +606,8 @@ function ConnectWalletContent() {
                   <div className="w-full">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">{currentStepLabel}</p>
 
-                    {((!isAdminActivationFlow && !isVoterSsoFirstFlow && !isConnected) || (isAdminActivationFlow && authSession && !isConnected) || (isVoterSsoFirstFlow && !isConnected)) && (
-                      <div className="mt-8 w-full">
-                        <h2 className="text-[20px] font-semibold text-slate-900">
-                          {isAdminActivationFlow
-                            ? 'Tahap 2 — ID Voting'
-                            : isReturningVoter
-                              ? 'Buat/Masukan ID Voting'
-                              : activationMode
-                                ? isVoterSsoFirstFlow ? 'Tahap 2 — ID Voting' : 'Tahap 1 — ID Voting'
-                                : 'ID Voting'}
-                        </h2>
-                        <p className="mt-3 text-[13px] leading-6 text-slate-600">
-                          {isReturningVoter
-                            ? 'ID voting Anda sudah terdaftar. Sambungkan dompet digital untuk melanjutkan masuk.'
-                            : activationMode
-                              ? activationContext === 'admin'
-                                ? 'Buat ID voting untuk mengelola pemilihan organisasi Anda.'
-                                : 'Buat ID voting untuk mulai memilih. Gratis, tanpa biaya apapun.'
-                              : 'Cukup buat ID voting, dan sistem akan mengenali Anda secara otomatis.'}
-                        </p>
-
-                        {activationMode && (
-                          <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50/60 p-5">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">{activationContext === 'admin' ? 'Cara Aktivasi Admin' : 'Cara Aktivasi Pemilih'}</p>
-                            <div className="mt-3 space-y-2 text-[13px] leading-6 text-blue-900/80">
-                              {isVoterSsoFirstFlow ? (
-                                <>
-                                  <p><strong>Tahap 1.</strong> Verifikasi akun kampus sudah selesai.</p>
-                                  <p><strong>Tahap 2.</strong> Buat ID voting, lalu aktifkan hak suara.</p>
-                                </>
-                              ) : (
-                                <>
-                                  <p><strong>Tahap 1.</strong> {activationContext === 'admin' ? 'Masuk dengan email organisasi yang sudah didaftarkan.' : 'Buat ID voting untuk memilih.'}</p>
-                                  <p><strong>Tahap 2.</strong> {activationContext === 'admin' ? 'Buat ID voting untuk mengelola pemilihan.' : 'Masuk dengan akun kampus untuk verifikasi identitas.'}</p>
-                                  <p><strong>Tahap 3.</strong> {activationContext === 'admin' ? 'Aktifkan akses admin' : 'Aktifkan hak suara'} dengan menautkan akun kampus dan ID voting.</p>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="mt-8 space-y-4">
-                          {isReturningVoter ? [
-                            'ID voting Anda sudah terdaftar di sistem.',
-                            'Cukup sambungkan dompet dan masuk dengan akun kampus.',
-                            'Tidak perlu membuat ID voting lagi.',
-                          ].map((item) => (
-                            <div key={item} className="flex items-center gap-3 text-[13px] text-slate-600">
-                              <span className="h-3 w-3 rounded-full border-2 border-blue-500 bg-blue-50" />
-                              {item}
-                            </div>
-                          )) : [
-                            'ID voting dibuat otomatis — tidak perlu install aplikasi tambahan.',
-                            'Tidak ada biaya apapun, gratis seluruhnya.',
-                            activationContext === 'admin' ? 'Anda perlu email kampus dan ID voting yang cocok.' : 'Pilihan Anda tetap terjaga sampai fase reveal.',
-                          ].map((item) => (
-                            <div key={item} className="flex items-center gap-3 text-[13px] text-slate-600">
-                              <span className="h-3 w-3 rounded-full border-2 border-blue-500 bg-blue-50" />
-                              {item}
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-                          <div className="flex gap-3">
-                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                            <div>
-                              <p className="text-[12px] font-semibold">Jika muncul dialog konfirmasi</p>
-                              <p className="mt-1 text-[12px] leading-5 text-amber-800">
-                                Itu adalah permintaan izin untuk membuat ID voting. Klik tombol konfirmasi pada dialog tersebut untuk melanjutkan. Jika tidak sengaja tertutup, klik tombol sambungkan lagi.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
                     {/* ponytail: tampilkan loading saat auth session masih dimuat, cegah SSO flash setelah wallet connect */}
-                    {isConnected && authSessionQuery.isLoading && (
+                    {(!isAdminActivationFlow && !isVoterSsoFirstFlow && authSessionQuery.isLoading && !authSession) && (
                       <div className="mt-8 w-full">
                         <div className="flex flex-col items-center justify-center py-8 text-center">
                           <Loader2 className="h-8 w-8 animate-spin text-slate-900" />
@@ -696,43 +616,15 @@ function ConnectWalletContent() {
                       </div>
                     )}
 
-                    {((isConnected && !authSession && !authSessionQuery.isLoading) || (isAdminActivationFlow && !authSession && !authSessionQuery.isLoading)) && (
+                    {/* ponytail: SSO-first flow — tampilkan form login SSO dulu sebelum connect wallet */}
+                    {((!isAdminActivationFlow && !isVoterSsoFirstFlow && !authSession && !authSessionQuery.isLoading) || (isAdminActivationFlow && !authSession && !authSessionQuery.isLoading)) && (
                       <div className="mt-8 w-full">
-                        <h2 className="text-[20px] font-semibold text-slate-900">{isAdminActivationFlow ? 'Tahap 1 — Masuk dengan Akun Kampus' : activationMode ? 'Tahap 2 — Masuk dengan Akun Kampus' : 'Masuk dengan Akun Kampus'}</h2>
+                        <h2 className="text-[20px] font-semibold text-slate-900">{isAdminActivationFlow ? 'Tahap 1 — Masuk dengan Akun Kampus' : activationMode ? 'Tahap 1 — Masuk dengan Akun Kampus' : 'Masuk dengan Akun Kampus'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationContext === 'admin'
                             ? 'Masuk dengan email organisasi yang sudah didaftarkan oleh Superadmin.'
-                            : 'Setelah ID voting aktif, masuk untuk memastikan Anda mahasiswa UAJY.'}
+                            : 'Masuk untuk memastikan Anda mahasiswa UAJY. ID voting akan ditautkan ke akun ini.'}
                         </p>
-
-                        {isConnected && <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50 p-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">ID voting aktif</p>
-                          <div className="mt-2 flex min-w-0 items-center gap-2">
-                            <WalletAddress
-                              address={address ?? ''}
-                              className="min-w-0 flex-1 font-mono text-[12px] font-semibold text-slate-900"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (address) {
-                                  navigator.clipboard.writeText(address)
-                                  showToast({ tone: 'success', title: 'Alamat Disalin', description: 'Alamat ID voting disalin ke clipboard.' })
-                                }
-                              }}
-                              title="Salin ID voting"
-                              className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-700"
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={() => disconnect()}
-                              className="shrink-0 rounded-md border border-red-100 bg-white px-3 py-1.5 text-[11px] font-semibold text-red-600 transition-colors hover:bg-red-50"
-                            >
-                              Ganti
-                            </button>
-                          </div>
-                        </div>}
 
                         <div className="mt-6 flex flex-col gap-3">
                           <button
@@ -790,6 +682,89 @@ function ConnectWalletContent() {
                             {formError}
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* ponytail: tampilkan connect wallet SETELAH SSO login berhasil */}
+                    {((!isAdminActivationFlow && !isVoterSsoFirstFlow && authSession && !isConnected) || (isAdminActivationFlow && authSession && !isConnected) || (isVoterSsoFirstFlow && !isConnected)) && (
+                      <div className="mt-8 w-full">
+                        <h2 className="text-[20px] font-semibold text-slate-900">
+                          {isAdminActivationFlow
+                            ? 'Tahap 2 — ID Voting'
+                            : isReturningVoter
+                              ? 'Buat/Masukan ID Voting'
+                              : activationMode
+                                ? isVoterSsoFirstFlow ? 'Tahap 2 — ID Voting' : 'Tahap 2 — ID Voting'
+                                : 'Tahap 2 — ID Voting'}
+                        </h2>
+                        <p className="mt-3 text-[13px] leading-6 text-slate-600">
+                          {isReturningVoter
+                            ? 'ID voting Anda sudah terdaftar. Sambungkan dompet digital untuk melanjutkan masuk.'
+                            : activationMode
+                              ? activationContext === 'admin'
+                                ? 'Buat ID voting untuk mengelola pemilihan organisasi Anda.'
+                                : 'Buat ID voting untuk mulai memilih. Gratis, tanpa biaya apapun.'
+                              : 'Buat ID voting untuk membuktikan identitas Anda di sistem pemilihan.'}
+                        </p>
+
+                        {activationMode && (
+                          <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50/60 p-5">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-blue-700">{activationContext === 'admin' ? 'Cara Aktivasi Admin' : 'Cara Aktivasi Pemilih'}</p>
+                            <div className="mt-3 space-y-2 text-[13px] leading-6 text-blue-900/80">
+                              {isVoterSsoFirstFlow ? (
+                                <>
+                                  <p><strong>Tahap 1.</strong> Verifikasi akun kampus sudah selesai.</p>
+                                  <p><strong>Tahap 2.</strong> Buat ID voting, lalu aktifkan hak suara.</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p><strong>Tahap 1.</strong> {activationContext === 'admin' ? 'Masuk dengan email organisasi yang sudah didaftarkan.' : 'Masuk dengan akun kampus untuk verifikasi identitas.'}</p>
+                                  <p><strong>Tahap 2.</strong> {activationContext === 'admin' ? 'Buat ID voting untuk mengelola pemilihan.' : 'Buat ID voting untuk mulai memilih.'}</p>
+                                  <p><strong>Tahap 3.</strong> {activationContext === 'admin' ? 'Aktifkan akses admin' : 'Aktifkan hak suara'} dengan menautkan akun kampus dan ID voting.</p>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50 p-4">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">Akun Kampus</p>
+                          <p className="mt-1 truncate text-[13px] font-semibold text-slate-900" title={authSession?.user?.email}>{authSession?.user?.email}</p>
+                        </div>
+
+                        <div className="mt-8 space-y-4">
+                          {isReturningVoter ? [
+                            'ID voting Anda sudah terdaftar di sistem.',
+                            'Cukup sambungkan dompet dan masuk dengan akun kampus.',
+                            'Tidak perlu membuat ID voting lagi.',
+                          ].map((item) => (
+                            <div key={item} className="flex items-center gap-3 text-[13px] text-slate-600">
+                              <span className="h-3 w-3 rounded-full border-2 border-blue-500 bg-blue-50" />
+                              {item}
+                            </div>
+                          )) : [
+                            'ID voting dibuat otomatis — tidak perlu install aplikasi tambahan.',
+                            'Tidak ada biaya apapun, gratis seluruhnya.',
+                            activationContext === 'admin' ? 'Anda perlu email kampus dan ID voting yang cocok.' : 'Pilihan Anda tetap terjaga sampai fase reveal.',
+                          ].map((item) => (
+                            <div key={item} className="flex items-center gap-3 text-[13px] text-slate-600">
+                              <span className="h-3 w-3 rounded-full border-2 border-blue-500 bg-blue-50" />
+                              {item}
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                          <div className="flex gap-3">
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                            <div>
+                              <p className="text-[12px] font-semibold">Jika muncul dialog konfirmasi</p>
+                              <p className="mt-1 text-[12px] leading-5 text-amber-800">
+                                Itu adalah permintaan izin untuk membuat ID voting. Klik tombol konfirmasi pada dialog tersebut untuk melanjutkan. Jika tidak sengaja tertutup, klik tombol sambungkan lagi.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
 
@@ -866,7 +841,8 @@ function ConnectWalletContent() {
                       <ArrowLeft className="h-4 w-4" />
                     </button>
 
-                    {!isConnected && (!isAdminActivationFlow || authSession) && (
+                    {/* ponytail: SSO-first — tampilkan tombol connect wallet hanya setelah SSO login */}
+                    {!isConnected && authSession && !isWalletBound && (
                       <button
                         type="button"
                         onClick={handleConnectWallet}
@@ -879,7 +855,7 @@ function ConnectWalletContent() {
                       </button>
                     )}
 
-                    {((isConnected && !authSession && !authSessionQuery.isLoading) || (isAdminActivationFlow && !authSession && !authSessionQuery.isLoading)) && (
+                    {!isConnected && !authSession && !authSessionQuery.isLoading && (
                       <p className="text-right text-[12px] text-slate-400">Pilih salah satu metode masuk di atas.</p>
                     )}
 

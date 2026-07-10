@@ -201,9 +201,14 @@ contract VoteChainMVPTest {
         require(space.revealStartsAt() == revealStartsAt, "reveal start mismatch");
         require(space.revealEndsAt() == revealEndsAt, "reveal end mismatch");
 
-        _warp(commitStartsAt + 1);
         bytes32 salt = bytes32(uint256(123));
         bytes32 commitment = _commitment(space, address(voter1), 1, salt);
+
+        try voter1.commit(space, commitment) {
+            revert("commit before schedule should fail");
+        } catch {}
+
+        _warp(commitStartsAt + 1);
         voter1.commit(space, commitment);
         require(space.hasCommitted(address(voter1)), "voter1 should commit without manual sync");
     }

@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeft, CalendarDays, CirclePlus, Download, FileText, Link2, ListChecks, Loader2, Pencil, RefreshCw, Share2, ShieldCheck, Trash2, Upload, Users, Clock, ChevronRight, UserRound } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CirclePlus, Download, ExternalLink, FileText, Link2, ListChecks, Loader2, Pencil, RefreshCw, Share2, ShieldCheck, Trash2, Upload, Users, Clock, ChevronRight, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -213,7 +213,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const canAddCandidate = false
   // ponytail: whitelist is managed at deploy-time only; no post-deploy editing
   const canManageWhitelist = false
-  const phaseLabels = ['Menunggu Dibuka', 'Pencoblosan', 'Konfirmasi Suara', 'Selesai'] as const
+  const phaseLabels = ['Pencoblosan', 'Konfirmasi Suara', 'Selesai'] as const
   const onChainPhaseLabel = onChainPhaseNumber !== null && onChainPhaseNumber >= 0 && onChainPhaseNumber < phaseLabels.length
     ? phaseLabels[onChainPhaseNumber]
     : 'Belum terbaca'
@@ -1145,6 +1145,54 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             <div className="rounded-xl bg-slate-50 px-4 py-3 text-[13px] leading-6 text-slate-600">
               Tidak ada tombol transisi manual. Semua fase berganti otomatis berdasarkan waktu yang telah ditentukan saat proposal disetujui.
             </div>
+            {isAddressValid && (
+              <div className="flex flex-wrap gap-3">
+                <a
+                  href={`https://sepolia.basescan.org/address/${deployedAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Buka di Basescan
+                </a>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!deployedAddress) return
+                    showToast({ tone: 'info', title: 'Memverifikasi kontrak', description: 'Mengirim permintaan verifikasi ke Basescan...' })
+                    try {
+                      const res = await fetch(`/api/verify-contract?address=${deployedAddress}`)
+                      const data = await res.json()
+                      if (data.verified) {
+                        showToast({ tone: 'success', title: 'Kontrak Terverifikasi', description: 'Kontrak sudah terverifikasi di Basescan. Read/Write Contract tersedia.' })
+                      } else {
+                        // Try to verify
+                        const verifyRes = await fetch('/api/verify-contract', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ contractAddress: deployedAddress, contractType: 'election-space' }),
+                        })
+                        const verifyData = await verifyRes.json()
+                        if (verifyData.verified) {
+                          showToast({ tone: 'success', title: 'Kontrak Terverifikasi', description: 'Kontrak berhasil diverifikasi di Basescan.' })
+                        } else if (verifyData.pending) {
+                          showToast({ tone: 'info', title: 'Verifikasi Diproses', description: 'Kontrak sedang dalam antrian verifikasi Basescan. Coba lagi dalam beberapa menit.' })
+                        } else {
+                          showToast({ tone: 'error', title: 'Verifikasi Gagal', description: verifyData.message || 'Gagal memverifikasi kontrak. Coba lagi nanti.' })
+                        }
+                      }
+                    } catch {
+                      showToast({ tone: 'error', title: 'Gagal Memeriksa', description: 'Tidak dapat menghubungi server verifikasi.' })
+                    }
+                  }}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-4 text-[13px] font-semibold text-white hover:bg-[#1E293B]"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Verifikasi di Basescan
+                </button>
+              </div>
+            )}
           </div>
         </article>
       </div>
@@ -1451,10 +1499,17 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           {/* Fase & Kontrak — jadwal DB adalah acuan UI, kontrak sebagai guard transaksi */}
           <div className="mt-3 flex flex-wrap items-center gap-3 text-[13px]">
             {isAddressValid && (
-              <span className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-slate-600">
+              <a
+                href={`https://sepolia.basescan.org/address/${deployedAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 font-mono text-slate-600 transition-colors hover:bg-slate-200 hover:text-slate-900"
+                title="Lihat smart contract di Basescan"
+              >
                 <Link2 className="h-3.5 w-3.5" />
                 {deployedAddress.slice(0, 10)}…{deployedAddress.slice(-8)}
-              </span>
+                <ExternalLink className="h-3 w-3" />
+              </a>
             )}
             <span className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3 py-1.5 font-medium text-indigo-700">
               <CalendarDays className="h-3.5 w-3.5" />

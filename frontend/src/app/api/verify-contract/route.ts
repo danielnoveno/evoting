@@ -1,8 +1,7 @@
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { NextResponse, type NextRequest } from 'next/server'
 import { encodeAbiParameters, type Address } from 'viem'
 import { createClient } from '@supabase/supabase-js'
+import { NextResponse, type NextRequest } from 'next/server'
+import { ELECTION_SPACE_SOURCE, FLATTENED_REGISTRY_SOURCE } from '@/lib/contract-source'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -68,22 +67,7 @@ function asBigInt(value: unknown): bigint {
   return BigInt(0)
 }
 
-async function readContractSource(name: 'VoteChainRegistry' | 'ElectionSpace') {
-  return readFile(path.join(process.cwd(), '..', 'contracts', 'src', `${name}.sol`), 'utf8')
-}
-
-async function getFlattenedRegistrySource() {
-  const electionSpace = await readContractSource('ElectionSpace')
-  const registry = await readContractSource('VoteChainRegistry')
-  return [
-    electionSpace,
-    registry
-      .replace('// SPDX-License-Identifier: MIT', '')
-      .replace('pragma solidity ^0.8.24;', '')
-      .replace('import { ElectionSpace } from "./ElectionSpace.sol";', ''),
-  ].join('\n')
-}
-
+// ponytail: source code di-embed dari build time agar production-safe (tidak depend on process.cwd)
 async function getContractConfig(body: VerifyBody): Promise<ContractConfig> {
   const type = body.contractType === 'registry' ? 'registry' : 'election-space'
 
@@ -93,7 +77,7 @@ async function getContractConfig(body: VerifyBody): Promise<ContractConfig> {
 
     return {
       contractName: 'VoteChainRegistry',
-      sourceCode: await getFlattenedRegistrySource(),
+      sourceCode: FLATTENED_REGISTRY_SOURCE,
       constructorArguements: encodeAbiParameters([{ type: 'address' }], [initialSuperAdmin]).slice(2),
     }
   }
@@ -104,7 +88,7 @@ async function getContractConfig(body: VerifyBody): Promise<ContractConfig> {
 
   return {
     contractName: 'ElectionSpace',
-    sourceCode: await readContractSource('ElectionSpace'),
+    sourceCode: ELECTION_SPACE_SOURCE,
     constructorArguements: encodeAbiParameters(
       [
         { type: 'address' },
@@ -196,19 +180,48 @@ export async function POST(request: NextRequest) {
     }
 
     const contractType = body.contractType === 'registry' ? 'registry' : 'election-space'
+    console.log(`[verify-contract] Memulai verifikasi ${contractType} di ${body.contractAddress}`)
+    
     const result = await verifyContract(body.contractAddress, await getContractConfig({ ...body, contractType }))
+    console.log(`[verify-contract] Hasil verifikasi:`, result)
 
     if (result.success && result.guid) {
       await new Promise((resolve) => setTimeout(resolve, 5000))
       const status = await checkVerificationStatus(result.guid)
+      console.log(`[verify-contract] Status verifikasi:`, status)
       return NextResponse.json({ success: true, guid: result.guid, contractType, ...status })
     }
 
     return NextResponse.json({ ...result, contractType })
   } catch (error) {
+    console.error('[verify-contract] Error:', error)
     return NextResponse.json(
       { success: false, message: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 },
     )
+  }
+}
+
+/** GET: check if a contract is verified on Basescan */
+export async function GET(request: NextRequest) {
+  const contractAddress = request.nextUrl.searchParams.get('address')
+  if (!contractAddress || !isAddress(contractAddress)) {
+    return NextResponse.json({ verified: false, message: 'address wajib address valid' }, { status: 400 })
+  }
+
+  const apiKey = process.env.BASESCAN_API_KEY
+  if (!apiKey) {
+    return NextResponse.json({ verified: false, message: 'BASESCAN_API_KEY tidak dikonfigurasi' })
+  }
+
+  try {
+    const response = await fetch(
+      `${BASESCAN_API_URL}?apikey=${apiKey}&module=contract&action=getabi&address=${contractAddress}`
+    )
+    const data = (await response.json()) as BasescanResponse
+    const verified = data.status === '1' && data.message === 'OK'
+    return NextResponse.json({ verified, message: verified ? 'Terverifikasi' : 'Belum terverifikasi' })
+  } catch (error) {
+    return NextResponse.json({ verified: false, message: 'Gagal memeriksa status verifikasi' })
   }
 }

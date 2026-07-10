@@ -119,17 +119,15 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
   const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
     ? Number(currentPhase)
     : null
-  const isRevealPhaseOnChain = currentPhaseNumber === 2
+  const isRevealPhaseOnChain = currentPhaseNumber === 1
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? hasRevealedError ?? null
   const onChainPhaseLabel = currentPhaseNumber === 0
-    ? 'Registrasi'
+    ? 'Memilih'
     : currentPhaseNumber === 1
-      ? 'Memilih'
-      : currentPhaseNumber === 2
-        ? 'Konfirmasi suara'
-        : currentPhaseNumber === 3
-          ? 'Selesai'
-          : 'Belum terbaca'
+      ? 'Konfirmasi suara'
+    : currentPhaseNumber === 2
+        ? 'Selesai'
+        : 'Belum terbaca'
   const isOnChainStatusReady = Boolean(contractAddress)
     && Boolean(profileWallet)
     && currentPhaseNumber !== null

@@ -289,6 +289,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
             try {
               const supabase = getSupabaseBrowserClient()
               const accessToken = (await supabase?.auth.getSession())?.data.session?.access_token
+              console.log(`[deploy] Memulai auto-verify untuk ${deployment.spaceAddress}`)
               const verifyResponse = await fetch('/api/verify-contract', {
                 method: 'POST',
                 headers: {
@@ -313,6 +314,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                 }),
               })
               const verifyResult = await verifyResponse.json()
+              console.log('[deploy] Hasil auto-verify:', verifyResult)
               if (verifyResult.verified) {
                 verifyMessage = ' Contract sudah terverifikasi di Basescan.'
               } else if (verifyResult.pending) {
@@ -320,8 +322,9 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
               } else {
                 verifyMessage = ''
               }
-            } catch {
-              // Auto-verify gagal, tidak kritis
+            } catch (verifyError) {
+              // Auto-verify gagal, tidak kritis — tapi log untuk debugging
+              console.error('[deploy] Auto-verify gagal:', verifyError)
               verifyMessage = ''
             }
 

@@ -90,19 +90,17 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const effectivePhase: 'commit' | 'reveal' | 'ended' | 'suspended' | 'registration' = dbPhase === 'suspended' ? 'suspended' : dbPhase
   const effectivePhaseNumber = effectivePhase === 'commit' ? 1 : effectivePhase === 'reveal' ? 2 : effectivePhase === 'ended' ? 3 : 0
   const onChainPhaseLabel = currentPhaseNumber === 0
-    ? 'Registrasi'
+    ? 'Pencoblosan'
     : currentPhaseNumber === 1
-      ? 'Pencoblosan'
-      : currentPhaseNumber === 2
-        ? 'Konfirmasi Suara'
-        : currentPhaseNumber === 3
-          ? 'Selesai'
-          : 'belum terbaca'
+      ? 'Konfirmasi Suara'
+    : currentPhaseNumber === 2
+        ? 'Selesai'
+        : 'belum terbaca'
   const onChainCommitBlockedReason = !profileWallet
     ? ''
     : currentPhaseNumber === null
       ? 'Status fase blockchain belum terbaca. Coba muat ulang halaman sebelum mencoblos.'
-    : currentPhaseNumber !== 1
+    : currentPhaseNumber !== 0
       ? `Jadwal aplikasi sudah masuk masa pencoblosan, tetapi fase blockchain masih ${onChainPhaseLabel}. Admin perlu sinkronkan jadwal ke blockchain terlebih dahulu.`
     : isWhitelistedOnChain === false
       ? 'Wallet ini belum masuk whitelist on-chain. Admin perlu sinkronkan daftar pemilih ke blockchain terlebih dahulu.'
