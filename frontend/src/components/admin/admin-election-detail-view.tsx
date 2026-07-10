@@ -1098,7 +1098,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                   ? 'Pemilih sudah bisa mencoblos. Setelah waktu konfirmasi suara tiba, sistem otomatis masuk tahap pengesahan.'
                   : dbPhaseInfo.phase === 'reveal'
                     ? 'Masa mencoblos sudah berakhir. Pemilih sedang mengonfirmasi pilihan sebelum dihitung.'
-                    : 'Pemilihan selesai. Hasil dapat diaudit melalui bukti transaksi on-chain.'}
+                    : 'Pemilihan selesai. Hasil hanya dapat diaudit jika bukti transaksi commit/reveal tersedia.'}
             </p>
           </div>
         </article>

@@ -122,7 +122,7 @@ export function getRecentLogs(store: VoterStore): VoterLogItem[] {
     .flatMap((election) => {
       const items: VoterLogItem[] = []
       if (election.commitProof) {
-        items.push({ id: `${election.id}-commit`, title: `${election.title} · Pilihan tersimpan`, detail: `Kode bukti: ${formatWallet(election.commitProof.txHash)} · Blok #${formatNumber(election.commitProof.blockNumber)}`, timeLabel: formatDateTime(election.commitProof.createdAt), tone: 'success' })
+        items.push({ id: `${election.id}-commit`, title: `${election.title} · Komitmen suara tersimpan`, detail: `Bukti commit: ${formatWallet(election.commitProof.txHash)} · Blok #${formatNumber(election.commitProof.blockNumber)}`, timeLabel: formatDateTime(election.commitProof.createdAt), tone: 'success' })
       }
       if (election.phase === 'reveal' && !election.revealProof) {
         items.push({ id: `${election.id}-phase`, title: `${election.title} · Penghitungan dibuka`, detail: 'Sahkan suara dengan dompet aktivasi yang sama.', timeLabel: election.lastTransactionLabel, tone: 'info' })

@@ -149,7 +149,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       blockNumber: Number(receipt.blockNumber),
       gasUsed: Number(receipt.gasUsed),
       createdAt: new Date().toISOString(),
-      statusLabel: 'Pilihan tersimpan',
+      statusLabel: 'Bukti commit tersimpan',
     }
 
     actions.commitVote(params.id, pendingCommit.record.commitment, proof)
@@ -353,7 +353,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     blockNumber: Number(receipt.blockNumber),
     gasUsed: Number(receipt.gasUsed),
     createdAt: new Date().toISOString(),
-    statusLabel: 'Pilihan tersimpan',
+    statusLabel: 'Bukti commit tersimpan',
   } : null)
 
   if (commitProof || hasCommittedOnChain) {
@@ -380,7 +380,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
           <div className="mx-auto mt-8 grid max-w-3xl gap-4 text-left md:grid-cols-2">
             <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat yang dicoblos</p>
-              <h2 className="mt-3 text-[20px] font-semibold text-slate-900">{committedCandidate?.name ?? 'Pilihan tersimpan'}</h2>
+              <h2 className="mt-3 text-[20px] font-semibold text-slate-900">{committedCandidate?.name ?? 'Komitmen tersimpan'}</h2>
               <p className="mt-2 text-[13px] leading-6 text-slate-600">Detail pilihan akan dibuka saat kamu mengesahkan suara pada tahap penghitungan.</p>
             </article>
             <article className="rounded-2xl border border-blue-100 bg-blue-50 p-5">

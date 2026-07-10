@@ -17,6 +17,7 @@ import { useAuthSession } from '@/hooks/use-auth-session'
 import { SuperadminElectionState, superadminElectionFilters } from '@/lib/superadmin-data'
 import { useSuperadminElectionsStore } from '@/lib/superadmin-store'
 import type { SuperadminElectionRecord } from '@/lib/superadmin-data'
+import { resolveSchedulePhase } from '@/lib/election-phase'
 import {
   DataTable,
   DataTableBody,
@@ -67,7 +68,14 @@ export default function SuperadminElectionManagementPage() {
       .filter(p => p.status === 'approved' || p.status === 'deployed' || p.status === 'suspended')
       .map(p => {
         const fromStore = storeElections.find(item => item.id === p.id)
-        const status = (fromStore?.status ?? (p.status === 'suspended' ? 'Ditangguhkan' : p.status === 'deployed' ? 'Aktif' : 'Selesai')) as SuperadminElectionState
+        const phaseInfo = resolveSchedulePhase(p)
+        const status = (p.status === 'suspended' || fromStore?.status === 'Ditangguhkan'
+          ? 'Ditangguhkan'
+          : phaseInfo.phase === 'ended'
+            ? 'Selesai'
+            : p.status === 'deployed'
+              ? 'Aktif'
+              : 'Selesai') as SuperadminElectionState
         
         return {
           id: p.id,
@@ -75,7 +83,7 @@ export default function SuperadminElectionManagementPage() {
           code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
           status,
           note: status === 'Ditangguhkan' ? 'Halted' : (p.status === 'deployed' ? 'Online' : 'Final'),
-          phaseLabel: p.status === 'deployed' ? 'Fase Berjalan' : 'Pemilihan Selesai',
+          phaseLabel: phaseInfo.phase === 'ended' ? 'Pemilihan Selesai' : p.status === 'deployed' ? 'Fase Berjalan' : 'Pemilihan Selesai',
           totalVoters: fromStore?.totalVoters ?? '0',
           participation: fromStore?.participation ?? '0%'
         }

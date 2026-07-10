@@ -134,7 +134,7 @@ export function SuperadminOnboardingTour({ forceStart = false, onComplete }: Onb
     steps.push(
       {
         target: 'h1',
-        content: 'Log Audit Transparansi. Setiap tindakan penting di platform dicatat secara permanen untuk kebutuhan audit.',
+        content: 'Log Audit Transparansi. Aktivitas penting dicatat pada log sistem untuk kebutuhan audit aplikasi.',
         placement: 'bottom',
         skipBeacon: true,
       }

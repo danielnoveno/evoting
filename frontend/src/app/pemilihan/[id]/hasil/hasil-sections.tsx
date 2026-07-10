@@ -144,9 +144,9 @@ export function HasilSections({ id }: { id: string }) {
                   )}
                 </div>
                 <div>
-                  <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] uppercase tracking-[0.06em] text-slate-500">Hasil akhir</span>
+                  <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] uppercase tracking-[0.06em] text-slate-500">{hasIndexerResult && totalRevealed > 0 ? 'Hasil akhir' : 'Hasil belum tersedia'}</span>
                   <h2 className="mt-5 text-[28px] font-semibold leading-tight text-slate-900 md:text-[36px]">
-                    {winner && winner.voteCount > 0 ? winner.name : 'Belum ada data hasil dari indexer'}
+                    {winner && winner.voteCount > 0 ? winner.name : 'Belum ada data reveal terindeks'}
                   </h2>
                   <p className="mt-3 text-[18px] text-slate-800">
                     {hasIndexerResult ? 'Perolehan suara dihitung dari event Reveal yang berhasil terindeks.' : 'Kandidat dan transaksi diambil dari tabel Supabase. Perolehan suara tidak akan diisi dengan angka palsu.'}
@@ -174,7 +174,7 @@ export function HasilSections({ id }: { id: string }) {
           <div className="space-y-6">
             <ScrollReveal variant="fade-left" delay={250} duration={700}>
               <article className="public-flat-card p-6">
-                <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Total Suara Terverifikasi</p>
+                <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Suara Reveal Terindeks</p>
                 <p className="mt-3 text-[48px] font-semibold leading-none tracking-[-0.04em] text-slate-900">{hasIndexerResult ? totalRevealed : 0}</p>
                 <div className="mt-6 h-2 rounded-full bg-slate-200">
                   <div className={`h-2 rounded-full bg-black ${progressWidthClass(participation)}`} />
@@ -225,7 +225,7 @@ export function HasilSections({ id }: { id: string }) {
           <section className="mt-10 public-flat-card p-6 md:p-8">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-[32px] font-semibold text-slate-900">Jejak Audit Blockchain</h2>
+                <h2 className="text-[32px] font-semibold text-slate-900">Bukti Transaksi</h2>
                 <p className="mt-3 text-[16px] leading-8 text-slate-800">Transaksi ditampilkan dari indexer Ponder jika tersedia; jika endpoint belum aktif, sistem memakai tabel audit Supabase sebagai cadangan.</p>
               </div>
               <a href="https://sepolia.basescan.org" target="_blank" rel="noreferrer" className="hidden items-center gap-2 text-[14px] font-medium text-slate-900 md:inline-flex">
@@ -260,7 +260,7 @@ export function HasilSections({ id }: { id: string }) {
               ))}
               {!auditQuery.isLoading && logs.length === 0 ? (
                 <article className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-[14px] leading-7 text-slate-500">
-                  Belum ada transaksi audit untuk pemilihan ini. Data akan tampil setelah transaksi nyata tercatat dari frontend/on-chain.
+                  Belum ada transaksi commit/reveal untuk pemilihan ini. Deployment mungkin tersedia di audit sistem, tetapi hasil belum dapat diverifikasi tanpa bukti reveal.
                 </article>
               ) : null}
             </StaggerContainer>

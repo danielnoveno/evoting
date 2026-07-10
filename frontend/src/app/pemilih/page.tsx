@@ -86,11 +86,14 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
   const isUpcoming = viewState.nextAction === 'wait'
   const isSuspended = election.phase === 'suspended'
   const alreadyVoted = viewState.hasCommitted
+  const hasRevealProof = Boolean(election.revealProof)
   const isRevealMissed = alreadyVoted && !election.revealProof && (election.phase === 'ended')
   const label = isRevealMissed
     ? 'Komitmen Tercatat'
-    : alreadyVoted
-      ? 'Suara Sudah Tercatatype'
+    : hasRevealProof
+      ? 'Suara Sudah Dikonfirmasi'
+      : alreadyVoted
+        ? 'Komitmen Tercatat'
       : election.phase === 'suspended'
         ? 'Pemilihan Ditangguhkan'
         : isUpcoming
@@ -112,7 +115,7 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
           : election.phase === 'reveal'
             ? 'Batas penghitungan suara:'
             : election.phase === 'ended'
-              ? 'Pemilihan telah selesai:'
+              ? 'Status pemilihan:'
               : 'Sisa waktu memilih:'
   const dateLabel = isUpcoming ? 'Waktu Mulai' : election.phase === 'ended' ? 'Selesai Pada' : 'Batas Waktu'
 
@@ -133,7 +136,7 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
         <div className="min-w-0 flex-1">
           <p className="text-[16px] font-semibold uppercase tracking-[0.04em] text-white md:text-[18px]">{label}</p>
           <h2 className="mt-3 text-[44px] font-semibold leading-none tracking-[-0.05em] text-white md:text-[60px]">{election.title}</h2>
-          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-slate-200">{isRevealMissed ? 'Komitmen suara kamu sudah tercatat di blockchain, tetapi tahap konfirmasi (reveal) belum dilakukan sebelum jadwal berakhir. Akibatnya, suara belum dihitung.' : alreadyVoted ? 'Pilihanmu sudah dikunci di blockchain. Menunggu waktu penghitungan dibuka oleh sistem.' : election.summary}</p>
+          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-slate-200">{isRevealMissed ? 'Komitmen suara kamu sudah tercatat di blockchain, tetapi tahap konfirmasi (reveal) belum dilakukan sebelum jadwal berakhir. Akibatnya, suara belum dihitung.' : hasRevealProof ? 'Suaramu sudah dikonfirmasi dan dapat dihitung sebagai suara sah.' : alreadyVoted ? 'Komitmen suara sudah tersimpan. Suara baru dihitung setelah kamu melakukan konfirmasi pada fase reveal.' : election.summary}</p>
 
           <div className="mt-6 grid gap-2 text-[14px] leading-7 text-slate-100">
             <p>
@@ -147,19 +150,25 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
 
         <div className="w-full lg:max-w-[560px]">
           <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-slate-100">{countdownLabel}</p>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <CountdownTile label="Hari" value={countdown.days} />
-            <CountdownTile label="Jam" value={countdown.hours} />
-            <CountdownTile label="Menit" value={countdown.minutes} />
-            <CountdownTile label="Detik" value={countdown.seconds} />
-          </div>
+          {election.phase === 'ended' ? (
+            <div className="mt-4 rounded-xl border border-white/15 bg-white/10 px-4 py-4 text-[14px] leading-6 text-slate-100">
+              Batas waktu sudah berakhir. Komitmen yang belum dikonfirmasi pada fase reveal tidak dihitung sebagai suara sah.
+            </div>
+          ) : (
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <CountdownTile label="Hari" value={countdown.days} />
+              <CountdownTile label="Jam" value={countdown.hours} />
+              <CountdownTile label="Menit" value={countdown.minutes} />
+              <CountdownTile label="Detik" value={countdown.seconds} />
+            </div>
+          )}
           {isRevealMissed ? (
             <div className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-amber-300/40 bg-amber-500/10 px-5 text-[13px] font-semibold text-amber-200">
               ⚠ Komitmen Tercatat, Reveal Belum Dilakukan
             </div>
           ) : alreadyVoted ? (
             <div className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-emerald-300/40 bg-emerald-500/10 px-5 text-[13px] font-semibold text-emerald-200">
-              ✓ Suara Sudah Dicoblos
+              {hasRevealProof ? '✓ Suara Sudah Dikonfirmasi' : '✓ Komitmen Suara Tersimpan'}
             </div>
           ) : isSuspended ? (
             <div className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-red-300/40 bg-red-500/10 px-5 text-[13px] font-semibold text-red-200">
@@ -280,7 +289,7 @@ function ScheduleStateBanner({ hasUpcoming, onlyPast, upcomingCount }: { hasUpco
           </div>
         </div>
         <Link href="/pemilih/bukti-saya" className="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 hover:bg-slate-50">
-          Lihat Bukti Saya
+          Lihat Bukti Transaksi
         </Link>
       </div>
     </section>
@@ -349,9 +358,9 @@ export default function VoterDashboardPage() {
   const otherElections = elections.filter(e => e.id !== featuredElection.id)
   const logs = getRecentLogs(store)
 
-  const participated = store.elections.filter((election) => election.commitProof || election.revealProof).length
+  const participated = store.elections.filter((election) => election.revealProof).length
   const pendingReveal = store.elections.filter((election) => getElectionViewState(election).canReveal).length
-  const completed = store.elections.filter((election) => election.phase === 'ended').length
+  const revealProofs = store.elections.filter((election) => election.revealProof).length
   const participationRate = Math.round((participated / store.elections.length) * 100)
 
   return (
@@ -360,7 +369,7 @@ export default function VoterDashboardPage() {
         <section>
           <h1 id="tour-voter-home-title" className="text-[22px] font-semibold text-slate-900 md:text-[24px]">Ruang Voting Saya</h1>
           <p className="mt-2 max-w-3xl text-[14px] leading-6 text-slate-600">
-            Pantau ruang voting yang sedang aktif, pilihan yang sudah disimpan, dan langkah berikutnya sampai suaramu selesai dihitung.
+            Pantau status pemilihan, bukti commit, dan apakah suaramu berhasil dihitung.
           </p>
         </section>
       </ScrollReveal>
@@ -385,7 +394,7 @@ export default function VoterDashboardPage() {
               <p className="mt-1 text-[12px] leading-5 text-slate-500">Pantau komitmen suara, pembukaan fase konfirmasi, dan bukti transaksi yang sudah tersimpan.</p>
             </div>
             <Link href="/pemilih/bukti-saya" className="text-[12px] font-semibold text-slate-700 hover:text-slate-900 sm:text-right">
-              Lihat Bukti Digital
+              Lihat Bukti Transaksi
             </Link>
           </div>
 
@@ -431,12 +440,12 @@ export default function VoterDashboardPage() {
 
       <StaggerContainer stagger={120} variant="fade-up" className="mt-10 grid gap-6 xl:grid-cols-2">
         <article id="tour-voter-participation-stats" className="rounded-xl border border-slate-100 bg-slate-50 p-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">Partisipasi Anda</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-700">Suara Sah Anda</p>
 
           <div className="mt-5 flex items-end gap-3">
             <p className="text-[40px] font-semibold leading-none tracking-[-0.04em] text-slate-900 sm:text-[48px]">{participationRate}%</p>
           </div>
-          <p className="mt-3 max-w-[24ch] text-[14px] leading-6 text-slate-600">Dari total ruang voting yang Anda ikuti tahun ini.</p>
+          <p className="mt-3 max-w-[32ch] text-[14px] leading-6 text-slate-600">Dihitung dari pemilihan yang sudah memiliki bukti reveal. Commit tanpa reveal belum dihitung sebagai suara sah.</p>
           <div className="mt-8 flex items-center gap-3">
             <div className="flex -space-x-2">
               {store.elections.slice(0, 3).map((election, index) => (
@@ -465,7 +474,7 @@ export default function VoterDashboardPage() {
          {[
            ['Space diikuti', store.elections.length],
            ['Menunggu konfirmasi', pendingReveal],
-           ['Bukti final', completed],
+            ['Bukti reveal', revealProofs],
          ].map(([label, value]) => (
            <article key={label} className="rounded-lg border border-slate-100 bg-slate-50 p-4">
              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600">{label}</p>

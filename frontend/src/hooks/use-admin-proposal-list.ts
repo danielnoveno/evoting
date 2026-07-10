@@ -9,6 +9,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { RepositoryError } from '@/lib/repositories/errors'
 import type { Database } from '@/lib/supabase/database.types'
 import { getInitials } from '@/lib/repositories/helpers'
+import { resolveSchedulePhase } from '@/lib/election-phase'
 
 type ProposalDraft = NonNullable<Awaited<ReturnType<typeof listProposalDrafts>>>[number]
 type WhitelistRow = Pick<Database['app']['Tables']['proposal_whitelist_entries']['Row'], 'id' | 'proposal_draft_id' | 'wallet_address' | 'voter_name'>
@@ -135,18 +136,20 @@ export function useAdminElectionList() {
         }))
 
         const isSuspended = p.status === 'suspended'
+        const phaseInfo = resolveSchedulePhase(p)
+        const isEnded = phaseInfo.phase === 'ended'
 
         return {
           id: p.id,
           title: p.title,
           code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
-          status: isSuspended ? 'ditangguhkan' : 'aktif',
-          badge: isSuspended ? 'Ditangguhkan' : 'Active',
+          status: isSuspended ? 'ditangguhkan' : isEnded ? 'selesai' : 'aktif',
+          badge: isSuspended ? 'Ditangguhkan' : isEnded ? 'Selesai' : 'Aktif',
           meta: isSuspended
             ? 'Pemilihan ditangguhkan oleh superadmin. Hubungi superadmin untuk informasi lebih lanjut.'
             : (p.description ?? 'Ruang pemilihan blockchain.'),
           iconTone: isSuspended ? 'orange' : 'emerald',
-          actionLabel: isSuspended ? 'Ditangguhkan' : 'Monitoring',
+          actionLabel: isSuspended ? 'Ditangguhkan' : isEnded ? 'Lihat Ringkasan' : 'Monitoring',
           secondaryActionLabel: whitelistRows.length > 0 ? `${whitelistRows.length} pemilih` : 'Belum ada pemilih',
           actionTone: isSuspended ? 'slate' : 'blue',
           periodLabel: 'Mei - Juni 2026',

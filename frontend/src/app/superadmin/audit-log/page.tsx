@@ -143,7 +143,7 @@ export default function SuperadminAuditLogPage() {
         <div className="w-full max-w-[720px]">
           <h1 className="text-[36px] font-semibold tracking-[-0.03em] text-slate-900 md:text-[54px]">Audit Log Transparansi</h1>
           <p className="mt-4 max-w-[760px] text-[16px] leading-8 text-slate-800 md:text-[18px] md:leading-9">
-            Setiap tindakan penting di platform dicatat secara permanen untuk kebutuhan audit. Data diambil langsung dari tx_audit_log dan ops_audit_log.
+            Aktivitas penting dicatat pada log sistem untuk kebutuhan audit aplikasi. Untuk aktivitas on-chain, sistem menampilkan hash transaksi dan tautan Basescan jika tersedia.
           </p>
         </div>
 
@@ -199,10 +199,10 @@ export default function SuperadminAuditLogPage() {
             <div className="flex flex-wrap items-center gap-2">
               {[
                 ['semua', 'Semua'],
-                ['verified', 'Verified'],
-                ['syncing', 'Syncing'],
+                ['verified', 'Terverifikasi'],
+                ['syncing', 'Sinkronisasi'],
                 ['proposal', 'Proposal'],
-                ['vote', 'Vote'],
+                ['vote', 'Suara'],
                 ['validator', 'Validator'],
               ].map(([key, label]) => (
                 <button

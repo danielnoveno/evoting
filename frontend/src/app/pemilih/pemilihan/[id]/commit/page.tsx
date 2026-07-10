@@ -95,8 +95,8 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   useEffect(() => {
     if (isConfirmed && hash && receipt) {
       showToast({
-        title: 'Pilihan Berhasil Disimpan',
-        description: 'Suaramu sudah dikunci dengan aman.',
+        title: 'Komitmen Suara Tersimpan',
+        description: 'Suara baru dihitung setelah kamu melakukan konfirmasi pada fase reveal.',
         tone: 'success',
       })
       actions.commitVote(params.id, savedCommitment?.commitment, {
@@ -104,7 +104,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         blockNumber: Number(receipt.blockNumber),
         gasUsed: Number(receipt.gasUsed),
         createdAt: new Date().toISOString(),
-        statusLabel: 'Pilihan tersimpan',
+        statusLabel: 'Bukti commit tersimpan',
       })
     }
   }, [isConfirmed, hash, receipt, params.id, actions, showToast, savedCommitment?.commitment])
@@ -274,9 +274,9 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
             </div>
           </div>
 
-          <h1 className="mt-5 text-center text-[24px] font-semibold text-slate-900">Pilihan berhasil disimpan aman</h1>
+          <h1 className="mt-5 text-center text-[24px] font-semibold text-slate-900">Komitmen suara berhasil disimpan</h1>
           <p className="mx-auto mt-3 max-w-2xl text-center text-[14px] leading-7 text-slate-700">
-            Pilihanmu sudah dikunci sebagai bukti suara. Saat tahap penghitungan dibuka, sahkan suara memakai dompet aktivasi yang sama.
+            Hash komitmen sudah tercatat. Suara baru dihitung setelah kamu mengonfirmasi suara pada fase reveal memakai dompet aktivasi yang sama.
           </p>
 
           <div className="mt-8 grid gap-4 xl:grid-cols-2">
@@ -287,16 +287,16 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
                   {selectedCandidate ? selectedCandidate.name.slice(0, 2).toUpperCase() : 'VC'}
                 </div>
                 <div>
-                  <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate?.name ?? 'Pilihan tersimpan terdeteksi'}</h2>
+                  <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate?.name ?? 'Komitmen tersimpan terdeteksi'}</h2>
                   <RichTextRenderer value={selectedCandidate?.vision} emptyFallback="Detail kandidat asli tetap tersimpan untuk tahap reveal." className="mt-1 text-[14px] text-slate-600" />
                 </div>
               </div>
             </article>
 
             <article className="rounded-2xl bg-[#0F172A] p-5 text-white">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Kode bukti suara</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Kode bukti commit</p>
               <p className="mt-4 break-all font-mono text-[12px] leading-6 text-slate-200">{election.commitmentHash ?? savedCommitment?.commitment ?? 'Kode bukti pilihan terdeteksi.'}</p>
-              <p className="mt-4 text-[13px] leading-6 text-slate-300">Kode ini menjadi tanda bahwa pilihanmu sudah tersimpan dan tidak bisa diubah sembarangan.</p>
+              <p className="mt-4 text-[13px] leading-6 text-slate-300">Kode ini membuktikan komitmen suara tersimpan. Kode ini belum berarti suara sudah dihitung.</p>
             </article>
           </div>
 

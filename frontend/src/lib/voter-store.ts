@@ -419,7 +419,7 @@ export function useVoterStore() {
         ...election,
         revealProof: proof,
         revealedCount: Math.min(election.totalParticipants, election.revealedCount + 1),
-        lastTransactionLabel: 'Hasil akhir dapat dilihat dan diverifikasi di Basescan.',
+        lastTransactionLabel: 'Bukti reveal tersimpan. Hasil dapat diverifikasi jika data transaksi tersedia di Basescan.',
       })))
       return proof
     },

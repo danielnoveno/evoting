@@ -103,7 +103,7 @@ function downloadCertificate(election: VoterElection, wallet?: string) {
 
   ctx.fillStyle = '#059669'
   ctx.font = 'bold 16px sans-serif'
-  ctx.fillText(election.revealProof?.statusLabel ?? election.commitProof?.statusLabel ?? 'Pilihan tersimpan', leftX, y + 24)
+  ctx.fillText(election.revealProof?.statusLabel ?? election.commitProof?.statusLabel ?? 'Bukti commit tersimpan', leftX, y + 24)
 
   ctx.fillStyle = '#1e293b'
   ctx.font = '500 15px sans-serif'

@@ -116,6 +116,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
     : null
 
   const phaseInfo = proposal ? resolveSchedulePhase(proposal, nowMs) : { phase: 'commit' as const, label: 'Pencoblosan', next: 'Konfirmasi', deadlineIso: null, deadlineLabel: 'Pencoblosan dibuka dalam' }
+  const displayStatus: SuperadminElectionState = election.status === 'Ditangguhkan' ? 'Ditangguhkan' : phaseInfo.phase === 'ended' ? 'Selesai' : election.status
 
   const validWhitelistCount = whitelistEntries.filter((e) => e.validationStatus === 'valid' || e.validationStatus === 'synced' || e.syncStatus === 'synced').length
   const syncedWhitelistCount = whitelistEntries.filter((e) => e.syncStatus === 'synced' || e.validationStatus === 'synced').length
@@ -144,8 +145,8 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
         title={election.title}
         meta={(
           <>
-            <SuperadminStatusBadge status={election.status} />
-            <div className={`flex items-center gap-2 ${getElectionStatusColor(election.status)}`}>
+            <SuperadminStatusBadge status={displayStatus} />
+            <div className={`flex items-center gap-2 ${getElectionStatusColor(displayStatus)}`}>
               <CalendarDays className="h-4 w-4" />
               <span className="text-slate-800">{schedule?.endedAt ? `Berakhir ${new Date(schedule.endedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : 'Jadwal sedang disinkronkan'}</span>
             </div>
@@ -163,16 +164,23 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
               <Wallet className="h-4 w-4" />
               Lihat Smart Contract
             </a>
-            <button
-              type="button"
-              onClick={() => setSuspendDialogOpen(true)}
-              className="inline-flex h-14 items-center justify-center gap-3 rounded-2xl bg-red-500 px-6 text-[15px] font-medium text-white hover:bg-red-600"
-            >
-              <AlertTriangle className="h-4 w-4" />
-              Tangguhkan Pemilihan
-            </button>
+            {displayStatus === 'Selesai' ? (
+              <button type="button" disabled className="inline-flex h-14 cursor-not-allowed items-center justify-center gap-3 rounded-2xl bg-slate-100 px-6 text-[15px] font-medium text-slate-500">
+                <CheckCircle2 className="h-4 w-4" />
+                Pemilihan Selesai
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSuspendDialogOpen(true)}
+                className="inline-flex h-14 items-center justify-center gap-3 rounded-2xl bg-red-500 px-6 text-[15px] font-medium text-white hover:bg-red-600"
+              >
+                <AlertTriangle className="h-4 w-4" />
+                Tangguhkan Pemilihan
+              </button>
+            )}
             </div>
-            <p className="max-w-[320px] text-[14px] leading-6 text-slate-500 xl:text-right">Penangguhan akan menghentikan pemilihan ini sampai proses tinjauan selesai.</p>
+            <p className="max-w-[320px] text-[14px] leading-6 text-slate-500 xl:text-right">{displayStatus === 'Selesai' ? 'Pemilihan yang sudah selesai tidak dapat ditangguhkan. Gunakan audit untuk peninjauan lanjutan.' : 'Penangguhan akan menghentikan pemilihan ini sampai proses tinjauan selesai.'}</p>
           </div>
         )}
       />
