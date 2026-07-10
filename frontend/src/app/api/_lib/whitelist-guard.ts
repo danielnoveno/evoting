@@ -8,12 +8,13 @@ type ProposalWhitelistState = {
   status: string
   commit_start_at: string | null
   deployed_space_address: string | null
+  deployment_tx_hash: string | null
 }
 
 export async function ensureWhitelistMutable(client: ServiceClient, proposalDraftId: string) {
   const { data: proposal, error } = await client
     .from('proposal_drafts')
-    .select('id, status, commit_start_at, deployed_space_address')
+    .select('id, status, commit_start_at, deployed_space_address, deployment_tx_hash')
     .eq('id', proposalDraftId)
     .maybeSingle()
 

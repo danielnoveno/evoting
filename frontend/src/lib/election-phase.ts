@@ -39,5 +39,5 @@ export function resolveSchedulePhase(input: ScheduleInput, now = Date.now()): Sc
   if (!Number.isNaN(commitStart) && now >= commitStart) {
     return { phase: 'commit', label: 'Pencoblosan', next: 'Konfirmasi Suara', deadlineIso: input.revealStartAt ?? null, deadlineLabel: 'Sisa waktu mencoblos' }
   }
-  return { phase: 'commit', label: 'Menunggu Dibuka', next: 'Pencoblosan', deadlineIso: input.commitStartAt ?? null, deadlineLabel: 'Pencoblosan dibuka dalam' }
+  return { phase: 'registration', label: 'Menunggu Dibuka', next: 'Pencoblosan', deadlineIso: input.commitStartAt ?? null, deadlineLabel: 'Pencoblosan dibuka dalam' }
 }

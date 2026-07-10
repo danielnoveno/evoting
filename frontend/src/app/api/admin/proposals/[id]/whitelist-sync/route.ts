@@ -24,7 +24,8 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     ? body.walletAddresses.filter((item): item is string => typeof item === 'string').map((item) => item.trim().toLowerCase()).filter((item) => /^0x[a-f0-9]{40}$/.test(item))
     : []
   if (walletAddresses.length === 0) return jsonError('Daftar wallet untuk sinkronisasi kosong.')
-  const txError = await ensureSuccessfulContractTx(txHash, whitelistGuard.proposal.deployed_space_address)
+  const isDeploymentTx = txHash.toLowerCase() === whitelistGuard.proposal.deployment_tx_hash?.toLowerCase()
+  const txError = await ensureSuccessfulContractTx(txHash, isDeploymentTx ? null : whitelistGuard.proposal.deployed_space_address)
   if (txError) return txError
   const whitelistStateError = await ensureWalletWhitelistState(whitelistGuard.proposal.deployed_space_address, walletAddresses, true)
   if (whitelistStateError) return whitelistStateError

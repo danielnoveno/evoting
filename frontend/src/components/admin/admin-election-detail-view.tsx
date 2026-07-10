@@ -213,8 +213,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const canAddCandidate = false
   // ponytail: whitelist is managed at deploy-time only; no post-deploy editing
   const canManageWhitelist = false
-  const phaseLabels = ['Pencoblosan', 'Konfirmasi Suara', 'Selesai'] as const
-  const onChainPhaseLabel = onChainPhaseNumber !== null && phaseLabels[onChainPhaseNumber]
+  const phaseLabels = ['Menunggu Dibuka', 'Pencoblosan', 'Konfirmasi Suara', 'Selesai'] as const
+  const onChainPhaseLabel = onChainPhaseNumber !== null && onChainPhaseNumber >= 0 && onChainPhaseNumber < phaseLabels.length
     ? phaseLabels[onChainPhaseNumber]
     : 'Belum terbaca'
   const dbPhaseInfo = resolveSchedulePhase({
@@ -1124,11 +1124,13 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
               </div>
             </div>
             <p className="mt-4 text-[13px] leading-6 text-slate-600">
-              {dbPhaseInfo.phase === 'commit'
-                ? 'Pemilih sudah bisa mencoblos. Setelah waktu konfirmasi suara tiba, sistem otomatis masuk tahap pengesahan.'
-                : dbPhaseInfo.phase === 'reveal'
-                  ? 'Masa mencoblos sudah berakhir. Pemilih sedang mengonfirmasi pilihan sebelum dihitung.'
-                  : 'Pemilihan selesai. Hasil dapat diaudit melalui bukti transaksi on-chain.'}
+              {dbPhaseInfo.phase === 'registration'
+                ? 'Pemilih belum bisa mencoblos. Sistem akan membuka pencoblosan otomatis sesuai jadwal mulai.'
+                : dbPhaseInfo.phase === 'commit'
+                  ? 'Pemilih sudah bisa mencoblos. Setelah waktu konfirmasi suara tiba, sistem otomatis masuk tahap pengesahan.'
+                  : dbPhaseInfo.phase === 'reveal'
+                    ? 'Masa mencoblos sudah berakhir. Pemilih sedang mengonfirmasi pilihan sebelum dihitung.'
+                    : 'Pemilihan selesai. Hasil dapat diaudit melalui bukti transaksi on-chain.'}
             </p>
           </div>
         </article>

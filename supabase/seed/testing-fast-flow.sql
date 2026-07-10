@@ -37,13 +37,13 @@ begin
       v_voter_user_id is null;
   end if;
 
-  select lower(uw.wallet_address)
+  select lower(p.wallet_address)
   into v_voter_wallet
-  from (select v_voter_user_id as user_id) u
-  left join app.user_wallets uw on uw.user_id = u.user_id;
+  from app.app_profiles p
+  where p.user_id = v_voter_user_id;
 
   if v_voter_wallet is null then
-    raise exception 'Server wallet voter belum ada. Login sebagai voter lalu buka /pemilih sampai app.user_wallets terisi, baru jalankan seed testing.';
+    raise exception 'Wallet aktivasi voter belum ada di app_profiles. Login/aktivasi sebagai voter dan sambungkan dompet aktivasi, baru jalankan seed testing.';
   end if;
 
   -- Idempotent cleanup for this testing scenario only.
