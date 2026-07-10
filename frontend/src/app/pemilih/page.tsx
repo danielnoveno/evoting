@@ -100,10 +100,11 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
             : election.phase === 'ended'
               ? 'Pemilihan Selesai'
               : 'Pemilihan Sedang Berlangsung'
+  const nextPhaseName = election.phase === 'commit' ? 'Konfirmasi Suara' : 'Selesai'
   const countdownLabel = isRevealMissed
     ? 'Komitmen suara tercatat, tetapi konfirmasi (reveal) belum dilakukan:'
     : alreadyVoted
-      ? 'Menunggu pembukaan fase berikutnya:'
+      ? `Menunggu fase ${nextPhaseName}:`
       : election.phase === 'suspended'
         ? 'Pencoblosan dihentikan sementara:'
         : isUpcoming
