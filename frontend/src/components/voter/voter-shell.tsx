@@ -17,6 +17,7 @@ import { useNotificationBadge } from '@/hooks/use-notification-badge'
 import { OnboardingTour } from './onboarding-tour'
 import { useLanguage } from '@/lib/contexts/language-context'
 import { useWelcomeToast } from '@/hooks/use-welcome-toast'
+import { useSilentReconnect } from '@/hooks/use-silent-reconnect'
 import { LocalClock } from '@/components/ui/local-clock'
 
 export function VoterShell({ children }: { children: ReactNode }) {
@@ -36,6 +37,9 @@ export function VoterShell({ children }: { children: ReactNode }) {
 
   // Tampilkan toast selamat datang sekali per sesi login
   useWelcomeToast()
+
+  // Silent wallet reconnect: restore Base Account session tanpa popup
+  useSilentReconnect()
 
   const sidebarItems = [
     { href: '/pemilih', label: t.sidebar.dashboard, icon: Home },

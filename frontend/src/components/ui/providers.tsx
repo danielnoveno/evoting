@@ -82,7 +82,7 @@ function AuthErrorHandler({ children }: { children: ReactNode }) {
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
-    <WagmiProvider config={wagmiConfig} reconnectOnMount={true}>
+    <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
       <AuthErrorHandler>
         <LanguageProvider>
           <ToastProvider>
