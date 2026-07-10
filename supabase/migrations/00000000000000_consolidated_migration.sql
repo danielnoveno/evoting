@@ -539,11 +539,6 @@ create or replace trigger master_voters_set_updated_at
 before update on app.master_voters
 for each row execute function app.set_updated_at();
 
-drop trigger if exists trigger_update_user_wallet_timestamp on app.user_wallets;
-create trigger trigger_update_user_wallet_timestamp
-before update on app.user_wallets
-for each row execute function app.update_user_wallet_timestamp();
-
 -- ─── Helper Functions ───────────────────────────────────────────────────────
 
 create or replace function app.current_profile_id()
@@ -711,6 +706,11 @@ begin
   return new;
 end;
 $$ language plpgsql;
+
+drop trigger if exists trigger_update_user_wallet_timestamp on app.user_wallets;
+create trigger trigger_update_user_wallet_timestamp
+before update on app.user_wallets
+for each row execute function app.update_user_wallet_timestamp();
 
 -- ─── Row Level Security (enable all) ────────────────────────────────────────
 

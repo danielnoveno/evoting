@@ -23,10 +23,9 @@ function decodeUint256(hex: string): number {
   return parseInt(hex, 16)
 }
 
-// keccak256("candidateCount()")[:4] = 0x18d12e06
-// keccak256("voteCount(uint256)")[:4] = 0x6817c76c
-const FUNC_CANDIDATE_COUNT = '0x18d12e06'
-const FUNC_VOTE_COUNT = '0x6817c76c'
+// cast sig 'candidateCount()' / 'voteCount(uint256)'
+const FUNC_CANDIDATE_COUNT = '0xa9a981a3'
+const FUNC_VOTE_COUNT = '0x4fc8a20d'
 
 async function ethCall(rpcUrl: string, to: string, data: string, timeoutMs = 4000): Promise<string> {
   // ponytail: race all RPCs in parallel, first success wins. Cuts worst case from N*5s to ~5s.

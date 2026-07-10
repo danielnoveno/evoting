@@ -22,18 +22,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Payload GraphQL tidak valid.' }, { status: 400 })
   }
 
-  const response = await fetch(graphqlUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  })
+  try {
+    const response = await fetch(graphqlUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    })
 
-  const text = await response.text()
-  return new NextResponse(text, {
-    status: response.status,
-    headers: {
-      'Content-Type': response.headers.get('content-type') ?? 'application/json',
-      'Cache-Control': 'no-store',
-    },
-  })
+    const text = await response.text()
+    return new NextResponse(text, {
+      status: response.status,
+      headers: {
+        'Content-Type': response.headers.get('content-type') ?? 'application/json',
+        'Cache-Control': 'no-store',
+      },
+    })
+  } catch {
+    return NextResponse.json({ error: 'Indexer Ponder tidak dapat dihubungi.' }, { status: 503 })
+  }
 }
