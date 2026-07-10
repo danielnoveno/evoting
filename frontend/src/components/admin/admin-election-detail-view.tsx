@@ -93,7 +93,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const { 
     registerVoters, 
     unregisterVoterAsync,
-    setPhaseScheduleAsync,
     transitionToNextPhase,
     isWritePending, 
     isConfirming, 
@@ -139,12 +138,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   const [syncMode, setSyncMode] = useState<'manual' | 'auto' | null>(null)
   const [whitelistSearch, setWhitelistSearch] = useState('')
   const [masterVoterModalOpen, setMasterVoterModalOpen] = useState(false)
-  const [phaseConfirmOpen, setPhaseConfirmOpen] = useState(false)
-  const [phaseScheduleForm, setPhaseScheduleForm] = useState({
-    commitStart: '',
-    revealStart: '',
-    revealEnd: '',
-  })
+
   const [nowMs, setNowMs] = useState(Date.now())
   const whitelistQuery = useWhitelistEntries(election.id)
   const createWhitelistEntry = useCreateWhitelistEntry()
@@ -1060,32 +1054,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     </section>
   )
 
-  const handleSetPhaseSchedule = async () => {
-    if (!isAddressValid || !deployedAddress) return
-
-    try {
-      const commitStart = Math.floor(new Date(phaseScheduleForm.commitStart).getTime() / 1000)
-      const revealStart = Math.floor(new Date(phaseScheduleForm.revealStart).getTime() / 1000)
-      const revealEnd = Math.floor(new Date(phaseScheduleForm.revealEnd).getTime() / 1000)
-
-      // Instant transition: commitEndsAt = revealStartsAt
-      const commitEnd = revealStart
-
-      if (commitStart >= commitEnd || revealStart >= revealEnd) {
-        showToast({ tone: 'error', title: 'Jadwal tidak valid', description: 'Urutan waktu harus: Mulai Pencoblosan < Mulai Konfirmasi Suara < Selesai Pemilihan.' })
-        return
-      }
-
-      await setPhaseScheduleAsync(deployedAddress, BigInt(commitStart), BigInt(commitEnd), BigInt(revealStart), BigInt(revealEnd))
-      showToast({ tone: 'success', title: 'Jadwal fase berhasil diatur', description: 'Perubahan akan aktif setelah transaksi dikonfirmasi di blockchain.' })
-      setPhaseConfirmOpen(false)
-      refetchPhase()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal mengatur jadwal fase.'
-      showToast({ tone: 'error', title: 'Gagal mengatur jadwal', description: message })
-    }
-  }
-
   const handleTransitionPhase = async () => {
     try {
       transitionToNextPhase()
@@ -1199,20 +1167,9 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
       {/* Phase Schedule */}
       <article className="rounded-[28px] border border-slate-200 bg-white p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Jadwal Pemilihan</p>
-            <p className="mt-2 text-[13px] text-slate-500">Jadwal database ini menjadi acuan tampilan admin, superadmin, dan pemilih.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setPhaseConfirmOpen(true)}
-            disabled={!isAddressValid || onChainPhaseNumber !== 0}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Pencil className="h-4 w-4" />
-            Sinkronkan Jadwal Kontrak
-          </button>
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Jadwal Pemilihan</p>
+          <p className="mt-2 text-[13px] text-slate-500">Jadwal database ini menjadi acuan tampilan admin, superadmin, dan pemilih.</p>
         </div>
         <div className="mt-6 space-y-4">
           {phaseScheduleItems.map((item) => (
@@ -1233,63 +1190,6 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
           ))}
         </div>
       </article>
-
-      {/* Set Schedule Modal */}
-      <ModalShell
-        open={phaseConfirmOpen}
-        title="Atur Jadwal Fase"
-        description="Tetapkan waktu pencoblosan, konfirmasi suara, dan selesai pemilihan di smart contract."
-        onClose={() => setPhaseConfirmOpen(false)}
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-[13px] font-medium text-slate-700">Mulai Pencoblosan</label>
-            <input
-              type="datetime-local"
-              value={phaseScheduleForm.commitStart}
-              onChange={(e) => setPhaseScheduleForm({ ...phaseScheduleForm, commitStart: e.target.value })}
-              className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-[14px] text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-            />
-          </div>
-          <div>
-            <label className="block text-[13px] font-medium text-slate-700">Mulai Konfirmasi Suara</label>
-            <input
-              type="datetime-local"
-              value={phaseScheduleForm.revealStart}
-              onChange={(e) => setPhaseScheduleForm({ ...phaseScheduleForm, revealStart: e.target.value })}
-              className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-[14px] text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-            />
-          </div>
-          <div>
-            <label className="block text-[13px] font-medium text-slate-700">Selesai Pemilihan</label>
-            <input
-              type="datetime-local"
-              value={phaseScheduleForm.revealEnd}
-              onChange={(e) => setPhaseScheduleForm({ ...phaseScheduleForm, revealEnd: e.target.value })}
-              className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-[14px] text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-            />
-          </div>
-          <p className="text-[12px] text-slate-500">Gunakan timezone lokal Anda. Waktu akan dikonversi ke Unix timestamp sebelum dikirim ke kontrak.</p>
-          <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={() => setPhaseConfirmOpen(false)}
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-[13px] font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Batal
-            </button>
-            <button
-              type="button"
-              onClick={handleSetPhaseSchedule}
-              disabled={isWritePending || isConfirming}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isWritePending || isConfirming ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Simpan Jadwal
-            </button>
-          </div>
-        </div>
-      </ModalShell>
     </section>
   )
 

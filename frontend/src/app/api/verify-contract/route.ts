@@ -1,26 +1,9 @@
 import { encodeAbiParameters, type Address } from 'viem'
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 import { ELECTION_SPACE_SOURCE, FLATTENED_REGISTRY_SOURCE } from '@/lib/contract-source'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-/** Verify that the caller is an authenticated Supabase user. */
-async function requireAuth(request: NextRequest): Promise<string | null> {
-  const authHeader = request.headers.get('Authorization')
-  if (!authHeader?.startsWith('Bearer ')) return null
-  const token = authHeader.replace('Bearer ', '')
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) return null
-
-  const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-  const { data: { user }, error } = await supabase.auth.getUser(token)
-  if (error || !user) return null
-  return user.id
-}
 
 const BASESCAN_API_URL = 'https://api-sepolia.basescan.org/api'
 
@@ -167,12 +150,6 @@ async function checkVerificationStatus(guid: string) {
 }
 
 export async function POST(request: NextRequest) {
-  // ── Auth: verify caller is authenticated ──
-  const userId = await requireAuth(request)
-  if (!userId) {
-    return NextResponse.json({ success: false, message: 'Tidak terautentikasi.' }, { status: 401 })
-  }
-
   try {
     const body = (await request.json()) as VerifyBody
     if (!isAddress(body.contractAddress)) {
