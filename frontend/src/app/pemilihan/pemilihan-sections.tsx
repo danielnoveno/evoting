@@ -60,7 +60,7 @@ export function PemilihanSections() {
             <div className="max-w-[860px]">
               <h1 className="text-[44px] font-semibold leading-[1.08] tracking-[-0.03em] text-slate-900 md:text-[64px]">Daftar Pemilihan Publik</h1>
               <p className="mt-5 text-[18px] leading-9 text-slate-800">
-                Pantau seluruh agenda pemilihan, status blockchain, dan hasil akhir secara transparan. Semua data tersimpan permanen di jaringan terdesentralisasi.
+                Pantau agenda pemilihan, status fase, hasil yang tersedia, dan bukti transaksi jika sudah tercatat.
               </p>
             </div>
           </ScrollReveal>

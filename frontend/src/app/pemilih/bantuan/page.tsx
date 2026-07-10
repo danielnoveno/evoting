@@ -31,17 +31,17 @@ const faqs = [
   {
     id: 'faq-1',
     question: 'Kenapa suara harus dikunci dulu sebelum dihitung?',
-    answer: 'Saat mencoblos, pilihanmu dikunci dulu di blockchain. Saat jadwal penghitungan dibuka, kamu mengesahkan pilihan tersebut dengan dompet aktivasi yang sama agar suara bisa dihitung.',
+    answer: 'Saat mencoblos, pilihanmu dikunci dulu di blockchain sebagai komitmen. Saat jadwal penghitungan dibuka, sistem mencoba mengesahkan komitmen itu otomatis melalui relayer agar suara bisa dihitung.',
   },
   {
     id: 'faq-2',
-    question: 'Apakah saya perlu mengesahkan suara?',
-    answer: 'Ya. Setelah mencoblos dan transaksi commit berhasil, buka tahap pengesahan saat jadwal reveal dibuka. Transaksi tetap memakai dompet aktivasi yang sama dan gas dapat disponsori paymaster.',
+    question: 'Apakah saya perlu masuk lagi untuk reveal?',
+    answer: 'Tidak untuk alur normal. Setelah transaksi commit berhasil dan data pengesahan otomatis tersimpan, sistem akan mencoba reveal saat fase penghitungan dibuka. Jika antrean otomatis gagal, hubungi admin/TU.',
   },
   {
     id: 'faq-3',
     question: 'Bagaimana jika pengesahan suara bermasalah?',
-    answer: 'Jika transaksi coblos berhasil tetapi tombol pengesahan belum bisa dipakai saat waktunya tiba, hubungi admin/TU untuk memeriksa fase blockchain dan whitelist dompet aktivasi.',
+    answer: 'Jika transaksi coblos berhasil tetapi status reveal belum muncul setelah fase penghitungan dibuka, hubungi admin/TU untuk memeriksa relayer, fase blockchain, dan whitelist dompet aktivasi.',
   },
 ]
 

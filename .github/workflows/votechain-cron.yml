@@ -1,0 +1,19 @@
+name: VoteChain Cron
+
+on:
+  schedule:
+    # GitHub Actions cron uses UTC and may be delayed by a few minutes.
+    # Keep reveal windows >= 10-15 minutes so auto-reveal has time to run.
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  auto-reveal:
+    name: Trigger auto reveal
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Votein auto-reveal endpoint
+        run: |
+          curl --fail-with-body -X POST "${{ secrets.VOTEIN_BASE_URL }}/api/cron/auto-reveal" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

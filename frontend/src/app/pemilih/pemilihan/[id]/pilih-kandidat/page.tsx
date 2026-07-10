@@ -118,7 +118,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       ? 'Status blockchain belum terbaca. Coba muat ulang halaman sebelum mencoblos.'
     : effectivePhaseNumber !== 1
       ? effectivePhase === 'reveal'
-          ? 'Masa mencoblos sudah berakhir. Sistem sedang memasuki tahap pengesahan dan penghitungan suara.'
+          ? 'Masa mencoblos sudah berakhir. Sistem sedang menunggu pengesahan otomatis dan penghitungan suara.'
         : effectivePhase === 'ended'
           ? 'Pemilihan ini sudah selesai.'
           : 'Pencoblosan belum dibuka atau sudah selesai.'
@@ -182,24 +182,24 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             const err = await res.json().catch(() => ({ message: 'Gagal menyimpan ke server' }))
             console.error('[commit-store] Failed:', err)
             setAutoRevealQueueStatus('failed')
-            setAutoRevealQueueError('Gagal menyimpan data ke server. Reveal manual mungkin diperlukan.')
+            setAutoRevealQueueError('Pengesahan otomatis belum siap. Hubungi admin/TU jika status ini tidak berubah saat fase penghitungan dibuka.')
           } else {
             setAutoRevealQueueStatus('saved')
           }
         } else {
           setAutoRevealQueueStatus('failed')
-          setAutoRevealQueueError('Tidak dapat mengakses sesi. Reveal manual mungkin diperlukan.')
+          setAutoRevealQueueError('Sesi tidak terbaca, sehingga antrean pengesahan otomatis belum tersimpan. Hubungi admin/TU jika diperlukan.')
         }
       } catch (err) {
         console.error('[commit-store] Error:', err)
         setAutoRevealQueueStatus('failed')
-        setAutoRevealQueueError('Gagal menyimpan data ke server. Reveal manual mungkin diperlukan.')
+        setAutoRevealQueueError('Pengesahan otomatis belum siap. Hubungi admin/TU jika status ini tidak berubah saat fase penghitungan dibuka.')
       }
     })()
 
     showToast({
       title: 'Suara berhasil dicoblos',
-      description: 'Pilihanmu sudah terkunci. Saat tahap penghitungan dibuka, sahkan suara dengan dompet aktivasi yang sama.',
+      description: 'Komitmen suara tersimpan. Sistem akan mencoba mengesahkan suara otomatis saat fase penghitungan dibuka.',
       tone: 'success',
     })
   }, [isConfirmed, hash, receipt, pendingCommit, actions, params.id, showToast])
@@ -254,7 +254,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const stepState = [
     { label: 'Coblos kandidat', description: 'Pilih satu nama', active: true },
     { label: 'Kunci pilihan', description: 'Tercatat di blockchain' },
-    { label: 'Pengesahan suara', description: 'Otomatis oleh sistem' },
+    { label: 'Pengesahan otomatis', description: 'Oleh sistem' },
     { label: 'Lihat hasil', description: 'Cek hasil akhir' },
   ]
 
@@ -363,7 +363,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
           steps={[
             { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
             { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
-            { label: 'Sahkan suara', description: 'Saat tahap reveal', active: true },
+            { label: 'Pengesahan otomatis', description: 'Menunggu sistem', active: true },
             { label: 'Lihat hasil', description: 'Cek hasil akhir' },
           ]}
         />
@@ -374,26 +374,28 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
           </div>
           <h1 className="mt-5 text-[24px] font-semibold text-slate-900">Suara berhasil dicoblos</h1>
           <p className="mx-auto mt-3 max-w-2xl text-[14px] leading-7 text-slate-700">
-            Pilihanmu sudah dikunci di blockchain. Saat jadwal penghitungan dibuka, sahkan suara dengan dompet aktivasi yang sama.
+            Komitmen suara sudah tercatat di blockchain. Kamu boleh keluar dari sistem; pengesahan akan dicoba otomatis saat fase penghitungan dibuka.
           </p>
 
           <div className="mx-auto mt-8 grid max-w-3xl gap-4 text-left md:grid-cols-2">
             <article className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat yang dicoblos</p>
               <h2 className="mt-3 text-[20px] font-semibold text-slate-900">{committedCandidate?.name ?? 'Komitmen tersimpan'}</h2>
-              <p className="mt-2 text-[13px] leading-6 text-slate-600">Detail pilihan akan dibuka saat kamu mengesahkan suara pada tahap penghitungan.</p>
+              <p className="mt-2 text-[13px] leading-6 text-slate-600">Detail pilihan akan dibuka saat sistem berhasil mengesahkan suara pada tahap penghitungan.</p>
             </article>
             <article className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">Status pengesahan suara</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700">Status pengesahan otomatis</p>
               <p className="mt-3 text-[15px] font-semibold text-slate-900">
                 {autoRevealQueueStatus === 'saving'
                   ? 'Menyiapkan antrean penghitungan...'
                   : autoRevealQueueStatus === 'failed'
                     ? 'Pengesahan perlu dicek admin/TU'
-                    : 'Menunggu tahap pengesahan'}
+                    : autoRevealQueueStatus === 'saved'
+                      ? 'Terdaftar untuk pengesahan otomatis'
+                      : 'Menunggu fase penghitungan'}
               </p>
               <p className="mt-2 text-[13px] leading-6 text-slate-600">
-                {autoRevealQueueError ?? 'Saat tahap penghitungan dibuka, sahkan suara memakai dompet aktivasi yang sama. Gas tetap dapat disponsori paymaster.'}
+                {autoRevealQueueError ?? 'Saat fase penghitungan dibuka, sistem akan mencoba mengirim transaksi reveal melalui relayer. Kamu tidak perlu masuk lagi hanya untuk reveal.'}
               </p>
             </article>
           </div>
@@ -491,7 +493,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                   : !isWalletReady
                         ? walletError ?? 'Sambungkan dompet yang dipakai saat aktivasi voter sebelum mencoblos.'
                       : effectivePhaseNumber === 1
-                        ? 'Pilih satu kandidat lalu konfirmasi. Saat jadwal penghitungan dibuka, sahkan suara dengan dompet aktivasi yang sama.'
+                        ? 'Pilih satu kandidat lalu konfirmasi. Saat jadwal penghitungan dibuka, sistem akan mencoba mengesahkan suara otomatis.'
                         : 'Pencoblosan belum dimulai. Kamu bisa melihat kandidat terlebih dahulu, lalu coblos saat masa pencoblosan dibuka.'}
             </p>
           </div>
@@ -540,7 +542,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         <div className="flex items-start gap-3">
           <Info className="mt-0.5 h-4.5 w-4.5 shrink-0 text-blue-700" />
           <p>
-            Setelah mencoblos, simpan browser dan dompet aktivasi yang sama. Saat tahap penghitungan dibuka, kamu mengesahkan suara dengan transaksi gasless/paymaster.
+            Setelah mencoblos, sistem menyimpan data teknis yang diperlukan untuk pengesahan otomatis. Saat tahap penghitungan dibuka, relayer akan mencoba mengirim transaksi reveal sehingga kamu tidak perlu masuk lagi hanya untuk reveal.
           </p>
         </div>
       </section>

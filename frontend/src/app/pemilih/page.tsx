@@ -299,26 +299,6 @@ function ScheduleStateBanner({ hasUpcoming, onlyPast, upcomingCount }: { hasUpco
 export default function VoterDashboardPage() {
   const { store, loading, refresh } = useVoterStore()
 
-  // Auto-reveal: trigger when voter opens dashboard during Reveal phase
-  useEffect(() => {
-    if (loading || !store) return
-    const needsReveal = store.elections.some((e) =>
-      e.phase === 'reveal' && e.commitProof && !e.revealProof
-    )
-    if (!needsReveal) return
-
-    // Fire-and-forget: call auto-reveal API
-    fetch('/api/cron/auto-reveal', { method: 'POST' })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.revealed > 0) {
-          console.log(`[auto-reveal] Revealed ${data.revealed} votes`)
-          refresh()
-        }
-      })
-      .catch((err) => console.error('[auto-reveal] Failed:', err))
-  }, [loading, store, refresh])
-
   if (loading || !store) {
     return (
       <VoterShell>

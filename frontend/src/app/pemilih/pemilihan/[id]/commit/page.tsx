@@ -175,13 +175,13 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     ? [
         { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
         { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
-        { label: 'Sahkan suara', description: 'Saat tahap reveal' },
+        { label: 'Pengesahan otomatis', description: 'Menunggu sistem' },
         { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
     : [
         { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
         { label: 'Kunci pilihan', description: 'Tercatat di blockchain', active: true },
-        { label: 'Sahkan suara', description: 'Saat tahap reveal' },
+        { label: 'Pengesahan otomatis', description: 'Menunggu sistem' },
         { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
 
@@ -276,7 +276,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
 
           <h1 className="mt-5 text-center text-[24px] font-semibold text-slate-900">Komitmen suara berhasil disimpan</h1>
           <p className="mx-auto mt-3 max-w-2xl text-center text-[14px] leading-7 text-slate-700">
-            Hash komitmen sudah tercatat. Suara baru dihitung setelah kamu mengonfirmasi suara pada fase reveal memakai dompet aktivasi yang sama.
+            Hash komitmen sudah tercatat. Suara baru dihitung setelah sistem berhasil mengesahkan suara pada fase reveal.
           </p>
 
           <div className="mt-8 grid gap-4 xl:grid-cols-2">
@@ -327,7 +327,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
               </Link>
             ) : (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] leading-6 text-amber-900">
-                Pilihan sudah pernah disimpan. Jika tahap reveal sudah dibuka tetapi pengesahan belum berhasil, hubungi admin/TU untuk pengecekan fase dan whitelist.
+                Pilihan sudah pernah disimpan. Jika fase reveal sudah dibuka tetapi pengesahan otomatis belum berhasil, hubungi admin/TU untuk pengecekan relayer, fase, dan whitelist.
               </div>
             )}
           </div>
@@ -450,7 +450,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           </div>
           <h2 className="mt-8 text-[18px] font-semibold text-white">Ringkasan Penyimpanan Suara</h2>
           <p className="mt-4 text-[16px] leading-8 text-slate-300">
-            Sistem sudah menyiapkan kode bukti. Pilihan aslimu baru dihitung setelah kamu mengesahkan suara pada tahap reveal.
+            Sistem sudah menyiapkan kode bukti. Pilihan aslimu baru dihitung setelah pengesahan otomatis berhasil pada tahap reveal.
           </p>
 
           <div className="mt-8 space-y-3">
@@ -466,7 +466,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           <div>
             <h2 className="text-[18px] font-semibold text-slate-900">Privasi pilihan</h2>
             <p className="mt-2 text-[14px] leading-7 text-slate-700">
-              Setelah pilihan disimpan, suara baru dihitung saat dompet aktivasi yang sama mengesahkannya pada jadwal penghitungan.
+              Setelah pilihan disimpan, suara baru dihitung saat sistem berhasil mengirim transaksi reveal pada jadwal penghitungan.
             </p>
           </div>
         </div>
@@ -476,9 +476,9 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
         <div className="flex gap-3">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
           <div>
-            <h2 className="text-[18px] font-semibold text-amber-900">Pengesahan suara</h2>
+            <h2 className="text-[18px] font-semibold text-amber-900">Pengesahan otomatis</h2>
             <p className="mt-2 text-[14px] leading-7 text-amber-900/90">
-              Simpan browser dan dompet aktivasi yang sama. Saat tahap reveal dibuka, kirim transaksi pengesahan; gas dapat disponsori paymaster.
+              Setelah commit berhasil, sistem akan mencoba mendaftarkan data reveal untuk diproses relayer saat fase penghitungan dibuka. Kamu tidak perlu masuk lagi hanya untuk reveal.
             </p>
           </div>
         </div>
@@ -516,7 +516,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
       <ConfirmDialog
         open={confirmOpen}
         title="Coblos dan kunci pilihan sekarang?"
-        description="Setelah disimpan, sahkan suara saat jadwal penghitungan dibuka. Pilihan tidak bisa diubah."
+        description="Setelah disimpan, sistem akan mencoba mengesahkan suara otomatis saat jadwal penghitungan dibuka. Pilihan tidak bisa diubah."
         confirmLabel="Ya, Simpan Pilihan"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleCommit}

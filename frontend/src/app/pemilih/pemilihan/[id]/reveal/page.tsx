@@ -97,13 +97,13 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
           steps={[
             { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
             { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
-            { label: 'Pengesahan suara', description: 'Sahkan pilihanmu', active: true },
+            { label: 'Pengesahan otomatis', description: 'Menunggu sistem', active: true },
             { label: 'Lihat hasil', description: 'Cek hasil akhir' },
           ]}
         />
         <section className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <h1 className="text-[20px] font-semibold text-slate-900">Pilihan belum tersimpan</h1>
-          <p className="mt-2 text-[14px] leading-7 text-slate-800">Silakan pilih kandidat dan simpan pilihan terlebih dahulu sebelum mengesahkan suara.</p>
+          <p className="mt-2 text-[14px] leading-7 text-slate-800">Silakan pilih kandidat dan simpan pilihan terlebih dahulu. Sistem akan mencoba reveal otomatis saat fase penghitungan dibuka.</p>
           <Link 
             href={`/pemilih/pemilihan/${params.id}/commit`} 
             className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B] focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 focus:outline-none"
@@ -137,19 +137,19 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
   const revealBlockedReason = !contractAddress
     ? 'Smart contract untuk pemilihan ini belum tersedia.'
     : !isWalletReady
-      ? walletError ?? 'Sambungkan dompet yang dipakai saat aktivasi voter sebelum mengesahkan suara.'
+      ? walletError ?? 'Sambungkan dompet yang dipakai saat aktivasi voter sebelum memakai mode cadangan ini.'
     : onChainStatusError
-      ? 'Jaringan Base Sepolia belum merespons. Coba muat ulang status sebelum mengesahkan suara.'
+      ? 'Jaringan Base Sepolia belum merespons. Coba muat ulang status sebelum memakai mode cadangan ini.'
     : !isOnChainStatusReady
-      ? 'Status on-chain sedang diperiksa. Tunggu sebentar sebelum mengesahkan suara.'
+      ? 'Status on-chain sedang diperiksa. Tunggu sebentar sebelum memakai mode cadangan ini.'
     : !isWhitelistedOnChain
       ? 'Dompet aktivasi ini belum terdaftar di Daftar Pemilih Tetap (whitelist) untuk pemilihan ini.'
     : !hasCommittedOnChain
-      ? 'Dompet aktivasi ini belum menyimpan pilihan di smart contract, jadi belum bisa mengesahkan suara.'
+      ? 'Dompet aktivasi ini belum menyimpan pilihan di smart contract, jadi belum bisa diproses.'
     : !isRevealPhaseOnChain
-      ? `Tahap pemilihan masih ${onChainPhaseLabel}, belum berada di Pengesahan Suara (Reveal). Kamu baru bisa mengesahkan suara saat jadwal penghitungan dibuka.`
+      ? `Tahap pemilihan masih ${onChainPhaseLabel}, belum berada di fase Reveal. Reveal hanya bisa diproses saat jadwal penghitungan dibuka.`
     : hasRevealedOnChain
-      ? 'Dompet aktivasi ini sudah pernah mengesahkan suara untuk ruang voting ini.'
+      ? 'Dompet aktivasi ini sudah pernah reveal untuk ruang voting ini.'
       : ''
 
   const handleReveal = async () => {
@@ -174,13 +174,13 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
     ? [
         { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
         { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
-        { label: 'Pengesahan suara', description: 'Sahkan pilihanmu', done: true },
+        { label: 'Pengesahan otomatis', description: 'Reveal selesai', done: true },
         { label: 'Lihat hasil', description: 'Cek hasil akhir', active: true },
       ]
     : [
         { label: 'Coblos kandidat', description: 'Pilih satu nama', done: true },
         { label: 'Kunci pilihan', description: 'Tercatat di blockchain', done: true },
-        { label: 'Pengesahan suara', description: 'Sahkan pilihanmu', active: true },
+        { label: 'Pengesahan otomatis', description: 'Mode cadangan', active: true },
         { label: 'Lihat hasil', description: 'Cek hasil akhir' },
       ]
 
@@ -192,15 +192,15 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 mb-6">
           <LockKeyhole className="h-3.5 w-3.5 text-slate-700" />
           <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-700">
-            Pengesahan Suara (Reveal)
+            Reveal Manual Cadangan
           </span>
         </div>
 
         <h1 className="text-[28px] md:text-[36px] font-bold tracking-tight text-slate-900">
-          Sahkan Suara Manual
+          Reveal Manual Cadangan
         </h1>
         <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-slate-600">
-          Sistem memakai kode rahasia di browser ini untuk memastikan suara yang dihitung sama dengan pilihanmu tadi. Transaksi dikirim dari dompet aktivasi yang sama.
+          Alur normal memakai relayer otomatis sehingga kamu tidak perlu masuk lagi untuk reveal. Halaman ini hanya cadangan jika relayer otomatis bermasalah.
         </p>
 
         {writeError && (
@@ -211,7 +211,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
               <p className="mt-1 text-[13px] text-red-800 leading-relaxed">
                 {writeError.message.includes('CommitmentMismatch') 
                   ? 'Kode rahasia tidak cocok dengan bukti pilihan yang sebelumnya dikunci.' 
-                  : 'Terjadi kesalahan saat mengesahkan suara. Pastikan dompet digitalmu siap dan memiliki saldo uji coba yang cukup.'}
+                  : 'Terjadi kesalahan saat reveal manual. Pastikan dompet digitalmu siap dan memiliki saldo uji coba yang cukup.'}
               </p>
             </div>
           </section>
@@ -272,15 +272,15 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
             {isWritePending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Mengesahkan suara...
+                Mengirim reveal...
               </>
             ) : isConfirming ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Mengesahkan suara...
+                Mengirim reveal...
               </>
             ) : (
-              revealBlockedReason ? 'Pengesahan Belum Dibuka' : 'Sahkan Suara Manual'
+              revealBlockedReason ? 'Reveal Belum Dibuka' : 'Kirim Reveal Manual'
             )}
           </button>
           <Link

@@ -61,6 +61,12 @@ export default function SuperadminElectionManagementPage() {
   const [haltNote, setHaltNote] = useState('')
   const [haltingElectionId, setHaltingElectionId] = useState<string | null>(null)
   const [haltingElectionTitle, setHaltingElectionTitle] = useState('')
+  const [nowMs, setNowMs] = useState(Date.now())
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 30_000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   const elections = useMemo(() => {
     if (!proposalRowsRaw) return []
@@ -68,7 +74,7 @@ export default function SuperadminElectionManagementPage() {
       .filter(p => p.status === 'approved' || p.status === 'deployed' || p.status === 'suspended')
       .map(p => {
         const fromStore = storeElections.find(item => item.id === p.id)
-        const phaseInfo = resolveSchedulePhase(p)
+        const phaseInfo = resolveSchedulePhase(p, nowMs)
         const status = (p.status === 'suspended' || fromStore?.status === 'Ditangguhkan'
           ? 'Ditangguhkan'
           : phaseInfo.phase === 'ended'
@@ -82,13 +88,13 @@ export default function SuperadminElectionManagementPage() {
           title: p.title,
           code: `VC-${p.id.slice(0, 4).toUpperCase()}`,
           status,
-          note: status === 'Ditangguhkan' ? 'Halted' : (p.status === 'deployed' ? 'Online' : 'Final'),
+          note: status === 'Ditangguhkan' ? 'Halted' : status === 'Selesai' ? 'Final' : 'Online',
           phaseLabel: phaseInfo.phase === 'ended' ? 'Pemilihan Selesai' : p.status === 'deployed' ? 'Fase Berjalan' : 'Pemilihan Selesai',
           totalVoters: fromStore?.totalVoters ?? '0',
           participation: fromStore?.participation ?? '0%'
         }
       })
-  }, [proposalRowsRaw, storeElections])
+  }, [nowMs, proposalRowsRaw, storeElections])
 
   const filteredElections = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()
@@ -231,7 +237,7 @@ export default function SuperadminElectionManagementPage() {
       <ScrollReveal variant="fade-up" duration={800}>
         <AppPageHeader
           title="Manajemen Pemilihan"
-          description="Pantau dan kelola ruang pemilihan aktif di jaringan blockchain."
+          description="Pantau ruang pemilihan, fase jadwal, dan status audit yang tersedia."
         />
       </ScrollReveal>
 

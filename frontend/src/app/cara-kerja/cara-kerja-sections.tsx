@@ -20,8 +20,8 @@ const steps = [
   },
   {
     icon: Eye,
-    title: '3. Datang lagi untuk konfirmasi',
-    body: 'Saat panitia membuka tahap konfirmasi, kamu tinggal mengesahkan suara dari browser yang sama. Sistem mencocokkan kode bukti dengan pilihanmu.',
+    title: '3. Sistem mengesahkan otomatis',
+    body: 'Saat panitia membuka tahap penghitungan, relayer sistem mencoba membuka komitmen suara otomatis agar kamu tidak perlu masuk lagi hanya untuk reveal.',
     noteTitle: '',
     noteBody: 'Pencocokan berjalan otomatis di belakang layar.',
   },
