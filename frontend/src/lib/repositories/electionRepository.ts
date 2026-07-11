@@ -16,6 +16,7 @@ import type {
 import { asStringArray, isRecord } from './helpers'
 import { formatDateTime } from '@/lib/voter-helpers'
 import { resolveSchedulePhase } from '@/lib/election-phase'
+import { fetchChainEvents, decodeChainEvents } from '@/lib/alchemy-rpc'
 
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 type CandidateRow = Database['app']['Tables']['proposal_candidates']['Row']
@@ -543,6 +544,10 @@ export async function listPonderAuditLogs(spaceAddress?: string | null, limit = 
 
   if (!response.ok) {
     markIndexerUnavailable(response.status)
+    // ponytail: indexer down → fallback ke eth_getLogs langsung
+    if ((response.status === 404 || response.status === 503) && spaceAddress) {
+      return fetchAuditLogsFromChain(spaceAddress, limit)
+    }
     if (response.status === 404 || response.status === 503) return null
     throw new RepositoryError('Gagal memuat jejak audit dari indexer Ponder.')
   }
@@ -552,6 +557,36 @@ export async function listPonderAuditLogs(spaceAddress?: string | null, limit = 
   if (payload.errors && payload.errors.length > 0) throw new RepositoryError('Indexer belum siap menyajikan audit log.')
 
   return (payload.data?.chainEvents?.items ?? []).map(mapPonderAuditEvent)
+}
+
+/**
+ * ponytail: fallback audit logs — fetch event langsung dari blockchain via eth_getLogs
+ * saat Ponder indexer down. Mengembalikan TxAuditLogRecord[] agar UI tetap menampilkan
+ * Live Feed Blockchain.
+ */
+async function fetchAuditLogsFromChain(spaceAddress: string, limit: number): Promise<TxAuditLogRecord[]> {
+  try {
+    const rawEvents = await fetchChainEvents(spaceAddress)
+    if (rawEvents.length === 0) return []
+
+    const decoded = decodeChainEvents(rawEvents).slice(0, limit)
+    return decoded.map((event) => ({
+      id: event.id,
+      spaceId: (event.metadata.spaceId as number) ?? null,
+      proposalDraftId: null,
+      walletAddress: event.actor,
+      actionType: event.actionType,
+      txHash: event.txHash,
+      blockNumber: event.blockNumber,
+      status: 'success',
+      source: 'chain_rpc',
+      metadata: event.metadata,
+      createdAt: event.timestamp,
+    }))
+  } catch (error) {
+    console.warn('[fetchAuditLogsFromChain] Gagal fetch events dari RPC:', error)
+    return []
+  }
 }
 
 export async function getElectionResultsFromIndexer(spaceAddress?: string | null): Promise<PublicElectionResultRecord | null> {

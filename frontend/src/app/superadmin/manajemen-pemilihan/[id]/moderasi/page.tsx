@@ -1,8 +1,9 @@
 'use client'
 
-import { Activity, AlertTriangle, ArrowRight, BadgeCheck, CalendarDays, ExternalLink, Hourglass, Lock, ShieldCheck, Wallet, Loader2, Users, CheckCircle2, XCircle, RefreshCw, UserRound, Youtube, Clock3 } from 'lucide-react'
+import { Activity, AlertTriangle, ArrowRight, BadgeCheck, CalendarDays, ExternalLink, Hourglass, Lock, ShieldCheck, Wallet, Loader2, Users, CheckCircle2, XCircle, RefreshCw, UserRound, Youtube, Clock3, Link2 } from 'lucide-react'
 import { notFound, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { SuperadminDetailIntro, SuperadminEmptyState, SuperadminSectionCard, SuperadminShell, SuperadminStatusBadge } from '@/components/superadmin/superadmin-shell'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useToast } from '@/components/ui/toast-provider'
@@ -14,6 +15,7 @@ import { useProposalDraft, useProposalActivities } from '@/hooks/use-proposal-dr
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { useAuthSession } from '@/hooks/use-auth-session'
 import { resolveSchedulePhase } from '@/lib/election-phase'
+import { fetchChainEvents, decodeChainEvents } from '@/lib/alchemy-rpc'
 
 function getElectionStatusColor(status: SuperadminElectionState) {
   if (status === 'Ditangguhkan') return 'text-red-600'
@@ -37,6 +39,20 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
   const [suspending, setSuspending] = useState(false)
   const [nowMs, setNowMs] = useState(Date.now())
   const authSession = useAuthSession()
+
+  // ponytail: fetch blockchain events langsung dari RPC sebagai pelengkap aktivitas DB
+  const chainEventsQuery = useQuery({
+    queryKey: ['chain-events', params.id],
+    queryFn: async () => {
+      const spaceAddress = proposalQuery.data?.deployedSpaceAddress
+      if (!spaceAddress) return []
+      const raw = await fetchChainEvents(spaceAddress)
+      return decodeChainEvents(raw)
+    },
+    enabled: Boolean(proposalQuery.data?.deployedSpaceAddress),
+    refetchInterval: 1000 * 30,
+    retry: false,
+  })
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 1000)
@@ -105,6 +121,38 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
   const candidates = candidatesQuery.data ?? []
   const whitelistEntries = whitelistQuery.data ?? []
   const activities = activitiesQuery.data ?? []
+  const chainEvents = chainEventsQuery.data ?? []
+
+  // ponytail: gabungkan aktivitas DB + event blockchain, urutkan berdasarkan waktu
+  const mergedActivities = useMemo(() => {
+    const dbActivities = activities.map((a) => ({
+      id: a.id,
+      title: a.title,
+      message: a.message || a.description,
+      actorLabel: a.actorLabel,
+      createdAt: a.createdAt,
+      source: 'database' as const,
+    }))
+    const onchainActivities = chainEvents.map((e) => {
+      const actionLabels: Record<string, { title: string; message: string }> = {
+        commit: { title: 'Pemilih melakukan commit suara', message: `Voter ${e.actor.slice(0, 10)}...${e.actor.slice(-4)} mengirim komitmen` },
+        reveal: { title: 'Pemilih melakukan reveal suara', message: `Voter ${e.actor.slice(0, 10)}...${e.actor.slice(-4)} mengonfirmasi pilihan (kandidat #${(e.metadata.candidateId as number) ?? '?'})` },
+        phase_changed: { title: `Fase berubah ke ${(e.metadata.newPhase as string) ?? '?'}`, message: `Sebelumnya: ${(e.metadata.previousPhase as string) ?? '?'}` },
+        whitelist_updated: { title: 'Whitelist diperbarui', message: `${e.metadata.isRegistered ? 'Ditambahkan' : 'Dihapus'}: ${e.actor.slice(0, 10)}...${e.actor.slice(-4)}` },
+      }
+      const label = actionLabels[e.actionType] ?? { title: e.actionType, message: '' }
+      return {
+        id: e.id,
+        title: label.title,
+        message: label.message,
+        actorLabel: 'On-Chain',
+        createdAt: e.timestamp,
+        source: 'blockchain' as const,
+        txHash: e.txHash,
+      }
+    })
+    return [...dbActivities, ...onchainActivities].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  }, [activities, chainEvents])
 
   const contractAddress = proposal?.deployedSpaceAddress ?? 'Belum tersedia'
   const contractUrl = proposal?.deployedSpaceAddress
@@ -472,21 +520,33 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
         <SuperadminSectionCard className="border border-slate-200 bg-white p-0">
           <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-5">
             <h2 className="text-[18px] font-semibold text-slate-900">Riwayat Aktivitas</h2>
-            {activities.length > 0 && (
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-[13px] font-medium text-emerald-600">{activities.length} aktivitas</span>
+            {mergedActivities.length > 0 && (
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-[13px] font-medium text-emerald-600">{mergedActivities.length} aktivitas</span>
             )}
           </div>
 
           <div className="max-h-[920px] overflow-y-auto px-6 py-6">
             <div className="space-y-6">
-              {activities.length > 0 ? activities.map((activity) => (
+              {mergedActivities.length > 0 ? mergedActivities.map((activity) => (
                 <article key={activity.id} className="relative pl-8">
-                  <span className="absolute left-0 top-0 flex h-6 w-6 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-[10px] font-bold text-blue-600">+</span>
+                  <span className={`absolute left-0 top-0 flex h-6 w-6 items-center justify-center rounded-full border text-[10px] font-bold ${activity.source === 'blockchain' ? 'border-amber-200 bg-amber-50 text-amber-600' : 'border-blue-200 bg-blue-50 text-blue-600'}`}>
+                    {activity.source === 'blockchain' ? <Link2 className="h-3 w-3" /> : '+'}
+                  </span>
                   <h3 className="text-[14px] font-semibold text-slate-900">{activity.title}</h3>
                   {activity.message && (
                     <p className="mt-1 text-[13px] leading-5 text-slate-600">{activity.message}</p>
                   )}
-                  <p className="mt-1 text-[12px] text-slate-400">{activity.actorLabel}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <p className="text-[12px] text-slate-400">{activity.actorLabel}</p>
+                    {activity.source === 'blockchain' && 'txHash' in activity && activity.txHash && (
+                      <a
+                        href={`https://sepolia.basescan.org/tx/${activity.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] text-blue-500 hover:text-blue-700"
+                      >Lihat TX</a>
+                    )}
+                  </div>
                   <p className="mt-1 text-[11px] text-slate-400">{new Date(activity.createdAt).toLocaleString('id-ID')}</p>
                   <div className="absolute bottom-[-16px] left-[11px] top-6 w-px bg-slate-200 last:hidden" />
                 </article>

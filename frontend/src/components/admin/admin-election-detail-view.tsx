@@ -1315,7 +1315,41 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 >
                   <RefreshCw className={`h-4 w-4 ${resultsQuery.isRefetching ? 'animate-spin' : ''}`} />
                 </button>
-                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduh Laporan', description: 'Fitur unduh laporan sedang disiapkan.' })} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
+                <button type="button" onClick={() => {
+                  const lines: string[] = []
+                  lines.push('Laporan Hasil Pemilihan')
+                  lines.push('')
+                  lines.push(`Nama Pemilihan,${election.title}`)
+                  lines.push(`Kode Pemilihan,${election.code}`)
+                  lines.push(`Total Pemilih Terdaftar,${totalVoters}`)
+                  lines.push(`Total Suara Masuk,${totalVotes}`)
+                  lines.push(`Tingkat Partisipasi,${participationRate.toFixed(1)}%`)
+                  lines.push('')
+                  lines.push('Perolehan Suara Kandidat')
+                  lines.push('No. Urut,Nama Kandidat,Perolehan Suara,Persentase')
+                  for (const r of mappedResults) {
+                    lines.push(`${r.candidateNumber},${r.candidateName},${r.votes},${r.percentage}`)
+                  }
+                  lines.push('')
+                  if (election.detail.blockchainAnchor) {
+                    lines.push('Anchor Blockchain')
+                    lines.push(`Kontrak,${election.detail.blockchainAnchor}`)
+                    lines.push(`Basescan,https://sepolia.basescan.org/address/${election.detail.blockchainAnchor}`)
+                  }
+                  lines.push('')
+                  lines.push(`Diunduh pada,${new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })}`)
+                  const csvContent = lines.join('\n')
+                  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+                  const url = URL.createObjectURL(blob)
+                  const link = document.createElement('a')
+                  link.href = url
+                  link.download = `laporan-${election.title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.csv`
+                  document.body.appendChild(link)
+                  link.click()
+                  document.body.removeChild(link)
+                  URL.revokeObjectURL(url)
+                  showToast({ tone: 'success', title: 'Laporan berhasil diunduh', description: 'File CSV laporan hasil pemilihan sudah diunduh.' })
+                }} className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-black px-5 text-[14px] font-medium text-white hover:bg-slate-900">
                   <Download className="h-4 w-4" />
                   Unduh Laporan
                 </button>
