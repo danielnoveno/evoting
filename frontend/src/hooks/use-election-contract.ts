@@ -182,6 +182,51 @@ export function useElectionContract(address?: string, options: UseElectionContra
     }
   })
 
+  // ponytail: immutable reads untuk verifikasi Basescan
+  const { data: registryAddress } = useReadContract({
+    address: address as `0x${string}`,
+    abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
+    functionName: 'registry',
+    query: {
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address,
+    }
+  })
+
+  const { data: spaceAdminAddress } = useReadContract({
+    address: address as `0x${string}`,
+    abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
+    functionName: 'spaceAdmin',
+    query: {
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address,
+    }
+  })
+
+  const { data: onChainSpaceId } = useReadContract({
+    address: address as `0x${string}`,
+    abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
+    functionName: 'spaceId',
+    query: {
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address,
+    }
+  })
+
+  const { data: onChainCandidateCount } = useReadContract({
+    address: address as `0x${string}`,
+    abi: electionSpaceAbi,
+    chainId: baseSepolia.id,
+    functionName: 'candidateCount',
+    query: {
+      ...DEFAULT_READ_QUERY_OPTIONS,
+      enabled: !!address,
+    }
+  })
+
   // Write functions
   const commitVote = (commitment: `0x${string}`) => {
     if (!address) return
@@ -331,6 +376,11 @@ export function useElectionContract(address?: string, options: UseElectionContra
     isHasCommittedFetching,
     isHasRevealedFetching,
     isWhitelistedFetching,
+    // ponytail: immutable reads untuk verifikasi Basescan
+    registryAddress: registryAddress as `0x${string}` | undefined,
+    spaceAdminAddress: spaceAdminAddress as `0x${string}` | undefined,
+    onChainSpaceId: onChainSpaceId !== undefined ? Number(onChainSpaceId) : undefined,
+    onChainCandidateCount: onChainCandidateCount !== undefined ? Number(onChainCandidateCount) : undefined,
     
     // Actions
     commitVote,

@@ -221,12 +221,24 @@ export function VoterShell({ children }: { children: ReactNode }) {
 
 export function VoterPageSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="h-8 w-40 animate-pulse rounded-xl bg-slate-200" />
-      <div className="h-[220px] animate-pulse rounded-[28px] bg-slate-200" />
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="h-[320px] animate-pulse rounded-[28px] bg-slate-200" />
-        <div className="h-[320px] animate-pulse rounded-[28px] bg-slate-200" />
+    <div className="min-h-[85vh] space-y-6">
+      <div className="h-8 w-40 animate-pulse rounded-xl bg-slate-100" />
+      <div className="h-[340px] animate-pulse rounded-[28px] bg-slate-100" />
+      <div className="rounded-xl border border-slate-100 bg-white p-4">
+        <div className="h-5 w-48 animate-pulse rounded bg-slate-100" />
+        <div className="mt-3 space-y-2">
+          <div className="h-4 w-full animate-pulse rounded bg-slate-50" />
+          <div className="h-4 w-3/4 animate-pulse rounded bg-slate-50" />
+        </div>
+      </div>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <div className="h-[180px] animate-pulse rounded-xl bg-slate-100" />
+        <div className="h-[180px] animate-pulse rounded-xl bg-slate-100" />
+      </div>
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="h-[80px] animate-pulse rounded-lg bg-slate-100" />
+        <div className="h-[80px] animate-pulse rounded-lg bg-slate-100" />
+        <div className="h-[80px] animate-pulse rounded-lg bg-slate-100" />
       </div>
     </div>
   )

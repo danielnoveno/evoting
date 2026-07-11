@@ -101,7 +101,11 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     writeError,
     resetWrite,
     currentPhase: onChainPhase,
-    refetchPhase
+    refetchPhase,
+    registryAddress: onChainRegistry,
+    spaceAdminAddress: onChainSpaceAdmin,
+    onChainSpaceId,
+    onChainCandidateCount,
   } = useElectionContract(isAddressValid ? deployedAddress : undefined)
 
   // Indexer Hooks
@@ -1135,11 +1139,29 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                       if (data.verified) {
                         showToast({ tone: 'success', title: 'Kontrak Terverifikasi', description: 'Kontrak sudah terverifikasi di Basescan. Read/Write Contract tersedia.' })
                       } else {
+                        if (!onChainRegistry) {
+                          showToast({ tone: 'error', title: 'Data Belum Siap', description: 'Alamat registry belum terbaca dari kontrak. Tunggu sebentar lalu coba lagi.' })
+                          return
+                        }
                         // Try to verify
                         const verifyRes = await fetch('/api/verify-contract', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ contractAddress: deployedAddress, contractType: 'election-space' }),
+                          body: JSON.stringify({
+                            contractAddress: deployedAddress,
+                            contractType: 'election-space',
+                            registry: onChainRegistry,
+                            spaceAdmin: onChainSpaceAdmin,
+                            spaceId: onChainSpaceId,
+                            candidateCount: onChainCandidateCount,
+                            title: election.title,
+                            metadataURI: election.detail.blockchainAnchor || '',
+                            initialActor: deployedAddress,
+                            commitStartsAt: election.schedule?.commitStartAt ? Math.floor(new Date(election.schedule.commitStartAt).getTime() / 1000) : 0,
+                            commitEndsAt: election.schedule?.revealStartAt ? Math.floor(new Date(election.schedule.revealStartAt).getTime() / 1000) : 0,
+                            revealStartsAt: election.schedule?.revealStartAt ? Math.floor(new Date(election.schedule.revealStartAt).getTime() / 1000) : 0,
+                            revealEndsAt: election.schedule?.endedAt ? Math.floor(new Date(election.schedule.endedAt).getTime() / 1000) : 0,
+                          }),
                         })
                         const verifyData = await verifyRes.json()
                         if (verifyData.verified) {

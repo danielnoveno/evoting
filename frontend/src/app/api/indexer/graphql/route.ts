@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
+      signal: AbortSignal.timeout(10_000), // ponytail: 10s timeout agar tidak hang
     })
 
     const text = await response.text()
@@ -37,7 +38,10 @@ export async function POST(request: NextRequest) {
         'Cache-Control': 'no-store',
       },
     })
-  } catch {
-    return NextResponse.json({ error: 'Indexer Ponder tidak dapat dihubungi.' }, { status: 503 })
+  } catch (error) {
+    const message = error instanceof Error && error.name === 'TimeoutError'
+      ? 'Indexer Ponder tidak merespons (timeout 10 detik). Server mungkin sedang down.'
+      : 'Indexer Ponder tidak dapat dihubungi. Pastikan server indexer berjalan.'
+    return NextResponse.json({ error: message }, { status: 503 })
   }
 }
