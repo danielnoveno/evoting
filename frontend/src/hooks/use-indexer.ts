@@ -7,6 +7,10 @@ import type {
   TxAuditLogRecord,
   VoterOnchainProofRecord,
 } from '@/lib/repositories/types'
+import {
+  getPublicElectionResults,
+  listLatestAuditLogs,
+} from '@/lib/repositories/electionRepository'
 
 // ─── Query Keys ──────────────────────────────────────────────────────────────
 export const indexerKeys = {
@@ -93,41 +97,7 @@ export function useElectionResults(spaceAddress?: string | null) {
     queryFn: async (): Promise<PublicElectionResultRecord | null> => {
       if (!spaceAddress) return null
       
-      const addressVariants = Array.from(new Set([spaceAddress, spaceAddress.toLowerCase()]))
-      const data = await fetchJson<PonderElectionResultsData>(
-        '/api/indexer/graphql',
-        {
-          query: `
-            query PublicElectionResults($addresses: [String]) {
-              elections(where: { id_in: $addresses }, limit: 1) {
-                items { id totalCommitted totalRevealed lastUpdatedBlock }
-              }
-              candidateResults(where: { spaceAddress_in: $addresses }, orderBy: "candidateId", orderDirection: "asc", limit: 100) {
-                items { candidateId voteCount lastRevealTx lastUpdatedBlock }
-              }
-            }
-          `,
-          variables: { addresses: addressVariants },
-        }
-      )
-
-      const electionItem = data.elections?.items?.[0]
-      const candidateResults = (data.candidateResults?.items ?? []).map((item) => ({
-        candidateId: Number(item.candidateId),
-        voteCount: Number(item.voteCount),
-        lastRevealTx: item.lastRevealTx || null,
-        lastUpdatedBlock: Number(item.lastUpdatedBlock) || null,
-      }))
-
-      if (!electionItem && candidateResults.length === 0) return null
-
-      return {
-        spaceAddress: electionItem?.id ?? spaceAddress,
-        totalCommitted: electionItem?.totalCommitted ?? 0,
-        totalRevealed: electionItem?.totalRevealed ?? candidateResults.reduce((t, c) => t + c.voteCount, 0),
-        lastUpdatedBlock: electionItem ? Number(electionItem.lastUpdatedBlock) || null : null,
-        candidateResults,
-      }
+      return getPublicElectionResults(spaceAddress)
     },
     enabled: !!spaceAddress,
     staleTime: 15_000, // Results update frequently during reveal
@@ -262,59 +232,7 @@ export function useAuditLogs(spaceAddress?: string | null, limit = 6) {
   return useQuery({
     queryKey: indexerKeys.auditLogs(spaceAddress ?? undefined, limit),
     queryFn: async (): Promise<TxAuditLogRecord[]> => {
-      const addressVariants = spaceAddress
-        ? Array.from(new Set([spaceAddress, spaceAddress.toLowerCase()]))
-        : null
-
-      const data = await fetchJson<PonderAuditData>(
-        '/api/indexer/graphql',
-        {
-          query: addressVariants ? `
-            query PonderAuditLogs($addresses: [String], $limit: Int) {
-              chainEvents(where: { spaceAddress_in: $addresses }, orderBy: "timestamp", orderDirection: "desc", limit: $limit) {
-                items { id actionType txHash blockNumber timestamp spaceAddress spaceId actor metadata }
-              }
-            }
-          ` : `
-            query PonderAuditLogs($limit: Int) {
-              chainEvents(orderBy: "timestamp", orderDirection: "desc", limit: $limit) {
-                items { id actionType txHash blockNumber timestamp spaceAddress spaceId actor metadata }
-              }
-            }
-          `,
-          variables: addressVariants ? { addresses: addressVariants, limit } : { limit },
-        }
-      )
-
-      const parseMetadata = (value?: string | null): Record<string, unknown> => {
-        if (!value) return {}
-        try {
-          const parsed = JSON.parse(value)
-          return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
-        } catch {
-          return {}
-        }
-      }
-
-      const timestampToIso = (value: string) => {
-        const numeric = Number(value)
-        if (!Number.isFinite(numeric) || numeric <= 0) return new Date().toISOString()
-        return new Date(numeric * 1000).toISOString()
-      }
-
-      return (data.chainEvents?.items ?? []).map((item) => ({
-        id: item.id,
-        spaceId: Number(item.spaceId) || null,
-        proposalDraftId: null,
-        walletAddress: item.actor ?? '0x0000000000000000000000000000000000000000',
-        actionType: item.actionType,
-        txHash: item.txHash,
-        blockNumber: Number(item.blockNumber) || null,
-        status: 'success',
-        source: 'ponder',
-        metadata: parseMetadata(item.metadata),
-        createdAt: timestampToIso(item.timestamp),
-      }))
+      return listLatestAuditLogs(undefined, limit, spaceAddress)
     },
     enabled: !!spaceAddress || true, // Can fetch global logs if no spaceAddress
     staleTime: 60_000,

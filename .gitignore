@@ -33,6 +33,8 @@ deploy/backups/
 supabase/.temp/
 
 # AI / Agent tool configs (local dev only)
+.codex/
+.agents/
 .opencode/
 opencode.json
 .gemini
@@ -51,6 +53,7 @@ opencode.json
 .augment/
 .windsurfrules
 .aider*
+AGENTS.md
 AGENTS.local.md
 
 # Docs (kept separately)

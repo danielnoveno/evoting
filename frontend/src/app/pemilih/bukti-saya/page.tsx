@@ -219,6 +219,7 @@ export default function VoterProofPage() {
                       </div>
                     </div>
                   </div>
+                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                   <button id="tour-voter-view-proof-btn" type="button" onClick={() => {
                     actions.selectProofElection(election.id)
                     showToast({ tone: 'success', title: 'Bukti dipilih', description: `Detail bukti "${election.title}" ditampilkan di bawah.` })
@@ -227,6 +228,14 @@ export default function VoterProofPage() {
                     Lihat Bukti
                     <ArrowRight className="h-4 w-4" />
                   </button>
+                  <Link
+                    href={`/pemilih/bukti-saya/${election.id}`}
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 text-[13px] font-semibold uppercase tracking-[0.06em] text-white hover:bg-slate-800 md:w-auto"
+                  >
+                    Lihat Hasil
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  </div>
                 </div>
               </article>
             )

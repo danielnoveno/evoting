@@ -407,6 +407,14 @@ export async function getPublicElectionResults(spaceAddress?: string | null): Pr
   if (!spaceAddress) return null
   const graphqlUrl = getPonderGraphqlUrl()
 
+  // In the browser, the contract is the authoritative and most resilient
+  // source for final tallies. This also avoids surfacing a noisy 503 when the
+  // optional Ponder deployment is temporarily unavailable.
+  if (typeof window !== 'undefined') {
+    const chainResult = await fetchChainResults(spaceAddress)
+    if (chainResult) return chainResult
+  }
+
   // ponytail: if Ponder is configured, try it first; fall back to direct chain read
   if (graphqlUrl) {
     try {
