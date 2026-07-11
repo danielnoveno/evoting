@@ -24,6 +24,8 @@ jobs:
     name: Run Cron Jobs
     runs-on: ubuntu-latest
     timeout-minutes: 7
+    env:
+      VOTEIN_BASE_URL: https://votein-evoting.vercel.app
     steps:
       - name: Trigger Auto-Reveal and Notifications every minute
         run: |
@@ -32,7 +34,7 @@ jobs:
             RESPONSE=$(curl -s -w "\n%{http_code}" \
               -X POST \
               -H "x-cron-secret: ${{ secrets.NOTIFICATION_CRON_SECRET }}" \
-              "https://e-votein.netlify.app/api/cron/auto-reveal")
+              "$VOTEIN_BASE_URL/api/cron/auto-reveal")
             HTTP_CODE=$(echo "$RESPONSE" | tail -1)
             BODY=$(echo "$RESPONSE" | head -n -1)
             echo "Status: $HTTP_CODE"
@@ -45,7 +47,7 @@ jobs:
             RESPONSE=$(curl -s -w "\n%{http_code}" \
               -X POST \
               -H "x-cron-secret: ${{ secrets.NOTIFICATION_CRON_SECRET }}" \
-              "https://e-votein.netlify.app/api/cron/send-notifications")
+              "$VOTEIN_BASE_URL/api/cron/send-notifications")
             HTTP_CODE=$(echo "$RESPONSE" | tail -1)
             BODY=$(echo "$RESPONSE" | head -n -1)
             echo "Status: $HTTP_CODE"

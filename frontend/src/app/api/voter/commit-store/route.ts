@@ -47,13 +47,21 @@ export async function POST(request: NextRequest) {
   const { data: profile } = await supabase
     .schema('app')
     .from('app_profiles')
-    .select('wallet_address')
+    .select('id, wallet_address')
     .eq('user_id', user.id)
     .single()
 
   if (!profile || profile.wallet_address?.toLowerCase() !== body.voterAddress.toLowerCase()) {
     return NextResponse.json({ success: false, message: 'Wallet address tidak cocok dengan akun.' }, { status: 403 })
   }
+
+  const { data: existingCommitment } = await supabase
+    .schema('app')
+    .from('vote_commitments')
+    .select('id')
+    .eq('election_id', body.electionId)
+    .eq('voter_address', body.voterAddress)
+    .maybeSingle()
 
   const { error } = await supabase
     .schema('app')
@@ -72,6 +80,71 @@ export async function POST(request: NextRequest) {
   if (error) {
     console.error('[commit-store] Error:', error)
     return NextResponse.json({ success: false, message: 'Gagal menyimpan komitmen.' }, { status: 500 })
+  }
+
+  if (!existingCommitment) {
+    const { data: proposal } = await supabase
+      .schema('app')
+      .from('proposal_drafts')
+      .select('title, created_by')
+      .eq('id', body.electionId)
+      .maybeSingle()
+
+    const electionTitle = proposal?.title || 'pemilihan ini'
+    const rows: Array<{
+      target_profile_id: string | null
+      target_wallet: string | null
+      channel: 'in_app'
+      template_key: string
+      status: 'sent'
+      payload: Record<string, unknown>
+    }> = [{
+      target_profile_id: profile.id,
+      target_wallet: body.voterAddress.toLowerCase(),
+      channel: 'in_app',
+      template_key: 'vote_committed',
+      status: 'sent',
+      payload: {
+        proposalId: body.electionId,
+        eventType: 'vote_committed',
+        title: 'Komitmen suara tersimpan',
+        description: `Komitmen suara Anda untuk "${electionTitle}" sudah tercatat. Suara akan dihitung setelah pengesahan.`,
+        type: 'success',
+        link: `/pemilih/pemilihan/${body.electionId}/hasil`,
+        txHash: body.commitTxHash ?? null,
+      },
+    }]
+
+    const adminTargets = new Set<string>()
+    if (proposal?.created_by) adminTargets.add(proposal.created_by)
+    const { data: superadmins } = await supabase
+      .schema('app')
+      .from('app_profiles')
+      .select('id')
+      .eq('role', 'super_admin')
+    for (const superadmin of superadmins ?? []) adminTargets.add(superadmin.id)
+
+    for (const targetProfileId of adminTargets) {
+      rows.push({
+        target_profile_id: targetProfileId,
+        target_wallet: null,
+        channel: 'in_app',
+        template_key: 'vote_activity',
+        status: 'sent',
+        payload: {
+          proposalId: body.electionId,
+          eventType: 'vote_committed',
+          title: 'Komitmen suara baru tercatat',
+          description: `Satu pemilih telah mencoblos pada "${electionTitle}". Suara belum dihitung sampai tahap pengesahan selesai.`,
+          type: 'info',
+          link: `/superadmin/manajemen-proposal/${body.electionId}`,
+          txHash: body.commitTxHash ?? null,
+        },
+      })
+    }
+
+    const { error: notificationError } = await supabase.schema('app').from('notification_jobs').insert(rows)
+    if (notificationError) console.error('[commit-store] Notification error:', notificationError)
   }
 
   return NextResponse.json({ success: true })

@@ -34,7 +34,7 @@ export function PemilihanSections() {
 
   const elections = electionsQuery.data ?? []
   const activeElections = elections.filter((item) => item.phase === 'commit' || item.phase === 'reveal')
-  const upcoming = elections.filter((item) => item.phase === 'commit')
+  const upcoming = elections.filter((item) => item.phase === 'registration')
   const finished = elections.filter((item) => item.phase === 'ended')
 
   return (
@@ -214,7 +214,7 @@ export function PemilihanSections() {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Total suara</p>
-                      <p className="mt-2 text-[18px] font-semibold text-slate-900">Menunggu indexer</p>
+                      <p className="mt-2 text-[18px] font-semibold text-slate-900">Lihat detail hasil</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <Link href={`/pemilihan/${item.id}/hasil`} className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-50">Detail Hasil</Link>

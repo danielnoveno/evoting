@@ -7,6 +7,12 @@ import { privateKeyToAccount } from 'viem/accounts'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+function getCronSecret() {
+  return process.env.CRON_SECRET?.trim()
+    || process.env.NOTIFICATION_CRON_SECRET?.trim()
+    || ''
+}
+
 const ELECTION_SPACE_ABI = [
   {
     name: 'revealFor',
@@ -43,8 +49,10 @@ const ELECTION_SPACE_ABI = [
  * Uses the RELAYER_WALLET_PRIVATE_KEY to submit revealFor() transactions.
  */
 export async function POST(request: NextRequest) {
-  const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && request.headers.get('authorization') !== `Bearer ${cronSecret}`) {
+  const cronSecret = getCronSecret()
+  const bearerOk = request.headers.get('authorization') === `Bearer ${cronSecret}`
+  const headerOk = request.headers.get('x-cron-secret') === cronSecret
+  if (cronSecret && !bearerOk && !headerOk) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
   }
 
@@ -159,6 +167,76 @@ export async function POST(request: NextRequest) {
         await supabase.schema('app').from('vote_commitments')
           .update({ revealed: true, reveal_tx_hash: txHash })
           .eq('id', commitment.id)
+
+        const { data: proposal } = await supabase
+          .schema('app')
+          .from('proposal_drafts')
+          .select('title, created_by')
+          .eq('id', commitment.election_id)
+          .maybeSingle()
+
+        const electionTitle = proposal?.title || 'pemilihan ini'
+        const { data: voterProfile } = await supabase
+          .schema('app')
+          .from('app_profiles')
+          .select('id')
+          .eq('wallet_address', commitment.voter_address.toLowerCase())
+          .maybeSingle()
+
+        const rows: Array<{
+          target_profile_id: string | null
+          target_wallet: string | null
+          channel: 'in_app'
+          template_key: string
+          status: 'sent'
+          payload: Record<string, unknown>
+        }> = [{
+          target_profile_id: voterProfile?.id ?? null,
+          target_wallet: commitment.voter_address.toLowerCase(),
+          channel: 'in_app',
+          template_key: 'vote_revealed',
+          status: 'sent',
+          payload: {
+            proposalId: commitment.election_id,
+            eventType: 'vote_revealed',
+            title: 'Suara berhasil disahkan',
+            description: `Suara Anda untuk "${electionTitle}" sudah disahkan dan masuk penghitungan.`,
+            type: 'success',
+            link: `/pemilih/pemilihan/${commitment.election_id}/hasil`,
+            txHash,
+          },
+        }]
+
+        const adminTargets = new Set<string>()
+        if (proposal?.created_by) adminTargets.add(proposal.created_by)
+        const { data: superadmins } = await supabase
+          .schema('app')
+          .from('app_profiles')
+          .select('id')
+          .eq('role', 'super_admin')
+        for (const superadmin of superadmins ?? []) adminTargets.add(superadmin.id)
+
+        for (const targetProfileId of adminTargets) {
+          rows.push({
+            target_profile_id: targetProfileId,
+            target_wallet: null,
+            channel: 'in_app',
+            template_key: 'vote_activity',
+            status: 'sent',
+            payload: {
+              proposalId: commitment.election_id,
+              eventType: 'vote_revealed',
+              title: 'Satu suara berhasil disahkan',
+              description: `Satu suara pada "${electionTitle}" berhasil disahkan oleh sistem.`,
+              type: 'success',
+              link: `/superadmin/manajemen-proposal/${commitment.election_id}`,
+              txHash,
+            },
+          })
+        }
+
+        const { error: notificationError } = await supabase.schema('app').from('notification_jobs').insert(rows)
+        if (notificationError) console.error('[auto-reveal] Notification error:', notificationError)
 
         revealedCount++
         results.push({ spaceAddress, voterAddress: commitment.voter_address, success: true, txHash })

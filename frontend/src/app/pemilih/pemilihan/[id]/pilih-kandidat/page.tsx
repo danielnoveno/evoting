@@ -3,7 +3,7 @@
 import { AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock3, ExternalLink, Info, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { useAccount } from 'wagmi'
+import { useAccount, useConnect } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
@@ -32,10 +32,23 @@ async function fetchLatestContractAddress(electionId: string): Promise<string | 
   }
 }
 
+function getWalletConnectionErrorMessage(error: { message?: string }) {
+  const message = error.message?.toLowerCase() ?? ''
+  if (message.includes('window') || message.includes('popup') || message.includes('permission')) {
+    return 'Browser memerlukan izin untuk membuka jendela konfirmasi. Klik sambungkan lagi, lalu izinkan jendela yang muncul.'
+  }
+  if (message.includes('rejected') || message.includes('denied') || message.includes('cancel')) {
+    return 'Penyambungan dompet dibatalkan. Klik sambungkan lagi jika ingin melanjutkan.'
+  }
+
+  return 'Coba lagi dari perangkat atau browser yang mendukung Base Account.'
+}
+
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
   const { showToast } = useToast()
   const { store, loading, actions } = useVoterStore()
   const { address: connectedWallet, isConnecting } = useAccount()
+  const { connect, connectors, isPending: isConnectPending } = useConnect()
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 8 })
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [candidateToConfirm, setCandidateToConfirm] = useState<string | null>(null)
@@ -51,6 +64,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const contractAddress = election?.deployedSpaceAddress ?? undefined
   const profileWallet = store?.profile.wallet ?? ''
   const isWalletReady = Boolean(profileWallet && connectedWallet && sameWalletAddress(profileWallet, connectedWallet))
+  const isWalletDisconnected = !connectedWallet
   const walletError = connectedWallet && profileWallet && !sameWalletAddress(profileWallet, connectedWallet)
     ? 'Dompet tersambung berbeda dari dompet aktivasi voter. Putuskan koneksi lalu sambungkan dompet yang dipakai saat aktivasi.'
     : null
@@ -112,8 +126,10 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     ? 'Pemilihan ini belum memiliki smart contract aktif.'
     : effectivePhase === 'suspended'
       ? 'Pemilihan ini sedang ditangguhkan oleh superadmin. Pencoblosan dihentikan sementara hingga proses tinjauan selesai.'
-    : !isWalletReady
-      ? walletError ?? 'Sambungkan dompet yang dipakai saat aktivasi voter sebelum mencoblos.'
+    : !profileWallet
+      ? 'Profil voter belum memiliki wallet aktivasi.'
+    : walletError
+      ? walletError
     : onChainStatusError
       ? 'Status blockchain belum terbaca. Coba muat ulang halaman sebelum mencoblos.'
     : effectivePhaseNumber !== 1
@@ -264,10 +280,44 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       return
     }
 
-    if (!isWalletReady) {
-      showToast({ title: 'Dompet aktivasi belum siap', description: walletError ?? 'Sambungkan dompet yang dipakai saat aktivasi voter.', tone: 'info' })
+    if (!profileWallet) {
+      showToast({ title: 'Dompet aktivasi belum siap', description: 'Profil voter belum memiliki wallet aktivasi.', tone: 'info' })
       return
     }
+
+    if (isWalletDisconnected) {
+      const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
+      if (!connector) {
+        showToast({ title: 'Dompet belum tersedia', description: 'Sistem Base Account belum tersedia. Coba muat ulang halaman.', tone: 'error' })
+        return
+      }
+
+      connect(
+        { connector, chainId: baseSepolia.id },
+        {
+          onSuccess: (data) => {
+            const account = data.accounts?.[0]
+            if (!account || !sameWalletAddress(profileWallet, account)) {
+              showToast({ title: 'Dompet tidak sesuai', description: 'Sambungkan dompet yang dipakai saat aktivasi voter.', tone: 'error' })
+              return
+            }
+
+            setCandidateToConfirm(candidateId)
+            setConfirmOpen(true)
+          },
+          onError: (error) => {
+            showToast({ title: 'Gagal menyambungkan dompet', description: getWalletConnectionErrorMessage(error), tone: 'error' })
+          },
+        },
+      )
+      return
+    }
+
+    if (!isWalletReady) {
+      showToast({ title: 'Dompet tidak sesuai', description: walletError ?? 'Sambungkan dompet yang dipakai saat aktivasi voter.', tone: 'error' })
+      return
+    }
+
     setCandidateToConfirm(candidateId)
     setConfirmOpen(true)
   }
@@ -564,7 +614,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         </section>
       )}
 
-      {isConnecting ? (
+      {isConnecting || isConnectPending ? (
         <section className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-[13px] leading-7 text-slate-600">
           <div className="flex items-start gap-3">
             <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-slate-500" />
@@ -580,7 +630,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
             <div>
               <p className="font-semibold">Dompet aktivasi belum siap</p>
-              <p className="mt-1">{walletError ?? 'Sambungkan dompet yang dipakai saat aktivasi voter sebelum mencoblos.'}</p>
+              <p className="mt-1">{walletError ?? 'Klik tombol Sambungkan Dompet pada kandidat yang ingin dicoblos, lalu izinkan jendela konfirmasi.'}</p>
             </div>
           </div>
         </section>
@@ -668,17 +718,26 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 <button
                   type="button"
                   onClick={() => handleSelectClick(candidate.id)}
-                  disabled={Boolean(voteBlockedReason) || !isWalletReady || isWritePending || isConfirming || hasCommittedOnChain === true}
+                  disabled={Boolean(voteBlockedReason && !walletError) || isConnectPending || isWritePending || isConfirming || hasCommittedOnChain === true}
                   className="mt-4 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#0F172A] px-4 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label={`Pilih kandidat ${candidate.name}`}
                 >
-                  {isWritePending || isConfirming ? (
+                  {isConnectPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Menyambungkan...
+                    </>
+                  ) : isWritePending || isConfirming ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Memproses...
                     </>
                   ) : hasCommittedOnChain === true ? (
                     'Sudah Mencoblos'
+                  ) : isWalletDisconnected ? (
+                    'Sambungkan Dompet'
+                  ) : walletError ? (
+                    'Dompet Tidak Sesuai'
                   ) : (
                     <>
                       Coblos Kandidat Ini
