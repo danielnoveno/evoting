@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import { sendCommitReminderEmail, sendElectionResultsEmail, sendDeadlineReminderEmail } from '@/lib/email/send'
 import { fetchVoteCountsViaAlchemy, fetchCandidateCountViaAlchemy, isAlchemyConfigured } from '@/lib/alchemy-rpc'
+import { notifyWallets } from '@/app/api/_lib/notifications'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -65,13 +66,14 @@ async function wasRecentlySent(
   templateKey: string,
   proposalDraftId: string,
   windowMs: number,
+  channel: 'email' | 'in_app' = 'email',
 ): Promise<boolean> {
   const since = new Date(Date.now() - windowMs).toISOString()
   const { count } = await client
     .schema('app')
     .from('notification_jobs')
     .select('id', { count: 'exact', head: true })
-    .eq('channel', 'email')
+    .eq('channel', channel)
     .eq('template_key', templateKey)
     .eq('status', 'sent')
     .eq('payload->>proposalDraftId', proposalDraftId)
@@ -84,9 +86,10 @@ async function markSent(
   templateKey: string,
   proposalDraftId: string,
   extraPayload: Record<string, unknown>,
+  channel: 'email' | 'in_app' = 'email',
 ) {
   await client.schema('app').from('notification_jobs').insert({
-    channel: 'email',
+    channel,
     template_key: templateKey,
     status: 'sent',
     payload: { proposalDraftId, ...extraPayload },
@@ -154,6 +157,23 @@ async function processCommitReminders(
     const uncommittedWallets = walletAddresses.filter((w) => !committedSet.has(w))
     if (uncommittedWallets.length === 0) continue
 
+    let inAppSent = 0
+    if (!await wasRecentlySent(client, 'commit_reminder_in_app', election.id, windowMinutes * 60 * 1000)) {
+      inAppSent = await notifyWallets(client, {
+        wallets: uncommittedWallets,
+        templateKey: 'commit_reminder',
+        payload: {
+          proposalDraftId: election.id,
+          eventType: 'commit_reminder',
+          title: 'Waktu memilih segera dibuka',
+          description: `Pemilihan "${election.title}" akan segera memasuki tahap pemilihan. Siapkan akun Anda.`,
+          type: 'warning',
+          link: election.deployed_space_address ? `/pemilih/pemilihan/${election.deployed_space_address}/pilih-kandidat` : '/pemilih',
+        },
+      })
+      await markSent(client, 'commit_reminder_in_app', election.id, { electionTitle: election.title, sentToCount: inAppSent })
+    }
+
     // Get voter emails from master_voters
     const { data: voters } = await client
       .schema('app')
@@ -181,6 +201,7 @@ async function processCommitReminders(
     await markSent(client, 'commit_reminder', election.id, {
       electionTitle: election.title,
       sentToCount: batchSent,
+      inAppSentToCount: inAppSent,
     })
   }
 
@@ -245,6 +266,23 @@ async function processDeadlineReminders(
     const uncommittedWallets = walletAddresses.filter((w) => !committedSet.has(w))
     if (uncommittedWallets.length === 0) continue
 
+    let inAppSent = 0
+    if (!await wasRecentlySent(client, 'deadline_reminder_in_app', election.id, windowMinutes * 60 * 1000)) {
+      inAppSent = await notifyWallets(client, {
+        wallets: uncommittedWallets,
+        templateKey: 'deadline_reminder',
+        payload: {
+          proposalDraftId: election.id,
+          eventType: 'deadline_reminder',
+          title: 'Batas memilih hampir habis',
+          description: `Tahap pemilihan "${election.title}" akan segera berakhir. Segera berikan suara jika belum.`,
+          type: 'warning',
+          link: election.deployed_space_address ? `/pemilih/pemilihan/${election.deployed_space_address}/pilih-kandidat` : '/pemilih',
+        },
+      })
+      await markSent(client, 'deadline_reminder_in_app', election.id, { electionTitle: election.title, sentToCount: inAppSent })
+    }
+
     const { data: voters } = await client
       .schema('app')
       .from('master_voters')
@@ -271,6 +309,7 @@ async function processDeadlineReminders(
     await markSent(client, 'deadline_reminder', election.id, {
       electionTitle: election.title,
       sentToCount: batchSent,
+      inAppSentToCount: inAppSent,
     })
   }
 
@@ -398,6 +437,23 @@ async function processElectionResults(
       .map((e) => e.wallet_address?.toLowerCase())
       .filter(Boolean) as string[]
 
+    let inAppSent = 0
+    if (!await wasRecentlySent(client, 'election_results_in_app', election.id, lookbackMinutes * 60 * 1000)) {
+      inAppSent = await notifyWallets(client, {
+        wallets: walletAddresses,
+        templateKey: 'election_results',
+        payload: {
+          proposalDraftId: election.id,
+          eventType: 'election_results',
+          title: 'Hasil pemilihan tersedia',
+          description: `Hasil pemilihan "${election.title}" sudah tersedia. Pemenang sementara: ${winnerName}.`,
+          type: 'success',
+          link: `/pemilih/pemilihan/${election.deployed_space_address}/hasil`,
+        },
+      })
+      await markSent(client, 'election_results_in_app', election.id, { electionTitle: election.title, sentToCount: inAppSent })
+    }
+
     const { data: voters } = await client
       .schema('app')
       .from('master_voters')
@@ -428,6 +484,7 @@ async function processElectionResults(
       winnerName,
       totalVotes,
       sentToCount: batchSent,
+      inAppSentToCount: inAppSent,
       dataSource,
     })
   }

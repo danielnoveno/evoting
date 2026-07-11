@@ -440,8 +440,7 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
       }
     }
 
-    void notifySuperadminsServer()
-    void notifyAdminServer()
+    await Promise.allSettled([notifySuperadminsServer(), notifyAdminServer()])
 
     // Send email notification to superadmins (fire-and-forget)
     const sendEmailToSuperadmins = async () => {

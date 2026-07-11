@@ -1,5 +1,6 @@
-# VoteChain Cron Jobs — Email Notifications + Auto-Reveal
-# Dijalankan otomatis via GitHub Actions setiap 5 menit
+# VoteChain Cron Jobs — Email + In-App Notifications + Auto-Reveal
+# GitHub Actions schedule minimum efektifnya ±5 menit, jadi workflow ini
+# melakukan 5 tick internal per run agar endpoint dipanggil kira-kira tiap 1 menit.
 #
 # SETUP:
 # 1. Push repo ini ke GitHub
@@ -11,41 +12,49 @@ name: VoteChain Cron
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # Setiap 5 menit
+    - cron: '*/5 * * * *' # GitHub Actions minimum praktis; tick internal tiap ±1 menit
   workflow_dispatch: # Manual trigger untuk testing
+
+concurrency:
+  group: votechain-cron
+  cancel-in-progress: false
 
 jobs:
   run-crons:
     name: Run Cron Jobs
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 7
     steps:
-      - name: Trigger Auto-Reveal
+      - name: Trigger Auto-Reveal and Notifications every minute
         run: |
-          echo "=== Auto-Reveal ==="
-          RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -X POST \
-            -H "x-cron-secret: ${{ secrets.NOTIFICATION_CRON_SECRET }}" \
-            "https://e-votein.netlify.app/api/cron/auto-reveal")
-          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-          BODY=$(echo "$RESPONSE" | head -n -1)
-          echo "Status: $HTTP_CODE"
-          echo "Response: $BODY"
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "::warning::Auto-reveal returned status $HTTP_CODE"
-          fi
+          for TICK in 1 2 3 4 5; do
+            echo "=== Tick $TICK/5: Auto-Reveal ==="
+            RESPONSE=$(curl -s -w "\n%{http_code}" \
+              -X POST \
+              -H "x-cron-secret: ${{ secrets.NOTIFICATION_CRON_SECRET }}" \
+              "https://e-votein.netlify.app/api/cron/auto-reveal")
+            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+            BODY=$(echo "$RESPONSE" | head -n -1)
+            echo "Status: $HTTP_CODE"
+            echo "Response: $BODY"
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "::warning::Auto-reveal returned status $HTTP_CODE"
+            fi
 
-      - name: Trigger Notifications
-        run: |
-          echo "=== Notifications ==="
-          RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -X POST \
-            -H "x-cron-secret: ${{ secrets.NOTIFICATION_CRON_SECRET }}" \
-            "https://e-votein.netlify.app/api/cron/send-notifications")
-          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-          BODY=$(echo "$RESPONSE" | head -n -1)
-          echo "Status: $HTTP_CODE"
-          echo "Response: $BODY"
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "::warning::Notifications returned status $HTTP_CODE"
-          fi
+            echo "=== Tick $TICK/5: Notifications ==="
+            RESPONSE=$(curl -s -w "\n%{http_code}" \
+              -X POST \
+              -H "x-cron-secret: ${{ secrets.NOTIFICATION_CRON_SECRET }}" \
+              "https://e-votein.netlify.app/api/cron/send-notifications")
+            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+            BODY=$(echo "$RESPONSE" | head -n -1)
+            echo "Status: $HTTP_CODE"
+            echo "Response: $BODY"
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "::warning::Notifications returned status $HTTP_CODE"
+            fi
+
+            if [ "$TICK" != "5" ]; then
+              sleep 60
+            fi
+          done

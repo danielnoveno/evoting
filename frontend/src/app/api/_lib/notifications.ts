@@ -57,3 +57,29 @@ export async function notifyDeployedElectionVoters(
 
   if (error) console.error('[notifications] Failed to create deployed voter notifications:', error)
 }
+
+export async function notifyWallets(
+  client: ServiceClient,
+  params: {
+    wallets: Array<string | null | undefined>
+    templateKey: string
+    payload: Record<string, unknown>
+  },
+) {
+  const wallets = uniqueWallets(params.wallets)
+  if (wallets.length === 0) return 0
+
+  const { error } = await client.from('notification_jobs').insert(wallets.map((wallet) => ({
+    target_wallet: wallet,
+    channel: 'in_app' as const,
+    template_key: params.templateKey,
+    status: 'sent' as const,
+    payload: params.payload,
+  })))
+
+  if (error) {
+    console.error('[notifications] Failed to create wallet notifications:', error)
+    return 0
+  }
+  return wallets.length
+}

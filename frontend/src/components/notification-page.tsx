@@ -71,6 +71,8 @@ export function NotificationPage({
       return payload.notifications as NotificationItem[]
     },
     retry: false,
+    refetchInterval: 60000,
+    refetchOnWindowFocus: true,
   })
 
   const notifications = data ?? []
