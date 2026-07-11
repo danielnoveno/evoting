@@ -5,6 +5,7 @@ import type { Database } from '@/lib/supabase/database.types'
 import { isRecord } from '@/lib/repositories/helpers'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import { sendVoterWhitelistEmail, sendProposalSubmittedEmail, sendProposalStatusEmail } from '@/lib/email/send'
+import { notifyDeployedElectionVoters } from '@/app/api/_lib/notifications'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -283,6 +284,13 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
           const walletAddresses = whitelistEntries
             .map((e) => e.wallet_address?.toLowerCase())
             .filter(Boolean) as string[]
+
+          await notifyDeployedElectionVoters(serviceClient, {
+            proposalId: id,
+            proposalTitle: data.title,
+            spaceAddress: data.deployed_space_address,
+            wallets: walletAddresses,
+          })
 
           const { data: voters } = await serviceClient
             .schema('app')

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { ensureCanManageProposal, jsonError, requireProfile } from '@/app/api/_lib/auth'
 import { ensureWhitelistMutable } from '@/app/api/_lib/whitelist-guard'
+import { notifyWhitelistAdded } from '@/app/api/_lib/notifications'
 import type { Database } from '@/lib/supabase/database.types'
 import { isRecord } from '@/lib/repositories/helpers'
 
@@ -53,5 +54,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     .single()
 
   if (error) return jsonError('Gagal menambahkan pemilih ke whitelist. Periksa duplikasi wallet atau hak akses.', 500)
+  const { data: proposal } = await auth.client.from('proposal_drafts').select('title').eq('id', id).maybeSingle()
+  await notifyWhitelistAdded(auth.client, { proposalId: id, proposalTitle: proposal?.title, wallets: [walletAddress] })
   return NextResponse.json({ entry: mapWhitelistRow(data) })
 }

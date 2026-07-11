@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { ensureCanManageProposal, jsonError, requireProfile } from '@/app/api/_lib/auth'
 import { ensureWhitelistMutable } from '@/app/api/_lib/whitelist-guard'
+import { notifyWhitelistAdded } from '@/app/api/_lib/notifications'
 import { logAudit, getActorInfo } from '@/lib/audit-logger'
 import { isRecord } from '@/lib/repositories/helpers'
 
@@ -80,6 +81,8 @@ export async function POST(request: NextRequest) {
     .insert(entries)
 
   if (insertError) return jsonError('Gagal menambahkan pemilih ke whitelist. Periksa duplikasi.', 500)
+  const { data: proposal } = await auth.client.from('proposal_drafts').select('title').eq('id', proposalDraftId).maybeSingle()
+  await notifyWhitelistAdded(auth.client, { proposalId: proposalDraftId, proposalTitle: proposal?.title, wallets: newVoters.map((v) => v.wallet_address) })
 
   const addedSkipped = skipped + (votersWithWallet.length - newVoters.length)
 

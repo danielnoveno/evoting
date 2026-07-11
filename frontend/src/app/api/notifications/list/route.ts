@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     .select('*')
     .eq('channel', 'in_app')
     .in('status', ['queued', 'sent'])
-    .eq('target_profile_id', auth.profile.id)
+    .or(`target_profile_id.eq.${auth.profile.id},target_wallet.eq.${auth.profile.wallet_address.toLowerCase()},and(target_profile_id.is.null,target_wallet.is.null)`)
     .order('created_at', { ascending: false })
     .limit(50)
 

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     .from('notification_jobs')
     .delete()
     .in('id', ids)
-    .eq('target_profile_id', auth.profile.id)
+    .or(`target_profile_id.eq.${auth.profile.id},target_wallet.eq.${auth.profile.wallet_address.toLowerCase()}`)
 
   if (error) {
     return NextResponse.json({ error: 'Gagal menghapus notifikasi.' }, { status: 500 })
