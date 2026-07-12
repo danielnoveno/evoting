@@ -206,7 +206,7 @@ contract VoteChainMVPTest {
 
         try voter1.commit(space, commitment) {
             revert("commit before schedule should fail");
-        } catch {}
+        } catch { }
 
         _warp(commitStartsAt + 1);
         voter1.commit(space, commitment);

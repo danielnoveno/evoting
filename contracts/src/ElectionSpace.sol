@@ -189,7 +189,20 @@ contract ElectionSpace {
     }
 
     modifier onlyCommitWindow() {
-        if (commitStartsAt != 0 && (block.timestamp < commitStartsAt || block.timestamp >= commitEndsAt)) {
+        if (
+            commitStartsAt != 0
+                && (block.timestamp < commitStartsAt || block.timestamp >= commitEndsAt)
+        ) {
+            revert WrongPhase(Phase.Commit, phase());
+        }
+        _;
+    }
+
+    /// @notice Blocks whitelist/schedule mutations once the commit window has closed.
+    /// @dev Prevents an admin from adding/removing voters or rescheduling after
+    ///      votes may already have been committed (phase-gap freeze).
+    modifier onlyBeforeCommitEnds() {
+        if (commitStartsAt != 0 && block.timestamp >= commitEndsAt) {
             revert WrongPhase(Phase.Commit, phase());
         }
         _;
@@ -217,7 +230,7 @@ contract ElectionSpace {
         uint256 _commitEndsAt,
         uint256 _revealStartsAt,
         uint256 _revealEndsAt
-    ) external onlySpaceAdminOrSuperAdmin onlyActive onlyPhase(Phase.Commit) {
+    ) external onlySpaceAdminOrSuperAdmin onlyActive onlyPhase(Phase.Commit) onlyBeforeCommitEnds {
         _setPhaseSchedule(
             _commitStartsAt, _commitEndsAt, _revealStartsAt, _revealEndsAt, msg.sender
         );
@@ -309,6 +322,7 @@ contract ElectionSpace {
         onlySpaceAdminOrSuperAdmin
         onlyActive
         onlyPhase(Phase.Commit)
+        onlyBeforeCommitEnds
     {
         if (voter == address(0)) revert InvalidVoter();
         if (isWhitelisted[voter]) revert AlreadyRegistered();
@@ -322,6 +336,7 @@ contract ElectionSpace {
         onlySpaceAdminOrSuperAdmin
         onlyActive
         onlyPhase(Phase.Commit)
+        onlyBeforeCommitEnds
     {
         for (uint256 i = 0; i < voters.length; i++) {
             address voter = voters[i];
@@ -337,6 +352,7 @@ contract ElectionSpace {
         onlySpaceAdminOrSuperAdmin
         onlyActive
         onlyPhase(Phase.Commit)
+        onlyBeforeCommitEnds
     {
         if (_removeWhitelistedVoter(voter)) {
             emit WhitelistUpdated(spaceId, voter, false, msg.sender);
@@ -359,26 +375,11 @@ contract ElectionSpace {
         emit Committed(spaceId, msg.sender, commitment);
     }
 
-    /// @notice Relayer-submitted commit on behalf of a whitelisted voter.
-    /// @dev Mirrors commitVote but allows any caller (relayer EOA) to submit.
-    ///      The relayer pays gas; the commitment is stored under the voter address.
-    function commitFor(address voter, bytes32 commitment)
-        external
-        onlyActive
-        onlyPhase(Phase.Commit)
-        onlyCommitWindow
-    {
-        if (voter == address(0)) revert InvalidVoter();
-        if (!isWhitelisted[voter]) revert NotRegistered();
-        if (hasCommitted[voter]) revert AlreadyCommitted();
-        if (commitment == bytes32(0)) revert InvalidCommitment();
-
-        hasCommitted[voter] = true;
-        commitmentOf[voter] = commitment;
-
-        emit Committed(spaceId, voter, commitment);
-        emit CommitRelayed(spaceId, voter, msg.sender, commitment);
-    }
+    /// @notice commitFor was REMOVED for security: it allowed any caller to
+    ///         pre-commit a garbage commitment for a whitelisted voter, permanently
+    ///         suppressing that voter's real vote (vote-suppression DoS). Voters
+    ///         commit via commitVote (msg.sender == voter). Do not re-add without
+    ///         an EIP-712 voter signature verified on-chain.
 
     function revealVote(uint256 candidateId, bytes32 salt)
         external
