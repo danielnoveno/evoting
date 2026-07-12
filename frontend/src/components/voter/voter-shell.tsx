@@ -214,7 +214,7 @@ export function VoterShell({ children }: { children: ReactNode }) {
           </AppNavbar>
 
           <div className="flex-1 px-4 py-5 md:px-6 md:py-6 lg:px-8 lg:py-6">
-            <div className="mx-auto w-full max-w-[1200px]">
+            <div className="mx-auto w-full max-w-[1440px]">
               {children}
             </div>
           </div>
