@@ -7,12 +7,44 @@ import { RoleGate } from '@/components/auth/role-gate'
 import { ConsoleShell, type ConsoleNavItem } from '@/components/dashboard/console-shell'
 import { superadminShellContent } from '@/lib/superadmin-data'
 import { usePlatformSettings } from '@/hooks/use-platform-settings'
-import { useLanguage } from '@/lib/contexts/language-context'
 import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 
 export function SuperadminShell({ children }: { children: ReactNode }) {
   const { data: settings } = usePlatformSettings()
-  const { t, locale } = useLanguage()
+  // ponytail: locale hardcoded to Bahasa Indonesia (English unreachable) — no i18n runtime.
+  const t = {
+    sidebar: {
+      dashboard: 'Beranda',
+      superadmin: 'Manajemen Superadmin',
+      admin: 'Manajemen Admin',
+      election: 'Manajemen Pemilihan',
+      proposal: 'Manajemen Proposal',
+      audit: 'Audit Log',
+      voter: 'Data Master Voter',
+      risk: 'Risk Activity',
+      profile: 'Profil',
+      help: 'Pusat Bantuan',
+      voter_home: 'Beranda Pemilih',
+      voter_elections: 'Pemilihan Aktif',
+      voter_history: 'Riwayat Suara',
+    },
+    header: {
+      search: 'Cari data...',
+      logout: 'Keluar Sesi',
+      connect_wallet: 'Hubungkan Dompet',
+    },
+    voter: {
+      welcome: 'Selamat Datang di VoteIn',
+      description: 'Gunakan hak suara Anda dengan aman melalui teknologi blockchain.',
+      start_voting: 'Mulai Memilih',
+    },
+    profile: {
+      title: 'Profil Pengguna',
+      save: 'Simpan Perubahan',
+      cancel: 'Batal',
+    },
+  }
+  const locale = 'Bahasa Indonesia'
 
   const sidebarItems: ConsoleNavItem[] = [
     { href: '/superadmin', label: t.sidebar.dashboard, icon: LayoutGrid },

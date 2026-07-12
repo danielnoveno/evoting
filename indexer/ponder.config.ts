@@ -6,7 +6,7 @@ import { VoteChainRegistryAbi } from "./abis/VoteChainRegistryAbi";
 import { ElectionSpaceAbi } from "./abis/ElectionSpaceAbi";
 
 const registryAddress = (process.env.NEXT_PUBLIC_REGISTRY_ADDRESS ??
-  "0x059e0F48aEB8190c7c9955023eB46716b8ef8Ce1") as `0x${string}`;
+  "0xFc63e575f1Ca4AB8F979Fc6dCb31B4D638020610") as `0x${string}`;
 const startBlock = Number(process.env.PONDER_START_BLOCK ?? 42387749);
 const maxRequestsPerSecond = Number(process.env.PONDER_MAX_REQUESTS_PER_SECOND ?? 3);
 const pollingInterval = Number(process.env.PONDER_POLLING_INTERVAL_MS ?? 5_000);

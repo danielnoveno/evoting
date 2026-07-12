@@ -3,7 +3,7 @@
   "network": "base-sepolia",
   "contracts": {
     "VoteChainRegistry": {
-      "address": "0x7928524CdFc035136b629E796EA4e7C54A6Ef3c0",
+      "address": "0xFc63e575f1Ca4AB8F979Fc6dCb31B4D638020610",
       "deployTxHash": "0xe57c7ba540c3383063bad458d76efde5bad28b1e20c5dba4a28fbcda32063774",
       "verified": true
     },

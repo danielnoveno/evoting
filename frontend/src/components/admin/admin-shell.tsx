@@ -9,8 +9,6 @@ import { adminShellContent } from '@/lib/admin-content'
 import { OnboardingTour } from './onboarding-tour'
 import { AdminSuspensionOverlay } from './admin-suspension-overlay'
 
-import { useLanguage } from '@/lib/contexts/language-context'
-
 const sidebarIconMap: Record<'layout-grid' | 'gauge' | 'file-text' | 'circle-help', LucideIcon> = {
   'layout-grid': LayoutGrid,
   gauge: Gauge,
@@ -19,7 +17,40 @@ const sidebarIconMap: Record<'layout-grid' | 'gauge' | 'file-text' | 'circle-hel
 }
 
 export function AdminShell({ children }: { children: ReactNode }) {
-  const { t, locale } = useLanguage()
+  // ponytail: locale hardcoded to Bahasa Indonesia (English unreachable) — no i18n runtime.
+  const t = {
+    sidebar: {
+      dashboard: 'Beranda',
+      superadmin: 'Manajemen Superadmin',
+      admin: 'Manajemen Admin',
+      election: 'Manajemen Pemilihan',
+      proposal: 'Manajemen Proposal',
+      audit: 'Audit Log',
+      voter: 'Data Master Voter',
+      risk: 'Risk Activity',
+      profile: 'Profil',
+      help: 'Pusat Bantuan',
+      voter_home: 'Beranda Pemilih',
+      voter_elections: 'Pemilihan Aktif',
+      voter_history: 'Riwayat Suara',
+    },
+    header: {
+      search: 'Cari data...',
+      logout: 'Keluar Sesi',
+      connect_wallet: 'Hubungkan Dompet',
+    },
+    voter: {
+      welcome: 'Selamat Datang di VoteIn',
+      description: 'Gunakan hak suara Anda dengan aman melalui teknologi blockchain.',
+      start_voting: 'Mulai Memilih',
+    },
+    profile: {
+      title: 'Profil Pengguna',
+      save: 'Simpan Perubahan',
+      cancel: 'Batal',
+    },
+  }
+  const locale = 'Bahasa Indonesia'
 
   const sidebarItems: ConsoleNavItem[] = [
     { href: '/admin', label: t.sidebar.dashboard, icon: LayoutGrid },

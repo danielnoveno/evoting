@@ -95,13 +95,15 @@ export function isAlchemyConfigured(): boolean {
   return getRpcUrl() !== null
 }
 
-/** Fetch candidateCount + all voteCounts in a single call. */
-export async function fetchElectionResultsFromChain(spaceAddress: string) {
-  const candidateCount = await fetchCandidateCountViaAlchemy(spaceAddress)
-  if (candidateCount === 0) return { totalRevealed: 0, candidateResults: [] as Array<{ candidateId: number; voteCount: number }> }
-  const candidateResults = await fetchVoteCountsViaAlchemy(spaceAddress, candidateCount)
-  const totalRevealed = candidateResults.reduce((sum, r) => sum + r.voteCount, 0)
-  return { totalRevealed, candidateResults }
+/**
+ * Former fallback reader for election results via direct RPC.
+ * Committed/total counts are only reliably available from the Ponder indexer
+ * (which tracks the Commit/Reveal events). Direct RPC cannot supply the
+ * committed count, so returning zeros would mislead users into thinking
+ * nobody voted. We surface a clear error instead of faking data.
+ */
+export async function fetchElectionResultsFromChain(_spaceAddress: string): Promise<never> {
+  throw new Error('Indexer Ponder tidak tersedia; data hasil pemilihan belum dapat diambil.')
 }
 
 // ── ponytail: eth_getLogs helper untuk fetch event blockchain langsung tanpa indexer ──

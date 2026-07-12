@@ -1,4 +1,10 @@
-# Panduan Lengkap Deploy VoteChain ke cPanel VPS
+# Panduan Lengkap Deploy VoteChain ke cPanel VPS (ARSIP — DIRETIR)
+
+> ⚠️ **STATUS: cPanel/VPS frontend (votein.biz.id) dan replika MySQL SUDAH DIRETIR.**
+> - Frontend production sekarang dihosting di **Vercel**.
+> - Database off-chain hanya **Supabase (PostgreSQL)**; replika MySQL di VPS tidak dipakai.
+> - Indexer Ponder tetap berjalan di VPS, diakses lewat proxy server `/api/indexer/graphql`.
+> Panduan ini tersisa sebagai arsip saja; jangan gunakan untuk deploy baru.
 
 Panduan step-by-step dari nol sampai website jalan di `votein.biz.id`.
 
@@ -209,7 +215,7 @@ Akan terbuka editor nano. Edit setiap baris dengan values yang benar:
 
 ```bash
 # ─── Blockchain (wajib) ─────────────────────────────────────────────
-NEXT_PUBLIC_REGISTRY_ADDRESS=0x059e0F48aEB8190c7c9955023eB46716b8ef8Ce1
+NEXT_PUBLIC_REGISTRY_ADDRESS=0xFc63e575f1Ca4AB8F979Fc6dCb31B4D638020610
 NEXT_PUBLIC_BASE_SEPOLIA_CHAIN_ID=84532
 NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
 NEXT_PUBLIC_BASESCAN_EXPLORER_URL=https://sepolia.basescan.org
@@ -321,7 +327,7 @@ nano .env
 Isi dengan:
 ```bash
 PONDER_RPC_URL_84532=https://sepolia.base.org
-NEXT_PUBLIC_REGISTRY_ADDRESS=0x059e0F48aEB8190c7c9955023eB46716b8ef8Ce1
+NEXT_PUBLIC_REGISTRY_ADDRESS=0xFc63e575f1Ca4AB8F979Fc6dCb31B4D638020610
 PONDER_START_BLOCK=42387749
 PONDER_MAX_REQUESTS_PER_SECOND=3
 PONDER_POLLING_INTERVAL_MS=5000

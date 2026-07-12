@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { fetchElectionResultsFromChain } from '@/lib/alchemy-rpc'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -13,22 +12,12 @@ export async function GET(
     return NextResponse.json({ error: 'Alamat kontrak tidak valid.' }, { status: 400 })
   }
 
-  try {
-    const result = await fetchElectionResultsFromChain(address)
-    return NextResponse.json({
-      spaceAddress: address,
-      totalCommitted: 0, // ponytail: not available from contract state
-      totalRevealed: result.totalRevealed,
-      lastUpdatedBlock: null,
-      candidateResults: result.candidateResults.map((r) => ({
-        candidateId: String(r.candidateId),
-        voteCount: r.voteCount,
-        lastRevealTx: null,
-        lastUpdatedBlock: null,
-      })),
-    })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Gagal membaca data dari blockchain.'
-    return NextResponse.json({ error: message }, { status: 502 })
-  }
+  // Hasil pemilihan (termasuk jumlah komitmen) hanya tersedia lewat indexer
+  // Ponder yang mencatat event Commit/Reveal. Tanpa indexer, menampilkan
+  // nol adalah data palsu, sehingga kita mengembalikan error eksplisit
+  // alih-alih nol palsu.
+  return NextResponse.json(
+    { error: 'Indexer Ponder tidak tersedia; data hasil pemilihan belum dapat diambil.' },
+    { status: 503 },
+  )
 }

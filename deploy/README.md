@@ -1,20 +1,22 @@
-# VoteChain — cPanel VPS Deployment Guide
+# VoteChain — Deployment Guide
 
-Panduan lengkap deploy VoteChain ke cPanel VPS sebagai backup dari services utama (Netlify, Railway, Supabase).
+> ⚠️ **STATUS: cPanel/VPS frontend (votein.biz.id) dan replika MySQL SUDAH DIRETIR.**
+> - Frontend production dihosting di **Vercel** (bukan cPanel/VPS).
+> - Database off-chain hanya **Supabase (PostgreSQL)**; replika MySQL di VPS sudah tidak dipakai.
+> - Indexer Ponder **tetap berjalan di VPS** dan mencatat event on-chain.
+> Panduan cPanel di bawah hanya tersisa sebagai arsip; jangan gunakan untuk deploy baru.
 
-## Arsitektur
+## Arsitektur Saat Ini
 
 ```
-PRIMARY (Production):
-├── Netlify     → Frontend (Next.js)
-├── Railway     → Ponder Indexer
-└── Supabase    → PostgreSQL Database
+PRODUCTION:
+├── Vercel        → Frontend (Next.js)
+├── Supabase      → PostgreSQL (database off-chain satu-satunya)
+└── Ponder (VPS) → Indexer, diakses lewat proxy server /api/indexer/graphql
 
-BACKUP (cPanel VPS: votein.biz.id):
-├── Frontend    → Next.js Node.js app via PM2
-├── Indexer     → Ponder via PM2
-├── Database    → PostgreSQL (restore dari Supabase)
-└── Domain      → votein.biz.id
+RETIRED:
+├── cPanel/VPS frontend (votein.biz.id) → DIRETIR
+└── Replika MySQL (VPS)                → DIRETIR (pakai Supabase saja)
 ```
 
 ## Prasyarat

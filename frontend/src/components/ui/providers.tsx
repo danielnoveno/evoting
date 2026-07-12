@@ -6,7 +6,6 @@ import { WagmiProvider } from 'wagmi'
 import { wagmiConfig } from '@/lib/wagmi'
 import { DynamicPageTitle } from '@/components/ui/dynamic-page-title'
 import { ToastProvider } from '@/components/ui/toast-provider'
-import { LanguageProvider } from '@/lib/contexts/language-context'
 import { IdleSessionTimeout } from '@/components/auth/idle-session-timeout'
 
 function isAuthError(error: unknown): boolean {
@@ -84,13 +83,11 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
       <AuthErrorHandler>
-        <LanguageProvider>
-          <ToastProvider>
+        <ToastProvider>
             <DynamicPageTitle />
             <IdleSessionTimeout />
             {children}
           </ToastProvider>
-        </LanguageProvider>
       </AuthErrorHandler>
     </WagmiProvider>
   )

@@ -15,7 +15,6 @@ import { useCurrentProfile } from '@/hooks/use-profile'
 import { useLogoutSession } from '@/hooks/use-auth-session'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
 import { OnboardingTour } from './onboarding-tour'
-import { useLanguage } from '@/lib/contexts/language-context'
 import { useWelcomeToast } from '@/hooks/use-welcome-toast'
 import { useSilentReconnect } from '@/hooks/use-silent-reconnect'
 import { LocalClock } from '@/components/ui/local-clock'
@@ -33,7 +32,40 @@ export function VoterShell({ children }: { children: ReactNode }) {
   const { data: currentProfile } = useCurrentProfile()
   const logoutSession = useLogoutSession()
   const { hasUnread, unreadCount } = useNotificationBadge()
-  const { t, locale } = useLanguage()
+  // ponytail: locale hardcoded to Bahasa Indonesia (English unreachable) — no i18n runtime.
+  const t = {
+    sidebar: {
+      dashboard: 'Beranda',
+      superadmin: 'Manajemen Superadmin',
+      admin: 'Manajemen Admin',
+      election: 'Manajemen Pemilihan',
+      proposal: 'Manajemen Proposal',
+      audit: 'Audit Log',
+      voter: 'Data Master Voter',
+      risk: 'Risk Activity',
+      profile: 'Profil',
+      help: 'Pusat Bantuan',
+      voter_home: 'Beranda Pemilih',
+      voter_elections: 'Pemilihan Aktif',
+      voter_history: 'Riwayat Suara',
+    },
+    header: {
+      search: 'Cari data...',
+      logout: 'Keluar Sesi',
+      connect_wallet: 'Hubungkan Dompet',
+    },
+    voter: {
+      welcome: 'Selamat Datang di VoteIn',
+      description: 'Gunakan hak suara Anda dengan aman melalui teknologi blockchain.',
+      start_voting: 'Mulai Memilih',
+    },
+    profile: {
+      title: 'Profil Pengguna',
+      save: 'Simpan Perubahan',
+      cancel: 'Batal',
+    },
+  }
+  const locale = 'Bahasa Indonesia'
 
   // Tampilkan toast selamat datang sekali per sesi login
   useWelcomeToast()

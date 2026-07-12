@@ -4,9 +4,21 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 function getIndexerGraphqlUrl(): string | null {
-  const rawUrl = process.env.NEXT_PUBLIC_PONDER_URL?.trim()
-  if (!rawUrl) return null
-  return rawUrl.endsWith('/graphql') ? rawUrl : `${rawUrl.replace(/\/$/, '')}/graphql`
+  // Server-only PONDER_URL (never exposed to the client bundle).
+  // Falls back to NEXT_PUBLIC_PONDER_URL only so local/dev keeps working until
+  // the deployment env is migrated to the secret PONDER_URL.
+  const url = process.env.PONDER_URL?.trim() || process.env.NEXT_PUBLIC_PONDER_URL?.trim()
+  if (!url) return null
+  return url.endsWith('/graphql') ? url : `${url.replace(/\/$/, '')}/graphql`
+}
+
+// Reject queries that SELECT the `voter` field on voteReveals/vote_reveals.
+// Matches `voter` used as a field selection (followed by whitespace / { / } / end),
+// but NOT `voter_in` (where-filter) nor `$voterVariants` (variable), so the
+// legitimate per-voter proof queries keep working while the voter→candidate
+// mapping stays hidden behind the server.
+function selectsVoterField(body: string): boolean {
+  return /voter(?![\w])/.test(body)
 }
 
 export async function POST(request: NextRequest) {
@@ -20,6 +32,13 @@ export async function POST(request: NextRequest) {
     body = await request.text()
   } catch {
     return NextResponse.json({ error: 'Payload GraphQL tidak valid.' }, { status: 400 })
+  }
+
+  if (selectsVoterField(body)) {
+    return NextResponse.json(
+      { error: 'Query ditolak: pemilihan field voter tidak diizinkan oleh proxy.' },
+      { status: 403 },
+    )
   }
 
   try {

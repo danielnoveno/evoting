@@ -4,10 +4,10 @@ pragma solidity ^0.8.24;
 import "forge-std/Script.sol";
 import "../src/ElectionSpace.sol";
 
-/// @title Deploy ElectionSpace with commitFor support
+/// @title Deploy ElectionSpace
 /// @notice Deploys a standalone ElectionSpace pointed at the existing VoteChainRegistry.
-///         The existing Registry cannot deploy new ElectionSpace with commitFor
-///         because its bytecode still contains the old ElectionSpace code.
+///         Used for manual ElectionSpace deployment. Election creation in production
+///         is handled by the Registry via createElectionForAdminWithConfig.
 contract DeployElectionSpace is Script {
     function run() external {
         address registry = vm.envAddress("REGISTRY_ADDRESS");

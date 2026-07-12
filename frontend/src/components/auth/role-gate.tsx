@@ -6,7 +6,6 @@ import { ReactNode, useEffect } from 'react'
 import { Clock, ArrowLeft } from 'lucide-react'
 import type { AppRole } from '@/lib/repositories/types'
 import { useCurrentProfile } from '@/hooks/use-profile'
-import { useLanguage } from '@/lib/contexts/language-context'
 
 export function RoleGate({
   allowedRoles,
@@ -22,7 +21,7 @@ export function RoleGate({
   children: ReactNode
 }) {
   const { data: currentProfile, isLoading } = useCurrentProfile()
-  const { locale } = useLanguage()
+  const locale = 'Bahasa Indonesia'
   const router = useRouter()
 
   // No profile and not loading → redirect to login page
