@@ -1,11 +1,13 @@
 'use client'
 
-import { Download, ExternalLink, GraduationCap, LockKeyhole, Play, ShieldCheck, Trophy, Youtube } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Download, ExternalLink, GraduationCap, LockKeyhole, Play, ShieldCheck, Trophy, Youtube, Clock, CheckCircle2, Vote } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { PublicElectionBackLink } from '@/components/public/site-shell'
 import { ScrollReveal, ParallaxLayer, FloatingShape, StaggerContainer } from '@/components/public/parallax'
 import { getPublicElectionById, getPublicElectionResults, listLatestAuditLogs } from '@/lib/repositories/electionRepository'
 import { shortenHash } from '@/lib/voter-helpers'
+import type { PublicElectionPhase } from '@/lib/repositories/types'
 
 function actionLabel(actionType: string) {
   if (actionType === 'reveal_vote') return 'Reveal Suara'
@@ -60,6 +62,149 @@ function extractYouTubeId(url: string): string | null {
     if (match) return match[1]
   }
   return null
+}
+
+/* ── Phase Timeline ────────────────────────────────────────────────── */
+
+type PhaseStep = {
+  key: string
+  label: string
+  icon: 'vote' | 'clock' | 'check'
+  timestamp: string | null
+}
+
+function formatDateTimeShort(iso: string | null): string {
+  if (!iso) return '-'
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+  }).format(new Date(iso))
+}
+
+function useCountdown(targetIso: string | null) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!targetIso) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [targetIso])
+  if (!targetIso) return null
+  const target = new Date(targetIso).getTime()
+  if (!Number.isFinite(target)) return null
+  const diff = target - now
+  if (diff <= 0) return { hours: 0, minutes: 0, seconds: 0, expired: true }
+  return {
+    hours: Math.floor(diff / 3_600_000),
+    minutes: Math.floor((diff % 3_600_000) / 60_000),
+    seconds: Math.floor((diff % 60_000) / 1000),
+    expired: false,
+  }
+}
+
+function PhaseTimeline({
+  phase,
+  commitStartAt,
+  revealStartAt,
+  endedAt,
+}: {
+  phase: PublicElectionPhase
+  commitStartAt: string | null
+  revealStartAt: string | null
+  endedAt: string | null
+}) {
+  const steps: PhaseStep[] = [
+    { key: 'commit', label: 'Pencoblosan', icon: 'vote', timestamp: commitStartAt },
+    { key: 'reveal', label: 'Konfirmasi', icon: 'clock', timestamp: revealStartAt },
+    { key: 'ended', label: 'Selesai', icon: 'check', timestamp: endedAt },
+  ]
+
+  const phaseOrder: PublicElectionPhase[] = ['registration', 'commit', 'reveal', 'ended']
+  const activeIndex = phaseOrder.indexOf(phase)
+  const commitIndex = 0
+  const revealIndex = 1
+  const endedIndex = 2
+
+  const nextPhase = phase === 'commit' ? 'reveal' : phase === 'reveal' ? 'ended' : null
+  const nextDeadline = nextPhase === 'reveal' ? revealStartAt : nextPhase === 'ended' ? endedAt : null
+  const countdown = useCountdown(nextDeadline)
+
+  const isActive = (index: number) => {
+    if (phase === 'commit') return index === commitIndex
+    if (phase === 'reveal') return index === revealIndex
+    if (phase === 'ended') return index === endedIndex
+    return index === commitIndex
+  }
+  const isDone = (index: number) => {
+    if (phase === 'ended') return true
+    if (phase === 'reveal') return index <= commitIndex
+    return false
+  }
+  const isPending = (index: number) => !isActive(index) && !isDone(index)
+
+  return (
+    <article className="public-card p-6 md:p-8">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[14px] font-semibold uppercase tracking-[0.06em] text-slate-500">Jadwal Fase</h3>
+        {countdown && !countdown.expired && (
+          <div className="flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5">
+            <Clock className="h-3.5 w-3.5 text-blue-600" />
+            <span className="text-[13px] font-semibold text-blue-700">
+              {countdown.hours > 0 ? `${countdown.hours}j ` : ''}{countdown.minutes}m {countdown.seconds}s
+            </span>
+            <span className="text-[12px] text-blue-500">lagi</span>
+          </div>
+        )}
+      </div>
+
+      {/* Timeline steps */}
+      <div className="mt-6 flex items-start gap-0">
+        {steps.map((step, i) => (
+          <div key={step.key} className="flex flex-1 items-start">
+            {/* Dot + line */}
+            <div className="flex flex-col items-center">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${
+                isActive(i)
+                  ? 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-200'
+                  : isDone(i)
+                    ? 'border-emerald-500 bg-emerald-500 text-white'
+                    : 'border-slate-300 bg-white text-slate-400'
+              }`}>
+                {isDone(i) ? (
+                  <CheckCircle2 className="h-5 w-5" />
+                ) : step.icon === 'vote' ? (
+                  <Vote className="h-5 w-5" />
+                ) : step.icon === 'clock' ? (
+                  <Clock className="h-5 w-5" />
+                ) : (
+                  <CheckCircle2 className="h-5 w-5" />
+                )}
+              </div>
+              {i < steps.length - 1 && (
+                <div className={`mt-0.5 h-1 w-full min-w-[40px] rounded-full ${
+                  isDone(i) ? 'bg-emerald-400' : isActive(i) ? 'bg-gradient-to-r from-blue-400 to-slate-200' : 'bg-slate-200'
+                }`} />
+              )}
+            </div>
+
+            {/* Label + timestamp */}
+            <div className="ml-3 min-w-0 pb-6">
+              <div className="flex items-center gap-2">
+                <p className={`text-[14px] font-semibold ${isActive(i) ? 'text-blue-700' : isDone(i) ? 'text-emerald-700' : 'text-slate-400'}`}>
+                  {step.label}
+                </p>
+                {isActive(i) && (
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-600" />
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-[12px] text-slate-400">{formatDateTimeShort(step.timestamp)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </article>
+  )
 }
 
 export function HasilSections({ id }: { id: string }) {
@@ -142,6 +287,20 @@ export function HasilSections({ id }: { id: string }) {
             </div>
           </ScrollReveal>
         </ParallaxLayer>
+
+        {/* Phase Timeline */}
+        {election && (
+          <ScrollReveal variant="fade-up" delay={100} duration={700}>
+            <div className="mt-8">
+              <PhaseTimeline
+                phase={election.phase}
+                commitStartAt={election.commitStartAt}
+                revealStartAt={election.revealStartAt}
+                endedAt={election.endedAt}
+              />
+            </div>
+          </ScrollReveal>
+        )}
 
         {/* Dashboard Cards Section */}
         <div className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.72fr)]">
