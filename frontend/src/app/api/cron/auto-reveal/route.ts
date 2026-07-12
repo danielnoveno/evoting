@@ -108,9 +108,10 @@ export async function POST(request: NextRequest) {
   const results: Array<{ spaceAddress: string; voterAddress: string; success: boolean; txHash?: string; error?: string }> = []
 
   for (const [spaceAddress, items] of bySpace) {
-    // Check current phase — log but do NOT skip. The contract will reject
-    // revealFor if the phase is wrong; we still attempt so that late-running
-    // crons catch commitments that were queued during the Reveal window.
+    // Check current phase. Contract enum: Commit=0, Reveal=1, Ended=2.
+    // Only reveal during Reveal phase (1) to avoid gas-wasting WrongPhase reverts
+    // that could permanently mark commitments as revealed in the error handler.
+    let phaseNumber: number | null = null
     let phaseLabel = 'unknown'
     try {
       const phase = await publicClient.readContract({
@@ -118,10 +119,18 @@ export async function POST(request: NextRequest) {
         abi: ELECTION_SPACE_ABI,
         functionName: 'phase',
       })
-      phaseLabel = phase === 0 ? 'Registration' : phase === 1 ? 'Commit' : phase === 2 ? 'Reveal' : phase === 3 ? 'Ended' : `Phase(${phase})`
-      console.log(`[auto-reveal] Space ${spaceAddress} phase=${phase} (${phaseLabel}), commitments=${items.length}`)
+      phaseNumber = Number(phase)
+      phaseLabel = phaseNumber === 0 ? 'Commit' : phaseNumber === 1 ? 'Reveal' : phaseNumber === 2 ? 'Ended' : `Phase(${phaseNumber})`
+      console.log(`[auto-reveal] Space ${spaceAddress} phase=${phaseNumber} (${phaseLabel}), commitments=${items.length}`)
     } catch (err) {
       console.error(`[auto-reveal] Phase check failed for ${spaceAddress}:`, err)
+    }
+
+    // Skip spaces not in Reveal phase. If phase check failed (RPC error),
+    // proceed anyway so late-running crons can catch queued commitments.
+    if (phaseNumber !== null && phaseNumber !== 1) {
+      console.log(`[auto-reveal] Skipping ${spaceAddress} — not in Reveal phase (${phaseLabel})`)
+      continue
     }
 
     for (const commitment of items) {
@@ -252,15 +261,22 @@ export async function POST(request: NextRequest) {
         console.log(`[auto-reveal] Revealed for ${commitment.voter_address} in ${spaceAddress}: ${txHash}`)
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error'
-        // If the contract rejects (e.g. wrong phase), mark so we don't retry endlessly
         const isContractReject = /execution reverted|call revert exception|invalid opcode/i.test(message)
-        if (isContractReject) {
+        // Distinguish retryable errors (WrongPhase) from permanent ones.
+        // WrongPhase: keep revealed=false so next cron cycle retries.
+        // Other reverts (InvalidCandidate, CommitmentMismatch, etc.): mark permanently.
+        const isWrongPhase = /WrongPhase|wrong phase|Phase\.Commit|Phase\.Ended/i.test(message)
+        if (isContractReject && !isWrongPhase) {
           await supabase.schema('app').from('vote_commitments')
             .update({ revealed: true, reveal_tx_hash: `REVERT:${message.slice(0, 200)}` })
             .eq('id', commitment.id)
+          console.error(`[auto-reveal] Permanent revert for ${commitment.voter_address}: ${message}`)
+        } else if (isWrongPhase) {
+          console.error(`[auto-reveal] WrongPhase (retryable) for ${commitment.voter_address}: will retry next cycle`)
+        } else {
+          console.error(`[auto-reveal] Failed for ${commitment.voter_address} in ${spaceAddress}: ${message}`)
         }
         results.push({ spaceAddress, voterAddress: commitment.voter_address, success: false, error: message })
-        console.error(`[auto-reveal] Failed for ${commitment.voter_address} in ${spaceAddress}:`, message)
       }
     }
   }
