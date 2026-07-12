@@ -139,8 +139,36 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     type: status === 'revision_requested' ? 'warning' : status === 'rejected' || status === 'archived' ? 'info' : 'success',
   }
 
+  if (status === 'submitted') {
+    const { data: superadmins, error: superadminError } = await auth.client
+      .from('app_profiles')
+      .select('id')
+      .eq('role', 'super_admin')
+
+    if (superadminError) {
+      console.error('[notification] Failed to load superadmin recipients:', superadminError)
+    } else if (superadmins?.length) {
+      const { error: notificationError } = await auth.client.from('notification_jobs').insert(
+        superadmins.map(({ id: targetProfileId }) => ({
+          target_profile_id: targetProfileId,
+          channel: 'in_app' as const,
+          template_key: 'proposal_activity',
+          status: 'sent' as const,
+          payload: activityPayload,
+        })),
+      )
+      if (notificationError) console.error('[notification] Failed to notify superadmins:', notificationError)
+    }
+  }
+
   if (beforeRow?.created_by) {
-    await auth.client.from('notification_jobs').insert({ target_profile_id: beforeRow.created_by, channel: 'in_app', template_key: 'proposal_activity', status: 'queued', payload: activityPayload }).throwOnError()
+    await auth.client.from('notification_jobs').insert({
+      target_profile_id: beforeRow.created_by,
+      channel: 'in_app',
+      template_key: 'proposal_activity',
+      status: 'queued',
+      payload: { ...activityPayload, link: `/admin/daftar-proposal/${id}` },
+    }).throwOnError()
   }
 
   // Email notification to superadmins when proposal is submitted or resubmitted
@@ -218,8 +246,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
       if (serviceClient) {
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || 'https://e-votein.netlify.app'
         const proposalLink = `${siteUrl}/admin/daftar-proposal/${id}`
-        const spaceAddress = data.deployed_space_address
-        const electionLink = spaceAddress ? `${siteUrl}/pemilihan/${spaceAddress}/hasil` : null
+        const electionLink = `${siteUrl}/pemilihan/${id}/hasil`
 
         const { data: creatorProfile } = await serviceClient
           .schema('app')
@@ -247,16 +274,17 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
   // Public notification for deployed elections — visible to all visitors
   if (status === 'deployed' && data.title) {
-    const spaceAddress = data.deployed_space_address
-    const electionLink = spaceAddress ? `/pemilihan/${spaceAddress}/hasil` : '/pemilihan'
+    const electionLink = `/pemilihan/${id}/hasil`
     try {
       await auth.client.schema('app').from('notification_jobs').insert({
         channel: 'in_app',
         template_key: 'public_election',
         status: 'sent',
         payload: {
+          proposalDraftId: id,
+          eventType: 'election_waiting',
           title: 'Pemilihan baru tersedia',
-          description: `Pemilihan "${data.title}" telah dibuka. Anda bisa melihat detail dan berpartisipasi.`,
+          description: `Pemilihan "${data.title}" telah tersedia dan menunggu jadwal pencoblosan.`,
           type: 'success',
           link: electionLink,
         },
@@ -278,7 +306,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
           .from('proposal_whitelist_entries')
           .select('wallet_address')
           .eq('proposal_draft_id', id)
-          .eq('validation_status', 'valid')
+          .in('validation_status', ['valid', 'synced'])
 
         if (whitelistEntries && whitelistEntries.length > 0) {
           const walletAddresses = whitelistEntries
@@ -288,7 +316,6 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
           await notifyDeployedElectionVoters(serviceClient, {
             proposalId: id,
             proposalTitle: data.title,
-            spaceAddress: data.deployed_space_address,
             wallets: walletAddresses,
           })
 

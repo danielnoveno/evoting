@@ -442,5 +442,6 @@ export function useVoterStore() {
 }
 
 export function findElection(store: VoterStore | null, electionId: string) {
-  return store?.elections.find((election) => election.id === electionId) ?? null
+  const normalizedId = electionId.toLowerCase()
+  return store?.elections.find((election) => election.id === electionId || election.deployedSpaceAddress?.toLowerCase() === normalizedId) ?? null
 }

@@ -55,6 +55,7 @@ export function HasilSections({ id }: { id: string }) {
     queryKey: ['public', 'election-detail', id],
     queryFn: () => getPublicElectionById(id),
     retry: false,
+    staleTime: 0,
   })
   const election = electionQuery.data
   const auditQuery = useQuery({

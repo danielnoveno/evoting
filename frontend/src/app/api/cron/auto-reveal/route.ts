@@ -8,8 +8,8 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 function getCronSecret() {
-  return process.env.CRON_SECRET?.trim()
-    || process.env.NOTIFICATION_CRON_SECRET?.trim()
+  return process.env.NOTIFICATION_CRON_SECRET?.trim()
+    || process.env.CRON_SECRET?.trim()
     || ''
 }
 
@@ -50,9 +50,12 @@ const ELECTION_SPACE_ABI = [
  */
 export async function POST(request: NextRequest) {
   const cronSecret = getCronSecret()
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Secret cron belum dikonfigurasi.' }, { status: 503 })
+  }
   const bearerOk = request.headers.get('authorization') === `Bearer ${cronSecret}`
   const headerOk = request.headers.get('x-cron-secret') === cronSecret
-  if (cronSecret && !bearerOk && !headerOk) {
+  if (!bearerOk && !headerOk) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
   }
 
@@ -105,17 +108,20 @@ export async function POST(request: NextRequest) {
   const results: Array<{ spaceAddress: string; voterAddress: string; success: boolean; txHash?: string; error?: string }> = []
 
   for (const [spaceAddress, items] of bySpace) {
-    // Check current phase
+    // Check current phase — log but do NOT skip. The contract will reject
+    // revealFor if the phase is wrong; we still attempt so that late-running
+    // crons catch commitments that were queued during the Reveal window.
+    let phaseLabel = 'unknown'
     try {
       const phase = await publicClient.readContract({
         address: spaceAddress as Address,
         abi: ELECTION_SPACE_ABI,
         functionName: 'phase',
       })
-      if (phase !== 1) continue // Not in Reveal phase, skip
+      phaseLabel = phase === 0 ? 'Registration' : phase === 1 ? 'Commit' : phase === 2 ? 'Reveal' : phase === 3 ? 'Ended' : `Phase(${phase})`
+      console.log(`[auto-reveal] Space ${spaceAddress} phase=${phase} (${phaseLabel}), commitments=${items.length}`)
     } catch (err) {
       console.error(`[auto-reveal] Phase check failed for ${spaceAddress}:`, err)
-      continue
     }
 
     for (const commitment of items) {
@@ -132,6 +138,7 @@ export async function POST(request: NextRequest) {
           await supabase.schema('app').from('vote_commitments')
             .update({ revealed: true })
             .eq('id', commitment.id)
+          console.log(`[auto-reveal] Already revealed on-chain, marking DB: ${commitment.voter_address}`)
           continue
         }
       } catch {
@@ -159,6 +166,8 @@ export async function POST(request: NextRequest) {
           data,
           gas: gas + gas / BigInt(10), // 10% buffer
         })
+
+        console.log(`[auto-reveal] Tx sent for ${commitment.voter_address}: ${txHash}`)
 
         // Wait for confirmation
         const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
@@ -243,8 +252,15 @@ export async function POST(request: NextRequest) {
         console.log(`[auto-reveal] Revealed for ${commitment.voter_address} in ${spaceAddress}: ${txHash}`)
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error'
+        // If the contract rejects (e.g. wrong phase), mark so we don't retry endlessly
+        const isContractReject = /execution reverted|call revert exception|invalid opcode/i.test(message)
+        if (isContractReject) {
+          await supabase.schema('app').from('vote_commitments')
+            .update({ revealed: true, reveal_tx_hash: `REVERT:${message.slice(0, 200)}` })
+            .eq('id', commitment.id)
+        }
         results.push({ spaceAddress, voterAddress: commitment.voter_address, success: false, error: message })
-        console.error(`[auto-reveal] Failed for ${commitment.voter_address}:`, message)
+        console.error(`[auto-reveal] Failed for ${commitment.voter_address} in ${spaceAddress}:`, message)
       }
     }
   }

@@ -30,6 +30,8 @@ export function PemilihanSections() {
     queryKey: ['public', 'elections'],
     queryFn: listPublicElections,
     retry: false,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   })
 
   const elections = electionsQuery.data ?? []

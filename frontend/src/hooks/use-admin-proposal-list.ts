@@ -152,7 +152,7 @@ export function useAdminElectionList() {
           actionLabel: isSuspended ? 'Ditangguhkan' : isEnded ? 'Lihat Ringkasan' : 'Monitoring',
           secondaryActionLabel: whitelistRows.length > 0 ? `${whitelistRows.length} pemilih` : 'Belum ada pemilih',
           actionTone: isSuspended ? 'slate' : 'blue',
-          periodLabel: 'Mei - Juni 2026',
+          periodLabel: `${formatDate(p.commitStartAt)} — ${formatDate(p.endedAt)}`,
           turnoutLabel: p.deployedSpaceAddress ? `${whitelistRows.length} pemilih whitelist` : 'Belum deploy',
           whitelistCount: whitelistRows.length,
           whitelistPreview,

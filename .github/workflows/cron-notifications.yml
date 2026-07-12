@@ -1,19 +1,12 @@
 # VoteChain Cron Jobs — Email + In-App Notifications + Auto-Reveal
-# GitHub Actions schedule minimum efektifnya ±5 menit, jadi workflow ini
-# melakukan 5 tick internal per run agar endpoint dipanggil kira-kira tiap 1 menit.
-#
-# SETUP:
-# 1. Push repo ini ke GitHub
-# 2. Buka repo Settings → Secrets and variables → Actions
-# 3. Tambahkan secret: NOTIFICATION_CRON_SECRET
-#    Value: BObRDgehRdo72ZU40XfUss+IHvsbOPYnqcyKwMF+WDw=
+# Configure NOTIFICATION_CRON_SECRET in GitHub Actions and Vercel with the same value.
 
 name: VoteChain Cron
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # GitHub Actions minimum praktis; tick internal tiap ±1 menit
-  workflow_dispatch: # Manual trigger untuk testing
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 concurrency:
   group: votechain-cron
@@ -27,36 +20,17 @@ jobs:
     env:
       VOTEIN_BASE_URL: https://votein-evoting.vercel.app
     steps:
-      - name: Trigger Auto-Reveal and Notifications every minute
+      - name: Trigger Auto-Reveal
         run: |
-          for TICK in 1 2 3 4 5; do
-            echo "=== Tick $TICK/5: Auto-Reveal ==="
-            RESPONSE=$(curl -s -w "\n%{http_code}" \
-              -X POST \
-              -H "x-cron-secret: ${{ secrets.NOTIFICATION_CRON_SECRET }}" \
-              "$VOTEIN_BASE_URL/api/cron/auto-reveal")
-            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-            BODY=$(echo "$RESPONSE" | head -n -1)
-            echo "Status: $HTTP_CODE"
-            echo "Response: $BODY"
-            if [ "$HTTP_CODE" != "200" ]; then
-              echo "::warning::Auto-reveal returned status $HTTP_CODE"
-            fi
+          curl --fail-with-body --silent --show-error \
+            -X POST \
+            -H "x-cron-secret: ${{ secrets.NOTIFICATION_CRON_SECRET }}" \
+            "$VOTEIN_BASE_URL/api/cron/auto-reveal"
 
-            echo "=== Tick $TICK/5: Notifications ==="
-            RESPONSE=$(curl -s -w "\n%{http_code}" \
-              -X POST \
-              -H "x-cron-secret: ${{ secrets.NOTIFICATION_CRON_SECRET }}" \
-              "$VOTEIN_BASE_URL/api/cron/send-notifications")
-            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-            BODY=$(echo "$RESPONSE" | head -n -1)
-            echo "Status: $HTTP_CODE"
-            echo "Response: $BODY"
-            if [ "$HTTP_CODE" != "200" ]; then
-              echo "::warning::Notifications returned status $HTTP_CODE"
-            fi
-
-            if [ "$TICK" != "5" ]; then
-              sleep 60
-            fi
-          done
+      - name: Trigger Notifications
+        if: always()
+        run: |
+          curl --fail-with-body --silent --show-error \
+            -X POST \
+            -H "x-cron-secret: ${{ secrets.NOTIFICATION_CRON_SECRET }}" \
+            "$VOTEIN_BASE_URL/api/cron/send-notifications"

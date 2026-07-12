@@ -34,12 +34,12 @@ export async function notifyWhitelistAdded(
 
 export async function notifyDeployedElectionVoters(
   client: ServiceClient,
-  params: { proposalId: string; proposalTitle: string; spaceAddress?: string | null; wallets: Array<string | null | undefined> },
+  params: { proposalId: string; proposalTitle: string; wallets: Array<string | null | undefined> },
 ) {
   const wallets = uniqueWallets(params.wallets)
   if (wallets.length === 0) return
 
-  const link = params.spaceAddress ? `/pemilih/pemilihan/${params.spaceAddress}/pilih-kandidat` : '/pemilih'
+  const link = `/pemilih/pemilihan/${params.proposalId}/pilih-kandidat`
   const { error } = await client.from('notification_jobs').insert(wallets.map((wallet) => ({
     target_wallet: wallet,
     channel: 'in_app' as const,

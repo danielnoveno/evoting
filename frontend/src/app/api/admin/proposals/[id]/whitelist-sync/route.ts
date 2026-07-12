@@ -46,7 +46,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
   const { error } = await auth.client
     .from('proposal_whitelist_entries')
-    .update({ validation_status: 'synced', sync_status: 'synced', latest_sync_tx_hash: txHash })
+    .update({ sync_status: 'synced', latest_sync_tx_hash: txHash })
     .in('id', matchingIds)
 
   if (error) return jsonError('Gagal memperbarui status sinkronisasi whitelist.', 500)

@@ -1217,9 +1217,33 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
   const renderRealtimeTab = () => {
     const indexerData = resultsQuery.data
-    const totalVoters = parseInt(election.detail.realtime.totalTarget) || 100
+    const totalVoters = whitelistQuery.data?.length ?? (parseInt(election.detail.realtime.totalTarget) || 100)
     const totalVotes = indexerData?.totalRevealed ?? 0
     const participationRate = totalVoters > 0 ? (totalVotes / totalVoters) * 100 : 0
+
+    // ponytail: compute countdown live from schedule instead of placeholder
+    const schedule = election.schedule
+    const endedAtMs = schedule?.endedAt ? new Date(schedule.endedAt).getTime() : NaN
+    const revealStartMs = schedule?.revealStartAt ? new Date(schedule.revealStartAt).getTime() : NaN
+    const commitStartMs = schedule?.commitStartAt ? new Date(schedule.commitStartAt).getTime() : NaN
+    const isEnded = !Number.isNaN(endedAtMs) && nowMs >= endedAtMs
+    const isReveal = !Number.isNaN(revealStartMs) && nowMs >= revealStartMs && !isEnded
+    const isCommit = !Number.isNaN(commitStartMs) && nowMs >= commitStartMs && !isReveal && !isEnded
+    const countdownTargetMs = isEnded ? 0 : isReveal ? endedAtMs : isCommit ? revealStartMs : commitStartMs
+    const countdownDiff = isEnded ? 0 : Math.max(0, countdownTargetMs - nowMs)
+    const countdownHours = String(Math.floor(countdownDiff / (1000 * 60 * 60))).padStart(2, '0')
+    const countdownMinutes = String(Math.floor((countdownDiff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0')
+    const countdownSeconds = String(Math.floor((countdownDiff % (1000 * 60)) / 1000)).padStart(2, '0')
+    const countdownLabel = isEnded ? 'Pemilihan selesai' : isReveal ? 'Sisa waktu konfirmasi' : isCommit ? 'Sisa waktu memilih' : 'Menunggu jadwal'
+
+    // ponytail: compute network status from live indexer query
+    const indexerConnected = !resultsQuery.isError && !resultsQuery.isLoading
+    const networkTitle = indexerConnected
+      ? (totalVotes > 0 ? `${totalVotes} suara terindeks` : 'Terkoneksi — menunggu data reveal')
+      : resultsQuery.isError ? 'Indexer tertunda' : 'Menghubungkan...'
+    const networkSubtitle = indexerConnected
+      ? 'Data diambil langsung dari kontrak Base Sepolia'
+      : 'Mencoba jalur alternatif ke blockchain'
     
     // Map indexer candidate results to UI candidates
     const mappedResults = candidates.map((candidate, index) => {
@@ -1272,20 +1296,20 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">Waktu Tersisa</p>
             <div className="mt-6 grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.realtime.remaining.hours}</p>
+                <p className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{countdownHours}</p>
                 <p className="mt-2 text-[12px] uppercase tracking-[0.08em] text-slate-400">Jam</p>
               </div>
               <div>
-                <p className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.realtime.remaining.minutes}</p>
+                <p className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{countdownMinutes}</p>
                 <p className="mt-2 text-[12px] uppercase tracking-[0.08em] text-slate-400">Menit</p>
               </div>
               <div>
-                <p className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{election.detail.realtime.remaining.seconds}</p>
+                <p className="text-[48px] font-semibold leading-none tracking-[-0.05em] text-slate-900">{countdownSeconds}</p>
                 <p className="mt-2 text-[12px] uppercase tracking-[0.08em] text-slate-400">Detik</p>
               </div>
             </div>
             <button type="button" onClick={() => showToast({ tone: 'info', title: 'Hitung Mundur', description: 'Waktu mundur otomatis berjalan pada saat pemilihan berlangsung.' })} className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-2xl bg-slate-100 text-[14px] font-semibold uppercase tracking-[0.08em] text-slate-700 hover:bg-slate-200">
-              {election.detail.realtime.remaining.label}
+              {countdownLabel}
             </button>
           </article>
 
@@ -1296,8 +1320,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
                 <ShieldCheck className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-[18px] font-semibold text-white">{election.detail.realtime.networkStatus.title}</h2>
-                <p className="mt-3 text-[14px] leading-7 text-slate-300">{election.detail.realtime.networkStatus.subtitle}</p>
+                <h2 className="text-[18px] font-semibold text-white">{networkTitle}</h2>
+                <p className="mt-3 text-[14px] leading-7 text-slate-300">{networkSubtitle}</p>
               </div>
             </div>
           </article>

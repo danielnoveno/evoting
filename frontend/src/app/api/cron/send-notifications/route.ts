@@ -96,6 +96,35 @@ async function markSent(
   })
 }
 
+async function notifyPublicOnce(
+  client: NonNullable<ReturnType<typeof getSupabaseServiceRoleClient>>,
+  templateKey: string,
+  proposalDraftId: string,
+  payload: Record<string, unknown>,
+) {
+  const { count, error: lookupError } = await client
+    .schema('app')
+    .from('notification_jobs')
+    .select('id', { count: 'exact', head: true })
+    .eq('channel', 'in_app')
+    .eq('template_key', templateKey)
+    .eq('payload->>proposalDraftId', proposalDraftId)
+    .is('target_profile_id', null)
+    .is('target_wallet', null)
+
+  if (lookupError) throw lookupError
+  if ((count ?? 0) > 0) return false
+
+  const { error: insertError } = await client.schema('app').from('notification_jobs').insert({
+    channel: 'in_app',
+    template_key: templateKey,
+    status: 'sent',
+    payload: { proposalDraftId, ...payload },
+  })
+  if (insertError) throw insertError
+  return true
+}
+
 // ─── Commit Reminder (N min before commit STARTS) ────────────────────────────
 
 async function processCommitReminders(
@@ -121,10 +150,17 @@ async function processCommitReminders(
 
   let sent = 0
   for (const election of elections) {
-    // Dedup: skip if already sent within the same window
-    if (await wasRecentlySent(client, 'commit_reminder', election.id, windowMinutes * 60 * 1000)) continue
+    const emailAlreadySent = await wasRecentlySent(client, 'commit_reminder', election.id, windowMinutes * 60 * 1000)
 
     const commitStartsAt = toDatetimeLocal(election.commit_start_at)
+
+    await notifyPublicOnce(client, 'public_voting_upcoming', election.id, {
+      eventType: 'voting_upcoming',
+      title: 'Pencoblosan segera dimulai',
+      description: `Pemilihan "${election.title}" akan segera membuka tahap pencoblosan.`,
+      type: 'warning',
+      link: `/pemilihan/${election.id}/hasil`,
+    })
 
     // Get valid whitelist entries for this election
     const { data: whitelistEntries } = await client
@@ -132,7 +168,7 @@ async function processCommitReminders(
       .from('proposal_whitelist_entries')
       .select('wallet_address')
       .eq('proposal_draft_id', election.id)
-      .eq('validation_status', 'valid')
+      .in('validation_status', ['valid', 'synced'])
 
     if (!whitelistEntries || whitelistEntries.length === 0) continue
 
@@ -158,7 +194,7 @@ async function processCommitReminders(
     if (uncommittedWallets.length === 0) continue
 
     let inAppSent = 0
-    if (!await wasRecentlySent(client, 'commit_reminder_in_app', election.id, windowMinutes * 60 * 1000)) {
+    if (!await wasRecentlySent(client, 'commit_reminder', election.id, windowMinutes * 60 * 1000, 'in_app')) {
       inAppSent = await notifyWallets(client, {
         wallets: uncommittedWallets,
         templateKey: 'commit_reminder',
@@ -168,11 +204,12 @@ async function processCommitReminders(
           title: 'Waktu memilih segera dibuka',
           description: `Pemilihan "${election.title}" akan segera memasuki tahap pemilihan. Siapkan akun Anda.`,
           type: 'warning',
-          link: election.deployed_space_address ? `/pemilih/pemilihan/${election.deployed_space_address}/pilih-kandidat` : '/pemilih',
+          link: `/pemilih/pemilihan/${election.id}/pilih-kandidat`,
         },
       })
-      await markSent(client, 'commit_reminder_in_app', election.id, { electionTitle: election.title, sentToCount: inAppSent })
     }
+
+    if (emailAlreadySent) continue
 
     // Get voter emails from master_voters
     const { data: voters } = await client
@@ -233,16 +270,24 @@ async function processDeadlineReminders(
 
   let sent = 0
   for (const election of elections) {
-    if (await wasRecentlySent(client, 'deadline_reminder', election.id, windowMinutes * 60 * 1000)) continue
+    const emailAlreadySent = await wasRecentlySent(client, 'deadline_reminder', election.id, windowMinutes * 60 * 1000)
 
     const commitEndsAt = toDatetimeLocal(election.reveal_start_at)
+
+    await notifyPublicOnce(client, 'public_counting_upcoming', election.id, {
+      eventType: 'counting_upcoming',
+      title: 'Perhitungan suara segera dimulai',
+      description: `Pencoblosan "${election.title}" segera berakhir dan tahap konfirmasi suara akan dimulai.`,
+      type: 'warning',
+      link: `/pemilihan/${election.id}/hasil`,
+    })
 
     const { data: whitelistEntries } = await client
       .schema('app')
       .from('proposal_whitelist_entries')
       .select('wallet_address')
       .eq('proposal_draft_id', election.id)
-      .eq('validation_status', 'valid')
+      .in('validation_status', ['valid', 'synced'])
 
     if (!whitelistEntries || whitelistEntries.length === 0) continue
 
@@ -267,7 +312,7 @@ async function processDeadlineReminders(
     if (uncommittedWallets.length === 0) continue
 
     let inAppSent = 0
-    if (!await wasRecentlySent(client, 'deadline_reminder_in_app', election.id, windowMinutes * 60 * 1000)) {
+    if (!await wasRecentlySent(client, 'deadline_reminder', election.id, windowMinutes * 60 * 1000, 'in_app')) {
       inAppSent = await notifyWallets(client, {
         wallets: uncommittedWallets,
         templateKey: 'deadline_reminder',
@@ -277,11 +322,12 @@ async function processDeadlineReminders(
           title: 'Batas memilih hampir habis',
           description: `Tahap pemilihan "${election.title}" akan segera berakhir. Segera berikan suara jika belum.`,
           type: 'warning',
-          link: election.deployed_space_address ? `/pemilih/pemilihan/${election.deployed_space_address}/pilih-kandidat` : '/pemilih',
+          link: `/pemilih/pemilihan/${election.id}/pilih-kandidat`,
         },
       })
-      await markSent(client, 'deadline_reminder_in_app', election.id, { electionTitle: election.title, sentToCount: inAppSent })
     }
+
+    if (emailAlreadySent) continue
 
     const { data: voters } = await client
       .schema('app')
@@ -344,8 +390,7 @@ async function processElectionResults(
 
   let sent = 0
   for (const election of elections) {
-    // Dedup: skip if already sent within the same window
-    if (await wasRecentlySent(client, 'election_results', election.id, lookbackMinutes * 60 * 1000)) continue
+    const emailAlreadySent = await wasRecentlySent(client, 'election_results', election.id, lookbackMinutes * 60 * 1000)
 
     const addr = election.deployed_space_address!
 
@@ -406,7 +451,16 @@ async function processElectionResults(
       (sum: number, c: { voteCount: number }) => sum + (c.voteCount ?? 0),
       0,
     )
-    if (totalVotes === 0) continue
+    if (totalVotes === 0) {
+      await notifyPublicOnce(client, 'public_results_available', election.id, {
+        eventType: 'results_available',
+        title: 'Pemilihan telah selesai',
+        description: `Pemilihan "${election.title}" selesai tanpa suara sah yang dapat dihitung.`,
+        type: 'info',
+        link: `/pemilihan/${election.id}/hasil`,
+      })
+      continue
+    }
 
     const nameMap = new Map(
       candidates.map((c) => [c.candidate_local_id, c.full_name]),
@@ -423,13 +477,21 @@ async function processElectionResults(
 
     const winnerName = sortedResults[0]?.name || 'Tidak diketahui'
 
+    await notifyPublicOnce(client, 'public_results_available', election.id, {
+      eventType: 'results_available',
+      title: 'Hasil pemilihan terbaru tersedia',
+      description: `Hasil pemilihan "${election.title}" sudah tersedia. Kandidat dengan suara terbanyak: ${winnerName}.`,
+      type: 'success',
+      link: `/pemilihan/${election.id}/hasil`,
+    })
+
     // Get all voters to notify
     const { data: whitelistEntries } = await client
       .schema('app')
       .from('proposal_whitelist_entries')
       .select('wallet_address')
       .eq('proposal_draft_id', election.id)
-      .eq('validation_status', 'valid')
+      .in('validation_status', ['valid', 'synced'])
 
     if (!whitelistEntries || whitelistEntries.length === 0) continue
 
@@ -438,7 +500,7 @@ async function processElectionResults(
       .filter(Boolean) as string[]
 
     let inAppSent = 0
-    if (!await wasRecentlySent(client, 'election_results_in_app', election.id, lookbackMinutes * 60 * 1000)) {
+    if (!await wasRecentlySent(client, 'election_results', election.id, lookbackMinutes * 60 * 1000, 'in_app')) {
       inAppSent = await notifyWallets(client, {
         wallets: walletAddresses,
         templateKey: 'election_results',
@@ -448,11 +510,12 @@ async function processElectionResults(
           title: 'Hasil pemilihan tersedia',
           description: `Hasil pemilihan "${election.title}" sudah tersedia. Pemenang sementara: ${winnerName}.`,
           type: 'success',
-          link: `/pemilih/pemilihan/${election.deployed_space_address}/hasil`,
+          link: `/pemilih/pemilihan/${election.id}/hasil`,
         },
       })
-      await markSent(client, 'election_results_in_app', election.id, { electionTitle: election.title, sentToCount: inAppSent })
     }
+
+    if (emailAlreadySent) continue
 
     const { data: voters } = await client
       .schema('app')
@@ -496,7 +559,8 @@ async function processElectionResults(
 
 export async function POST(request: NextRequest) {
   const secret = getCronSecret()
-  if (secret && request.headers.get('x-cron-secret') !== secret) {
+  if (!secret) return jsonError('Secret cron belum dikonfigurasi.', 503)
+  if (request.headers.get('x-cron-secret') !== secret) {
     return jsonError('Akses cron tidak diizinkan.', 401)
   }
 

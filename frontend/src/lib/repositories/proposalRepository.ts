@@ -364,7 +364,7 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
     const sanitizedWhitelistEntries = input.whitelistEntries
       .map((entry) => ({
         proposal_draft_id: data.id,
-        wallet_address: entry.walletAddress.trim(),
+        wallet_address: entry.walletAddress.trim().toLowerCase(),
         voter_name: entry.voterName?.trim() || null,
         source: 'manual' as const,
         validation_status: 'valid' as const,
@@ -390,6 +390,27 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
 
       if (insertWhitelistError) {
         throw new RepositoryError('Proposal tersimpan, tetapi daftar pemilih gagal diperbarui.')
+      }
+
+      if (!input.id) {
+        const { error: notificationError } = await client
+          .schema('app')
+          .from('notification_jobs')
+          .insert(sanitizedWhitelistEntries.map((entry) => ({
+            target_wallet: entry.wallet_address,
+            channel: 'in_app' as const,
+            template_key: 'whitelist_added',
+            status: 'sent' as const,
+            payload: {
+              proposalId: data.id,
+              eventType: 'whitelist_added',
+              title: 'Anda ditambahkan sebagai pemilih',
+              description: `Akun Anda terdaftar sebagai pemilih untuk "${data.title}".`,
+              type: 'success',
+              link: '/pemilih',
+            },
+          })))
+        if (notificationError) console.warn('[notification] Whitelist notify failed:', notificationError)
       }
     }
   }

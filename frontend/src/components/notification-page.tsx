@@ -28,6 +28,7 @@ import {
 import { useToast } from '@/components/ui/toast-provider'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { timeAgo } from '@/lib/repositories/helpers'
+import { useCurrentProfile } from '@/hooks/use-profile'
 
 interface NotificationItem {
   id: string
@@ -53,16 +54,17 @@ export function NotificationPage({
   const router = useRouter()
   const queryClient = useQueryClient()
   const { showToast } = useToast()
+  const { data: profile, isLoading: isProfileLoading, isError: isProfileError } = useCurrentProfile()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [readVersion, setReadVersion] = useState(0) // force re-render when read state changes
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['user-notifications-page'],
+    queryKey: ['user-notifications-page', profile?.id],
     queryFn: async () => {
       const client = getSupabaseBrowserClient()
       const token = client ? (await client.auth.getSession()).data.session?.access_token : null
       // ponytail: jangan kirim request tanpa token — API akan return 401
-      if (!token) return []
+      if (!token) throw new Error('Sesi pengguna belum siap')
       const res = await fetch('/api/notifications/list', {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -71,6 +73,7 @@ export function NotificationPage({
       return payload.notifications as NotificationItem[]
     },
     retry: false,
+    enabled: Boolean(profile?.id),
     refetchInterval: 60000,
     refetchOnWindowFocus: true,
   })
@@ -170,12 +173,12 @@ export function NotificationPage({
       </ScrollReveal>
 
       <StaggerContainer stagger={80} variant="fade-up" duration={500} className="mt-8">
-        {isLoading ? (
+        {isLoading || isProfileLoading ? (
           <div className="py-16 text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
             <p className="mt-4 text-[14px] text-slate-500">Memuat notifikasi...</p>
           </div>
-        ) : isError ? (
+        ) : isError || isProfileError ? (
           <AppSectionCard className="py-16 text-center">
             <Bell className="mx-auto h-12 w-12 text-slate-200" />
             <p className="mt-4 text-[14px] text-slate-500">Gagal memuat notifikasi. Coba muat ulang halaman.</p>
