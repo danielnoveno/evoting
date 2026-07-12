@@ -10,7 +10,12 @@ import { shortenHash } from '@/lib/voter-helpers'
 
 function formatFinishedDate(value: string | null) {
   if (!value) return 'Tanggal selesai belum diatur'
-  return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date(value))
+  return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).format(new Date(value)) + ' WIB'
+}
+
+function formatScheduleDate(value: string | null) {
+  if (!value) return '-'
+  return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }).format(new Date(value)) + ' WIB'
 }
 
 function EmptyElectionCard({ message }: { message: string }) {
@@ -106,6 +111,11 @@ export function PemilihanSections() {
                     </div>
                     <h3 className="mt-8 max-w-[560px] text-[24px] font-semibold leading-tight text-slate-900">{item.title}</h3>
                     <p className="mt-4 max-w-[560px] text-[16px] leading-8 text-slate-800"><ElectionDescription election={item} /></p>
+                    <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-slate-500">
+                      {item.commitStartAt && <span>Pencoblosan: {formatScheduleDate(item.commitStartAt)}</span>}
+                      {item.revealStartAt && <span>Konfirmasi: {formatScheduleDate(item.revealStartAt)}</span>}
+                      {item.endedAt && <span>Selesai: {formatScheduleDate(item.endedAt)}</span>}
+                    </div>
 
                     <div className="mt-8 grid gap-4 md:grid-cols-2">
                       <div className="rounded-xl bg-slate-100 px-4 py-4">
@@ -165,6 +175,11 @@ export function PemilihanSections() {
                     <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-amber-700 self-start">Menunggu</span>
                     <h3 className="mt-8 max-w-[20ch] text-[24px] font-semibold leading-tight text-slate-900">{item.title}</h3>
                     <p className="mt-4 text-[16px] text-slate-500">{item.deadlineLabel}</p>
+                    <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-slate-500">
+                      {item.commitStartAt && <span>Pencoblosan: {formatScheduleDate(item.commitStartAt)}</span>}
+                      {item.revealStartAt && <span>Konfirmasi: {formatScheduleDate(item.revealStartAt)}</span>}
+                      {item.endedAt && <span>Selesai: {formatScheduleDate(item.endedAt)}</span>}
+                    </div>
                     <div className="mt-auto pt-8">
                       <Link href={`/pemilihan/${item.id}/hasil`} className="inline-flex items-center gap-2 text-[14px] font-semibold text-slate-900">
                         Lihat Detail
@@ -208,9 +223,14 @@ export function PemilihanSections() {
                     <div>
                       <div className="flex items-center gap-3">
                         <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-emerald-700">Selesai</span>
-                        <span className="text-[11px] uppercase tracking-[0.06em] text-slate-400">{formatFinishedDate(item.endedAt)}</span>
+                        <span className="text-[11px] uppercase tracking-[0.06em] text-slate-400">Selesai {formatFinishedDate(item.endedAt)}</span>
                       </div>
                       <h3 className="mt-2 text-[20px] font-semibold text-slate-900">{item.title}</h3>
+                      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-slate-500">
+                        <span>Pencoblosan: {formatScheduleDate(item.commitStartAt)}</span>
+                        <span>Konfirmasi: {formatScheduleDate(item.revealStartAt)}</span>
+                        <span>Selesai: {formatScheduleDate(item.endedAt)}</span>
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">

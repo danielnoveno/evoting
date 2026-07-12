@@ -17,7 +17,9 @@ export function formatDateTime(value: string | null): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(date)
+    hour12: false,
+    timeZone: 'Asia/Jakarta',
+  }).format(date) + ' WIB'
 }
 
 export function formatDateShort(value: string) {

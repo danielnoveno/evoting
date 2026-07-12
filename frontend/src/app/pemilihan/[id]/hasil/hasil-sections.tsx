@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, ExternalLink, LockKeyhole, ShieldCheck } from 'lucide-react'
+import { Download, ExternalLink, GraduationCap, LockKeyhole, Play, ShieldCheck, Trophy, Youtube } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { PublicElectionBackLink } from '@/components/public/site-shell'
 import { ScrollReveal, ParallaxLayer, FloatingShape, StaggerContainer } from '@/components/public/parallax'
@@ -48,6 +48,18 @@ function resolveCandidateId(candidateLocalId: string, fallbackIndex: number) {
   if (!match) return fallbackIndex + 1
   const parsed = Number(match[1])
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallbackIndex + 1
+}
+
+function extractYouTubeId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/,
+  ]
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match) return match[1]
+  }
+  return null
 }
 
 export function HasilSections({ id }: { id: string }) {
@@ -220,6 +232,155 @@ export function HasilSections({ id }: { id: string }) {
             </ScrollReveal>
           </div>
         </div>
+
+        {/* Candidate Detail Profiles */}
+        {election && election.candidates.length > 0 ? (
+          <ScrollReveal variant="fade-up" delay={100} duration={800}>
+            <section className="mt-10">
+              <h2 className="text-[32px] font-semibold text-slate-900">Profil Kandidat</h2>
+              <p className="mt-3 text-[16px] leading-8 text-slate-800">Informasi lengkap setiap kandidat yang berpartisipasi dalam pemilihan ini.</p>
+
+              <StaggerContainer stagger={200} variant="fade-up" duration={700} className="mt-8 space-y-6">
+                {election.candidates
+                  .slice()
+                  .sort((a, b) => {
+                    const aId = resolveCandidateId(a.candidateLocalId, election.candidates.indexOf(a))
+                    const bId = resolveCandidateId(b.candidateLocalId, election.candidates.indexOf(b))
+                    const aVotes = candidateResults.get(aId)?.voteCount ?? 0
+                    const bVotes = candidateResults.get(bId)?.voteCount ?? 0
+                    return bVotes - aVotes
+                  })
+                  .map((candidate, displayIndex) => {
+                    const candidateId = resolveCandidateId(candidate.candidateLocalId, displayIndex)
+                    const voteCount = candidateResults.get(candidateId)?.voteCount ?? 0
+                    const percentage = totalRevealed > 0 ? (voteCount / totalRevealed) * 100 : 0
+                    const isWinner = winner?.name === candidate.fullName && voteCount > 0
+                    const youtubeId = candidate.youtubeUrl ? extractYouTubeId(candidate.youtubeUrl) : null
+
+                    return (
+                      <article key={candidate.id} className={`public-card overflow-hidden ${isWinner ? 'border-amber-200 ring-1 ring-amber-100' : ''}`}>
+                        {/* Top: Photo + Identity + Vote summary */}
+                        <div className="flex flex-col gap-6 p-6 md:flex-row md:items-start md:p-8">
+                          {/* Avatar */}
+                          <div className="relative shrink-0">
+                            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
+                              {candidate.avatarPath ? (
+                                <img src={candidate.avatarPath} alt={candidate.fullName} className="h-full w-full object-cover" />
+                              ) : (
+                                <span className="text-[32px] font-bold text-slate-400">
+                                  {candidate.fullName.split(' ').slice(0, 2).map((part) => part[0]).join('')}
+                                </span>
+                              )}
+                            </div>
+                            {isWinner && (
+                              <div className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-white shadow-sm">
+                                <Trophy className="h-4 w-4" />
+                              </div>
+                            )}
+                            <div className="mt-3 text-center text-[13px] font-semibold text-slate-500">No. Urut {candidateId}</div>
+                          </div>
+
+                          {/* Info + Vote */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                              <div>
+                                <h3 className="text-[24px] font-semibold text-slate-900">{candidate.fullName}</h3>
+                                <div className="mt-2 flex flex-wrap items-center gap-3 text-[13px] text-slate-500">
+                                  {candidate.studentId && (
+                                    <span className="inline-flex items-center gap-1">
+                                      <GraduationCap className="h-3.5 w-3.5" />
+                                      NPM {candidate.studentId}
+                                    </span>
+                                  )}
+                                  {candidate.faculty && (
+                                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-600">
+                                      {candidate.faculty}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[36px] font-semibold leading-none tracking-[-0.03em] text-slate-900">{formatPercentage(percentage)}</p>
+                                <p className="mt-1 text-[14px] text-slate-500">{hasIndexerResult ? `${voteCount} suara` : 'Menunggu data'}</p>
+                              </div>
+                            </div>
+
+                            {/* Bio */}
+                            {candidate.bio ? (
+                              <p className="mt-5 text-[15px] leading-8 text-slate-700">{candidate.bio}</p>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        {/* YouTube Embed */}
+                        {youtubeId && (
+                          <div className="border-t border-slate-100 px-6 py-5 md:px-8">
+                            <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-slate-400">
+                              <Youtube className="h-4 w-4" />
+                              Video Profil
+                            </div>
+                            <div className="mt-4 aspect-video w-full overflow-hidden rounded-xl bg-slate-900">
+                              <iframe
+                                src={`https://www.youtube.com/embed/${youtubeId}`}
+                                title={`Video profil ${candidate.fullName}`}
+                                className="h-full w-full"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Vision + Mission */}
+                        {(candidate.vision || candidate.mission.length > 0) ? (
+                          <div className="border-t border-slate-100 px-6 py-5 md:px-8">
+                            <div className="grid gap-6 md:grid-cols-2">
+                              {/* Vision */}
+                              {candidate.vision ? (
+                                <div>
+                                  <h4 className="text-[13px] font-bold uppercase tracking-[0.08em] text-slate-800">Visi</h4>
+                                  <p className="mt-3 text-[15px] leading-8 text-slate-700">{candidate.vision}</p>
+                                </div>
+                              ) : null}
+
+                              {/* Mission */}
+                              {candidate.mission.length > 0 ? (
+                                <div>
+                                  <h4 className="text-[13px] font-bold uppercase tracking-[0.08em] text-slate-800">Misi</h4>
+                                  <ul className="mt-3 space-y-2">
+                                    {candidate.mission.map((item, mi) => (
+                                      <li key={mi} className="flex gap-3 text-[15px] leading-7 text-slate-700">
+                                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
+                                        {item}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {/* Vote bar footer */}
+                        <div className="border-t border-slate-100 bg-slate-50/50 px-6 py-4 md:px-8">
+                          <div className="flex items-center justify-between text-[13px] text-slate-500">
+                            <span>{hasIndexerResult ? `${voteCount} suara terverifikasi` : 'Menunggu data reveal'}</span>
+                            <span className="font-semibold text-slate-900">{formatPercentage(percentage)}</span>
+                          </div>
+                          <div className="mt-2 h-2 rounded-full bg-slate-200">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-1000 ${isWinner ? 'bg-amber-400' : 'bg-slate-400'}`}
+                              style={{ width: `${Math.max(percentage, 0)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </article>
+                    )
+                  })}
+              </StaggerContainer>
+            </section>
+          </ScrollReveal>
+        ) : null}
 
         {/* Audit Trail Section */}
         <ScrollReveal variant="fade-up" delay={200} duration={800}>
