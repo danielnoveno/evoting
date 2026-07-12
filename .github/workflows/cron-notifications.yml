@@ -5,11 +5,14 @@ name: VoteChain Cron
 
 on:
   schedule:
-    - cron: '*/1 * * * *'
+    # GitHub Actions MINIMUM cron interval = 5 minutes.
+    # */1, */2, */3, */4 are SILENTLY IGNORED — no error, no warning.
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 concurrency:
   group: votechain-cron
+  # false = queue runs, don't cancel in-progress. Safer for 4-min auto-reveal jobs.
   cancel-in-progress: false
 
 jobs:
@@ -21,16 +24,34 @@ jobs:
       VOTEIN_BASE_URL: https://votein-evoting.vercel.app
     steps:
       - name: Trigger Auto-Reveal
+        id: auto-reveal
         run: |
-          curl --fail-with-body --silent --show-error \
+          RESPONSE=$(curl --fail-with-body --silent --show-error \
             -X POST \
             -H "x-cron-secret: ${{ secrets.NOTIFICATION_CRON_SECRET }}" \
-            "$VOTEIN_BASE_URL/api/cron/auto-reveal"
+            -w "\nHTTP_STATUS:%{http_code}" \
+            "$VOTEIN_BASE_URL/api/cron/auto-reveal" 2>&1) || true
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | grep -v 'HTTP_STATUS:')
+          echo "status=$HTTP_STATUS" >> "$GITHUB_OUTPUT"
+          echo "response=$BODY" >> "$GITHUB_OUTPUT"
+          echo "--- Auto-Reveal Response ---"
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Body: $BODY"
+          echo "---------------------------"
 
       - name: Trigger Notifications
         if: always()
+        id: notifications
         run: |
-          curl --fail-with-body --silent --show-error \
+          RESPONSE=$(curl --fail-with-body --silent --show-error \
             -X POST \
             -H "x-cron-secret: ${{ secrets.NOTIFICATION_CRON_SECRET }}" \
-            "$VOTEIN_BASE_URL/api/cron/send-notifications"
+            -w "\nHTTP_STATUS:%{http_code}" \
+            "$VOTEIN_BASE_URL/api/cron/send-notifications" 2>&1) || true
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o 'HTTP_STATUS:[0-9]*' | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | grep -v 'HTTP_STATUS:')
+          echo "--- Notifications Response ---"
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Body: $BODY"
+          echo "-----------------------------"

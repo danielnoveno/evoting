@@ -557,10 +557,12 @@ async function processElectionResults(
 
 // ─── Main Handler ────────────────────────────────────────────────────────────
 
-export async function POST(request: NextRequest) {
+async function handleNotifications(request: NextRequest) {
   const secret = getCronSecret()
   if (!secret) return jsonError('Secret cron belum dikonfigurasi.', 503)
-  if (request.headers.get('x-cron-secret') !== secret) {
+  const bearerOk = request.headers.get('authorization') === `Bearer ${secret}`
+  const headerOk = request.headers.get('x-cron-secret') === secret
+  if (!bearerOk && !headerOk) {
     return jsonError('Akses cron tidak diizinkan.', 401)
   }
 
@@ -595,4 +597,12 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, results })
+}
+
+// Vercel cron sends GET; GitHub Actions sends POST.
+export async function GET(request: NextRequest) {
+  return handleNotifications(request)
+}
+export async function POST(request: NextRequest) {
+  return handleNotifications(request)
 }

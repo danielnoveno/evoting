@@ -41,21 +41,17 @@ const ELECTION_SPACE_ABI = [
   },
 ] as const
 
-/**
- * POST /api/cron/auto-reveal
- * Called by Vercel cron or frontend to auto-reveal all un-revealed commitments
- * for elections currently in the Reveal phase (phase === 1).
- *
- * Uses the RELAYER_WALLET_PRIVATE_KEY to submit revealFor() transactions.
- */
-export async function POST(request: NextRequest) {
+function verifyAuth(request: NextRequest): boolean {
   const cronSecret = getCronSecret()
-  if (!cronSecret) {
-    return NextResponse.json({ error: 'Secret cron belum dikonfigurasi.' }, { status: 503 })
-  }
+  if (!cronSecret) return false
   const bearerOk = request.headers.get('authorization') === `Bearer ${cronSecret}`
   const headerOk = request.headers.get('x-cron-secret') === cronSecret
-  if (!bearerOk && !headerOk) {
+  return bearerOk || headerOk
+}
+
+/** Shared auto-reveal logic for both GET (Vercel cron) and POST (GitHub Actions) */
+async function handleAutoReveal(request: NextRequest) {
+  if (!verifyAuth(request)) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
   }
 
@@ -282,4 +278,12 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ success: true, revealed: revealedCount, results })
+}
+
+// Vercel cron sends GET; GitHub Actions sends POST.
+export async function GET(request: NextRequest) {
+  return handleAutoReveal(request)
+}
+export async function POST(request: NextRequest) {
+  return handleAutoReveal(request)
 }
