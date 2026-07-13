@@ -31,13 +31,21 @@ function formatPercentage(value: number) {
   return `${Math.round(value)}%`
 }
 
-function csvCell(value: string | number | null | undefined) {
-  const text = String(value ?? '')
-  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
-}
-
 function fileSlug(value: string) {
   return value.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'pemilihan'
+}
+
+function escapeHtml(value: string | number | null | undefined) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+}
+
+function reportLink(href: string, label = href) {
+  return `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`
 }
 
 function progressWidthClass(value: number) {
@@ -269,73 +277,117 @@ export function HasilSections({ id }: { id: string }) {
       return
     }
 
-    const lines: string[] = []
-    lines.push('Laporan Hasil Pemilihan')
-    lines.push('')
-    lines.push(['ID Pemilihan', election.id].map(csvCell).join(','))
-    lines.push(['Nama Pemilihan', election.title].map(csvCell).join(','))
-    lines.push(['Organisasi', election.organizationName ?? '-'].map(csvCell).join(','))
-    lines.push(['Fase', election.phaseLabel].map(csvCell).join(','))
-    lines.push(['Alamat Kontrak', election.deployedSpaceAddress ?? 'Belum tersedia'].map(csvCell).join(','))
-    if (election.deployedSpaceAddress) {
-      lines.push(['Basescan Kontrak', `https://sepolia.basescan.org/address/${election.deployedSpaceAddress}`].map(csvCell).join(','))
-    }
-    if (election.deploymentTxHash) {
-      lines.push(['Tx Deploy', election.deploymentTxHash].map(csvCell).join(','))
-      lines.push(['Basescan Deploy', `https://sepolia.basescan.org/tx/${election.deploymentTxHash}`].map(csvCell).join(','))
-    }
-    lines.push(['Total Pemilih Terdaftar', election.participantCount].map(csvCell).join(','))
-    lines.push(['Total Commit Terindeks', hasIndexerResult ? (indexerResult?.totalCommitted ?? 0) : 'Belum tersedia'].map(csvCell).join(','))
-    lines.push(['Total Reveal Terindeks', hasIndexerResult ? totalRevealed : 'Belum tersedia'].map(csvCell).join(','))
-    lines.push(['Partisipasi Reveal', hasIndexerResult ? formatPercentage(participation) : 'Menunggu indexer'].map(csvCell).join(','))
-    lines.push('')
-    lines.push('Perolehan Suara Kandidat')
-    lines.push(['No. Urut', 'Nama Kandidat', 'Perolehan Suara', 'Persentase', 'Tx Reveal Terakhir', 'Block Terakhir'].map(csvCell).join(','))
-    election.candidates.forEach((candidate, index) => {
+    const printedAt = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })
+    const contractUrl = election.deployedSpaceAddress ? `https://sepolia.basescan.org/address/${election.deployedSpaceAddress}` : null
+    const deployUrl = election.deploymentTxHash ? `https://sepolia.basescan.org/tx/${election.deploymentTxHash}` : null
+    const summaryRows = [
+      ['ID Pemilihan', election.id],
+      ['Organisasi', election.organizationName ?? '-'],
+      ['Fase Saat Ini', election.phaseLabel],
+      ['Total Pemilih Terdaftar', election.participantCount],
+      ['Total Commit Terindeks', hasIndexerResult ? (indexerResult?.totalCommitted ?? 0) : 'Belum tersedia'],
+      ['Total Reveal Terindeks', hasIndexerResult ? totalRevealed : 'Belum tersedia'],
+      ['Partisipasi Reveal', hasIndexerResult ? formatPercentage(participation) : 'Menunggu indexer'],
+      ['Alamat Kontrak', election.deployedSpaceAddress ?? 'Belum tersedia'],
+    ]
+    const candidateRows = election.candidates.map((candidate, index) => {
       const candidateId = resolveCandidateId(candidate.candidateLocalId, index)
       const result = candidateResults.get(candidateId)
       const voteCount = result?.voteCount ?? 0
       const percentage = totalRevealed > 0 ? (voteCount / totalRevealed) * 100 : 0
-      lines.push([
+      return [
         candidateId,
         candidate.fullName,
         hasIndexerResult ? voteCount : 'Belum tersedia',
         hasIndexerResult ? `${percentage.toFixed(1)}%` : 'Menunggu indexer',
         result?.lastRevealTx ?? '-',
         result?.lastUpdatedBlock ?? '-',
-      ].map(csvCell).join(','))
+      ]
     })
-    lines.push('')
-    lines.push('Bukti Transaksi Terbaru')
-    lines.push(['Waktu', 'Aksi', 'Tx Hash', 'Block', 'Sumber', 'Basescan'].map(csvCell).join(','))
-    if (logs.length === 0) {
-      lines.push(['-', 'Belum ada transaksi commit/reveal', '-', '-', '-', '-'].map(csvCell).join(','))
-    } else {
-      logs.forEach((log) => {
-        lines.push([
-          formatTime(log.createdAt),
-          actionLabel(log.actionType),
-          log.txHash,
-          log.blockNumber ?? '-',
-          log.source,
-          `https://sepolia.basescan.org/tx/${log.txHash}`,
-        ].map(csvCell).join(','))
-      })
-    }
-    lines.push('')
-    lines.push(['Catatan', hasIndexerResult ? 'Angka suara berasal dari hasil reveal yang terindeks.' : 'Hasil suara belum tersedia karena indexer belum mengembalikan data. Laporan tidak mengisi angka palsu.'].map(csvCell).join(','))
-    lines.push(['Diunduh pada', new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })].map(csvCell).join(','))
 
-    const blob = new Blob([`\uFEFF${lines.join('\n')}`], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `laporan-${fileSlug(election.title)}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-    showToast({ tone: 'success', title: 'Laporan berhasil diunduh', description: 'File CSV laporan hasil pemilihan sudah diunduh.' })
+    const popup = window.open('', '_blank', 'noopener,noreferrer')
+    if (!popup) {
+      showToast({ tone: 'error', title: 'Gagal membuka laporan', description: 'Izinkan pop-up browser untuk menyimpan laporan sebagai PDF.' })
+      return
+    }
+
+    popup.document.write(`<!doctype html>
+      <html lang="id">
+        <head>
+          <meta charset="utf-8" />
+          <title>laporan-${escapeHtml(fileSlug(election.title))}</title>
+          <style>
+            @page { size: A4; margin: 18mm; }
+            * { box-sizing: border-box; }
+            body { margin: 0; color: #0f172a; font-family: Arial, sans-serif; line-height: 1.5; }
+            header { border-bottom: 2px solid #0f172a; padding-bottom: 18px; margin-bottom: 22px; }
+            h1 { margin: 0; font-size: 28px; line-height: 1.15; letter-spacing: -0.02em; }
+            h2 { margin: 24px 0 10px; font-size: 16px; text-transform: uppercase; letter-spacing: 0.06em; }
+            p { margin: 8px 0; color: #334155; }
+            .badge { display: inline-block; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; color: #334155; }
+            .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0; }
+            .metric { border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; }
+            .metric b { display: block; font-size: 22px; }
+            .metric span { color: #64748b; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; vertical-align: top; word-break: break-word; }
+            th { background: #f8fafc; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+            a { color: #1d4ed8; text-decoration: none; }
+            .note { border: 1px solid #fde68a; background: #fffbeb; border-radius: 12px; padding: 12px; color: #713f12; }
+            .muted { color: #64748b; font-size: 12px; }
+            .print { margin-top: 24px; }
+            @media print { .print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <header>
+            <span class="badge">Laporan Hasil Pemilihan</span>
+            <h1>${escapeHtml(election.title)}</h1>
+            <p>Laporan ini merangkum data pemilihan, perolehan suara terindeks, dan bukti transaksi yang tersedia pada halaman publik VoteChain.</p>
+            <p class="muted">Dicetak pada ${escapeHtml(printedAt)} · Base Sepolia Testnet</p>
+          </header>
+
+          <section class="grid">
+            <div class="metric"><b>${escapeHtml(election.participantCount)}</b><span>Pemilih terdaftar</span></div>
+            <div class="metric"><b>${escapeHtml(hasIndexerResult ? totalRevealed : '—')}</b><span>Reveal terindeks</span></div>
+            <div class="metric"><b>${escapeHtml(hasIndexerResult ? formatPercentage(participation) : '—')}</b><span>Partisipasi reveal</span></div>
+          </section>
+
+          <section>
+            <h2>Ringkasan Pemilihan</h2>
+            <table><tbody>${summaryRows.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`).join('')}
+              ${contractUrl ? `<tr><th>Basescan Kontrak</th><td>${reportLink(contractUrl)}</td></tr>` : ''}
+              ${deployUrl ? `<tr><th>Basescan Deploy</th><td>${reportLink(deployUrl)}</td></tr>` : ''}
+            </tbody></table>
+          </section>
+
+          <section>
+            <h2>Perolehan Suara Kandidat</h2>
+            <table>
+              <thead><tr><th>No.</th><th>Nama Kandidat</th><th>Suara</th><th>Persentase</th><th>Tx Reveal Terakhir</th><th>Block</th></tr></thead>
+              <tbody>${candidateRows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('') || '<tr><td colspan="6">Belum ada kandidat.</td></tr>'}</tbody>
+            </table>
+          </section>
+
+          <section>
+            <h2>Bukti Transaksi Terbaru</h2>
+            <table>
+              <thead><tr><th>Waktu</th><th>Aksi</th><th>Tx Hash</th><th>Block</th><th>Sumber</th><th>Basescan</th></tr></thead>
+              <tbody>${logs.map((log) => `<tr><td>${escapeHtml(formatTime(log.createdAt))}</td><td>${escapeHtml(actionLabel(log.actionType))}</td><td>${escapeHtml(log.txHash)}</td><td>${escapeHtml(log.blockNumber ?? '-')}</td><td>${escapeHtml(log.source)}</td><td>${reportLink(`https://sepolia.basescan.org/tx/${log.txHash}`, 'Lihat transaksi')}</td></tr>`).join('') || '<tr><td colspan="6">Belum ada transaksi commit/reveal yang tersedia.</td></tr>'}</tbody>
+            </table>
+          </section>
+
+          <section>
+            <h2>Catatan Audit</h2>
+            <p class="note">${escapeHtml(hasIndexerResult ? 'Angka suara pada laporan ini berasal dari event reveal yang berhasil terindeks. Verifikasi publik dapat dilakukan melalui tautan Basescan yang tersedia.' : 'Hasil suara belum tersedia karena indexer belum mengembalikan data. Laporan ini tidak mengisi angka palsu dan hanya menampilkan bukti yang tersedia.')}</p>
+          </section>
+
+          <button class="print" onclick="window.print()">Simpan / Cetak PDF</button>
+          <script>window.addEventListener('load', () => setTimeout(() => window.print(), 300))</script>
+        </body>
+      </html>`)
+    popup.document.close()
+    showToast({ tone: 'success', title: 'Laporan PDF dibuka', description: 'Pilih “Save as PDF” atau “Simpan sebagai PDF” pada dialog cetak browser.' })
   }
 
   return (
