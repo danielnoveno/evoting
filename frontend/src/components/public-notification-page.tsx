@@ -16,10 +16,17 @@ import {
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { AppSectionCard } from '@/components/ui/app-section-card'
-import { isNotificationRead, markNotificationRead, markNotificationsRead, markNotificationsUnread } from '@/lib/notification-store'
+import {
+  isNotificationDeleted,
+  isNotificationRead,
+  markNotificationRead,
+  markNotificationsDeleted,
+  markNotificationsRead,
+  markNotificationsUnread,
+} from '@/lib/notification-store'
 import { timeAgo } from '@/lib/repositories/helpers'
 
 interface NotificationItem {
@@ -58,13 +65,16 @@ export function PublicNotificationPage({
     refetchInterval: 60000,
   })
 
-  const notifications = data ?? []
+  const notifications = useMemo(
+    () => (data ?? []).filter((notification) => !isNotificationDeleted(notification.id)),
+    [data, readVersion],
+  )
   const allIds = notifications.map((n) => n.id)
   const allSelected = allIds.length > 0 && selected.size === allIds.length
 
   useEffect(() => {
     setReadVersion((v) => v + 1)
-  }, [notifications])
+  }, [data])
 
   const toggleSelect = useCallback((id: string) => {
     setSelected((prev) => {
@@ -90,6 +100,12 @@ export function PublicNotificationPage({
 
   const handleBulkMarkUnread = useCallback(() => {
     markNotificationsUnread([...selected])
+    setReadVersion((v) => v + 1)
+    setSelected(new Set())
+  }, [selected])
+
+  const handleBulkDelete = useCallback(() => {
+    markNotificationsDeleted([...selected])
     setReadVersion((v) => v + 1)
     setSelected(new Set())
   }, [selected])
@@ -174,6 +190,14 @@ export function PublicNotificationPage({
                   >
                     <EyeOff className="h-3.5 w-3.5" />
                     Tandai Belum Dibaca
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBulkDelete}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-[12px] font-medium text-red-600 transition hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Hapus
                   </button>
                 </>
               )}

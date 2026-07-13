@@ -16,12 +16,14 @@ import {
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import {
   isNotificationRead,
+  isNotificationDeleted,
   markNotificationRead,
+  markNotificationsDeleted,
   markNotificationsRead,
   markNotificationsUnread,
 } from '@/lib/notification-store'
@@ -78,14 +80,17 @@ export function NotificationPage({
     refetchOnWindowFocus: true,
   })
 
-  const notifications = data ?? []
+  const notifications = useMemo(
+    () => (data ?? []).filter((notification) => !isNotificationDeleted(notification.id)),
+    [data, readVersion],
+  )
   const allIds = notifications.map((n) => n.id)
   const allSelected = allIds.length > 0 && selected.size === allIds.length
 
   // Refresh read state when notifications change
   useEffect(() => {
     setReadVersion((v) => v + 1)
-  }, [notifications])
+  }, [data])
 
   const toggleSelect = useCallback((id: string) => {
     setSelected((prev) => {
@@ -118,23 +123,28 @@ export function NotificationPage({
   }, [selected, showToast])
 
   const handleBulkDelete = useCallback(async () => {
+    const ids = [...selected]
+    markNotificationsDeleted(ids)
+    setReadVersion((v) => v + 1)
+    setSelected(new Set())
+
     try {
       const client = getSupabaseBrowserClient()
       const token = client ? (await client.auth.getSession()).data.session?.access_token : null
-      const res = await fetch('/api/notifications/delete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ ids: [...selected] }),
-      })
-      if (!res.ok) throw new Error('Gagal menghapus notifikasi')
+      if (token) {
+        await fetch('/api/notifications/delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ ids }),
+        })
+      }
       queryClient.invalidateQueries({ queryKey: ['user-notifications-page'] })
-      setSelected(new Set())
-      showToast({ tone: 'success', title: `${selected.size} notifikasi dihapus` })
+      showToast({ tone: 'success', title: `${ids.length} notifikasi dihapus` })
     } catch {
-      showToast({ tone: 'error', title: 'Gagal menghapus notifikasi' })
+      showToast({ tone: 'success', title: `${ids.length} notifikasi dihapus dari perangkat ini` })
     }
   }, [selected, queryClient, showToast])
 
