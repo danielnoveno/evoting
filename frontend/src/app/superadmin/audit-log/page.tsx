@@ -43,6 +43,117 @@ function AuditStatusBadge({ tone, status }: { tone: AuditLogItem['statusTone']; 
   )
 }
 
+function escapeHtml(value: string | number | null | undefined) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+}
+
+function reportLink(href: string, label = href) {
+  return `<a href="${escapeHtml(href)}">${escapeHtml(label)}</a>`
+}
+
+function printAuditReport(logs: AuditLogItem[]) {
+  const generatedAt = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })
+  const verifiedCount = logs.filter((log) => log.statusTone === 'verified').length
+  const syncingCount = logs.filter((log) => log.statusTone === 'syncing').length
+  const txCount = logs.filter((log) => log.txHash && log.txHash !== '—').length
+  const lastUpdated = logs.length > 0 ? new Date(logs[0].timestamp).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' }) : '—'
+  const reportHtml = `<!doctype html>
+    <html lang="id">
+      <head>
+        <meta charset="utf-8" />
+        <title>laporan-audit-votechain</title>
+        <style>
+          @page { size: A4 landscape; margin: 14mm; }
+          * { box-sizing: border-box; }
+          body { margin: 0; color: #0f172a; font-family: Arial, sans-serif; line-height: 1.5; }
+          header { border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 18px; }
+          h1 { margin: 0; font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; }
+          h2 { margin: 20px 0 10px; font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; }
+          p { margin: 8px 0; color: #334155; }
+          .badge { display: inline-block; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; color: #334155; }
+          .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0; }
+          .metric { border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px; }
+          .metric b { display: block; font-size: 20px; }
+          .metric span { color: #64748b; font-size: 12px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+          th, td { border: 1px solid #cbd5e1; padding: 7px; text-align: left; vertical-align: top; word-break: break-word; }
+          th { background: #f8fafc; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+          a { color: #1d4ed8; text-decoration: none; }
+          .note { border: 1px solid #fde68a; background: #fffbeb; border-radius: 12px; padding: 12px; color: #713f12; }
+          .muted { color: #64748b; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <header>
+          <span class="badge">Laporan Audit Sistem</span>
+          <h1>Audit Log Transparansi VoteChain</h1>
+          <p>Laporan ini merangkum event audit aplikasi dari sumber <b>tx_audit_log</b> dan <b>ops_audit_log</b> yang sedang dimuat di halaman superadmin.</p>
+          <p class="muted">Dicetak pada ${escapeHtml(generatedAt)} · Rentang data endpoint: 30 hari terakhir</p>
+        </header>
+
+        <section class="grid">
+          <div class="metric"><b>${escapeHtml(logs.length)}</b><span>Total event</span></div>
+          <div class="metric"><b>${escapeHtml(verifiedCount)}</b><span>Status terverifikasi</span></div>
+          <div class="metric"><b>${escapeHtml(syncingCount)}</b><span>Status sinkronisasi</span></div>
+          <div class="metric"><b>${escapeHtml(txCount)}</b><span>Event dengan tx hash</span></div>
+        </section>
+
+        <section>
+          <h2>Ringkasan</h2>
+          <table><tbody>
+            <tr><th>Sumber Data</th><td>tx_audit_log + ops_audit_log</td></tr>
+            <tr><th>Terakhir Diperbarui</th><td>${escapeHtml(lastUpdated)}</td></tr>
+            <tr><th>Jaringan Referensi</th><td>Base Sepolia Testnet untuk event on-chain yang memiliki transaction hash</td></tr>
+          </tbody></table>
+        </section>
+
+        <section>
+          <h2>Daftar Event Audit</h2>
+          <table>
+            <thead><tr><th>Waktu</th><th>Block</th><th>Event</th><th>Judul</th><th>Status</th><th>Actor</th><th>Tx Hash</th><th>Basescan</th></tr></thead>
+            <tbody>${logs.map((log) => {
+              const hasTx = Boolean(log.txHash && log.txHash !== '—')
+              return `<tr><td>${escapeHtml(new Date(log.timestamp).toLocaleString('id-ID'))}</td><td>${escapeHtml(log.block)}</td><td>${escapeHtml(log.eventLabel)}</td><td>${escapeHtml(log.title)}</td><td>${escapeHtml(log.status)}</td><td>${escapeHtml(log.actorEmail ?? log.actorWallet ?? '-')}</td><td>${escapeHtml(log.txHash || '-')}</td><td>${hasTx ? reportLink(basescanTxUrl(log.txHash), 'Lihat transaksi') : '-'}</td></tr>`
+            }).join('') || '<tr><td colspan="8">Belum ada data audit log.</td></tr>'}</tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>Catatan Audit</h2>
+          <p class="note">Laporan ini adalah ringkasan operasional dari data audit yang tersedia di aplikasi. Untuk klaim transaksi blockchain, gunakan hash transaksi dan tautan Basescan pada baris terkait sebagai bukti verifikasi publik.</p>
+        </section>
+      </body>
+    </html>`
+
+  const existingFrame = document.getElementById('votechain-audit-report-print-frame')
+  existingFrame?.remove()
+
+  const frame = document.createElement('iframe')
+  frame.id = 'votechain-audit-report-print-frame'
+  frame.title = 'Laporan audit sistem'
+  frame.style.position = 'fixed'
+  frame.style.right = '0'
+  frame.style.bottom = '0'
+  frame.style.width = '1px'
+  frame.style.height = '1px'
+  frame.style.border = '0'
+  frame.style.opacity = '0'
+  frame.onload = () => {
+    const printWindow = frame.contentWindow
+    if (!printWindow) return
+    printWindow.focus()
+    printWindow.print()
+    window.setTimeout(() => frame.remove(), 60_000)
+  }
+  frame.srcdoc = reportHtml
+  document.body.appendChild(frame)
+}
+
 export default function SuperadminAuditLogPage() {
   const { showToast } = useToast()
   const authSessionQuery = useAuthSession()
@@ -119,6 +230,11 @@ export default function SuperadminAuditLogPage() {
     showToast({ tone: 'success', title: 'Bukti log diunduh', description: `File ${log.id}-proof.json berhasil dibuat.` })
   }
 
+  const downloadAuditReport = () => {
+    printAuditReport(logs)
+    showToast({ tone: 'success', title: 'Laporan audit disiapkan', description: 'Pilih “Save as PDF” atau “Simpan sebagai PDF” pada dialog cetak browser.' })
+  }
+
   const filteredLogs = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     let result = logs
@@ -156,7 +272,7 @@ export default function SuperadminAuditLogPage() {
         </div>
 
         <div className="mt-2 flex flex-wrap gap-4 xl:mt-10">
-          <SuperadminToolbarButton onClick={() => showToast({ tone: 'success', title: 'Laporan audit disiapkan', description: 'File laporan audit sedang disiapkan.' })}>
+          <SuperadminToolbarButton onClick={downloadAuditReport}>
             <Download className="h-4 w-4" />
             Unduh Laporan
           </SuperadminToolbarButton>
