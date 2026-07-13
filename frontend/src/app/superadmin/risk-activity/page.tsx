@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, BarChart3, RefreshCcw } from 'lucide-react'
+import { AlertTriangle, BarChart3, ExternalLink, RefreshCcw, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -9,7 +9,7 @@ import { SuperadminEmptyState, SuperadminInteractiveCard, SuperadminShell } from
 import { SuperadminOnboardingTour } from '@/components/superadmin/onboarding-tour'
 import { AppPageHeader } from '@/components/ui/app-page-header'
 import { AppSectionCard } from '@/components/ui/app-section-card'
-import { superadminRiskData } from '@/lib/superadmin-data'
+import { superadminRiskData, type SuperadminRiskAlert } from '@/lib/superadmin-data'
 import { useSuperadminRiskAlertsStore } from '@/lib/superadmin-store'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
@@ -20,12 +20,26 @@ export default function SuperadminRiskActivityPage() {
   const { showToast } = useToast()
   const { alerts, metrics, setAlerts, isLoading, error, refresh, blockActor } = useSuperadminRiskAlertsStore()
   const [blockedAlertId, setBlockedAlertId] = useState<string | null>(null)
+  const [selectedAlert, setSelectedAlert] = useState<SuperadminRiskAlert | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [aiSummary, setAiSummary] = useState<string>('Menganalisis pola keamanan...')
   const [isAiLoading, setIsAiLoading] = useState(false)
 
   // Layer 1: Heuristic pattern analysis (local, deterministic)
   const analysis = analyzeRiskPatterns(alerts)
+
+  const buildInternalRiskSummary = () => {
+    if (alerts.length === 0) return 'Tidak ada alert aktif. Status risiko rendah berdasarkan data risk_alerts terbaru.'
+    const dangerCount = alerts.filter((alert) => alert.tone === 'danger').length
+    const warningCount = alerts.filter((alert) => alert.tone === 'warning').length
+    return `${alerts.length} alert aktif dianalisis: ${dangerCount} risiko tinggi dan ${warningCount} peringatan. Skor risiko ${analysis.weightedScore}/100 dengan rekomendasi: ${analysis.suggestedAction}.`
+  }
+
+  const headerDescription = isLoading
+    ? 'Memuat alert risiko dari backend.'
+    : alerts.length > 0
+      ? `${alerts.length} alert aktif dari backend perlu ditinjau superadmin.`
+      : 'Tidak ada alert aktif dari backend saat ini.'
 
   // Layer 2: Generative summary via Gemini API
   useEffect(() => {
@@ -42,10 +56,10 @@ export default function SuperadminRiskActivityPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ alerts, analysis })
         })
-        const data = await res.json()
-        setAiSummary(data.summary || 'Gagal memuat ringkasan AI.')
+          const data = await res.json()
+          setAiSummary(data.summary || buildInternalRiskSummary())
       } catch (err) {
-        setAiSummary('Terjadi kesalahan saat menghubungi layanan AI.')
+        setAiSummary(buildInternalRiskSummary())
       } finally {
         setIsAiLoading(false)
       }
@@ -76,7 +90,7 @@ export default function SuperadminRiskActivityPage() {
       <ScrollReveal variant="fade-up" duration={800}>
         <AppPageHeader
           title={superadminRiskData.title}
-          description={superadminRiskData.description}
+          description={headerDescription}
         />
       </ScrollReveal>
 
@@ -154,7 +168,7 @@ export default function SuperadminRiskActivityPage() {
                 </div>
               </div>
             ) : alerts.length > 0 ? alerts.map((alert) => (
-              <SuperadminInteractiveCard key={alert.id} onClick={() => router.push('/superadmin/audit-log')} className={`bg-slate-100 p-6 ${alert.tone === 'danger' ? 'border-l-4 border-red-600' : 'border-l-4 border-amber-500'}`}>
+              <SuperadminInteractiveCard key={alert.id} onClick={() => setSelectedAlert(alert)} className={`bg-slate-100 p-6 ${alert.tone === 'danger' ? 'border-l-4 border-red-600' : 'border-l-4 border-amber-500'}`}>
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex gap-4">
                     <div className={`mt-1 flex h-10 w-10 items-center justify-center rounded-full ${alert.tone === 'danger' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
@@ -183,7 +197,7 @@ export default function SuperadminRiskActivityPage() {
                   ) : null}
                   <button type="button" onClick={(event) => {
                     event.stopPropagation()
-                    showToast({ tone: 'info', title: 'Detail log dibuka', description: `Detail log untuk ${alert.title} sedang ditampilkan.` })
+                    setSelectedAlert(alert)
                   }} className="inline-flex h-10 items-center justify-center rounded-2xl bg-slate-200 px-5 text-[15px] font-medium text-slate-900 hover:bg-slate-300">
                     Lihat Detail Log
                   </button>
@@ -240,6 +254,64 @@ export default function SuperadminRiskActivityPage() {
         </div>
         </section>
       </ScrollReveal>
+
+      {selectedAlert ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6" role="dialog" aria-modal="true" aria-labelledby="risk-alert-detail-title">
+          <div className="w-full max-w-2xl rounded-[28px] border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className={`inline-flex rounded-xl px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.06em] ${selectedAlert.tone === 'danger' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
+                  {selectedAlert.tone === 'danger' ? 'Risiko Tinggi' : 'Peringatan'} · {selectedAlert.status}
+                </p>
+                <h2 id="risk-alert-detail-title" className="mt-4 text-[24px] font-semibold text-slate-900">{selectedAlert.title}</h2>
+                <p className="mt-2 text-[15px] leading-7 text-slate-700">{selectedAlert.description}</p>
+              </div>
+              <button type="button" onClick={() => setSelectedAlert(null)} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200" aria-label="Tutup detail alert">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3 rounded-[20px] bg-slate-50 p-4 text-[14px] text-slate-800">
+              {[
+                ['ID Alert', selectedAlert.id],
+                ['Aktor', `${selectedAlert.actorLabel}: ${selectedAlert.actorValue}`],
+                ['Waktu terdeteksi', selectedAlert.time],
+                ['Status penanganan', selectedAlert.status === 'active' ? 'Aktif / belum ditangani' : selectedAlert.status],
+              ].map(([label, value]) => (
+                <div key={label} className="grid gap-1 border-b border-slate-200/70 pb-3 last:border-0 last:pb-0 md:grid-cols-[160px_minmax(0,1fr)]">
+                  <span className="font-semibold text-slate-500">{label}</span>
+                  <span className="break-all font-mono text-slate-900">{value}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 rounded-[20px] border border-slate-200 p-4">
+              <h3 className="text-[15px] font-semibold text-slate-900">Konteks analisis saat ini</h3>
+              <p className="mt-2 text-[14px] leading-7 text-slate-700">{buildInternalRiskSummary()}</p>
+              {analysis.patterns.length > 0 ? (
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-[14px] leading-7 text-slate-700">
+                  {analysis.patterns.map((pattern) => <li key={pattern}>{pattern}</li>)}
+                </ul>
+              ) : null}
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => router.push('/superadmin/audit-log')} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-semibold text-slate-900 hover:bg-slate-200">
+                Buka Audit Log
+                <ExternalLink className="h-4 w-4" />
+              </button>
+              {selectedAlert.tone === 'danger' && selectedAlert.status === 'active' ? (
+                <button type="button" onClick={() => {
+                  setBlockedAlertId(selectedAlert.id)
+                  setSelectedAlert(null)
+                }} className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#0B1120] px-5 text-[14px] font-semibold text-white hover:bg-slate-800">
+                  Blokir Akses
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={blockedAlertId !== null}

@@ -62,6 +62,12 @@ function parsePayload(value: unknown): RiskSummaryPayload | null {
   }
 }
 
+function buildDeterministicSummary(payload: RiskSummaryPayload) {
+  const { alerts, analysis } = payload
+  if (alerts.length === 0) return 'Tidak ada alert aktif. Analisis pola internal menilai status risiko rendah dan monitoring rutin tetap berjalan.'
+  return `${alerts.length} alert aktif dianalisis dengan skor risiko ${analysis.weightedScore}/100 (${analysis.riskLevel}). Rekomendasi sistem: ${analysis.suggestedAction}.`
+}
+
 async function requireSuperadmin() {
   const supabase = getSupabaseServerClient()
   if (!supabase) return jsonError('Backend Supabase belum dikonfigurasi.', 503)
@@ -103,7 +109,8 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
       return NextResponse.json({ 
-        summary: `Sistem AI siap. Harap konfigurasi GEMINI_API_KEY untuk ringkasan naratif otomatis. Analisis pola internal menunjukkan kondisi: ${analysis.riskLevel}.` 
+        summary: buildDeterministicSummary(payload),
+        source: 'internal-risk-engine',
       })
     }
 
@@ -134,7 +141,8 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Gemini API Error:', error)
     return NextResponse.json({
-      summary: 'Ringkasan AI belum tersedia. Sistem tetap memakai analisis pola internal untuk menentukan status risiko.',
+      summary: 'Ringkasan naratif eksternal gagal dibuat. Sistem tetap memakai analisis pola internal dan data alert aktif untuk menentukan status risiko.',
+      source: 'internal-risk-engine',
     })
   }
 }
