@@ -17,49 +17,73 @@ export function useSuperadminRiskAlertsStore() {
   const [alerts, setAlerts] = useState<SuperadminRiskAlert[]>([])
   const [metrics, setMetrics] = useState({ spaces: 0, incidents: 0 })
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const supabase = getSupabaseBrowserClient()
 
   const refresh = async () => {
-    if (!supabase) return
-    setIsLoading(true)
-    
-    const { data: alertsData } = await supabase
-      .schema('app')
-      .from('risk_alerts')
-      .select('*')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-
-    const { count: spaceCount } = await supabase
-      .schema('app')
-      .from('space_registry_map')
-      .select('*', { count: 'exact', head: true })
-
-    const { count: incidentCount } = await supabase
-      .schema('app')
-      .from('risk_alerts')
-      .select('*', { count: 'exact', head: true })
-      .neq('status', 'active')
-
-    if (alertsData) {
-      setAlerts(alertsData.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        actorLabel: item.actor_label,
-        actorValue: item.actor_value,
-        time: timeAgo(item.created_at),
-        tone: item.tone,
-        status: item.status
-      })))
+    if (!supabase) {
+      setError('Koneksi Supabase tidak tersedia. Periksa konfigurasi.')
+      setIsLoading(false)
+      return
     }
 
-    setMetrics({ 
-      spaces: spaceCount || 0, 
-      incidents: incidentCount || 0 
-    })
+    setIsLoading(true)
+    setError(null)
 
-    setIsLoading(false)
+    try {
+      const { data: alertsData, error: alertsErr } = await supabase
+        .schema('app')
+        .from('risk_alerts')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+
+      if (alertsErr) {
+        console.error('[risk-alerts] Query error:', alertsErr.message)
+      }
+
+      const { count: spaceCount, error: spaceErr } = await supabase
+        .schema('app')
+        .from('space_registry_map')
+        .select('*', { count: 'exact', head: true })
+
+      if (spaceErr) {
+        console.error('[risk-alerts] Space count error:', spaceErr.message)
+      }
+
+      const { count: incidentCount, error: incidentErr } = await supabase
+        .schema('app')
+        .from('risk_alerts')
+        .select('*', { count: 'exact', head: true })
+        .neq('status', 'active')
+
+      if (incidentErr) {
+        console.error('[risk-alerts] Incident count error:', incidentErr.message)
+      }
+
+      if (alertsData) {
+        setAlerts(alertsData.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          actorLabel: item.actor_label,
+          actorValue: item.actor_value,
+          time: timeAgo(item.created_at),
+          tone: item.tone,
+          status: item.status
+        })))
+      }
+
+      setMetrics({
+        spaces: spaceCount || 0,
+        incidents: incidentCount || 0
+      })
+    } catch (err) {
+      console.error('[risk-alerts] Refresh failed:', err)
+      setError('Gagal memuat data risiko. Periksa koneksi atau muat ulang halaman.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -67,21 +91,21 @@ export function useSuperadminRiskAlertsStore() {
   }, [])
 
   const blockActor = async (alertId: string) => {
-    if (!supabase) return
+    if (!supabase) throw new Error('Koneksi Supabase tidak tersedia')
 
-    const { data: alert } = await supabase
+    const { data: alert, error: fetchErr } = await supabase
       .schema('app')
       .from('risk_alerts')
       .select('*')
       .eq('id', alertId)
       .single()
 
-    if (!alert) return
+    if (fetchErr || !alert) throw new Error('Alert tidak ditemukan')
 
-    const entityType = alert.actor_label.toLowerCase().includes('ip') ? 'ip' : 
+    const entityType = alert.actor_label.toLowerCase().includes('ip') ? 'ip' :
                      alert.actor_label.toLowerCase().includes('wallet') ? 'wallet' : 'space'
 
-    await supabase
+    const { error: insertErr } = await supabase
       .schema('app')
       .from('blocked_entities')
       .insert({
@@ -90,14 +114,18 @@ export function useSuperadminRiskAlertsStore() {
         reason: alert.title
       })
 
-    await supabase
+    if (insertErr) throw new Error(`Gagal memblokir entitas: ${insertErr.message}`)
+
+    const { error: updateErr } = await supabase
       .schema('app')
       .from('risk_alerts')
       .update({ status: 'blocked' } as any)
       .eq('id', alertId)
 
+    if (updateErr) throw new Error(`Gagal update status alert: ${updateErr.message}`)
+
     await refresh()
   }
 
-  return { alerts, metrics, isLoading, refresh, blockActor, setAlerts }
+  return { alerts, metrics, isLoading, error, refresh, blockActor, setAlerts }
 }

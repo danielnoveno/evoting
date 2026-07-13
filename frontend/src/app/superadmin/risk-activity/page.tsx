@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, BarChart3 } from 'lucide-react'
+import { AlertTriangle, BarChart3, RefreshCcw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -18,7 +18,7 @@ import { analyzeRiskPatterns } from '@/lib/ai/risk-engine'
 export default function SuperadminRiskActivityPage() {
   const router = useRouter()
   const { showToast } = useToast()
-  const { alerts, metrics, setAlerts, isLoading, blockActor } = useSuperadminRiskAlertsStore()
+  const { alerts, metrics, setAlerts, isLoading, error, refresh, blockActor } = useSuperadminRiskAlertsStore()
   const [blockedAlertId, setBlockedAlertId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [aiSummary, setAiSummary] = useState<string>('Menganalisis pola keamanan...')
@@ -116,10 +116,35 @@ export default function SuperadminRiskActivityPage() {
         })}
       </StaggerContainer>
 
+      {error && (
+        <div className="mt-6 rounded-[20px] border border-red-200 bg-red-50 px-6 py-4">
+          <p className="text-[14px] font-medium text-red-700">{error}</p>
+          <button
+            type="button"
+            onClick={() => refresh()}
+            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-red-100 px-4 py-2 text-[13px] font-semibold text-red-700 hover:bg-red-200"
+          >
+            <RefreshCcw className="h-3.5 w-3.5" />
+            Coba Lagi
+          </button>
+        </div>
+      )}
+
       <ScrollReveal variant="fade-up" delay={200} duration={800}>
         <section className="mt-10 grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_520px]">
         <div>
-          <h2 className="text-[20px] font-semibold text-slate-900">Suspicious Activity Feed</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-[20px] font-semibold text-slate-900">Suspicious Activity Feed</h2>
+            <button
+              type="button"
+              onClick={() => refresh()}
+              disabled={isLoading}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-4 text-[14px] font-medium text-slate-700 hover:bg-slate-200 disabled:opacity-50"
+            >
+              <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? 'Memuat...' : 'Muat Ulang'}
+            </button>
+          </div>
           <div className="mt-6 space-y-5">
             {isLoading ? (
               <div className="flex h-40 items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-slate-50">
@@ -226,10 +251,16 @@ export default function SuperadminRiskActivityPage() {
         onConfirm={async () => {
           if (blockedAlertId) {
             setIsProcessing(true)
-            await blockActor(blockedAlertId)
-            setIsProcessing(false)
+            try {
+              await blockActor(blockedAlertId)
+              showToast({ tone: 'success', title: 'Akses berhasil diblokir', description: 'Langkah mitigasi berhasil diterapkan pada alert terpilih.' })
+            } catch (err) {
+              console.error('[risk-activity] Block actor failed:', err)
+              showToast({ tone: 'error', title: 'Gagal memblokir akses', description: err instanceof Error ? err.message : 'Terjadi kesalahan saat memblokir aktor.' })
+            } finally {
+              setIsProcessing(false)
+            }
           }
-          showToast({ tone: 'success', title: 'Akses berhasil diblokir', description: 'Langkah mitigasi berhasil diterapkan pada alert terpilih.' })
           setBlockedAlertId(null)
         }}
       />

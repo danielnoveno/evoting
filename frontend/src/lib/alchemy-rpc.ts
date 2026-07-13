@@ -127,15 +127,76 @@ export interface ChainEvent {
 }
 
 /**
+ * Build the JSON-RPC body for eth_getLogs.
+ */
+function buildGetLogsBody(spaceAddress: string, fromBlock: number, toBlock: string | number) {
+  const allTopics = Object.values(TOPIC)
+  return JSON.stringify({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'eth_getLogs',
+    params: [{
+      address: spaceAddress,
+      topics: [allTopics],
+      fromBlock: fromBlock === 0 ? '0x0' : '0x' + fromBlock.toString(16),
+      toBlock,
+    }],
+  })
+}
+
+/**
+ * Parse raw RPC logs into ChainEvent[].
+ */
+function parseLogsRpcResult(result: unknown): ChainEvent[] {
+  const logs = (result ?? []) as Array<{
+    transactionHash: string
+    blockNumber: string
+    logIndex: string
+    topics: string[]
+    data: string
+  }>
+  return logs.map((log) => ({
+    txHash: log.transactionHash,
+    blockNumber: parseInt(log.blockNumber, 16),
+    logIndex: parseInt(log.logIndex, 16),
+    topic0: log.topics[0],
+    topics: log.topics,
+    data: log.data,
+  }))
+}
+
+/**
  * Fetch raw event logs from ElectionSpace contract via eth_getLogs.
  * Used as fallback when Ponder indexer is down.
+ *
+ * Client-side: routes through /api/rpc/base-sepolia proxy to avoid CORS/403.
+ * Server-side: calls RPC endpoints directly with retry fallback.
  */
 export async function fetchChainEvents(spaceAddress: string, fromBlock = 0, toBlock = 'latest'): Promise<ChainEvent[]> {
+  const body = buildGetLogsBody(spaceAddress, fromBlock, toBlock)
+
+  // ponytail: browser env → route through server proxy (avoids CORS/403 from public RPCs)
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/rpc/base-sepolia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      })
+      if (!res.ok) return []
+      const payload = await res.json()
+      if (payload.error) return []
+      return parseLogsRpcResult(payload.result)
+    } catch {
+      return []
+    }
+  }
+
+  // Server-side: direct RPC calls with fallback
   const rpcUrl = getRpcUrl()
   if (!rpcUrl) return []
 
   const rpcUrls = [rpcUrl, ...PUBLIC_RPC_URLS.filter((url) => url !== rpcUrl)]
-  const allTopics = Object.values(TOPIC)
 
   const attempt = async (url: string): Promise<ChainEvent[]> => {
     const controller = new AbortController()
@@ -144,38 +205,14 @@ export async function fetchChainEvents(spaceAddress: string, fromBlock = 0, toBl
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'eth_getLogs',
-          params: [{
-            address: spaceAddress,
-            topics: [allTopics],
-            fromBlock: fromBlock === 0 ? '0x0' : '0x' + fromBlock.toString(16),
-            toBlock,
-          }],
-        }),
+        body,
         signal: controller.signal,
       })
       clearTimeout(timer)
       if (!response.ok) throw new Error(`RPC ${response.status}`)
       const payload = await response.json()
       if (payload.error) throw new Error(payload.error.message)
-      const logs = (payload.result ?? []) as Array<{
-        transactionHash: string
-        blockNumber: string
-        logIndex: string
-        topics: string[]
-        data: string
-      }>
-      return logs.map((log) => ({
-        txHash: log.transactionHash,
-        blockNumber: parseInt(log.blockNumber, 16),
-        logIndex: parseInt(log.logIndex, 16),
-        topic0: log.topics[0],
-        topics: log.topics,
-        data: log.data,
-      }))
+      return parseLogsRpcResult(payload.result)
     } catch (error) {
       clearTimeout(timer)
       throw error

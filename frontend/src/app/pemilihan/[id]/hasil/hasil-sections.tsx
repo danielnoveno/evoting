@@ -264,7 +264,7 @@ export function HasilSections({ id }: { id: string }) {
         className="right-[-80px] top-[500px] h-[250px] w-[250px] rounded-full bg-gradient-to-tl from-purple-50/30 to-slate-100/20 blur-3xl"
       />
       
-      <div className="public-container relative">
+      <div className="public-container relative max-w-none">
         {/* Header Section */}
         <ParallaxLayer speed={0.06}>
           <ScrollReveal variant="fade-up" duration={800}>

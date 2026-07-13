@@ -58,19 +58,27 @@ export default function SuperadminAuditLogPage() {
     setIsLoading(true)
     try {
       const token = authSessionQuery.data?.access_token
-      if (!token) return
+      if (!token) {
+        showToast({ tone: 'error', title: 'Sesi tidak ditemukan', description: 'Silakan masuk kembali untuk melihat log audit.' })
+        return
+      }
 
       const response = await fetch('/api/superadmin/audit-log?limit=100&days=30', {
         headers: { Authorization: `Bearer ${token}` },
       })
 
-      if (!response.ok) throw new Error('Gagal memuat audit log')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        const message = errorData?.error || 'Gagal memuat audit log'
+        throw new Error(message)
+      }
 
       const data = await response.json()
       setLogs(data.logs ?? [])
     } catch (err) {
       console.error('[audit-log] Fetch error:', err)
-      showToast({ tone: 'error', title: 'Gagal memuat audit log', description: 'Terjadi kesalahan saat mengambil data audit.' })
+      const message = err instanceof Error ? err.message : 'Terjadi kesalahan saat mengambil data audit.'
+      showToast({ tone: 'error', title: 'Gagal memuat audit log', description: message })
     } finally {
       setIsLoading(false)
     }
