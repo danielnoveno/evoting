@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
+import { createRiskAlert } from '../../_lib/risk-alerts'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -71,12 +72,21 @@ async function requireSuperadmin() {
   const { data: profile, error: profileError } = await supabase
     .schema('app')
     .from('app_profiles')
-    .select('role')
+    .select('role, wallet_address, email')
     .eq('user_id', userData.user.id)
     .maybeSingle()
 
   if (profileError) return jsonError('Gagal memeriksa otorisasi.', 500)
-  if (profile?.role !== 'super_admin') return jsonError('Hanya superadmin yang boleh memakai ringkasan AI.', 403)
+  if (profile?.role !== 'super_admin') {
+    await createRiskAlert({
+      title: 'Percobaan akses ringkasan risiko AI',
+      description: 'Akun non-superadmin mencoba memakai endpoint ringkasan risiko AI.',
+      actor_label: profile?.wallet_address ? 'Wallet' : 'User',
+      actor_value: profile?.wallet_address || profile?.email || userData.user.email || userData.user.id,
+      tone: 'danger',
+    })
+    return jsonError('Hanya superadmin yang boleh memakai ringkasan AI.', 403)
+  }
   return null
 }
 

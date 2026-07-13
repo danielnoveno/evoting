@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/supabase/database.types'
+import { createRiskAlert } from './risk-alerts'
 
 export type ServiceClient = NonNullable<ReturnType<typeof getSupabaseServiceRoleClient>>
 export type AppProfileRow = Database['app']['Tables']['app_profiles']['Row']
@@ -28,7 +29,16 @@ export async function requireProfile(request: NextRequest, allowedRoles: AppProf
 
   if (profileError) return { error: jsonError('Gagal memuat profil pengguna.', 500) }
   if (!profile) return { error: jsonError('Profil pengguna belum terdaftar.', 403) }
-  if (!allowedRoles.includes(profile.role)) return { error: jsonError('Akses tidak diizinkan untuk peran akun ini.', 403) }
+  if (!allowedRoles.includes(profile.role)) {
+    await createRiskAlert({
+      title: 'Percobaan akses API tidak sesuai peran',
+      description: `Akun dengan peran ${profile.role} mencoba mengakses ${request.nextUrl.pathname}.`,
+      actor_label: profile.wallet_address ? 'Wallet' : 'User',
+      actor_value: profile.wallet_address || profile.email || profile.user_id,
+      tone: allowedRoles.includes('super_admin') ? 'danger' : 'warning',
+    })
+    return { error: jsonError('Akses tidak diizinkan untuk peran akun ini.', 403) }
+  }
 
   return { client, profile }
 }
