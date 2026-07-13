@@ -5,6 +5,7 @@ import { Download, ExternalLink, GraduationCap, LockKeyhole, Play, ShieldCheck, 
 import { useQuery } from '@tanstack/react-query'
 import { PublicElectionBackLink } from '@/components/public/site-shell'
 import { ScrollReveal, ParallaxLayer, FloatingShape, StaggerContainer } from '@/components/public/parallax'
+import { useToast } from '@/components/ui/toast-provider'
 import { getPublicElectionById, getPublicElectionResults, listLatestAuditLogs } from '@/lib/repositories/electionRepository'
 import { shortenHash } from '@/lib/voter-helpers'
 import type { PublicElectionPhase } from '@/lib/repositories/types'
@@ -28,6 +29,15 @@ function formatTime(value: string) {
 function formatPercentage(value: number) {
   if (!Number.isFinite(value)) return '0%'
   return `${Math.round(value)}%`
+}
+
+function csvCell(value: string | number | null | undefined) {
+  const text = String(value ?? '')
+  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
+}
+
+function fileSlug(value: string) {
+  return value.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'pemilihan'
 }
 
 function progressWidthClass(value: number) {
@@ -208,6 +218,7 @@ function PhaseTimeline({
 }
 
 export function HasilSections({ id }: { id: string }) {
+  const { showToast } = useToast()
   const electionQuery = useQuery({
     queryKey: ['public', 'election-detail', id],
     queryFn: () => getPublicElectionById(id),
@@ -252,6 +263,81 @@ export function HasilSections({ id }: { id: string }) {
     ? Math.min(100, (totalRevealed / election.participantCount) * 100)
     : 0
 
+  const downloadReport = () => {
+    if (!election) {
+      showToast({ tone: 'error', title: 'Laporan belum siap', description: 'Data pemilihan belum berhasil dimuat.' })
+      return
+    }
+
+    const lines: string[] = []
+    lines.push('Laporan Hasil Pemilihan')
+    lines.push('')
+    lines.push(['ID Pemilihan', election.id].map(csvCell).join(','))
+    lines.push(['Nama Pemilihan', election.title].map(csvCell).join(','))
+    lines.push(['Organisasi', election.organizationName ?? '-'].map(csvCell).join(','))
+    lines.push(['Fase', election.phaseLabel].map(csvCell).join(','))
+    lines.push(['Alamat Kontrak', election.deployedSpaceAddress ?? 'Belum tersedia'].map(csvCell).join(','))
+    if (election.deployedSpaceAddress) {
+      lines.push(['Basescan Kontrak', `https://sepolia.basescan.org/address/${election.deployedSpaceAddress}`].map(csvCell).join(','))
+    }
+    if (election.deploymentTxHash) {
+      lines.push(['Tx Deploy', election.deploymentTxHash].map(csvCell).join(','))
+      lines.push(['Basescan Deploy', `https://sepolia.basescan.org/tx/${election.deploymentTxHash}`].map(csvCell).join(','))
+    }
+    lines.push(['Total Pemilih Terdaftar', election.participantCount].map(csvCell).join(','))
+    lines.push(['Total Commit Terindeks', hasIndexerResult ? (indexerResult?.totalCommitted ?? 0) : 'Belum tersedia'].map(csvCell).join(','))
+    lines.push(['Total Reveal Terindeks', hasIndexerResult ? totalRevealed : 'Belum tersedia'].map(csvCell).join(','))
+    lines.push(['Partisipasi Reveal', hasIndexerResult ? formatPercentage(participation) : 'Menunggu indexer'].map(csvCell).join(','))
+    lines.push('')
+    lines.push('Perolehan Suara Kandidat')
+    lines.push(['No. Urut', 'Nama Kandidat', 'Perolehan Suara', 'Persentase', 'Tx Reveal Terakhir', 'Block Terakhir'].map(csvCell).join(','))
+    election.candidates.forEach((candidate, index) => {
+      const candidateId = resolveCandidateId(candidate.candidateLocalId, index)
+      const result = candidateResults.get(candidateId)
+      const voteCount = result?.voteCount ?? 0
+      const percentage = totalRevealed > 0 ? (voteCount / totalRevealed) * 100 : 0
+      lines.push([
+        candidateId,
+        candidate.fullName,
+        hasIndexerResult ? voteCount : 'Belum tersedia',
+        hasIndexerResult ? `${percentage.toFixed(1)}%` : 'Menunggu indexer',
+        result?.lastRevealTx ?? '-',
+        result?.lastUpdatedBlock ?? '-',
+      ].map(csvCell).join(','))
+    })
+    lines.push('')
+    lines.push('Bukti Transaksi Terbaru')
+    lines.push(['Waktu', 'Aksi', 'Tx Hash', 'Block', 'Sumber', 'Basescan'].map(csvCell).join(','))
+    if (logs.length === 0) {
+      lines.push(['-', 'Belum ada transaksi commit/reveal', '-', '-', '-', '-'].map(csvCell).join(','))
+    } else {
+      logs.forEach((log) => {
+        lines.push([
+          formatTime(log.createdAt),
+          actionLabel(log.actionType),
+          log.txHash,
+          log.blockNumber ?? '-',
+          log.source,
+          `https://sepolia.basescan.org/tx/${log.txHash}`,
+        ].map(csvCell).join(','))
+      })
+    }
+    lines.push('')
+    lines.push(['Catatan', hasIndexerResult ? 'Angka suara berasal dari hasil reveal yang terindeks.' : 'Hasil suara belum tersedia karena indexer belum mengembalikan data. Laporan tidak mengisi angka palsu.'].map(csvCell).join(','))
+    lines.push(['Diunduh pada', new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })].map(csvCell).join(','))
+
+    const blob = new Blob([`\uFEFF${lines.join('\n')}`], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `laporan-${fileSlug(election.title)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    showToast({ tone: 'success', title: 'Laporan berhasil diunduh', description: 'File CSV laporan hasil pemilihan sudah diunduh.' })
+  }
+
   return (
     <section className="public-section relative overflow-hidden">
       {/* Decorative floating shapes */}
@@ -280,7 +366,7 @@ export function HasilSections({ id }: { id: string }) {
                   {election ? 'Halaman ini menampilkan data pemilihan dari Supabase, hasil reveal dari indexer Ponder jika tersedia, dan bukti transaksi Base Sepolia.' : 'Belum ada data Supabase untuk ID pemilihan ini.'}
                 </p>
               </div>
-              <button type="button" className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200">
+              <button type="button" onClick={downloadReport} disabled={electionQuery.isLoading} className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-5 text-[14px] font-medium text-slate-900 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60">
                 <Download className="h-4 w-4" />
                 Unduh Laporan
               </button>
