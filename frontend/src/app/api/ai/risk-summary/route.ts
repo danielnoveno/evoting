@@ -133,6 +133,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ summary: text })
   } catch (error) {
     console.error('Gemini API Error:', error)
-    return NextResponse.json({ error: 'Gagal menghasilkan ringkasan AI' }, { status: 500 })
+    return NextResponse.json({
+      summary: 'Ringkasan AI belum tersedia. Sistem tetap memakai analisis pola internal untuk menentukan status risiko.',
+    })
   }
 }

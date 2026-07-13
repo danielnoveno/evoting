@@ -2,6 +2,7 @@
 
 import { Download, ExternalLink, Trophy, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { useToast } from '@/components/ui/toast-provider'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
@@ -9,10 +10,29 @@ import {
   basescanTxUrl,
   findElection,
   formatDateTime,
+  formatNetworkFee,
   formatNumber,
   getElectionResultRows,
   useVoterStore,
 } from '@/lib/voter-store'
+
+type ReceiptFee = { gasUsed: number; gasPriceWei: string }
+
+async function fetchReceiptFee(txHash: string): Promise<ReceiptFee | null> {
+  const response = await fetch('/api/rpc/base-sepolia', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getTransactionReceipt', params: [txHash] }),
+  })
+  if (!response.ok) return null
+  const payload = await response.json()
+  const receipt = payload?.result
+  if (!receipt?.gasUsed || !receipt?.effectiveGasPrice) return null
+  return {
+    gasUsed: Number(BigInt(receipt.gasUsed)),
+    gasPriceWei: BigInt(receipt.effectiveGasPrice).toString(),
+  }
+}
 
 function MetricCard({ label, value, subValue }: { label: string; value: string; subValue?: string }) {
   return (
@@ -27,12 +47,23 @@ function MetricCard({ label, value, subValue }: { label: string; value: string; 
 export default function VoterResultPage({ params }: { params: { id: string } }) {
   const { showToast } = useToast()
   const { store, loading } = useVoterStore()
+  const [receiptFee, setReceiptFee] = useState<ReceiptFee | null>(null)
+  const election = store ? findElection(store, params.id) : null
+  const revealTxHash = election?.revealProof?.txHash
+  const proofGasUsed = election?.revealProof?.gasUsed
+
+  useEffect(() => {
+    if (!revealTxHash || proofGasUsed != null) return
+    let cancelled = false
+    fetchReceiptFee(revealTxHash).then((fee) => {
+      if (!cancelled && fee) setReceiptFee(fee)
+    }).catch(() => undefined)
+    return () => { cancelled = true }
+  }, [revealTxHash, proofGasUsed])
 
   if (loading || !store) {
     return <VoterShell><div className="h-[420px] animate-pulse rounded-xl bg-slate-200" /></VoterShell>
   }
-
-  const election = findElection(store, params.id)
 
   if (!election) {
     return (
@@ -54,6 +85,8 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
 
   const resultRows = getElectionResultRows(election)
   const totalVotes = resultRows.reduce((acc, curr) => acc + curr.votes, 0)
+  const gasUsed = election.revealProof?.gasUsed ?? receiptFee?.gasUsed ?? null
+  const gasPriceWei = election.revealProof?.gasPriceWei ?? receiptFee?.gasPriceWei ?? null
 
   // Only declare a winner if there are actual votes AND the top candidate has strictly more votes than others
   const maxVotes = resultRows.length > 0 ? resultRows[0].votes : 0
@@ -105,7 +138,7 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
                 lines.push('Bukti Transaksi')
                 lines.push(`Tx Hash,${election.revealProof.txHash}`)
                 lines.push(`Block Number,${election.revealProof.blockNumber}`)
-                lines.push(`Gas Used,${election.revealProof.gasUsed ?? '-'}`)
+                lines.push(`Biaya Jaringan,${formatNetworkFee(gasUsed, gasPriceWei)}`)
                 lines.push(`Waktu Sinkron,${election.revealProof.createdAt}`)
                 lines.push(`Basescan,https://sepolia.basescan.org/tx/${election.revealProof.txHash}`)
               }
@@ -245,7 +278,7 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
                 {[
                   ['Kode Bukti', election.revealProof.txHash],
                   ['Nomor Block', formatNumber(election.revealProof.blockNumber)],
-                  ['Biaya Jaringan', election.revealProof.gasUsed == null ? 'Belum tersedia' : formatNumber(election.revealProof.gasUsed)],
+                  ['Biaya Jaringan', formatNetworkFee(gasUsed, gasPriceWei)],
                   ['Waktu Sinkron', formatDateTime(election.revealProof.createdAt)],
                 ].map(([label, value], index, rows) => (
                   <div 

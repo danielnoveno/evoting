@@ -12,6 +12,7 @@ export {
   basescanTxUrl,
   formatDateTime,
   formatDateShort,
+  formatNetworkFee,
   formatNumber,
   formatWallet,
   getPhaseLabel,
@@ -40,6 +41,7 @@ export interface VoterProof {
   txHash: string
   blockNumber: number
   gasUsed?: number | null
+  gasPriceWei?: string | null
   createdAt: string
   statusLabel: string
 }

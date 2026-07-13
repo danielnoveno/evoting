@@ -34,6 +34,21 @@ export function formatNumber(value: number) {
   return new Intl.NumberFormat('id-ID').format(value)
 }
 
+function formatDecimal(value: number, maximumFractionDigits: number) {
+  return new Intl.NumberFormat('id-ID', { maximumFractionDigits }).format(value)
+}
+
+export function formatNetworkFee(gasUsed?: number | null, gasPriceWei?: string | bigint | null) {
+  if (gasUsed == null) return 'Belum tersedia'
+  if (!gasPriceWei) return `${formatNumber(gasUsed)} gas (biaya ETH belum tersedia)`
+
+  const feeWei = BigInt(gasUsed) * BigInt(gasPriceWei)
+  const feeGwei = Number(feeWei) / 1_000_000_000
+  const feeEth = Number(feeWei) / 1_000_000_000_000_000_000
+
+  return `${formatDecimal(feeGwei, 3)} gwei (${formatDecimal(feeEth, 8)} ETH Sepolia)`
+}
+
 export function formatWallet(address: string) {
   if (!address) return 'Belum terhubung'
   return `${address.slice(0, 6)}...${address.slice(-4)}`

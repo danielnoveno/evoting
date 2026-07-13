@@ -8,6 +8,7 @@ import { VoterShell } from '@/components/voter/voter-shell'
 import {
   basescanTxUrl,
   formatDateShort,
+  formatNetworkFee,
   formatNumber,
   formatWallet,
   getPhaseLabel,
@@ -275,11 +276,12 @@ export default function VoterProofPage() {
                   <p className="mt-2 font-mono text-[20px] font-semibold text-emerald-600">{selectedElection.revealProof?.statusLabel ?? selectedElection.commitProof?.statusLabel ?? 'Pending'}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Gas Terpakai</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Biaya Jaringan</p>
                   <p className="mt-2 text-[18px] font-semibold text-slate-900">
-                    {(selectedElection.revealProof?.gasUsed ?? selectedElection.commitProof?.gasUsed) == null
-                      ? 'Belum tersedia'
-                      : formatNumber(selectedElection.revealProof?.gasUsed ?? selectedElection.commitProof?.gasUsed ?? 0)}
+                    {formatNetworkFee(
+                      selectedElection.revealProof?.gasUsed ?? selectedElection.commitProof?.gasUsed,
+                      selectedElection.revealProof?.gasPriceWei ?? selectedElection.commitProof?.gasPriceWei,
+                    )}
                   </p>
                 </div>
               </div>

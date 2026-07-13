@@ -164,6 +164,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       txHash: receipt.transactionHash,
       blockNumber: Number(receipt.blockNumber),
       gasUsed: Number(receipt.gasUsed),
+      gasPriceWei: receipt.effectiveGasPrice?.toString() ?? null,
       createdAt: new Date().toISOString(),
       statusLabel: 'Bukti commit tersimpan',
     }
@@ -402,6 +403,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     txHash: receipt.transactionHash,
     blockNumber: Number(receipt.blockNumber),
     gasUsed: Number(receipt.gasUsed),
+    gasPriceWei: receipt.effectiveGasPrice?.toString() ?? null,
     createdAt: new Date().toISOString(),
     statusLabel: 'Bukti commit tersimpan',
   } : null)
