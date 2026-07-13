@@ -305,13 +305,7 @@ export function HasilSections({ id }: { id: string }) {
       ]
     })
 
-    const popup = window.open('', '_blank', 'noopener,noreferrer')
-    if (!popup) {
-      showToast({ tone: 'error', title: 'Gagal membuka laporan', description: 'Izinkan pop-up browser untuk menyimpan laporan sebagai PDF.' })
-      return
-    }
-
-    popup.document.write(`<!doctype html>
+    const reportHtml = `<!doctype html>
       <html lang="id">
         <head>
           <meta charset="utf-8" />
@@ -383,11 +377,36 @@ export function HasilSections({ id }: { id: string }) {
           </section>
 
           <button class="print" onclick="window.print()">Simpan / Cetak PDF</button>
-          <script>window.addEventListener('load', () => setTimeout(() => window.print(), 300))</script>
         </body>
-      </html>`)
-    popup.document.close()
-    showToast({ tone: 'success', title: 'Laporan PDF dibuka', description: 'Pilih “Save as PDF” atau “Simpan sebagai PDF” pada dialog cetak browser.' })
+      </html>`
+
+    const existingFrame = document.getElementById('votechain-report-print-frame')
+    existingFrame?.remove()
+
+    const frame = document.createElement('iframe')
+    frame.id = 'votechain-report-print-frame'
+    frame.title = 'Laporan hasil pemilihan'
+    frame.style.position = 'fixed'
+    frame.style.right = '0'
+    frame.style.bottom = '0'
+    frame.style.width = '1px'
+    frame.style.height = '1px'
+    frame.style.border = '0'
+    frame.style.opacity = '0'
+    frame.onload = () => {
+      const printWindow = frame.contentWindow
+      if (!printWindow) {
+        showToast({ tone: 'error', title: 'Gagal membuka laporan', description: 'Browser tidak dapat menyiapkan dialog cetak PDF.' })
+        frame.remove()
+        return
+      }
+      printWindow.focus()
+      printWindow.print()
+      window.setTimeout(() => frame.remove(), 60_000)
+    }
+    frame.srcdoc = reportHtml
+    document.body.appendChild(frame)
+    showToast({ tone: 'success', title: 'Laporan PDF disiapkan', description: 'Pilih “Save as PDF” atau “Simpan sebagai PDF” pada dialog cetak browser.' })
   }
 
   return (
