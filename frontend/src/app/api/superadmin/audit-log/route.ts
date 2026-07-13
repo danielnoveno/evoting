@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/admin'
+import { createRiskAlert } from '../../_lib/risk-alerts'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -8,25 +9,58 @@ function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status })
 }
 
+function requestActor(request: NextRequest) {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-real-ip')
+    || 'IP tidak tersedia'
+}
+
 async function requireSuperadmin(request: NextRequest) {
   const client = getSupabaseServiceRoleClient()
   if (!client) return { client: null, error: jsonError('Service role Supabase belum dikonfigurasi.', 503) }
 
   const authorization = request.headers.get('authorization')
   const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1]
-  if (!token) return { client, error: jsonError('Sesi superadmin tidak ditemukan.', 401) }
+  if (!token) {
+    await createRiskAlert({
+      title: 'Percobaan akses audit log tanpa sesi',
+      description: 'Request tanpa token mencoba mengakses endpoint audit log superadmin.',
+      actor_label: 'IP',
+      actor_value: requestActor(request),
+      tone: 'warning',
+    })
+    return { client, error: jsonError('Sesi superadmin tidak ditemukan.', 401) }
+  }
 
   const { data: userData, error: userError } = await client.auth.getUser(token)
-  if (userError || !userData.user) return { client, error: jsonError('Sesi superadmin tidak valid atau sudah berakhir.', 401) }
+  if (userError || !userData.user) {
+    await createRiskAlert({
+      title: 'Percobaan akses audit log dengan sesi tidak valid',
+      description: 'Token tidak valid atau sudah berakhir digunakan untuk mengakses endpoint audit log superadmin.',
+      actor_label: 'IP',
+      actor_value: requestActor(request),
+      tone: 'warning',
+    })
+    return { client, error: jsonError('Sesi superadmin tidak valid atau sudah berakhir.', 401) }
+  }
 
   const { data: profile, error: profileError } = await client
     .from('app_profiles')
-    .select('role')
+    .select('role, wallet_address, email')
     .eq('user_id', userData.user.id)
     .maybeSingle()
 
   if (profileError) return { client, error: jsonError('Gagal memeriksa otoritas superadmin.', 500) }
-  if (!profile || profile.role !== 'super_admin') return { client, error: jsonError('Hanya superadmin aktif yang dapat melihat log audit.', 403) }
+  if (!profile || profile.role !== 'super_admin') {
+    await createRiskAlert({
+      title: 'Percobaan akses audit log oleh non-superadmin',
+      description: `Akun dengan peran ${profile?.role ?? 'tidak terdaftar'} mencoba mengakses audit log superadmin.`,
+      actor_label: profile?.wallet_address ? 'Wallet' : 'User',
+      actor_value: profile?.wallet_address || profile?.email || userData.user.email || userData.user.id,
+      tone: 'danger',
+    })
+    return { client, error: jsonError('Hanya superadmin aktif yang dapat melihat log audit.', 403) }
+  }
 
   return { client, error: null }
 }
