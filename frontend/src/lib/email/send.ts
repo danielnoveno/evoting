@@ -83,6 +83,7 @@ export async function sendVoterActivationEmail(params: {
   displayName: string
   email: string
   activationLink: string
+  isMagicLink?: boolean
 }): Promise<SendActivationEmailResult> {
   const config = getSmtpConfig()
 

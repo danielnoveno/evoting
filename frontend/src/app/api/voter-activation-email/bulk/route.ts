@@ -34,6 +34,34 @@ function isAllowedVoterEmail(email: string) {
     && /^[a-zA-Z0-9._%+-]+@(gmail\.com|votein\.biz\.id)$/.test(email)
 }
 
+function isVoteinTestEmail(email: string) {
+  return process.env.ALLOW_TEST_VOTER_EMAILS === 'true' && email.endsWith('@votein.biz.id')
+}
+
+async function createMagicActivationLink(params: {
+  client: NonNullable<Awaited<ReturnType<typeof requireSuperadmin>>['client']>
+  email: string
+  origin: string
+  token: string
+}) {
+  const nextPath = `/hubungkan-dompet?activate=1&token=${encodeURIComponent(params.token)}&redirect=%2Fpemilih`
+  const redirectTo = `${params.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`
+
+  const { data, error } = await params.client.auth.admin.generateLink({
+    type: 'magiclink',
+    email: params.email,
+    options: {
+      redirectTo,
+      data: {
+        full_name: params.email.split('@')[0],
+      },
+    },
+  })
+
+  if (error) throw error
+  return data.properties?.action_link || null
+}
+
 async function requireSuperadmin(request: NextRequest) {
   const client = getSupabaseServiceRoleClient()
   if (!client) return { error: jsonError('Service role Supabase belum dikonfigurasi.', 503), client: null }
@@ -111,10 +139,32 @@ export async function POST(request: NextRequest) {
     }
 
     const activationLink = `${origin}/auth/aktivasi-voter?token=${encodeURIComponent(token)}`
+    let emailLink = activationLink
+    let isMagicLink = false
+
+    if (isVoteinTestEmail(recipient.email)) {
+      try {
+        const magicLink = await createMagicActivationLink({
+          client: auth.client!,
+          email: recipient.email,
+          origin,
+          token,
+        })
+        if (magicLink) {
+          emailLink = magicLink
+          isMagicLink = true
+        }
+      } catch (err) {
+        console.error('[Voter Activation] Failed to generate magic link:', err)
+        return { email: recipient.email, success: false, error: 'Gagal membuat magic link aktivasi voter.' }
+      }
+    }
+
     const emailResult = await sendVoterActivationEmail({
       displayName: recipient.name,
       email: recipient.email,
-      activationLink,
+      activationLink: emailLink,
+      isMagicLink,
     })
 
     return {

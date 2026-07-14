@@ -143,8 +143,16 @@ export function buildVoterActivationEmail(params: {
   displayName: string
   email: string
   activationLink: string
+  isMagicLink?: boolean
 }): { subject: string; html: string } {
   const subject = 'Aktivasi Hak Suara Pemilih — Votein'
+  const intro = params.isMagicLink
+    ? 'data kamu sudah disiapkan pada sistem Votein. Klik tombol di bawah untuk masuk melalui email ini dan langsung melanjutkan aktivasi hak suara, lalu sambungkan dompet digital.'
+    : 'data kamu sudah disiapkan pada sistem Votein. Klik tombol di bawah untuk memulai aktivasi hak suara: verifikasi akun kampus (SSO) terlebih dahulu, lalu sambungkan dompet digital.'
+  const buttonLabel = params.isMagicLink ? 'Masuk & Aktifkan Hak Suara' : 'Mulai Aktivasi Pemilih'
+  const footerNote = params.isMagicLink
+    ? 'Link ini hanya dikirim ke email undangan pemilih. Jangan bagikan link ini kepada orang lain.'
+    : 'Gunakan email kampus dan dompet digital milikmu sendiri agar sistem dapat mengenali hak suara dengan benar.'
 
   const html = `<div style="margin:0;padding:0;background:#F8FAFC;font-family:Inter,Arial,sans-serif;color:#0F172A;">
   <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
@@ -165,11 +173,11 @@ export function buildVoterActivationEmail(params: {
         Aktivasi Hak Suara Kamu
       </h2>
       <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#475569;">
-        Halo <strong>${params.displayName}</strong>, data kamu sudah disiapkan pada sistem Votein. Klik tombol di bawah untuk memulai aktivasi hak suara: verifikasi akun kampus (SSO) terlebih dahulu, lalu sambungkan dompet digital.
+        Halo <strong>${params.displayName}</strong>, ${intro}
       </p>
       <a href="${params.activationLink}"
          style="display:inline-block;width:100%;box-sizing:border-box;text-align:center;padding:12px 18px;background:#0F172A;color:#FFFFFF;text-decoration:none;border-radius:6px;font-size:13px;font-weight:600;">
-        Mulai Aktivasi Pemilih
+        ${buttonLabel}
       </a>
       <div style="margin-top:20px;padding:14px 16px;background:#F8FAFC;border:1px solid #F1F5F9;border-radius:8px;">
         <p style="margin:0;font-size:12px;line-height:1.6;color:#475569;">
@@ -180,7 +188,7 @@ export function buildVoterActivationEmail(params: {
         </p>
       </div>
       <p style="margin:20px 0 0;font-size:12px;line-height:1.6;color:#64748B;">
-        Gunakan email kampus dan dompet digital milikmu sendiri agar sistem dapat mengenali hak suara dengan benar.
+        ${footerNote}
       </p>
       <div style="margin-top:24px;padding-top:20px;border-top:1px solid #F1F5F9;">
         <p style="margin:0;font-size:12px;line-height:1.6;color:#94A3B8;">
