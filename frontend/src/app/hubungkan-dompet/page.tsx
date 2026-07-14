@@ -21,7 +21,7 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { signOutCurrentSession } from '@/lib/repositories/authRepository'
 import { useToast } from '@/components/ui/toast-provider'
-import { authSessionQueryKey, useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useEmailPasswordLogin, useEmailPasswordSignUp } from '@/hooks/use-auth-session'
+import { authSessionQueryKey, useAuthSession, useMicrosoftCampusLogin, useGoogleLogin, useMagicLinkLogin } from '@/hooks/use-auth-session'
 import { useBindCurrentWallet, useCurrentProfile, useProfileByWallet, useAdminRegistryByWallet } from '@/hooks/use-profile'
 import { ScrollReveal } from '@/components/public/parallax'
 import { PublicNavbar, PublicFooter } from '@/components/public/site-shell'
@@ -30,6 +30,7 @@ import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { WalletAddress } from '@/components/ui/wallet-address'
 import { AuthSuccessRedirectModal } from '@/components/auth/auth-success-redirect-modal'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
+import { useActivationTokenPreview } from '@/hooks/use-activation-token'
 
 function resolveRedirectTarget(redirectParam: string | null, activationContext: 'admin' | 'voter') {
   if (redirectParam?.startsWith('/auth/aktivasi-admin')) return '/admin'
@@ -110,8 +111,7 @@ function ConnectWalletContent() {
   const bindWalletMutation = useBindCurrentWallet()
   const microsoftLoginMutation = useMicrosoftCampusLogin()
   const googleLoginMutation = useGoogleLogin()
-  const emailLoginMutation = useEmailPasswordLogin()
-  const emailSignUpMutation = useEmailPasswordSignUp()
+  const magicLinkLoginMutation = useMagicLinkLogin()
 
   const signOutMutation = useMutation({
     mutationFn: signOutCurrentSession,
@@ -144,6 +144,7 @@ function ConnectWalletContent() {
   }, [currentProfile?.role, adminRegistryByWalletQuery.data, connectedWalletProfile?.role, adminInviteTokenFromRedirect, activateParam, redirectParam])
 
   const activationMode = activateParam === '1' || activateParam === 'admin' || activateParam === 'voter' || Boolean(adminInviteTokenFromRedirect) || activationContext === 'admin'
+  const tokenPreviewQuery = useActivationTokenPreview(activationToken && activationContext === 'voter' ? activationToken : null)
   const voterActivationMissingToken = activationMode && activationContext === 'voter' && !activationToken
   const adminActivationMissingToken = activateParam === 'admin' && activationContext === 'admin' && !activationToken && !currentProfile
   const redirectTarget = useMemo(() => {
@@ -153,15 +154,18 @@ function ConnectWalletContent() {
 
   const [mounted, setMounted] = useState(false)
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [formError, setFormError] = useState('')
+  const [magicLinkSentTo, setMagicLinkSentTo] = useState('')
   const [bindError, setBindError] = useState('')
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
   const [redirectModal, setRedirectModal] = useState<ReturnType<typeof getRedirectModalContent> | null>(null)
   const redirectStartedRef = useRef(false)
   const redirectTimerRef = useRef<number | null>(null)
 
   useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    if (!email && tokenPreviewQuery.data?.email) setEmail(tokenPreviewQuery.data.email)
+  }, [email, tokenPreviewQuery.data?.email])
 
   useEffect(() => {
     return () => {
@@ -381,40 +385,34 @@ function ConnectWalletContent() {
     googleLoginMutation.mutate({ nextPath: `/hubungkan-dompet?${nextParams.toString()}` })
   }
 
-  const handleEmailAuth = (e: FormEvent) => {
+  const handleMagicLinkLogin = (e: FormEvent) => {
     e.preventDefault()
     setFormError('')
-    
-    if (authMode === 'login') {
-      emailLoginMutation.mutate(
-        { email, password },
-        {
-          onSuccess: () => {
-            showToast({ tone: 'success', title: 'Login Berhasil', description: 'Identitas kampus Anda telah terverifikasi.' })
-          },
-          onError: (err) => {
-            setFormError(getRepositoryErrorMessage(err))
-          }
-        }
-      )
-    } else if (authMode === 'signup') {
-      emailSignUpMutation.mutate(
-        { email, password },
-        {
-          onSuccess: (session) => {
-            if (session) {
-              showToast({ tone: 'success', title: 'Pendaftaran Berhasil', description: 'Identitas kampus Anda telah terverifikasi dan Anda telah masuk.' })
-            } else {
-              showToast({ tone: 'success', title: 'Pendaftaran Berhasil', description: 'Akun baru telah dibuat. Silakan cek email kampus Anda untuk aktivasi sebelum masuk.' })
-              setAuthMode('login')
-            }
-          },
-          onError: (err) => {
-            setFormError(getRepositoryErrorMessage(err))
-          }
-        }
-      )
+
+    const normalizedEmail = email.trim().toLowerCase()
+    const invitedEmail = tokenPreviewQuery.data?.email?.trim().toLowerCase()
+    if (activationMode && activationContext === 'voter' && invitedEmail && normalizedEmail !== invitedEmail) {
+      setFormError('Email harus sama dengan email pada undangan aktivasi pemilih.')
+      return
     }
+
+    const nextParams = new URLSearchParams()
+    if (activationMode && activationContext === 'voter') nextParams.set('activate', '1')
+    if (activationToken) nextParams.set('token', activationToken)
+    nextParams.set('redirect', redirectTarget)
+
+    magicLinkLoginMutation.mutate(
+      { email: normalizedEmail, nextPath: `/hubungkan-dompet?${nextParams.toString()}` },
+      {
+        onSuccess: () => {
+          setMagicLinkSentTo(normalizedEmail)
+          showToast({ tone: 'success', title: 'Link Masuk Dikirim', description: 'Buka email tersebut lalu klik link masuk untuk melanjutkan aktivasi.' })
+        },
+        onError: (err) => {
+          setFormError(getRepositoryErrorMessage(err, 'Gagal mengirim link masuk. Coba lagi.'))
+        }
+      }
+    )
   }
 
   const handleConnectWallet = () => {
@@ -654,6 +652,47 @@ function ConnectWalletContent() {
                             Masuk dengan Google
                           </button>
                         </div>
+
+                        {activationMode && activationContext === 'voter' && (
+                          <form onSubmit={handleMagicLinkLogin} className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-700 ring-1 ring-slate-200">
+                                <Mail className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h3 className="text-[13px] font-bold text-slate-900">Masuk dengan Link Email</h3>
+                                <p className="mt-1 text-[12px] leading-5 text-slate-500">
+                                  Gunakan opsi ini untuk email undangan pemilih, termasuk email domain sendiri seperti <span className="font-semibold text-slate-700">@votein.biz.id</span>.
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                              <input
+                                type="email"
+                                value={email}
+                                onChange={(event) => setEmail(event.target.value)}
+                                placeholder="email pemilih"
+                                disabled={magicLinkLoginMutation.isPending || Boolean(tokenPreviewQuery.data?.email)}
+                                className="h-11 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 text-[13px] text-slate-900 outline-none transition focus:border-slate-400 disabled:bg-slate-100 disabled:text-slate-500"
+                              />
+                              <button
+                                type="submit"
+                                disabled={magicLinkLoginMutation.isPending || !email.trim() || tokenPreviewQuery.isLoading}
+                                className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
+                              >
+                                {magicLinkLoginMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                                Kirim Link Masuk
+                              </button>
+                            </div>
+
+                            {magicLinkSentTo && (
+                              <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-[12px] leading-5 text-emerald-700">
+                                Link masuk sudah dikirim ke <span className="font-semibold">{magicLinkSentTo}</span>. Buka email tersebut, lalu klik link untuk kembali ke aktivasi.
+                              </p>
+                            )}
+                          </form>
+                        )}
 
                         <div className="mt-8 rounded-xl border border-blue-100 bg-blue-50/50 p-5">
                           <div className="flex gap-3">

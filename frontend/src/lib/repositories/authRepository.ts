@@ -88,6 +88,35 @@ export async function signUpWithEmailPassword(email: string, password: string) {
   return data.session
 }
 
+export async function signInWithMagicLink(email: string, nextPath = '/pemilih') {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend login belum dikonfigurasi.')
+
+  const normalizedEmail = email.trim().toLowerCase()
+  if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+    throw new RepositoryError('Format email tidak valid. Pastikan alamat email sudah benar.')
+  }
+
+  const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`
+  const { error } = await client.auth.signInWithOtp({
+    email: normalizedEmail,
+    options: {
+      emailRedirectTo: redirectTo,
+      shouldCreateUser: true,
+      data: {
+        full_name: normalizedEmail.split('@')[0],
+      },
+    },
+  })
+
+  if (error) {
+    if (error.status === 429) {
+      throw new RepositoryError('Terlalu banyak permintaan link masuk. Tunggu sebentar lalu coba lagi.')
+    }
+    throw new RepositoryError(error.message || 'Gagal mengirim link masuk. Coba lagi.')
+  }
+}
+
 export async function resetPasswordForEmail(email: string) {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend login belum dikonfigurasi.')
@@ -126,5 +155,4 @@ export async function signOutCurrentSession() {
     await clearLocalAuthSession()
   }
 }
-
 

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useDisconnect } from 'wagmi'
-import { getCurrentSession, signInWithEmailPassword, signOutCurrentSession, signUpWithEmailPassword, resetPasswordForEmail, updatePassword } from '@/lib/repositories/authRepository'
+import { getCurrentSession, signInWithEmailPassword, signInWithMagicLink, signOutCurrentSession, signUpWithEmailPassword, resetPasswordForEmail, updatePassword } from '@/lib/repositories/authRepository'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { getPublicAppOrigin } from '@/lib/supabase/config'
 import { clearManualLogoutMarker, markManualLogoutStarted } from '@/lib/auth-session-events'
@@ -39,6 +39,12 @@ export function useEmailPasswordSignUp() {
       void queryClient.invalidateQueries({ queryKey: authSessionQueryKey })
       void queryClient.invalidateQueries({ queryKey: ['profile'] })
     },
+  })
+}
+
+export function useMagicLinkLogin() {
+  return useMutation({
+    mutationFn: ({ email, nextPath }: { email: string; nextPath?: string }) => signInWithMagicLink(email, nextPath),
   })
 }
 
