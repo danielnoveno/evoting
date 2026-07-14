@@ -31,7 +31,7 @@ function isAllowedVoterEmail(email: string) {
   // Testing only: enable in Vercel with ALLOW_TEST_VOTER_EMAILS=true.
   // Keep disabled for thesis/demo claims that require institutional voters.
   return process.env.ALLOW_TEST_VOTER_EMAILS === 'true'
-    && /^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)
+    && /^[a-zA-Z0-9._%+-]+@(gmail\.com|votein\.biz\.id)$/.test(email)
 }
 
 async function requireSuperadmin(request: NextRequest) {
