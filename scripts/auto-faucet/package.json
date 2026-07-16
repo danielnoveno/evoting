@@ -1,0 +1,17 @@
+{
+  "name": "votein-auto-faucet",
+  "version": "1.0.0",
+  "description": "Auto faucet for VoteChain relayer on Base Sepolia Testnet",
+  "type": "module",
+  "scripts": {
+    "claim": "tsx src/claim.ts",
+    "claim:loop": "tsx src/claim-loop.ts",
+    "claim:scheduled": "tsx src/scheduled.ts",
+    "balance": "tsx src/check-balance.ts"
+  },
+  "dependencies": {
+    "@coinbase/cdp-sdk": "^1.0.0",
+    "dotenv": "^16.4.0",
+    "tsx": "^4.0.0"
+  }
+}

@@ -21,7 +21,7 @@ import { getElectionResultsFromIndexer, listPonderAuditLogs } from '@/lib/reposi
 import { RequiredAsterisk } from '@/components/ui/required-asterisk'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { PilihDariMasterVoterModal } from '@/components/admin/pilih-dari-master-voter-modal'
-import { useMasterVoterByWallet } from '@/hooks/use-master-voters'
+import { useMasterVoterByWallet, useMasterVoters } from '@/hooks/use-master-voters'
 import type { PublicElectionCandidateResultRecord, WhitelistEntryRecord } from '@/lib/repositories/types'
 import { resolveSchedulePhase } from '@/lib/election-phase'
 import { useAccount, useConnect } from 'wagmi'
@@ -157,6 +157,18 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   })
   const whitelistImportSignedUrl = useWhitelistImportSignedUrl()
   const candidatesQuery = useProposalCandidates(election.id)
+  const masterVotersQuery = useMasterVoters()
+
+  // ponytail: build wallet→name lookup to fill missing voter_name in whitelist entries
+  const walletToNameMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const voter of masterVotersQuery.data ?? []) {
+      if (voter.walletAddress && voter.fullName) {
+        map.set(voter.walletAddress.toLowerCase(), voter.fullName)
+      }
+    }
+    return map
+  }, [masterVotersQuery.data])
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 1000)
@@ -391,7 +403,8 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     return (whitelistQuery.data ?? []).map((record) => ({
       id: record.id,
       wallet: record.walletAddress,
-      name: record.voterName ?? 'Nama belum diisi',
+      // ponytail: fill missing voter_name from master voters lookup
+      name: record.voterName || walletToNameMap.get(record.walletAddress.toLowerCase()) || 'Nama belum diisi',
       status: record.syncStatus === 'synced' ? 'synced' as const : record.validationStatus === 'valid' ? 'valid' as const : 'pending' as const,
       syncStatus: record.syncStatus,
       addedAt: new Intl.DateTimeFormat('id-ID', {
@@ -401,7 +414,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
       }).format(new Date(record.createdAt)),
       isFallback: false,
     }))
-  }, [whitelistQuery.data])
+  }, [whitelistQuery.data, walletToNameMap])
 
   useEffect(() => {
     setCandidates((candidatesQuery.data ?? []).map((candidate, index) => ({
