@@ -17,6 +17,7 @@ import { useProposalActivities, useProposalDraft, useUpdateProposalStatus } from
 import { useQuery } from '@tanstack/react-query'
 import { listProposalDocuments } from '@/lib/repositories/proposalDocumentRepository'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
+import { useMasterVoters } from '@/hooks/use-master-voters'
 import { REGISTRY_ADDRESS, useRegistryContract } from '@/hooks/use-registry-contract'
 import { createProposalDocumentPreviewUrl, createProposalDocumentSignedUrl } from '@/lib/repositories/proposalDocumentRepository'
 import { updateWhitelistSyncStatus } from '@/lib/repositories/whitelistRepository'
@@ -104,6 +105,19 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
     receipt,
     resetWrite
   } = useRegistryContract()
+
+  const masterVotersQuery = useMasterVoters()
+
+  // ponytail: build wallet→name lookup to fill missing voter_name in whitelist entries
+  const walletToNameMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const voter of masterVotersQuery.data ?? []) {
+      if (voter.walletAddress && voter.fullName) {
+        map.set(voter.walletAddress.toLowerCase(), voter.fullName)
+      }
+    }
+    return map
+  }, [masterVotersQuery.data])
 
   const liveProposal = proposalQuery.data
   const proposalDocuments = proposalDocumentsQuery.data ?? []
@@ -749,7 +763,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
                       return (
                         <tr key={entry.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                           <td className="px-4 py-3 font-mono text-[13px] text-slate-700">{entry.walletAddress}</td>
-                          <td className="px-4 py-3 text-slate-700">{entry.voterName || <span className="text-slate-400 italic">Belum diisi</span>}</td>
+                          <td className="px-4 py-3 text-slate-700">{entry.voterName || walletToNameMap.get(entry.walletAddress.toLowerCase()) || <span className="text-slate-400 italic">Belum diisi</span>}</td>
                           <td className="px-4 py-3">
                             <span className={`inline-flex rounded-lg px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.06em] ${
                               entry.source === 'csv' ? 'bg-blue-50 text-blue-600' : entry.source === 'sync' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-600'

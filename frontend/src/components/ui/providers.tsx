@@ -80,6 +80,19 @@ function AuthErrorHandler({ children }: { children: ReactNode }) {
 }
 
 export function AppProviders({ children }: { children: ReactNode }) {
+  // ponytail: global handler to absorb "Cannot set property ethereum" errors
+  // from wallet SDK initialization (happens outside try/catch in minified bundles)
+  useEffect(() => {
+    const handler = (event: ErrorEvent) => {
+      if (event.message && /cannot set property ethereum/i.test(event.message)) {
+        event.preventDefault()
+        return false
+      }
+    }
+    window.addEventListener('error', handler)
+    return () => window.removeEventListener('error', handler)
+  }, [])
+
   return (
     <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
       <AuthErrorHandler>

@@ -14,6 +14,7 @@ import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 import { useProposalDraft, useProposalActivities } from '@/hooks/use-proposal-draft'
 import { useProposalCandidates, useProposalWhitelistEntries } from '@/hooks/use-proposal-relations'
 import { useAuthSession } from '@/hooks/use-auth-session'
+import { useMasterVoters } from '@/hooks/use-master-voters'
 import { resolveSchedulePhase } from '@/lib/election-phase'
 import { fetchChainEvents, decodeChainEvents } from '@/lib/alchemy-rpc'
 
@@ -35,6 +36,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
   const candidatesQuery = useProposalCandidates(params.id)
   const whitelistQuery = useProposalWhitelistEntries(params.id)
   const activitiesQuery = useProposalActivities(params.id)
+  const masterVotersQuery = useMasterVoters()
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
   const [suspending, setSuspending] = useState(false)
   const [nowMs, setNowMs] = useState(Date.now())
@@ -58,6 +60,17 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
     const timer = window.setInterval(() => setNowMs(Date.now()), 1000)
     return () => window.clearInterval(timer)
   }, [])
+
+  // ponytail: build wallet→name lookup to fill missing voter_name in whitelist entries
+  const walletToNameMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const voter of masterVotersQuery.data ?? []) {
+      if (voter.walletAddress && voter.fullName) {
+        map.set(voter.walletAddress.toLowerCase(), voter.fullName)
+      }
+    }
+    return map
+  }, [masterVotersQuery.data])
 
   const election = useMemo(() => {
     const fromStore = elections.find((item) => item.id === params.id)
@@ -459,7 +472,7 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
                           return (
                             <tr key={entry.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                               <td className="px-4 py-2.5 font-mono text-[12px] text-slate-700">{entry.walletAddress}</td>
-                              <td className="px-4 py-2.5 text-slate-700">{entry.voterName || <span className="text-slate-400 italic">-</span>}</td>
+                              <td className="px-4 py-2.5 text-slate-700">{entry.voterName || walletToNameMap.get(entry.walletAddress.toLowerCase()) || <span className="text-slate-400 italic">-</span>}</td>
                               <td className="px-4 py-2.5">
                                 <span className={`inline-flex rounded-lg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] ${
                                   entry.source === 'csv' ? 'bg-blue-50 text-blue-600' : entry.source === 'sync' ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-600'

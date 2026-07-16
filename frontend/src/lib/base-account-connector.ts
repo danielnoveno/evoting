@@ -143,7 +143,7 @@ export function baseAccountConnector(parameters: BaseAccountParameters) {
       if (!walletProvider) {
         // Guard: ekstensi wallet (MetaMask, dll) define window.ethereum sebagai
         // read-only getter. Base Account SDK coba overwrite → TypeError.
-        // Proxy approach: intercept write ke window.ethereum supaya SDK gak crash.
+        // Intercept write ke window.ethereum supaya SDK gak crash.
         if (typeof window !== 'undefined' && window.ethereum) {
           try {
             Object.defineProperty(window, 'ethereum', {
@@ -167,12 +167,41 @@ export function baseAccountConnector(parameters: BaseAccountParameters) {
           }
         }
 
-        const { createBaseAccountSDK } = await import('@base-org/account')
-        const sdk = createBaseAccountSDK({
-          ...parameters,
-          appChainIds: config.chains.map((chain) => chain.id),
-          preference: parameters.preference,
-        })
+        // ponytail: wrap SDK init in try/catch to absorb "Cannot set property ethereum"
+        // errors that fire during module initialization (outside our guard scope)
+        let sdk: any
+        try {
+          const { createBaseAccountSDK } = await import('@base-org/account')
+          sdk = createBaseAccountSDK({
+            ...parameters,
+            appChainIds: config.chains.map((chain) => chain.id),
+            preference: parameters.preference,
+          })
+        } catch (sdkError) {
+          // Absorb window.ethereum write errors from SDK — the provider still works
+          const msg = sdkError instanceof Error ? sdkError.message : String(sdkError)
+          if (/cannot set property ethereum/i.test(msg)) {
+            // Retry: re-apply guard and try once more
+            if (typeof window !== 'undefined' && window.ethereum) {
+              try {
+                const existing = window.ethereum
+                Object.defineProperty(window, 'ethereum', {
+                  get() { return existing },
+                  set() { /* absorb */ },
+                  configurable: true,
+                })
+              } catch { /* ignore */ }
+            }
+            const { createBaseAccountSDK: retry } = await import('@base-org/account')
+            sdk = retry({
+              ...parameters,
+              appChainIds: config.chains.map((chain) => chain.id),
+              preference: parameters.preference,
+            })
+          } else {
+            throw sdkError
+          }
+        }
         walletProvider = sdk.getProvider()
       }
       return walletProvider
