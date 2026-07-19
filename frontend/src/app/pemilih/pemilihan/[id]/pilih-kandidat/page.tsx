@@ -226,6 +226,11 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   }, [isConfirmed, hash, receipt, pendingCommit, actions, params.id, showToast])
 
   useEffect(() => {
+    if (!writeError) return
+    setPendingCommit(null)
+  }, [writeError])
+
+  useEffect(() => {
     if (!countdownTargetIso) {
       setTimeLeft({ hours: 0, minutes: 0, seconds: 0 })
       return

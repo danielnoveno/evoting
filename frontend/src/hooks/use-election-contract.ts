@@ -1,8 +1,9 @@
 'use client'
 
 import { useCallback } from 'react'
-import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount, usePublicClient } from 'wagmi'
+import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount, usePublicClient, useSendCalls, useCallsStatus } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
+import { encodeFunctionData } from 'viem'
 import { PAYMASTER_URL } from '@/lib/wagmi'
 import ElectionSpaceArtifact from '@/lib/abi/ElectionSpace.json'
 
@@ -27,7 +28,7 @@ const DEFAULT_READ_QUERY_OPTIONS = {
 } as const
 
 export function useElectionContract(address?: string, options: UseElectionContractOptions = {}) {
-  const { address: wagmiAddress } = useAccount()
+  const { address: wagmiAddress, connector } = useAccount()
   const voterAddress = options.voterAddress || wagmiAddress || undefined
   const enabledChecks = new Set<ElectionReadCheck>(
     options.checks ?? ['phase', 'hasCommitted', 'hasRevealed', 'isWhitelisted']
@@ -41,7 +42,24 @@ export function useElectionContract(address?: string, options: UseElectionContra
     error: writeError,
     reset: resetWrite
   } = useWriteContract()
+  const {
+    sendCalls,
+    data: callsData,
+    isPending: isSendCallsPending,
+    error: sendCallsError,
+    reset: resetSendCalls,
+  } = useSendCalls()
   const publicClient = usePublicClient({ chainId: baseSepolia.id })
+  const callsStatusQuery = useCallsStatus({
+    id: callsData?.id ?? '',
+    query: {
+      enabled: Boolean(callsData?.id),
+      refetchInterval: (query) => query.state.data?.status === 'pending' ? 1500 : false,
+    },
+  })
+  const callsReceipt = callsStatusQuery.data?.receipts?.[0]
+  const callsTxHash = callsReceipt?.transactionHash
+  const isSmartWallet = connector?.id === 'baseAccount'
 
   const { 
     isLoading: isConfirming, 
@@ -238,6 +256,19 @@ export function useElectionContract(address?: string, options: UseElectionContra
       }
     } : undefined;
 
+    if (isSmartWallet && PAYMASTER_URL && wagmiAddress) {
+      sendCalls({
+        account: wagmiAddress,
+        chainId: baseSepolia.id,
+        calls: [{
+          to: address as `0x${string}`,
+          data: encodeFunctionData({ abi: electionSpaceAbi, functionName: 'commitVote', args: [commitment] }),
+        }],
+        capabilities,
+      })
+      return
+    }
+
     writeContract({
       address: address as `0x${string}`,
       abi: electionSpaceAbi,
@@ -257,6 +288,19 @@ export function useElectionContract(address?: string, options: UseElectionContra
         url: PAYMASTER_URL
       }
     } : undefined;
+
+    if (isSmartWallet && PAYMASTER_URL && wagmiAddress) {
+      sendCalls({
+        account: wagmiAddress,
+        chainId: baseSepolia.id,
+        calls: [{
+          to: address as `0x${string}`,
+          data: encodeFunctionData({ abi: electionSpaceAbi, functionName: 'revealVote', args: [BigInt(candidateId), salt] }),
+        }],
+        capabilities,
+      })
+      return
+    }
 
     writeContract({
       address: address as `0x${string}`,
@@ -392,15 +436,23 @@ export function useElectionContract(address?: string, options: UseElectionContra
     transitionToNextPhase,
     
     // TX Status
-    hash,
-    isWritePending,
-    isConfirming,
-    isConfirmed,
-    writeError,
-    receipt,
+    hash: hash ?? callsTxHash,
+    isWritePending: isWritePending || isSendCallsPending,
+    isConfirming: isConfirming || callsStatusQuery.data?.status === 'pending',
+    isConfirmed: isConfirmed || callsStatusQuery.data?.status === 'success',
+    writeError: writeError ?? sendCallsError ?? callsStatusQuery.error,
+    receipt: receipt ?? (callsReceipt ? {
+      transactionHash: callsReceipt.transactionHash,
+      blockNumber: callsReceipt.blockNumber,
+      gasUsed: callsReceipt.gasUsed,
+      effectiveGasPrice: undefined,
+    } : undefined),
     
     // Utils
-    resetWrite,
+    resetWrite: () => {
+      resetWrite()
+      resetSendCalls()
+    },
     refetchPhase,
     refetchHasCommitted,
     refetchHasRevealed,
