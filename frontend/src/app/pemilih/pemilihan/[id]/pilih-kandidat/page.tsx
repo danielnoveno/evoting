@@ -20,10 +20,6 @@ function getBaseSepoliaConnector(connectors: ReturnType<typeof useConnect>['conn
   return connectors.find((item) => item.id === 'baseAccount' || item.id.toLowerCase().includes('coinbase') || item.name.toLowerCase().includes('coinbase')) ?? connectors[0]
 }
 
-function isSmartWalletConnector(connector: ReturnType<typeof useAccount>['connector']) {
-  return connector ? connector.id === 'baseAccount' || connector.id.toLowerCase().includes('coinbase') || connector.name.toLowerCase().includes('coinbase') : false
-}
-
 async function fetchLatestContractAddress(electionId: string): Promise<string | null> {
   try {
     const response = await fetch(`/api/public/elections/${electionId}`, { method: 'GET' })
@@ -55,7 +51,7 @@ function getWalletConnectionErrorMessage(error: { message?: string }) {
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
   const { showToast } = useToast()
   const { store, loading, actions } = useVoterStore()
-  const { address: connectedWallet, isConnecting, connector: connectedConnector } = useAccount()
+  const { address: connectedWallet, isConnecting } = useAccount()
   const { connect, connectors, isPending: isConnectPending } = useConnect()
   const { signTypedDataAsync, isPending: isSignPending } = useSignTypedData()
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 8 })
@@ -79,7 +75,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const walletError = connectedWallet && profileWallet && !sameWalletAddress(profileWallet, connectedWallet)
     ? 'Dompet tersambung berbeda dari dompet aktivasi voter. Putuskan koneksi lalu sambungkan dompet yang dipakai saat aktivasi.'
     : null
-  const useRelayedSmartCommit = isSmartWalletConnector(connectedConnector)
+  // Semua commit voter dibuat gasless via tanda tangan + relayer.
+  // Ini menghindari popup transaksi Coinbase yang menolak Base Sepolia.
+  const useRelayedCommit = true
   const {
     commitVote,
     isWritePending,
@@ -409,7 +407,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       setAutoRevealQueueStatus('idle')
       setAutoRevealQueueError(null)
 
-      if (useRelayedSmartCommit) {
+      if (useRelayedCommit) {
         setRelayPending(true)
         setRelayError(null)
         try {
