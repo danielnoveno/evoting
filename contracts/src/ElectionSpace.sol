@@ -6,6 +6,13 @@ interface IRegistryRoleOracle {
     function isPlatformAdmin(address account) external view returns (bool);
 }
 
+interface IERC1271 {
+    function isValidSignature(bytes32 hash, bytes calldata signature)
+        external
+        view
+        returns (bytes4 magicValue);
+}
+
 contract ElectionSpace {
     enum Phase {
         Commit,
@@ -36,6 +43,7 @@ contract ElectionSpace {
     mapping(address => bool) public isWhitelisted;
     mapping(address => bool) public hasCommitted;
     mapping(address => bool) public hasRevealed;
+    mapping(address => uint256) public commitNonces;
     mapping(address => bytes32) public commitmentOf;
     mapping(uint256 => uint256) public voteCount;
     address[] private whitelistedVoters;
@@ -108,6 +116,19 @@ contract ElectionSpace {
     error ElectionTerminated();
     error InvalidPhaseSchedule();
     error InvalidAdmin();
+    error InvalidSignature();
+    error SignatureExpired();
+
+    bytes32 private constant EIP712_DOMAIN_TYPEHASH = keccak256(
+        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+    );
+    bytes32 private constant COMMIT_TYPEHASH =
+        keccak256("CommitVote(address voter,bytes32 commitment,uint256 nonce,uint256 deadline)");
+    bytes32 private constant EIP712_NAME_HASH = keccak256("VoteChainElectionSpace");
+    bytes32 private constant EIP712_VERSION_HASH = keccak256("1");
+    bytes4 private constant ERC1271_MAGICVALUE = 0x1626ba7e;
+    uint256 private constant SECP256K1N_DIV_2 =
+        0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0;
 
     constructor(
         address _registry,
@@ -361,18 +382,28 @@ contract ElectionSpace {
 
     function commitVote(bytes32 commitment)
         external
-        onlyRegistered
         onlyActive
         onlyPhase(Phase.Commit)
         onlyCommitWindow
     {
-        if (hasCommitted[msg.sender]) revert AlreadyCommitted();
-        if (commitment == bytes32(0)) revert InvalidCommitment();
+        _commit(msg.sender, commitment);
+    }
 
-        hasCommitted[msg.sender] = true;
-        commitmentOf[msg.sender] = commitment;
+    function commitBySignature(
+        address voter,
+        bytes32 commitment,
+        uint256 nonce,
+        uint256 deadline,
+        bytes calldata signature
+    ) external onlyActive onlyPhase(Phase.Commit) onlyCommitWindow {
+        if (block.timestamp > deadline) revert SignatureExpired();
+        if (nonce != commitNonces[voter]) revert InvalidSignature();
 
-        emit Committed(spaceId, msg.sender, commitment);
+        _verifyCommitSignature(voter, commitment, nonce, deadline, signature);
+        commitNonces[voter] = nonce + 1;
+        _commit(voter, commitment);
+
+        emit CommitRelayed(spaceId, voter, msg.sender, commitment);
     }
 
     /// @notice commitFor was REMOVED for security: it allowed any caller to
@@ -380,6 +411,83 @@ contract ElectionSpace {
     ///         suppressing that voter's real vote (vote-suppression DoS). Voters
     ///         commit via commitVote (msg.sender == voter). Do not re-add without
     ///         an EIP-712 voter signature verified on-chain.
+
+    function _commit(address voter, bytes32 commitment) internal {
+        if (voter == address(0)) revert InvalidVoter();
+        if (!isWhitelisted[voter]) revert NotRegistered();
+        if (hasCommitted[voter]) revert AlreadyCommitted();
+        if (commitment == bytes32(0)) revert InvalidCommitment();
+
+        hasCommitted[voter] = true;
+        commitmentOf[voter] = commitment;
+
+        emit Committed(spaceId, voter, commitment);
+    }
+
+    function domainSeparator() public view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                EIP712_DOMAIN_TYPEHASH,
+                EIP712_NAME_HASH,
+                EIP712_VERSION_HASH,
+                block.chainid,
+                address(this)
+            )
+        );
+    }
+
+    function commitDigest(address voter, bytes32 commitment, uint256 nonce, uint256 deadline)
+        public
+        view
+        returns (bytes32)
+    {
+        bytes32 structHash = keccak256(abi.encode(COMMIT_TYPEHASH, voter, commitment, nonce, deadline));
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
+    }
+
+    function _verifyCommitSignature(
+        address voter,
+        bytes32 commitment,
+        uint256 nonce,
+        uint256 deadline,
+        bytes calldata signature
+    ) internal view {
+        if (voter == address(0)) revert InvalidVoter();
+
+        bytes32 digest = commitDigest(voter, commitment, nonce, deadline);
+        if (voter.code.length > 0) {
+            (bool ok, bytes memory result) = voter.staticcall(
+                abi.encodeCall(IERC1271.isValidSignature, (digest, signature))
+            );
+            if (!ok || result.length < 32 || abi.decode(result, (bytes4)) != ERC1271_MAGICVALUE) {
+                revert InvalidSignature();
+            }
+            return;
+        }
+
+        if (_recoverSigner(digest, signature) != voter) revert InvalidSignature();
+    }
+
+    function _recoverSigner(bytes32 digest, bytes calldata signature) internal pure returns (address) {
+        if (signature.length != 65) revert InvalidSignature();
+
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            r := calldataload(signature.offset)
+            s := calldataload(add(signature.offset, 32))
+            v := byte(0, calldataload(add(signature.offset, 64)))
+        }
+
+        if (v < 27) v += 27;
+        if (v != 27 && v != 28) revert InvalidSignature();
+        if (uint256(s) > SECP256K1N_DIV_2) revert InvalidSignature();
+
+        address signer = ecrecover(digest, v, r, s);
+        if (signer == address(0)) revert InvalidSignature();
+        return signer;
+    }
 
     function revealVote(uint256 candidateId, bytes32 salt)
         external

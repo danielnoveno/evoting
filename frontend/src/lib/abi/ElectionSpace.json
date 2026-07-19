@@ -94,7 +94,7 @@
     },
     {
       "type": "function",
-      "name": "commitFor",
+      "name": "commitBySignature",
       "inputs": [
         {
           "name": "voter",
@@ -105,10 +105,59 @@
           "name": "commitment",
           "type": "bytes32",
           "internalType": "bytes32"
+        },
+        {
+          "name": "nonce",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "deadline",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "signature",
+          "type": "bytes",
+          "internalType": "bytes"
         }
       ],
       "outputs": [],
       "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "commitDigest",
+      "inputs": [
+        {
+          "name": "voter",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "commitment",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        },
+        {
+          "name": "nonce",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "deadline",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bytes32",
+          "internalType": "bytes32"
+        }
+      ],
+      "stateMutability": "view"
     },
     {
       "type": "function",
@@ -135,6 +184,25 @@
       ],
       "outputs": [],
       "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "commitNonces",
+      "inputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
     },
     {
       "type": "function",
