@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { ReactNode } from 'react'
 import { AdminMetricCard, AdminModuleCard, AdminShell } from '@/components/admin/admin-shell'
 import { adminDashboardContent, type AdminModuleKey } from '@/lib/admin-content'
-import { useToast } from '@/components/ui/toast-provider'
 import { ScrollReveal, StaggerContainer } from '@/components/public/parallax'
 
 const moduleIcons: Record<AdminModuleKey, ReactNode> = {
@@ -32,7 +31,6 @@ const moduleHrefs: Record<AdminModuleKey, string> = {
 
 export default function AdminPage() {
   const router = useRouter()
-  const { showToast } = useToast()
   const visibleModules = adminDashboardContent.modules.filter(
     (module) => !['fase', 'kandidat', 'whitelist', 'monitoring', 'hasil'].includes(module.key)
   )
@@ -55,9 +53,6 @@ export default function AdminPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <button type="button" onClick={() => router.push('/admin/manajemen-pemilihan')} className="inline-flex h-12 items-center justify-center rounded-2xl bg-black px-6 text-[15px] font-medium text-white hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
                   {adminDashboardContent.hero.primaryCta}
-                </button>
-                <button type="button" onClick={() => showToast({ tone: 'info', title: 'Unduh Ringkasan', description: 'Fitur unduh ringkasan sedang disiapkan.' })} className="inline-flex h-12 items-center justify-center rounded-2xl bg-white px-6 text-[15px] font-medium text-slate-900 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
-                  {adminDashboardContent.hero.secondaryCta}
                 </button>
               </div>
             </div>

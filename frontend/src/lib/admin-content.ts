@@ -115,7 +115,6 @@ interface AdminDashboardContent {
     title: string
     description: string
     primaryCta: string
-    secondaryCta: string
   }
   section: {
     title: string
@@ -178,7 +177,6 @@ export const adminDashboardContent: AdminDashboardContent = {
     description:
       'Panel admin Votein untuk memantau fase Registration → Commit → Reveal → Ended, mengelola whitelist pemilih, dan menyiapkan bukti audit Basescan.',
     primaryCta: 'Buka Ruang Aktif',
-    secondaryCta: 'Unduh Ringkasan',
   },
   section: {
     title: 'Manajemen Sistem',
