@@ -242,7 +242,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
   ])
 
   const requestWalletConnection = (description: string) => {
-    const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
+    const connector = connectors.find((item) => item.id === 'baseAccount' || item.id.toLowerCase().includes('coinbase') || item.name.toLowerCase().includes('coinbase')) ?? connectors[0]
 
     if (!connector) {
       showToast({

@@ -391,7 +391,7 @@ export default function SuperadminProposalDetailPage({ params }: { params: { id:
   const totalChecks = proposal.objectives.length
 
   const handleConnectSuperadminWallet = () => {
-    const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
+    const connector = connectors.find((item) => item.id === 'baseAccount' || item.id.toLowerCase().includes('coinbase') || item.name.toLowerCase().includes('coinbase')) ?? connectors[0]
 
     if (!connector) {
       showToast({

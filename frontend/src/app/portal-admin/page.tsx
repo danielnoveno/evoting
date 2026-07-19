@@ -178,7 +178,7 @@ function PortalAdminContent() {
   const handleConnectWallet = async () => {
     setFormError('')
     try {
-      const connector = connectors.find((c) => c.id === 'baseAccount') || connectors[0]
+      const connector = connectors.find((c) => c.id === 'baseAccount' || c.id.toLowerCase().includes('coinbase') || c.name.toLowerCase().includes('coinbase')) || connectors[0]
       if (connector) {
         connect({ connector }, { onError: (err) => setFormError(getWalletConnectionErrorMessage(err)) })
       }

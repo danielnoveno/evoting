@@ -30,7 +30,7 @@ export function useSilentReconnect() {
       try {
         // Dynamic import to avoid SSR issues
         const { wagmiConfig } = await import('@/lib/wagmi')
-        const connector = wagmiConfig.connectors.find((item) => item.id === 'baseAccount') ?? wagmiConfig.connectors[0]
+        const connector = wagmiConfig.connectors.find((item) => item.id === 'baseAccount' || item.id.toLowerCase().includes('coinbase') || item.name.toLowerCase().includes('coinbase')) ?? wagmiConfig.connectors[0]
         if (!connector) return
 
         const authorized = await connector.isAuthorized()

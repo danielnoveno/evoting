@@ -59,7 +59,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
   })
   const callsReceipt = callsStatusQuery.data?.receipts?.[0]
   const callsTxHash = callsReceipt?.transactionHash
-  const isSmartWallet = connector?.id === 'baseAccount'
+  const isSmartWallet = connector ? connector.id === 'baseAccount' || connector.id.toLowerCase().includes('coinbase') || connector.name.toLowerCase().includes('coinbase') : false
 
   const { 
     isLoading: isConfirming, 
