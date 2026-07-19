@@ -127,9 +127,6 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
     }
   }, [authSession.data?.access_token, params.id, setElections, showToast, router])
 
-  if (proposalQuery.isLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>
-  if (!election) notFound()
-
   const proposal = proposalQuery.data
   const candidates = candidatesQuery.data ?? []
   const whitelistEntries = whitelistQuery.data ?? []
@@ -166,6 +163,9 @@ export default function SuperadminElectionModerationPage({ params }: { params: {
     })
     return [...dbActivities, ...onchainActivities].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [activities, chainEvents])
+
+  if (proposalQuery.isLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-400" /></div>
+  if (!election) notFound()
 
   const contractAddress = proposal?.deployedSpaceAddress ?? 'Belum tersedia'
   const contractUrl = proposal?.deployedSpaceAddress

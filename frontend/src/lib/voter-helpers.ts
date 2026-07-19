@@ -91,7 +91,7 @@ export function getElectionViewState(election: VoterElection): VoterElectionView
   if (election.phase === 'registration') return { hasCommitted, hasRevealed, canCommit: false, canReveal: false, canViewResults: false, nextAction: 'wait' }
   const canCommit = election.phase === 'commit' && !hasCommitted
   const canReveal = election.phase === 'reveal' && hasCommitted && !hasRevealed
-  const canViewResults = election.phase === 'ended' || election.phase === 'reveal' || hasRevealed
+  const canViewResults = election.phase === 'ended' || hasRevealed
 
   if (canCommit) return { hasCommitted, hasRevealed, canCommit, canReveal, canViewResults, nextAction: 'commit' }
   if (canReveal) return { hasCommitted, hasRevealed, canCommit, canReveal, canViewResults, nextAction: 'reveal' }
@@ -122,7 +122,7 @@ export function resolveElectionAction(election: VoterElection) {
   const viewState = getElectionViewState(election)
   if (election.phase === 'suspended') return { label: 'Ditangguhkan', href: `/pemilih/pemilihan/${election.id}/pilih-kandidat` }
   if (viewState.nextAction === 'commit') return { label: 'Berikan Suara', href: `/pemilih/pemilihan/${election.id}/pilih-kandidat` }
-  if (viewState.nextAction === 'reveal') return { label: 'Menunggu Penghitungan', href: `/pemilih/pemilihan/${election.id}/hasil` }
+  if (viewState.nextAction === 'reveal') return { label: 'Cek Pengesahan', href: `/pemilih/pemilihan/${election.id}/reveal` }
   if (viewState.nextAction === 'results') return { label: 'Lihat Hasil', href: `/pemilih/pemilihan/${election.id}/hasil` }
   return { label: 'Belum Dibuka', href: `/pemilih#pemilihan-${election.id}` }
 }

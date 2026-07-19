@@ -83,6 +83,33 @@ export default function VoterResultPage({ params }: { params: { id: string } }) 
     )
   }
 
+  if (!election.commitProof && !election.revealProof && election.phase !== 'ended') {
+    return (
+      <VoterShell>
+        <VoterStepper
+          steps={[
+            { label: 'Pilih kandidat', description: 'Pilih satu nama' },
+            { label: 'Simpan pilihan', description: 'Kunci pilihanmu' },
+            { label: 'Konfirmasi suara', description: 'Sahkan pilihanmu' },
+            { label: 'Lihat hasil', description: 'Cek hasil akhir' },
+          ]}
+        />
+        <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-6 text-[14px] text-amber-900">
+          <h1 className="text-[20px] font-semibold">Masa mencoblos sudah berakhir</h1>
+          <p className="mt-2 leading-7">
+            Wallet ini belum memiliki bukti commit untuk pemilihan ini, jadi halaman hasil pemilih belum bisa dibuka dari alur pribadi.
+          </p>
+          <Link
+            href="/pemilih"
+            className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-[#0F172A] px-4 text-[13px] font-medium text-white hover:bg-[#1E293B]"
+          >
+            Kembali ke Dashboard Pemilih
+          </Link>
+        </section>
+      </VoterShell>
+    )
+  }
+
   const resultRows = getElectionResultRows(election)
   const totalVotes = resultRows.reduce((acc, curr) => acc + curr.votes, 0)
   const gasUsed = election.revealProof?.gasUsed ?? receiptFee?.gasUsed ?? null

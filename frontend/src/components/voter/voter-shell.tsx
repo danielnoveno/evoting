@@ -10,7 +10,7 @@ import { AppNavbar, AppFooter } from '@/components/ui/app-bar'
 import { AppSidebar, useSidebarLayout } from '@/components/ui/app-sidebar'
 import { useToast } from '@/components/ui/toast-provider'
 import { CommandPalette } from '@/components/ui/command-palette'
-import { formatWallet, useVoterStore } from '@/lib/voter-store'
+import { formatWallet } from '@/lib/voter-store'
 import { useCurrentProfile } from '@/hooks/use-profile'
 import { useLogoutSession } from '@/hooks/use-auth-session'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
@@ -27,7 +27,6 @@ export function VoterShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { showToast } = useToast()
-  const { store } = useVoterStore()
   const { sidebarWidthClass } = useSidebarLayout(collapsed)
   const { data: currentProfile } = useCurrentProfile()
   const logoutSession = useLogoutSession()
@@ -81,13 +80,13 @@ export function VoterShell({ children }: { children: ReactNode }) {
 
   const profile = currentProfile
     ? {
-        name: currentProfile.displayName ?? store?.profile.name ?? 'Pemilih',
-        email: currentProfile.email ?? store?.profile.email ?? '',
+        name: currentProfile.displayName ?? 'Pemilih',
+        email: currentProfile.email ?? '',
         wallet: currentProfile.walletAddress,
-        bio: store?.profile.bio ?? '',
-        avatarUrl: currentProfile.avatarUrl ?? store?.profile.avatarUrl ?? '',
+        bio: '',
+        avatarUrl: currentProfile.avatarUrl ?? '',
       }
-    : store?.profile
+    : null
 
   const handleConfirmLogout = () => {
     setLogoutConfirmOpen(false)

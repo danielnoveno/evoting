@@ -83,13 +83,16 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
   const countdown = useLiveCountdown(election.deadlineIso, onCountdownZero)
   const action = resolveElectionAction(election)
   const viewState = getElectionViewState(election)
-  const isUpcoming = viewState.nextAction === 'wait'
+  const isUpcoming = election.phase === 'registration'
   const isSuspended = election.phase === 'suspended'
   const alreadyVoted = viewState.hasCommitted
   const hasRevealProof = Boolean(election.revealProof)
+  const missedCommit = !alreadyVoted && (election.phase === 'reveal' || election.phase === 'ended')
   const isRevealMissed = alreadyVoted && !election.revealProof && (election.phase === 'ended')
   const label = isRevealMissed
     ? 'Komitmen Tercatat'
+    : missedCommit
+      ? 'Masa Mencoblos Berakhir'
     : hasRevealProof
       ? 'Suara Sudah Dikonfirmasi'
       : alreadyVoted
@@ -106,6 +109,8 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
   const nextPhaseName = election.phase === 'commit' ? 'Konfirmasi Suara' : 'Selesai'
   const countdownLabel = isRevealMissed
     ? 'Komitmen suara tercatat, tetapi konfirmasi (reveal) belum dilakukan:'
+    : missedCommit
+      ? 'Status pemilihan:'
     : alreadyVoted
       ? `Menunggu fase ${nextPhaseName}:`
       : election.phase === 'suspended'
@@ -162,7 +167,11 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
               <CountdownTile label="Detik" value={countdown.seconds} />
             </div>
           )}
-          {isRevealMissed ? (
+          {missedCommit ? (
+            <div className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-amber-300/40 bg-amber-500/10 px-5 text-[13px] font-semibold text-amber-200">
+              Masa mencoblos sudah berakhir
+            </div>
+          ) : isRevealMissed ? (
             <div className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-amber-300/40 bg-amber-500/10 px-5 text-[13px] font-semibold text-amber-200">
               ⚠ Komitmen Tercatat, Reveal Belum Dilakukan
             </div>
@@ -205,8 +214,9 @@ function FeaturedHeroCard({ election, onCountdownZero }: { election: VoterElecti
 function OtherElectionCard({ election }: { election: VoterElection }) {
   const action = resolveElectionAction(election)
   const viewState = getElectionViewState(election)
-  const isUpcoming = viewState.nextAction === 'wait'
+  const isUpcoming = election.phase === 'registration'
   const isSuspended = election.phase === 'suspended'
+  const missedCommit = !viewState.hasCommitted && (election.phase === 'reveal' || election.phase === 'ended')
   const statusLabel = isSuspended ? 'Ditangguhkan' : isUpcoming ? 'Mendatang' : election.phase === 'ended' ? 'Selesai' : 'Aktif'
   
   return (
@@ -253,6 +263,10 @@ function OtherElectionCard({ election }: { election: VoterElection }) {
           ) : isUpcoming ? (
             <button type="button" disabled className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-lg bg-slate-50 py-2 text-[12px] font-semibold text-slate-400">
               Belum Dibuka
+            </button>
+          ) : missedCommit ? (
+            <button type="button" disabled className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-lg border border-amber-200 bg-amber-50 py-2 text-[12px] font-semibold text-amber-700">
+              Masa Mencoblos Berakhir
             </button>
           ) : (
             <Link href={action.href} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-2 text-[12px] font-semibold text-white transition hover:bg-slate-800">
