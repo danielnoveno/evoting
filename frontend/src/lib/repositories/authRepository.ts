@@ -88,7 +88,7 @@ export async function signUpWithEmailPassword(email: string, password: string) {
   return data.session
 }
 
-export async function signInWithMagicLink(email: string, nextPath = '/pemilih') {
+export async function signInWithMagicLink(email: string, nextPath = '/pemilih', shouldCreateUser = true) {
   const client = getSupabaseBrowserClient()
   if (!client) throw new RepositoryError('Backend login belum dikonfigurasi.')
 
@@ -97,12 +97,23 @@ export async function signInWithMagicLink(email: string, nextPath = '/pemilih') 
     throw new RepositoryError('Format email tidak valid. Pastikan alamat email sudah benar.')
   }
 
+  if (!shouldCreateUser) {
+    const eligibility = await fetch(`/api/auth/magic-link-eligibility?email=${encodeURIComponent(normalizedEmail)}`, {
+      method: 'GET',
+      cache: 'no-store',
+    })
+    if (!eligibility.ok) {
+      const body = await eligibility.json().catch(() => null)
+      throw new RepositoryError(body?.error ?? 'Email belum teraktivasi sebagai pemilih. Gunakan link aktivasi dari admin terlebih dahulu.')
+    }
+  }
+
   const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`
   const { error } = await client.auth.signInWithOtp({
     email: normalizedEmail,
     options: {
       emailRedirectTo: redirectTo,
-      shouldCreateUser: true,
+      shouldCreateUser,
       data: {
         full_name: normalizedEmail.split('@')[0],
       },
@@ -112,6 +123,9 @@ export async function signInWithMagicLink(email: string, nextPath = '/pemilih') 
   if (error) {
     if (error.status === 429) {
       throw new RepositoryError('Terlalu banyak permintaan link masuk. Tunggu sebentar lalu coba lagi.')
+    }
+    if (!shouldCreateUser) {
+      throw new RepositoryError('Email belum terdaftar atau belum diaktivasi. Gunakan link aktivasi dari admin terlebih dahulu.')
     }
     throw new RepositoryError(error.message || 'Gagal mengirim link masuk. Coba lagi.')
   }
@@ -155,4 +169,3 @@ export async function signOutCurrentSession() {
     await clearLocalAuthSession()
   }
 }
-

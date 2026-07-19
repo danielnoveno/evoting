@@ -44,7 +44,7 @@ export function useEmailPasswordSignUp() {
 
 export function useMagicLinkLogin() {
   return useMutation({
-    mutationFn: ({ email, nextPath }: { email: string; nextPath?: string }) => signInWithMagicLink(email, nextPath),
+    mutationFn: ({ email, nextPath, shouldCreateUser }: { email: string; nextPath?: string; shouldCreateUser?: boolean }) => signInWithMagicLink(email, nextPath, shouldCreateUser),
   })
 }
 

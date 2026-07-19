@@ -146,7 +146,7 @@ function ConnectWalletContent() {
   const activationMode = activateParam === '1' || activateParam === 'admin' || activateParam === 'voter' || Boolean(adminInviteTokenFromRedirect) || activationContext === 'admin'
   const tokenPreviewQuery = useActivationTokenPreview(activationToken && activationContext === 'voter' ? activationToken : null)
   const invitedVoterEmail = tokenPreviewQuery.data?.email?.trim().toLowerCase() ?? ''
-  const isVoteinTestVoterEmail = activationMode && activationContext === 'voter' && invitedVoterEmail.endsWith('@votein.biz.id')
+  const isMagicLinkVoterEmail = activationMode && activationContext === 'voter' && Boolean(invitedVoterEmail) && !invitedVoterEmail.endsWith('@uajy.ac.id') && !invitedVoterEmail.endsWith('@students.uajy.ac.id')
   const voterActivationMissingToken = activationMode && activationContext === 'voter' && !activationToken
   const adminActivationMissingToken = activateParam === 'admin' && activationContext === 'admin' && !activationToken && !currentProfile
   const redirectTarget = useMemo(() => {
@@ -395,7 +395,7 @@ function ConnectWalletContent() {
     nextParams.set('redirect', redirectTarget)
 
     magicLinkLoginMutation.mutate(
-      { email: normalizedEmail, nextPath: `/hubungkan-dompet?${nextParams.toString()}` },
+      { email: normalizedEmail, nextPath: `/hubungkan-dompet?${nextParams.toString()}`, shouldCreateUser: activationMode },
       {
         onSuccess: () => {
           setMagicLinkSentTo(normalizedEmail)
@@ -423,7 +423,7 @@ function ConnectWalletContent() {
   }
 
   useEffect(() => {
-    if (!mounted || authSession || !isVoteinTestVoterEmail || !tokenPreviewQuery.data?.isValid || !invitedVoterEmail) return
+    if (!mounted || authSession || !isMagicLinkVoterEmail || !tokenPreviewQuery.data?.isValid || !invitedVoterEmail) return
 
     const key = `${activationToken}:${invitedVoterEmail}`
     if (autoMagicLinkSentRef.current === key) return
@@ -442,7 +442,7 @@ function ConnectWalletContent() {
 
     setEmail(invitedVoterEmail)
     sendMagicLink(invitedVoterEmail)
-  }, [activationToken, authSession, invitedVoterEmail, isVoteinTestVoterEmail, mounted, sendMagicLink, tokenPreviewQuery.data?.isValid])
+  }, [activationToken, authSession, invitedVoterEmail, isMagicLinkVoterEmail, mounted, sendMagicLink, tokenPreviewQuery.data?.isValid])
 
   const handleConnectWallet = () => {
     const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
@@ -591,9 +591,9 @@ function ConnectWalletContent() {
                         {authSession ? <Check className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-[14px] font-semibold text-slate-900">{isVoteinTestVoterEmail ? 'Masuk dengan Email Aktivasi' : 'Masuk dengan Akun Kampus'}</h2>
+                        <h2 className="text-[14px] font-semibold text-slate-900">{isMagicLinkVoterEmail ? 'Masuk dengan Email Aktivasi' : 'Masuk dengan Akun Kampus'}</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {authSession ? 'Email aktivasi sudah terverifikasi.' : isVoteinTestVoterEmail ? 'Buka magic link dari email undangan.' : 'Masuk untuk verifikasi identitas Anda.'}
+                          {authSession ? 'Email aktivasi sudah terverifikasi.' : isMagicLinkVoterEmail ? 'Buka magic link dari email undangan.' : 'Masuk untuk verifikasi identitas Anda.'}
                         </p>
                       </div>
                       {!authSession && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -621,7 +621,7 @@ function ConnectWalletContent() {
                       <div className="min-w-0 flex-1">
                         <h2 className={isConnected && authSession ? 'text-[14px] font-semibold text-slate-900' : 'text-[14px] font-semibold text-slate-400'}>{activationContext === 'admin' ? 'Aktifkan Akses Admin' : 'Aktifkan Hak Suara'}</h2>
                         <p className="mt-0.5 text-[12px] leading-5 text-slate-400">
-                          {isWalletBound ? activationContext === 'admin' ? 'Akses admin sudah aktif.' : 'Hak suara sudah aktif.' : isVoteinTestVoterEmail ? 'Tautkan email aktivasi dan dompet.' : 'Tautkan akun kampus dan dompet.'}
+                          {isWalletBound ? activationContext === 'admin' ? 'Akses admin sudah aktif.' : 'Hak suara sudah aktif.' : isMagicLinkVoterEmail ? 'Tautkan email aktivasi dan dompet.' : 'Tautkan akun kampus dan dompet.'}
                         </p>
                       </div>
                       {isConnected && authSession && !isWalletBound && <ChevronRight className="h-4 w-4 text-slate-400" />}
@@ -646,16 +646,16 @@ function ConnectWalletContent() {
                     {/* ponytail: SSO-first flow — tampilkan form login SSO dulu sebelum connect wallet */}
                     {((!isAdminActivationFlow && !isVoterSsoFirstFlow && !authSession && !authSessionQuery.isLoading) || (isAdminActivationFlow && !authSession && !authSessionQuery.isLoading)) && (
                       <div className="mt-8 w-full">
-                        <h2 className="text-[20px] font-semibold text-slate-900">{isAdminActivationFlow ? 'Tahap 1 — Masuk dengan Akun Kampus' : isVoteinTestVoterEmail ? 'Tahap 1 — Masuk dengan Email Aktivasi' : activationMode ? 'Tahap 1 — Masuk dengan Akun Kampus' : 'Masuk dengan Akun Kampus'}</h2>
+                        <h2 className="text-[20px] font-semibold text-slate-900">{isAdminActivationFlow ? 'Tahap 1 — Masuk dengan Akun Kampus' : isMagicLinkVoterEmail ? 'Tahap 1 — Masuk dengan Email Aktivasi' : activationMode ? 'Tahap 1 — Masuk dengan Akun Kampus' : 'Masuk dengan Akun Kampus'}</h2>
                         <p className="mt-3 text-[13px] leading-6 text-slate-600">
                           {activationContext === 'admin'
                             ? 'Masuk dengan email organisasi yang sudah didaftarkan oleh Superadmin.'
-                            : isVoteinTestVoterEmail
+                            : isMagicLinkVoterEmail
                               ? 'Link masuk dikirim otomatis ke email undangan. Buka inbox email tersebut lalu klik link masuk untuk melanjutkan aktivasi.'
                             : 'Masuk untuk memastikan Anda mahasiswa UAJY. ID voting akan ditautkan ke akun ini.'}
                         </p>
 
-                        <div className="mt-6 flex flex-col gap-3">
+                        {!isMagicLinkVoterEmail && <div className="mt-6 flex flex-col gap-3">
                           <button
                             onClick={handleMicrosoftLogin}
                             disabled={microsoftLoginMutation.isPending}
@@ -682,9 +682,9 @@ function ConnectWalletContent() {
                             {googleLoginMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <img src="https://www.google.com/favicon.ico" className="h-4 w-4" alt="Google" />}
                             Masuk dengan Google
                           </button>
-                        </div>
+                        </div>}
 
-                        {activationMode && activationContext === 'voter' && (
+                        {activationContext === 'voter' && (
                           <form onSubmit={handleMagicLinkLogin} className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
                             <div className="flex items-start gap-3">
                               <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-slate-700 ring-1 ring-slate-200">
@@ -693,7 +693,7 @@ function ConnectWalletContent() {
                               <div className="min-w-0 flex-1">
                                 <h3 className="text-[13px] font-bold text-slate-900">Masuk dengan Link Email</h3>
                                 <p className="mt-1 text-[12px] leading-5 text-slate-500">
-                                  Gunakan opsi ini untuk email undangan pemilih, termasuk email domain sendiri seperti <span className="font-semibold text-slate-700">@votein.biz.id</span>.
+                                  {isMagicLinkVoterEmail ? 'Email undangan ini memakai domain non-SSO, jadi login dilanjutkan lewat magic link.' : <>Untuk pemilih yang login dengan email non-Google/Microsoft, misalnya <span className="font-semibold text-slate-700">@votein.biz.id</span>.</>}
                                 </p>
                               </div>
                             </div>
@@ -719,7 +719,7 @@ function ConnectWalletContent() {
 
                             {magicLinkSentTo && (
                               <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-[12px] leading-5 text-emerald-700">
-                                Link masuk sudah dikirim ke <span className="font-semibold">{magicLinkSentTo}</span>. Buka email tersebut, lalu klik link untuk kembali ke aktivasi.
+                                Link masuk sudah dikirim ke <span className="font-semibold">{magicLinkSentTo}</span>. Buka email tersebut, lalu klik link untuk kembali ke Votein.
                               </p>
                             )}
                           </form>
@@ -735,7 +735,7 @@ function ConnectWalletContent() {
                               <p className="text-[12px] leading-5 text-blue-800/80">
                                 {activationContext === 'admin'
                                   ? 'Gunakan email yang sama dengan undangan Superadmin. ID voting akan menjadi identitas Anda di dashboard admin.'
-                                  : isVoteinTestVoterEmail
+                                  : isMagicLinkVoterEmail
                                     ? 'ID voting akan ditautkan permanen ke email undangan pemilih ini. Satu ID voting untuk satu pemilih.'
                                   : <>ID voting akan ditautkan permanen ke akun <span className="font-bold">@students.uajy.ac.id</span> Anda. Satu ID voting untuk satu mahasiswa.</>}
                               </p>
@@ -743,7 +743,7 @@ function ConnectWalletContent() {
                                 <span className="font-bold text-blue-900 block mb-1">Tips:</span>
                                   {activationContext === 'admin'
                                     ? 'Pastikan email yang Anda gunakan sama dengan yang diundang Superadmin.'
-                                    : isVoteinTestVoterEmail
+                                    : isMagicLinkVoterEmail
                                       ? 'Buka inbox email undangan, klik magic link, lalu kembali untuk membuat ID voting.'
                                     : 'Gunakan email mahasiswa UAJY saat membuat ID voting agar sinkron dengan sistem.'}
                               </div>
