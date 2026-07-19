@@ -33,7 +33,7 @@ import { sameWalletAddress } from '@/lib/repositories/helpers'
 import { useActivationTokenPreview } from '@/hooks/use-activation-token'
 
 function getBaseSepoliaConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
-  return connectors.find((item) => item.id !== 'baseAccount') ?? connectors[0]
+  return connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
 }
 
 function resolveRedirectTarget(redirectParam: string | null, activationContext: 'admin' | 'voter') {

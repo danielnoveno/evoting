@@ -17,7 +17,7 @@ import { resolveSchedulePhase } from '@/lib/election-phase'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
 
 function getBaseSepoliaConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
-  return connectors.find((item) => item.id !== 'baseAccount') ?? connectors[0]
+  return connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
 }
 
 async function fetchLatestContractAddress(electionId: string): Promise<string | null> {
