@@ -1,4 +1,5 @@
 import { http, fallback, createConfig } from 'wagmi'
+import { injected } from 'wagmi/connectors'
 import { baseSepolia } from 'wagmi/chains'
 import { baseAccountConnector } from '@/lib/base-account-connector'
 
@@ -21,6 +22,7 @@ const baseSepoliaTransports = baseSepoliaRpcUrls.map((url) => http(url, {
 export const wagmiConfig = createConfig({
   chains: [baseSepolia],
   connectors: [
+    injected({ shimDisconnect: true }),
     baseAccountConnector({
       appName: 'Votein',
       appLogoUrl: null,

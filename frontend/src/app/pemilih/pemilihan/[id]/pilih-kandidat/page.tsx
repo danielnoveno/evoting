@@ -16,6 +16,10 @@ import { useToast } from '@/components/ui/toast-provider'
 import { resolveSchedulePhase } from '@/lib/election-phase'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
 
+function getBaseSepoliaConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
+  return connectors.find((item) => item.id !== 'baseAccount') ?? connectors[0]
+}
+
 async function fetchLatestContractAddress(electionId: string): Promise<string | null> {
   try {
     const response = await fetch(`/api/public/elections/${electionId}`, { method: 'GET' })
@@ -41,7 +45,7 @@ function getWalletConnectionErrorMessage(error: { message?: string }) {
     return 'Penyambungan dompet dibatalkan. Klik sambungkan lagi jika ingin melanjutkan.'
   }
 
-  return 'Coba lagi dari perangkat atau browser yang mendukung Base Account.'
+  return 'Coba lagi dari dompet yang mendukung Base Sepolia, misalnya MetaMask atau Coinbase Wallet extension.'
 }
 
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
@@ -287,9 +291,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     }
 
     if (isWalletDisconnected) {
-      const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
+      const connector = getBaseSepoliaConnector(connectors)
       if (!connector) {
-        showToast({ title: 'Dompet belum tersedia', description: 'Sistem Base Account belum tersedia. Coba muat ulang halaman.', tone: 'error' })
+        showToast({ title: 'Dompet belum tersedia', description: 'Tidak ada dompet browser yang mendukung Base Sepolia. Pasang MetaMask atau Coinbase Wallet extension, lalu coba lagi.', tone: 'error' })
         return
       }
 

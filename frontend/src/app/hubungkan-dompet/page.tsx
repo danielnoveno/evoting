@@ -32,6 +32,10 @@ import { AuthSuccessRedirectModal } from '@/components/auth/auth-success-redirec
 import { sameWalletAddress } from '@/lib/repositories/helpers'
 import { useActivationTokenPreview } from '@/hooks/use-activation-token'
 
+function getBaseSepoliaConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
+  return connectors.find((item) => item.id !== 'baseAccount') ?? connectors[0]
+}
+
 function resolveRedirectTarget(redirectParam: string | null, activationContext: 'admin' | 'voter') {
   if (redirectParam?.startsWith('/auth/aktivasi-admin')) return '/admin'
 
@@ -93,7 +97,7 @@ function getWalletConnectionErrorMessage(error: { message?: string }) {
     return 'Pembuatan ID voting dibatalkan. Klik sambungkan lagi jika ingin melanjutkan.'
   }
 
-  return 'Coba lagi dari perangkat atau browser yang mendukung Base Account.'
+  return 'Coba lagi dari dompet yang mendukung Base Sepolia, misalnya MetaMask atau Coinbase Wallet extension.'
 }
 
 function ConnectWalletContent() {
@@ -445,12 +449,12 @@ function ConnectWalletContent() {
   }, [activationToken, authSession, invitedVoterEmail, isMagicLinkVoterEmail, mounted, sendMagicLink, tokenPreviewQuery.data?.isValid])
 
   const handleConnectWallet = () => {
-    const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
+    const connector = getBaseSepoliaConnector(connectors)
     if (!connector) {
       showToast({
         tone: 'error',
         title: 'ID voting belum siap',
-        description: 'Sistem Base Account belum tersedia. Coba muat ulang halaman.',
+        description: 'Tidak ada dompet browser yang mendukung Base Sepolia. Pasang MetaMask atau Coinbase Wallet extension, lalu coba lagi.',
       })
       return
     }
