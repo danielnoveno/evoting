@@ -5,7 +5,8 @@ import { ELECTION_SPACE_SOURCE, FLATTENED_REGISTRY_SOURCE } from '@/lib/contract
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const BASESCAN_API_URL = 'https://api-sepolia.basescan.org/api'
+const BASESCAN_API_URL = 'https://api.etherscan.io/v2/api'
+const BASE_SEPOLIA_CHAIN_ID = '84532'
 
 type ContractType = 'registry' | 'election-space'
 
@@ -110,6 +111,7 @@ async function verifyContract(contractAddress: string, config: ContractConfig) {
   if (!apiKey) return { success: false, message: 'BASESCAN_API_KEY tidak dikonfigurasi di server' }
 
   const params = new URLSearchParams({
+    chainid: BASE_SEPOLIA_CHAIN_ID,
     apikey: apiKey,
     module: 'contract',
     action: 'verifysourcecode',
@@ -142,7 +144,7 @@ async function checkVerificationStatus(guid: string) {
   const apiKey = process.env.BASESCAN_API_KEY
   if (!apiKey) return { pending: false, verified: false, message: 'BASESCAN_API_KEY tidak dikonfigurasi' }
 
-  const response = await fetch(`${BASESCAN_API_URL}?apikey=${apiKey}&module=contract&action=getverificationstatus&guid=${guid}`)
+  const response = await fetch(`${BASESCAN_API_URL}?${new URLSearchParams({ chainid: BASE_SEPOLIA_CHAIN_ID, apikey: apiKey, module: 'contract', action: 'getverificationstatus', guid })}`)
   const data = (await response.json()) as BasescanResponse
   if (data.result === 'Pending in queue') return { pending: true, verified: false, message: 'Masih dalam antrian verifikasi' }
   if (data.result === 'Pass - Verified') return { pending: false, verified: true, message: 'Terverifikasi' }
@@ -194,6 +196,7 @@ export async function GET(request: NextRequest) {
   try {
     const response = await fetch(
       `${BASESCAN_API_URL}?apikey=${apiKey}&module=contract&action=getabi&address=${contractAddress}`
+      + `&chainid=${BASE_SEPOLIA_CHAIN_ID}`
     )
     const data = (await response.json()) as BasescanResponse
     const verified = data.status === '1' && data.message === 'OK'

@@ -1,17 +1,19 @@
 -- =============================================================================
--- VoteChain — Testing Seed: 14 Voter Aktif + Activation Tokens
+-- VoteChain — Testing Seed (2 Bagian)
 -- =============================================================================
--- Jalankan setelah migration:
---   npx supabase db query --linked --file "supabase/seed/testing-fast-flow.sql"
 --
--- Output:
---   - 14 voter Inserted ke master_voters (status=active, wallet=real smart wallet)
---   - 14 activation token dibuat (hash tersimpan di activation_tokens)
---   - Plain token ditampilkan di NOTICE → copy link aktivasi dari situ
+-- BAGIAN 1: Voter + Activation Tokens (langsung jalan, gak butuh auth.users)
+--   Jalankan: npx supabase db query --linked --file "supabase/seed/testing-fast-flow.sql"
+--   Output: 15 voter aktif + 15 link aktivasi di NOTICE
 --
--- Prasyarat:
---   1. ALLOW_TEST_VOTER_EMAILS=true di Vercel/Supabase (agar @votein.biz.id lolos validasi)
---   2. Voter login 1x via Magic Link → auth.users terbentuk → profile auto-upsert
+-- BAGIAN 2: Proposal + Kandidat + Whitelist (butuh 3 akun sudah login)
+--   Prasyarat: SuperAdmin, Admin, Voter sudah login minimal 1x
+--   Jalankan setelah Bagian 1 + 3 akun login
+--
+-- CATATAN:
+--   - ALLOW_TEST_VOTER_EMAILS=true di environment Supabase/Vercel
+--   - Voter harus KLIK LINK AKTIVASI, bukan buka /hubungkan-dompet langsung
+--   - Link aktivasi ada di output NOTICE (grep LINK)
 -- =============================================================================
 
 -- ─── 1. Seed 14 Voter Aktif ─────────────────────────────────────────────────
@@ -67,7 +69,7 @@ declare
   v_expires timestamptz := v_now + interval '7 days';
   v_origin text := coalesce(
     current_setting('app.settings.site_url', true),
-    'https://votein.biz.id'
+    'https://votein-evoting.vercel.app'
   );
 
   v_voter record;
@@ -111,11 +113,13 @@ begin
 end $$;
 
 -- =============================================================================
--- VoteChain — Proposal Seed (BAB IV/V/VI Evidence)
+-- BAGIAN 2: Proposal Seed (BAB IV/V/VI Evidence)
 -- =============================================================================
--- Bagian ini membuat 3 proposal uji + kandidat + whitelist.
--- PRASYARAT: SuperAdmin, Admin, dan 1 Voter sudah login minimal 1x
--- supaya auth.users ada. Jalankan bagian ini SETELAH voter login pertama.
+-- PRASYARAT WAJIB: 3 akun ini sudah login minimal 1x supaya auth.users ada:
+--   - dnw022003@gmail.com (SuperAdmin)
+--   - novenoow@gmail.com (Admin)
+--   - 220711663@students.uajy.ac.id (Voter)
+-- Kalau belum login, akan muncul error.
 -- =============================================================================
 
 do $$
