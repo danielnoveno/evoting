@@ -3,7 +3,7 @@
 import { AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock3, ExternalLink, Info, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { useAccount, useConnect, useSignTypedData } from 'wagmi'
+import { useAccount, useConnect, usePublicClient, useSignTypedData } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
@@ -19,6 +19,16 @@ import { sameWalletAddress } from '@/lib/repositories/helpers'
 function getBaseSepoliaConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
   return connectors.find((item) => item.id === 'baseAccount' || item.id.toLowerCase().includes('coinbase') || item.name.toLowerCase().includes('coinbase')) ?? connectors[0]
 }
+
+function isCoinbaseConnector(connector: ReturnType<typeof useAccount>['connector'] | ReturnType<typeof useConnect>['connectors'][number] | undefined) {
+  return connector ? connector.id === 'baseAccount' || connector.id.toLowerCase().includes('coinbase') || connector.name.toLowerCase().includes('coinbase') : false
+}
+
+function getInjectedConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
+  return connectors.find((item) => item.id === 'injected' || item.name.toLowerCase().includes('metamask'))
+}
+
+const undeployedSmartWalletMessage = 'Smart Wallet aktivasi ini belum aktif di Base Sepolia, jadi belum bisa dipakai untuk mencoblos di jaringan uji. Hubungi admin untuk aktivasi ulang atau gunakan wallet aktivasi yang sudah aktif.'
 
 async function fetchLatestContractAddress(electionId: string): Promise<string | null> {
   try {
@@ -51,8 +61,9 @@ function getWalletConnectionErrorMessage(error: { message?: string }) {
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
   const { showToast } = useToast()
   const { store, loading, actions } = useVoterStore()
-  const { address: connectedWallet, isConnecting } = useAccount()
+  const { address: connectedWallet, isConnecting, connector: connectedConnector } = useAccount()
   const { connect, connectors, isPending: isConnectPending } = useConnect()
+  const publicClient = usePublicClient({ chainId: baseSepolia.id })
   const { signTypedDataAsync, isPending: isSignPending } = useSignTypedData()
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 8 })
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -291,7 +302,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     { label: 'Lihat hasil', description: 'Cek hasil akhir' },
   ]
 
-  const handleSelectClick = (candidateId: string) => {
+  const handleSelectClick = async (candidateId: string) => {
     if (voteBlockedReason) {
       showToast({ title: 'Belum bisa mencoblos', description: voteBlockedReason, tone: 'info' })
       return
@@ -303,9 +314,20 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     }
 
     if (isWalletDisconnected) {
-      const connector = getBaseSepoliaConnector(connectors)
+      let connector = getBaseSepoliaConnector(connectors)
+      const profileWalletCode = publicClient
+        ? await publicClient.getBytecode({ address: profileWallet as `0x${string}` }).catch(() => undefined)
+        : undefined
+      if ((!profileWalletCode || profileWalletCode === '0x') && isCoinbaseConnector(connector)) {
+        connector = getInjectedConnector(connectors) ?? connector
+      }
       if (!connector) {
         showToast({ title: 'Dompet belum tersedia', description: 'Tidak ada dompet browser yang mendukung Base Sepolia. Pasang MetaMask atau Coinbase Wallet extension, lalu coba lagi.', tone: 'error' })
+        return
+      }
+
+      if ((!profileWalletCode || profileWalletCode === '0x') && isCoinbaseConnector(connector)) {
+        showToast({ title: 'Smart Wallet belum aktif', description: undeployedSmartWalletMessage, tone: 'error' })
         return
       }
 
@@ -378,6 +400,15 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         setConfirmOpen(false)
         showToast({ title: 'Kandidat tidak valid', description: 'Pilih kandidat dari daftar yang tersedia.', tone: 'error' })
         return
+      }
+
+      if (isCoinbaseConnector(connectedConnector) && publicClient) {
+        const walletCode = await publicClient.getBytecode({ address: voterWallet as `0x${string}` }).catch(() => undefined)
+        if (!walletCode || walletCode === '0x') {
+          setConfirmOpen(false)
+          showToast({ title: 'Smart Wallet belum aktif', description: undeployedSmartWalletMessage, tone: 'error' })
+          return
+        }
       }
 
       actions.selectCandidate(election.id, candidateToConfirm)
@@ -891,7 +922,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
               <p className="mt-1 text-[12px] font-medium text-slate-600">{candidateBeingConfirmed?.faculty ?? 'Data kandidat belum tersedia'}</p>
             </div>
             <p className="text-[13px] text-slate-600">
-              Sistem akan mengirim transaksi commit dari dompet aktivasi kamu. Gas dapat disponsori paymaster, tetapi alamat pemilih tetap sama.
+              Kamu akan menandatangani persetujuan commit. Transaksi commit dikirim oleh relayer, dan bukti transaksi akan ditampilkan setelah berhasil.
             </p>
           </div>
         )}
