@@ -3,6 +3,7 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import type { MasterVoterRecord, MasterVoterFilter } from '@/lib/repositories/types'
 import { RepositoryError } from '@/lib/repositories/errors'
+import { compareNatural } from '@/lib/natural-sort'
 
 type MasterVoterRow = {
   id: string
@@ -94,7 +95,9 @@ export async function listMasterVoters(filter?: MasterVoterFilter): Promise<Mast
     }
   }
 
-  return rows.map(mapMasterVoterRow)
+  return rows
+    .map(mapMasterVoterRow)
+    .sort((left, right) => compareNatural(left.prodi, right.prodi) || compareNatural(left.fullName, right.fullName) || compareNatural(left.nim, right.nim))
 }
 
 export async function listMasterVoterProdiOptions(): Promise<string[]> {

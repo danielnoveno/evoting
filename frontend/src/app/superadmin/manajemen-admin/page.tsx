@@ -23,6 +23,7 @@ import { superadminAdminStatuses, superadminAdminTabs } from '@/lib/superadmin-d
 import { useCreateAdminRegistry, useSuperadminAdminDirectory } from '@/hooks/use-profile'
 import { useCreateAdminInvite } from '@/hooks/use-admin-invite'
 import { AppPageHeader } from '@/components/ui/app-page-header'
+import { compareNatural } from '@/lib/natural-sort'
 import { AppSectionCard } from '@/components/ui/app-section-card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
@@ -121,7 +122,7 @@ function SuperadminAdminManagementContent() {
             : sortField === 'status' ? right.status
               : `${right.lastSeen} ${right.lastLoginRelative}`
 
-      return leftValue.toLowerCase().localeCompare(rightValue.toLowerCase()) * (sortDirection === 'asc' ? 1 : -1)
+      return compareNatural(leftValue, rightValue) * (sortDirection === 'asc' ? 1 : -1)
     })
   }, [activeStatus, admins, searchTerm, sortField, sortDirection])
 

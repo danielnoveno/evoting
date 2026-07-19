@@ -153,12 +153,14 @@ export function ProposalForm({
   const [nowString] = useState(() => toDatetimeLocalString(new Date()))
   const isSubmitting = saveProposalDraft.isPending || isUploadingDocument || isUploadingCandidatePhotos || isUploadingBannerImage
 
-  const whitelistLines = formData.whitelistWallets
+  const candidateEntries = Array.isArray(formData.candidateEntries) ? formData.candidateEntries : [EMPTY_CANDIDATE, EMPTY_CANDIDATE]
+  const whitelistWallets = typeof formData.whitelistWallets === 'string' ? formData.whitelistWallets : ''
+  const whitelistLines = whitelistWallets
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
   const uniqueWhitelistWallets = Array.from(new Set(whitelistLines.map((wallet) => wallet.toLowerCase())))
-  const whitelistWalletSet = useMemo(() => new Set(whitelistLines.map((wallet) => wallet.toLowerCase())), [formData.whitelistWallets])
+  const whitelistWalletSet = useMemo(() => new Set(whitelistLines.map((wallet) => wallet.toLowerCase())), [whitelistWallets])
   const invalidWhitelistCount = whitelistLines.filter((wallet) => !isAddress(wallet)).length
 
   const allMasterVoters = masterVotersQuery.data ?? []
@@ -186,7 +188,7 @@ export function ProposalForm({
       return true
     }
     if (step === 1) {
-      const filled = formData.candidateEntries.filter((c) => c.name.trim())
+      const filled = candidateEntries.filter((c) => c.name.trim())
       if (filled.length < 2) return false
       const hasIncomplete = filled.some((c) =>
         !c.studentId?.trim() ||
@@ -237,7 +239,8 @@ export function ProposalForm({
 
   const validateForm = (data: ProposalFormData) => {
     const nextErrors: ProposalFormErrors = {}
-    const filledCandidates = data.candidateEntries.filter((candidate) => candidate.name.trim())
+    const safeCandidates = Array.isArray(data.candidateEntries) ? data.candidateEntries : []
+    const filledCandidates = safeCandidates.filter((candidate) => candidate.name.trim())
     const filledCandidateCount = filledCandidates.length
 
     if (!data.title.trim()) {
@@ -337,6 +340,7 @@ export function ProposalForm({
 
   const getValidationIssues = (data: ProposalFormData, nextErrors: ProposalFormErrors): ValidationIssue[] => {
     const issues: ValidationIssue[] = []
+    const safeCandidates = Array.isArray(data.candidateEntries) ? data.candidateEntries : []
 
     if (nextErrors.candidateCount) issues.push({ fieldKey: 'candidates', label: 'Kandidat', message: nextErrors.candidateCount })
     if (nextErrors.title) issues.push({ fieldKey: 'title', label: 'Nama Pemilihan', message: nextErrors.title })
@@ -345,7 +349,7 @@ export function ProposalForm({
     if (nextErrors.endedDate) issues.push({ fieldKey: 'endedDate', label: 'Selesai Pemilihan', message: nextErrors.endedDate })
     if (nextErrors.dateRange) issues.push({ fieldKey: 'commitDate', label: 'Urutan Waktu', message: nextErrors.dateRange })
 
-    data.candidateEntries.forEach((candidate, index) => {
+    safeCandidates.forEach((candidate, index) => {
       const missingFields = getCandidateMissingFields(candidate)
       if (missingFields.length === 0) return
 
@@ -360,7 +364,7 @@ export function ProposalForm({
         || candidate.avatarPath?.trim()
       )
 
-      const namedCandidatesCount = data.candidateEntries.filter((entry) => entry.name.trim()).length
+      const namedCandidatesCount = safeCandidates.filter((entry) => entry.name.trim()).length
       if (!hasAnyCandidateValue && namedCandidatesCount >= 2) return
 
       issues.push({
@@ -635,8 +639,8 @@ export function ProposalForm({
 
   const requestRemoveCandidate = (index: number) => {
     if (isReadOnly) return
-    if (formData.candidateEntries.length <= 1) return
-    const entry = formData.candidateEntries[index]
+    if (candidateEntries.length <= 1) return
+    const entry = candidateEntries[index]
     if (!entry) return
     const photoFile = candidatePhotoFiles[index]
     const photoPreview = candidatePhotoPreviews[index]
@@ -674,7 +678,7 @@ export function ProposalForm({
       return
     }
 
-    let candidateEntries = formData.candidateEntries.filter(c => c.name.trim())
+    let candidateEntries = (Array.isArray(formData.candidateEntries) ? formData.candidateEntries : []).filter(c => c.name.trim())
 
     if (Object.keys(candidatePhotoFiles).length > 0) {
       setIsUploadingCandidatePhotos(true)
@@ -727,7 +731,7 @@ export function ProposalForm({
     }
 
     // Always merge picker selections AND text area entries (not mutually exclusive)
-    const textWalletLines = formData.whitelistWallets
+    const textWalletLines = whitelistWallets
       .split('\n')
       .map((wallet) => wallet.trim())
       .filter((wallet) => wallet && isAddress(wallet))
@@ -1002,7 +1006,7 @@ export function ProposalForm({
               </button>
             ) : null}
           </div>
-          {formData.candidateEntries.map((c, i) => (
+          {candidateEntries.map((c, i) => (
             <div key={i} className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-5 transition-colors duration-150 hover:border-slate-300">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -1015,7 +1019,7 @@ export function ProposalForm({
                 {!isReadOnly ? (
                   <div className="flex items-center gap-2">
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Foto opsional</span>
-                    {formData.candidateEntries.length > 1 ? (
+                    {candidateEntries.length > 1 ? (
                       <button
                         type="button"
                         onClick={() => requestRemoveCandidate(i)}

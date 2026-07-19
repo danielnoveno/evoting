@@ -37,6 +37,7 @@ import {
   type MasterVoter,
 } from '@/hooks/use-master-voters-admin'
 import { getInitials } from '@/lib/repositories/helpers'
+import { compareNatural } from '@/lib/natural-sort'
 
 const MASTER_VOTER_CSV_HEADERS = ['nim', 'nama', 'email', 'fakultas'] as const
 const PAGE_SIZE_OPTIONS = [5, 10, 20] as const
@@ -152,7 +153,7 @@ export function SuperadminMasterVoterPage() {
             : sortField === 'prodi' ? right.prodi
               : right.syncStatus
 
-      return leftValue.toLowerCase().localeCompare(rightValue.toLowerCase()) * (sortDirection === 'asc' ? 1 : -1)
+      return compareNatural(leftValue, rightValue) * (sortDirection === 'asc' ? 1 : -1)
     })
   }, [voters, searchTerm, activeFilter, selectedVoterIds, sortField, sortDirection])
 

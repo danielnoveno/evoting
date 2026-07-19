@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { RepositoryError } from '@/lib/repositories/errors'
+import { compareNatural } from '@/lib/natural-sort'
 
 export type MasterVoter = {
   id: string
@@ -121,7 +122,9 @@ export function useMasterVotersList() {
         }
       }
 
-      return rows.map(mapRow)
+      return rows
+        .map(mapRow)
+        .sort((left, right) => compareNatural(left.prodi, right.prodi) || compareNatural(left.fullName, right.fullName) || compareNatural(left.nim, right.nim))
     },
     retry: false,
   })

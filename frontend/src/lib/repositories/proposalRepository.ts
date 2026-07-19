@@ -208,6 +208,7 @@ export async function listProposalDrafts(): Promise<ProposalDraftRecord[]> {
     .schema('app')
     .from('proposal_drafts')
     .select('*')
+    .order('updated_at', { ascending: false })
     .order('created_at', { ascending: false })
 
   if (error) throw new RepositoryError('Gagal memuat daftar proposal. Coba lagi.')
@@ -308,7 +309,7 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
     ? await client
       .schema('app')
       .from('proposal_drafts')
-      .update(basePayload)
+      .update({ ...basePayload, updated_at: new Date().toISOString() })
       .eq('id', input.id)
       .select('*')
       .single()

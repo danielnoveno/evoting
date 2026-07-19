@@ -33,6 +33,7 @@ import {
   SortableTableHeader,
   type TableSortDirection,
 } from '@/components/ui/data-table'
+import { compareNatural } from '@/lib/natural-sort'
 
 type ElectionFilter = (typeof superadminElectionFilters)[number]
 type SortField = 'title' | 'code' | 'status' | 'voters' | 'participation'
@@ -125,7 +126,7 @@ export default function SuperadminElectionManagementPage() {
       const rightNumber = Number(String(rightValue).replace(/[^0-9.]/g, ''))
       const comparison = sortField === 'voters' || sortField === 'participation'
         ? (leftNumber || 0) - (rightNumber || 0)
-        : String(leftValue).toLowerCase().localeCompare(String(rightValue).toLowerCase())
+        : compareNatural(leftValue, rightValue)
 
       return comparison * (sortDirection === 'asc' ? 1 : -1)
     })

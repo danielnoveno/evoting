@@ -24,6 +24,7 @@ import {
   SortableTableHeader,
   type TableSortDirection,
 } from '@/components/ui/data-table'
+import { compareNatural } from '@/lib/natural-sort'
 
 type SortField = 'tanggal' | 'organisasi' | 'pemilihan' | 'status'
 type SortDirection = TableSortDirection
@@ -45,7 +46,7 @@ export default function SuperadminProposalManagementPage() {
       organizationName: p.creatorOrganizationName ?? p.creatorDisplayName ?? p.organizationName ?? 'Organisasi Tanpa Nama',
       electionName: p.title || 'Nama pemilihan belum diisi',
       submittedAt: new Date(p.createdAt).toLocaleDateString('id-ID'),
-      submittedAtTime: new Date(p.createdAt).getTime(),
+      submittedAtTime: new Date(p.updatedAt ?? p.createdAt).getTime(),
       status: p.status === 'draft' ? 'Draf' : p.status === 'submitted' ? 'Menunggu Review' : p.status === 'revision_requested' ? 'Perlu Revisi' : p.status === 'approved' ? 'Disetujui' : p.status === 'deployed' ? 'Berjalan' : p.status === 'archived' ? 'Dibatalkan' : p.status
     }))
   }, [proposalRowsRaw])
@@ -90,9 +91,9 @@ export default function SuperadminProposalManagementPage() {
     return [...rows].sort((left, right) => {
       const direction = sortDirection === 'asc' ? 1 : -1
 
-      if (sortField === 'organisasi') return left.organizationName.localeCompare(right.organizationName) * direction
-      if (sortField === 'pemilihan') return left.electionName.localeCompare(right.electionName) * direction
-      if (sortField === 'status') return left.status.localeCompare(right.status) * direction
+      if (sortField === 'organisasi') return compareNatural(left.organizationName, right.organizationName) * direction
+      if (sortField === 'pemilihan') return compareNatural(left.electionName, right.electionName) * direction
+      if (sortField === 'status') return compareNatural(left.status, right.status) * direction
       return (left.submittedAtTime - right.submittedAtTime) * direction
     })
   }, [proposalRows, query, sortDirection, sortField, activeStatus])

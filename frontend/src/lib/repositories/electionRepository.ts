@@ -263,6 +263,7 @@ export async function listPublicElections(): Promise<PublicElectionRecord[]> {
     .from('proposal_drafts')
     .select('*')
     .in('status', ['deployed', 'archived'])
+    .order('updated_at', { ascending: false })
     .order('created_at', { ascending: false })
 
   if (error) throw new RepositoryError('Gagal memuat data pemilihan dari Supabase.')
@@ -361,6 +362,7 @@ export async function listVoterWhitelistedElections(walletAddress: string | stri
     .select('*')
     .in('id', matchedProposalIds)
     .in('status', ['approved', 'deployed', 'archived'])
+    .order('updated_at', { ascending: false })
     .order('created_at', { ascending: false })
 
   if (error) throw new RepositoryError('Gagal memuat data pemilihan dari Supabase.')

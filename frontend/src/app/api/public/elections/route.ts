@@ -78,7 +78,7 @@ export async function GET() {
   const client = getSupabaseServiceRoleClient()
   if (!client) return jsonError('Service role Supabase belum dikonfigurasi.', 503)
 
-  const { data: proposals, error } = await client.from('proposal_drafts').select('*').in('status', ['deployed', 'archived']).order('created_at', { ascending: false })
+  const { data: proposals, error } = await client.from('proposal_drafts').select('*').in('status', ['deployed', 'archived']).order('updated_at', { ascending: false }).order('created_at', { ascending: false })
   if (error) return jsonError('Gagal memuat pemilihan publik.', 500)
   const rows = proposals ?? []
   if (rows.length === 0) return NextResponse.json({ elections: [] })
