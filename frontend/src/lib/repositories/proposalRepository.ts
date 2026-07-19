@@ -649,3 +649,25 @@ export async function updateProposalStatus(input: ProposalStatusUpdateInput): Pr
 
   return mapProposalRow(data)
 }
+
+export async function deleteProposalDraft(id: string): Promise<void> {
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const { data: sessionData } = await client.auth.getSession()
+  const accessToken = sessionData.session?.access_token
+  if (!accessToken) throw new RepositoryError('Sesi pengguna belum aktif untuk menghapus proposal.')
+
+  const response = await fetch(`/api/proposals/${id}/status`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  if (!response.ok) {
+    const payload: unknown = await response.json().catch(() => ({}))
+    const message = payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
+      ? payload.error
+      : 'Gagal menghapus proposal. Coba lagi.'
+    throw new RepositoryError(message)
+  }
+}

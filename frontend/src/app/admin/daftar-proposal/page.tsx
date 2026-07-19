@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { OnboardingTour } from '@/components/admin/onboarding-tour'
 import { adminProposalContent, ProposalStatus } from '@/lib/admin-proposal-data'
@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/toast-provider'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAdminProposalList } from '@/hooks/use-admin-proposal-list'
-import { useUpdateProposalStatus } from '@/hooks/use-proposal-draft'
+import { useDeleteProposalDraft } from '@/hooks/use-proposal-draft'
 import { getRepositoryErrorMessage } from '@/lib/repositories/errors'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
@@ -69,11 +69,11 @@ export default function AdminProposalPage() {
   const { showToast } = useToast()
   const router = useRouter()
   const { rows: proposals, stats, error, isLoading } = useAdminProposalList()
-  const updateStatus = useUpdateProposalStatus()
+  const deleteProposal = useDeleteProposalDraft()
 
   const [currentPage, setCurrentPage] = useState(1)
   const [activeStatus, setActiveStatus] = useState<StatusFilter>('Semua')
-  const [proposalToCancel, setProposalToCancel] = useState<{ id: string; title: string } | null>(null)
+  const [proposalToDelete, setProposalToDelete] = useState<{ id: string; title: string } | null>(null)
   const itemsPerPage = 4
   const filteredProposals = useMemo(() => activeStatus === 'Semua' ? proposals : proposals.filter((proposal) => proposal.status === activeStatus), [activeStatus, proposals])
   const actualTotalItems = filteredProposals.length
@@ -86,15 +86,19 @@ export default function AdminProposalPage() {
 
   const totalPages = Math.max(1, Math.ceil(actualTotalItems / itemsPerPage))
 
-  const handleCancelProposal = () => {
-    if (!proposalToCancel) return
-    updateStatus.mutate({ id: proposalToCancel.id, status: 'archived' }, {
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, totalPages])
+
+  const handleDeleteProposal = () => {
+    if (!proposalToDelete) return
+    deleteProposal.mutate(proposalToDelete.id, {
       onSuccess: () => {
-        showToast({ title: 'Pengajuan dibatalkan', description: 'Proposal dipindahkan ke status dibatalkan.', tone: 'success' })
-        setProposalToCancel(null)
+        showToast({ title: 'Proposal dihapus', description: 'Proposal yang belum disetujui sudah dihapus dari daftar.', tone: 'success' })
+        setProposalToDelete(null)
       },
-      onError: (cancelError) => {
-        showToast({ title: 'Gagal membatalkan proposal', description: getRepositoryErrorMessage(cancelError, 'Coba lagi beberapa saat.'), tone: 'error' })
+      onError: (deleteError) => {
+        showToast({ title: 'Gagal menghapus proposal', description: getRepositoryErrorMessage(deleteError, 'Coba lagi beberapa saat.'), tone: 'error' })
       }
     })
   }
@@ -225,12 +229,12 @@ export default function AdminProposalPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Link>
-                        {row.status === 'DRAF' || row.status === 'MENUNGGU REVIEW' || row.status === 'PERLU REVISI' ? (
+                        {row.status === 'DRAF' || row.status === 'MENUNGGU REVIEW' || row.status === 'PERLU REVISI' || row.status === 'DIBATALKAN' ? (
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); setProposalToCancel({ id: row.id, title: row.title }) }}
+                            onClick={(e) => { e.stopPropagation(); setProposalToDelete({ id: row.id, title: row.title }) }}
                             className="text-slate-400 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50"
-                            aria-label={`Batalkan proposal ${row.title}`}
+                            aria-label={`Hapus proposal ${row.title}`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -278,14 +282,14 @@ export default function AdminProposalPage() {
         </section>
       </ScrollReveal>
       <ConfirmDialog
-        open={Boolean(proposalToCancel)}
-        title="Batalkan pengajuan proposal?"
-        description={proposalToCancel ? `Proposal “${proposalToCancel.title}” akan ditandai dibatalkan dan tidak masuk antrean review.` : 'Proposal akan dibatalkan.'}
-        confirmLabel="Ya, batalkan"
+        open={Boolean(proposalToDelete)}
+        title="Hapus proposal?"
+        description={proposalToDelete ? `Proposal “${proposalToDelete.title}” akan dihapus permanen dari daftar. Aksi ini hanya untuk proposal yang belum disetujui atau belum menjadi pemilihan aktif.` : 'Proposal akan dihapus.'}
+        confirmLabel="Ya, hapus"
         cancelLabel="Kembali"
         tone="danger"
-        onConfirm={handleCancelProposal}
-        onCancel={() => setProposalToCancel(null)}
+        onConfirm={handleDeleteProposal}
+        onCancel={() => setProposalToDelete(null)}
       />
 
       {/* Verification Banner */}

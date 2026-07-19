@@ -14,6 +14,7 @@ type ProposalStatus = Database['app']['Tables']['proposal_drafts']['Row']['statu
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 
 const VALID_STATUSES: ProposalStatus[] = ['draft', 'submitted', 'revision_requested', 'approved', 'rejected', 'deployed', 'archived', 'suspended']
+const DELETABLE_STATUSES: ProposalStatus[] = ['draft', 'submitted', 'revision_requested', 'rejected', 'archived']
 
 function mapProposalRow(row: ProposalRow) {
   return {
@@ -361,4 +362,47 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   }
 
   return NextResponse.json({ proposal: mapProposalRow(data) })
+}
+
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const auth = await requireProfile(request, ['admin', 'super_admin'])
+  if ('error' in auth) return auth.error
+  const { id } = await context.params
+
+  const permissionError = await ensureCanManageProposal(auth.client, auth.profile, id)
+  if (permissionError) return permissionError
+
+  const { data: proposal, error: proposalError } = await auth.client
+    .from('proposal_drafts')
+    .select('id,title,status')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (proposalError) return jsonError('Gagal memuat proposal.', 500)
+  if (!proposal) return jsonError('Proposal tidak ditemukan.', 404)
+  if (!DELETABLE_STATUSES.includes(proposal.status)) {
+    return jsonError('Proposal yang sudah disetujui, sudah menjadi pemilihan aktif, atau ditangguhkan tidak boleh dihapus dari dashboard.', 409)
+  }
+
+  await auth.client.from('proposal_documents').delete().eq('proposal_draft_id', id).throwOnError()
+  await auth.client.from('proposal_whitelist_entries').delete().eq('proposal_draft_id', id).throwOnError()
+  await auth.client.from('proposal_candidates').delete().eq('proposal_draft_id', id).throwOnError()
+
+  const { error: deleteError } = await auth.client.from('proposal_drafts').delete().eq('id', id)
+  if (deleteError) return jsonError('Gagal menghapus proposal.', 500)
+
+  const actor = await getActorInfo(auth.client)
+  await logAudit({
+    action_name: 'delete_proposal',
+    actor_wallet: actor.wallet,
+    actor_email: actor.email,
+    actor_role: actor.role,
+    entity_type: 'proposal',
+    entity_id: id,
+    details: { title: proposal.title, previousStatus: proposal.status },
+    related_tx_hash: null,
+    source: 'server_api',
+  })
+
+  return NextResponse.json({ ok: true })
 }

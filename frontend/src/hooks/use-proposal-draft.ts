@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { listProposalActivities, listProposalDrafts, getProposalDraftById, updateProposalStatus } from '@/lib/repositories/proposalRepository'
+import { deleteProposalDraft, listProposalActivities, listProposalDrafts, getProposalDraftById, updateProposalStatus } from '@/lib/repositories/proposalRepository'
 
 export function useProposalDraft(id: string | null | undefined) {
   return useQuery({
@@ -31,6 +31,21 @@ export function useUpdateProposalStatus() {
       void queryClient.invalidateQueries({ queryKey: ['superadmin', 'all-proposals'] })
       void queryClient.invalidateQueries({ queryKey: ['proposal-draft', proposal.id] })
       void queryClient.invalidateQueries({ queryKey: ['proposal-activities', proposal.id] })
+    },
+  })
+}
+
+export function useDeleteProposalDraft() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteProposalDraft,
+    onSuccess: (_data, id) => {
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'proposal-drafts'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'elections'] })
+      void queryClient.invalidateQueries({ queryKey: ['superadmin', 'all-proposals'] })
+      void queryClient.invalidateQueries({ queryKey: ['proposal-draft', id] })
+      void queryClient.invalidateQueries({ queryKey: ['proposal-activities', id] })
     },
   })
 }
