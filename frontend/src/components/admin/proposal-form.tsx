@@ -158,6 +158,7 @@ export function ProposalForm({
     .map((line) => line.trim())
     .filter(Boolean)
   const uniqueWhitelistWallets = Array.from(new Set(whitelistLines.map((wallet) => wallet.toLowerCase())))
+  const whitelistWalletSet = useMemo(() => new Set(whitelistLines.map((wallet) => wallet.toLowerCase())), [formData.whitelistWallets])
   const invalidWhitelistCount = whitelistLines.filter((wallet) => !isAddress(wallet)).length
 
   const allMasterVoters = masterVotersQuery.data ?? []
@@ -1165,7 +1166,10 @@ export function ProposalForm({
                 {!isReadOnly && (
                   <button
                     type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, whitelistWallets: '' }))}
+                    onClick={() => {
+                      setFormData((prev) => ({ ...prev, whitelistWallets: '' }))
+                      setSelectedWhitelistVoterIds(new Set())
+                    }}
                     className="text-[12px] font-medium text-red-500 hover:text-red-700"
                   >
                     Hapus Semua
@@ -1308,7 +1312,9 @@ export function ProposalForm({
             ) : (
               <div className="divide-y divide-slate-100">
                 {allMasterVoters.map((voter) => {
-                  const isSelected = selectedWhitelistVoterIds.has(voter.id)
+                  const normalizedWallet = voter.walletAddress?.toLowerCase() ?? ''
+                  const isAlreadyWhitelisted = Boolean(normalizedWallet && whitelistWalletSet.has(normalizedWallet))
+                  const isSelected = isAlreadyWhitelisted || selectedWhitelistVoterIds.has(voter.id)
                   const hasWallet = Boolean(voter.walletAddress)
                   const initials = voter.fullName.split(' ').filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || 'VT'
                   return (
@@ -1324,6 +1330,22 @@ export function ProposalForm({
                         disabled={!hasWallet}
                         onChange={() => {
                           if (!hasWallet) return
+                          if (isAlreadyWhitelisted) {
+                            setFormData((prev) => ({
+                              ...prev,
+                              whitelistWallets: prev.whitelistWallets
+                                .split('\n')
+                                .map((wallet) => wallet.trim())
+                                .filter((wallet) => wallet && wallet.toLowerCase() !== normalizedWallet)
+                                .join('\n'),
+                            }))
+                            setSelectedWhitelistVoterIds((prev) => {
+                              const next = new Set(prev)
+                              next.delete(voter.id)
+                              return next
+                            })
+                            return
+                          }
                           setSelectedWhitelistVoterIds((prev) => {
                             const next = new Set(prev)
                             if (next.has(voter.id)) next.delete(voter.id)
