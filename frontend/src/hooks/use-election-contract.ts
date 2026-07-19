@@ -200,18 +200,6 @@ export function useElectionContract(address?: string, options: UseElectionContra
     }
   })
 
-  const { data: commitNonce, refetch: refetchCommitNonce } = useReadContract({
-    address: address as `0x${string}`,
-    abi: electionSpaceAbi,
-    chainId: baseSepolia.id,
-    functionName: 'commitNonces',
-    args: voterAddress ? [voterAddress as `0x${string}`] : undefined,
-    query: {
-      ...DEFAULT_READ_QUERY_OPTIONS,
-      enabled: !!address && !!voterAddress,
-    }
-  })
-
   // ponytail: immutable reads untuk verifikasi Basescan
   const { data: registryAddress } = useReadContract({
     address: address as `0x${string}`,
@@ -424,7 +412,6 @@ export function useElectionContract(address?: string, options: UseElectionContra
     hasCommittedOnChain,
     hasRevealedOnChain,
     isWhitelistedOnChain,
-    commitNonce: commitNonce !== undefined ? BigInt(commitNonce as bigint | number | string) : undefined,
     phaseError,
     hasCommittedError,
     hasRevealedError,
@@ -469,7 +456,6 @@ export function useElectionContract(address?: string, options: UseElectionContra
     refetchPhase,
     refetchHasCommitted,
     refetchHasRevealed,
-    refetchIsWhitelisted,
-    refetchCommitNonce,
+    refetchIsWhitelisted
   }
 }

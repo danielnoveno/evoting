@@ -94,73 +94,6 @@
     },
     {
       "type": "function",
-      "name": "commitBySignature",
-      "inputs": [
-        {
-          "name": "voter",
-          "type": "address",
-          "internalType": "address"
-        },
-        {
-          "name": "commitment",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        },
-        {
-          "name": "nonce",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "deadline",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "signature",
-          "type": "bytes",
-          "internalType": "bytes"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "commitDigest",
-      "inputs": [
-        {
-          "name": "voter",
-          "type": "address",
-          "internalType": "address"
-        },
-        {
-          "name": "commitment",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        },
-        {
-          "name": "nonce",
-          "type": "uint256",
-          "internalType": "uint256"
-        },
-        {
-          "name": "deadline",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
       "name": "commitStartsAt",
       "inputs": [],
       "outputs": [
@@ -184,25 +117,6 @@
       ],
       "outputs": [],
       "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "commitNonces",
-      "inputs": [
-        {
-          "name": "",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "",
-          "type": "uint256",
-          "internalType": "uint256"
-        }
-      ],
-      "stateMutability": "view"
     },
     {
       "type": "function",
@@ -626,37 +540,6 @@
         }
       ],
       "stateMutability": "view"
-    },
-    {
-      "type": "event",
-      "name": "CommitRelayed",
-      "inputs": [
-        {
-          "name": "spaceId",
-          "type": "uint256",
-          "indexed": true,
-          "internalType": "uint256"
-        },
-        {
-          "name": "voter",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
-        },
-        {
-          "name": "relayer",
-          "type": "address",
-          "indexed": true,
-          "internalType": "address"
-        },
-        {
-          "name": "commitment",
-          "type": "bytes32",
-          "indexed": false,
-          "internalType": "bytes32"
-        }
-      ],
-      "anonymous": false
     },
     {
       "type": "event",

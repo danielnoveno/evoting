@@ -3,7 +3,7 @@
 import { AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock3, ExternalLink, Info, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { useAccount, useConnect, usePublicClient, useSignTypedData } from 'wagmi'
+import { useAccount, useConnect } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
@@ -19,16 +19,6 @@ import { sameWalletAddress } from '@/lib/repositories/helpers'
 function getBaseSepoliaConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
   return connectors.find((item) => item.id === 'baseAccount' || item.id.toLowerCase().includes('coinbase') || item.name.toLowerCase().includes('coinbase')) ?? connectors[0]
 }
-
-function isCoinbaseConnector(connector: ReturnType<typeof useAccount>['connector'] | ReturnType<typeof useConnect>['connectors'][number] | undefined) {
-  return connector ? connector.id === 'baseAccount' || connector.id.toLowerCase().includes('coinbase') || connector.name.toLowerCase().includes('coinbase') : false
-}
-
-function getInjectedConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
-  return connectors.find((item) => item.id === 'injected' || item.name.toLowerCase().includes('metamask'))
-}
-
-const undeployedSmartWalletMessage = 'Smart Wallet aktivasi ini belum aktif di Base Sepolia, jadi belum bisa dipakai untuk mencoblos di jaringan uji. Hubungi admin untuk aktivasi ulang atau gunakan wallet aktivasi yang sudah aktif.'
 
 async function fetchLatestContractAddress(electionId: string): Promise<string | null> {
   try {
@@ -61,10 +51,8 @@ function getWalletConnectionErrorMessage(error: { message?: string }) {
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
   const { showToast } = useToast()
   const { store, loading, actions } = useVoterStore()
-  const { address: connectedWallet, isConnecting, connector: connectedConnector } = useAccount()
+  const { address: connectedWallet, isConnecting } = useAccount()
   const { connect, connectors, isPending: isConnectPending } = useConnect()
-  const publicClient = usePublicClient({ chainId: baseSepolia.id })
-  const { signTypedDataAsync, isPending: isSignPending } = useSignTypedData()
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 8 })
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [candidateToConfirm, setCandidateToConfirm] = useState<string | null>(null)
@@ -74,8 +62,6 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     contractAddress: string
     record: VoteCommitmentRecord
   } | null>(null)
-  const [relayPending, setRelayPending] = useState(false)
-  const [relayError, setRelayError] = useState<string | null>(null)
   const [autoRevealQueueStatus, setAutoRevealQueueStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
   const [autoRevealQueueError, setAutoRevealQueueError] = useState<string | null>(null)
   const election = findElection(store, params.id)
@@ -86,9 +72,6 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const walletError = connectedWallet && profileWallet && !sameWalletAddress(profileWallet, connectedWallet)
     ? 'Dompet tersambung berbeda dari dompet aktivasi voter. Putuskan koneksi lalu sambungkan dompet yang dipakai saat aktivasi.'
     : null
-  // Semua commit voter dibuat gasless via tanda tangan + relayer.
-  // Ini menghindari popup transaksi Coinbase yang menolak Base Sepolia.
-  const useRelayedCommit = true
   const {
     commitVote,
     isWritePending,
@@ -100,7 +83,6 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     currentPhase,
     hasCommittedOnChain,
     isWhitelistedOnChain,
-    commitNonce,
     phaseError,
     hasCommittedError,
     whitelistError,
@@ -302,7 +284,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     { label: 'Lihat hasil', description: 'Cek hasil akhir' },
   ]
 
-  const handleSelectClick = async (candidateId: string) => {
+  const handleSelectClick = (candidateId: string) => {
     if (voteBlockedReason) {
       showToast({ title: 'Belum bisa mencoblos', description: voteBlockedReason, tone: 'info' })
       return
@@ -314,20 +296,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     }
 
     if (isWalletDisconnected) {
-      let connector = getBaseSepoliaConnector(connectors)
-      const profileWalletCode = publicClient
-        ? await publicClient.getBytecode({ address: profileWallet as `0x${string}` }).catch(() => undefined)
-        : undefined
-      if ((!profileWalletCode || profileWalletCode === '0x') && isCoinbaseConnector(connector)) {
-        connector = getInjectedConnector(connectors) ?? connector
-      }
+      const connector = getBaseSepoliaConnector(connectors)
       if (!connector) {
         showToast({ title: 'Dompet belum tersedia', description: 'Tidak ada dompet browser yang mendukung Base Sepolia. Pasang MetaMask atau Coinbase Wallet extension, lalu coba lagi.', tone: 'error' })
-        return
-      }
-
-      if ((!profileWalletCode || profileWalletCode === '0x') && isCoinbaseConnector(connector)) {
-        showToast({ title: 'Smart Wallet belum aktif', description: undeployedSmartWalletMessage, tone: 'error' })
         return
       }
 
@@ -402,15 +373,6 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         return
       }
 
-      if (isCoinbaseConnector(connectedConnector) && publicClient) {
-        const walletCode = await publicClient.getBytecode({ address: voterWallet as `0x${string}` }).catch(() => undefined)
-        if (!walletCode || walletCode === '0x') {
-          setConfirmOpen(false)
-          showToast({ title: 'Smart Wallet belum aktif', description: undeployedSmartWalletMessage, tone: 'error' })
-          return
-        }
-      }
-
       actions.selectCandidate(election.id, candidateToConfirm)
       
       const salt = generateSalt()
@@ -437,100 +399,6 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       })
       setAutoRevealQueueStatus('idle')
       setAutoRevealQueueError(null)
-
-      if (useRelayedCommit) {
-        setRelayPending(true)
-        setRelayError(null)
-        try {
-          const nonce = commitNonce ?? BigInt(0)
-          const deadline = BigInt(Math.floor(Date.now() / 1000) + 10 * 60)
-          const signature = await signTypedDataAsync({
-            account: voterWallet as `0x${string}`,
-            domain: {
-              name: 'VoteChainElectionSpace',
-              version: '1',
-              chainId: baseSepolia.id,
-              verifyingContract: deployedSpaceAddress as `0x${string}`,
-            },
-            types: {
-              CommitVote: [
-                { name: 'voter', type: 'address' },
-                { name: 'commitment', type: 'bytes32' },
-                { name: 'nonce', type: 'uint256' },
-                { name: 'deadline', type: 'uint256' },
-              ],
-            },
-            primaryType: 'CommitVote',
-            message: {
-              voter: voterWallet as `0x${string}`,
-              commitment,
-              nonce,
-              deadline,
-            },
-          })
-
-          const { getSupabaseBrowserClient } = await import('@/lib/supabase/browser')
-          const client = getSupabaseBrowserClient()
-          const { data: sessionData } = await client?.auth.getSession() ?? { data: { session: null } }
-          const accessToken = sessionData?.session?.access_token
-          if (!accessToken) throw new Error('Sesi tidak terbaca. Silakan masuk ulang.')
-
-          const relayResponse = await fetch('/api/voter/relay-commit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-            body: JSON.stringify({
-              spaceAddress: deployedSpaceAddress,
-              voterAddress: voterWallet,
-              commitmentHash: commitment,
-              nonce: nonce.toString(),
-              deadline: deadline.toString(),
-              signature,
-            }),
-          })
-          const relayPayload = await relayResponse.json().catch(() => ({}))
-          if (!relayResponse.ok) throw new Error(typeof relayPayload.message === 'string' ? relayPayload.message : 'Relayer gagal mengirim commit.')
-
-          const proof = {
-            txHash: relayPayload.txHash as string,
-            blockNumber: Number(relayPayload.blockNumber),
-            gasUsed: Number(relayPayload.gasUsed),
-            gasPriceWei: null,
-            createdAt: new Date().toISOString(),
-            statusLabel: 'Bukti commit relayer tersimpan',
-          }
-          actions.commitVote(params.id, commitment, proof)
-          setAutoRevealQueueStatus('saving')
-
-          const storeResponse = await fetch('/api/voter/commit-store', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
-            body: JSON.stringify({
-              electionId: params.id,
-              spaceAddress: deployedSpaceAddress,
-              voterAddress: voterWallet,
-              candidateId: candidateNumber,
-              salt,
-              commitmentHash: commitment,
-              commitTxHash: proof.txHash,
-            }),
-          })
-          if (!storeResponse.ok) {
-            setAutoRevealQueueStatus('failed')
-            setAutoRevealQueueError('Commit on-chain berhasil, tetapi antrean pengesahan otomatis belum tersimpan. Hubungi admin/TU jika perlu.')
-          } else {
-            setAutoRevealQueueStatus('saved')
-          }
-          showToast({ title: 'Suara berhasil dicoblos', description: 'Commit tercatat on-chain melalui relayer dan dapat dicek di Basescan.', tone: 'success' })
-        } catch (error) {
-          const message = error instanceof Error ? error.message : 'Commit relayer gagal.'
-          setRelayError(message)
-          setPendingCommit(null)
-          showToast({ title: 'Gagal mencoblos', description: message, tone: 'error' })
-        } finally {
-          setRelayPending(false)
-        }
-        return
-      }
 
       commitVote(commitment)
     }
@@ -787,16 +655,14 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
             </div>
           </div>
         </section>
-      ) : (voteBlockedReason || writeError || relayError) ? (
+      ) : (voteBlockedReason || writeError) ? (
         <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-[13px] leading-7 text-amber-900">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
             <div>
               <p className="font-semibold">Belum bisa mencoblos</p>
               <p className="mt-1">
-                {relayError
-                    ? relayError
-                  : writeError
+                {writeError
                     ? 'Transaksi belum berhasil diproses. Pastikan pemilihan sudah berada pada masa pencoblosan.'
                     : voteBlockedReason}
               </p>
@@ -863,7 +729,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 <button
                   type="button"
                   onClick={() => handleSelectClick(candidate.id)}
-                  disabled={Boolean(voteBlockedReason && !walletError) || isConnectPending || isSignPending || relayPending || isWritePending || isConfirming || hasCommittedOnChain === true}
+                  disabled={Boolean(voteBlockedReason && !walletError) || isConnectPending || isWritePending || isConfirming || hasCommittedOnChain === true}
                   className="mt-4 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#0F172A] px-4 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label={`Pilih kandidat ${candidate.name}`}
                 >
@@ -872,7 +738,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Menyambungkan...
                     </>
-                  ) : isSignPending || relayPending || isWritePending || isConfirming ? (
+                  ) : isWritePending || isConfirming ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Memproses...
@@ -922,7 +788,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
               <p className="mt-1 text-[12px] font-medium text-slate-600">{candidateBeingConfirmed?.faculty ?? 'Data kandidat belum tersedia'}</p>
             </div>
             <p className="text-[13px] text-slate-600">
-              Kamu akan menandatangani persetujuan commit. Transaksi commit dikirim oleh relayer, dan bukti transaksi akan ditampilkan setelah berhasil.
+              Sistem akan mengirim transaksi commit dari dompet aktivasi kamu. Gas dapat disponsori paymaster, tetapi alamat pemilih tetap sama.
             </p>
           </div>
         )}
