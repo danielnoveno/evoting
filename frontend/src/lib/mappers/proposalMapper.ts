@@ -33,13 +33,13 @@ function mapStatus(status: ProposalDraftRecord['status']): ProposalListStatus {
   }
 }
 
-export function mapProposalDraftToListItem(item: ProposalDraftRecord): ProposalListItem {
+export function mapProposalDraftToListItem(item: ProposalDraftRecord, whitelistCount?: number): ProposalListItem {
   return {
     id: item.id,
     title: item.title,
     category: item.organizationName ?? item.creatorOrganizationName ?? 'Organisasi',
     date: formatDateLabel(item.createdAt),
-    votersEstimate: String(item.candidateCount),
+    votersEstimate: String(whitelistCount ?? 0),
     hash: shortenHash(item.proposalTxHash ?? item.deploymentTxHash),
     status: mapStatus(item.status),
   }

@@ -13,20 +13,47 @@ import { resolveSchedulePhase } from '@/lib/election-phase'
 
 type ProposalDraft = NonNullable<Awaited<ReturnType<typeof listProposalDrafts>>>[number]
 type WhitelistRow = Pick<Database['app']['Tables']['proposal_whitelist_entries']['Row'], 'id' | 'proposal_draft_id' | 'wallet_address' | 'voter_name'>
+type WhitelistCountRow = Pick<Database['app']['Tables']['proposal_whitelist_entries']['Row'], 'proposal_draft_id'>
+
+async function listProposalDraftsWithWhitelistCounts() {
+  const proposals = await listProposalDrafts()
+  const proposalIds = proposals.map((proposal) => proposal.id)
+
+  if (proposalIds.length === 0) return { proposals, whitelistCounts: new Map<string, number>() }
+
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new RepositoryError('Backend belum dikonfigurasi.')
+
+  const { data, error } = await client
+    .schema('app')
+    .from('proposal_whitelist_entries')
+    .select('proposal_draft_id')
+    .in('proposal_draft_id', proposalIds)
+
+  if (error) throw new RepositoryError('Gagal memuat jumlah whitelist proposal.')
+
+  const whitelistCounts = new Map<string, number>()
+  for (const row of (data ?? []) as WhitelistCountRow[]) {
+    whitelistCounts.set(row.proposal_draft_id, (whitelistCounts.get(row.proposal_draft_id) ?? 0) + 1)
+  }
+
+  return { proposals, whitelistCounts }
+}
 
 export function useAdminProposalList() {
   const query = useQuery({
     queryKey: ['admin', 'proposal-drafts'],
-    queryFn: listProposalDrafts,
+    queryFn: listProposalDraftsWithWhitelistCounts,
     retry: false,
   })
 
   const rows = useMemo(() => {
-    return (query.data ?? []).map(mapProposalDraftToListItem)
+    if (!query.data) return []
+    return query.data.proposals.map((proposal) => mapProposalDraftToListItem(proposal, query.data.whitelistCounts.get(proposal.id) ?? 0))
   }, [query.data])
 
   const stats = useMemo(() => {
-    const data = query.data ?? []
+    const data = query.data?.proposals ?? []
     const total = data.length
     const waiting = data.filter((item) => item.status === 'submitted').length
     const running = data.filter((item) => item.status === 'deployed').length
