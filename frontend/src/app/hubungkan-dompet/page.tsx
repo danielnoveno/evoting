@@ -17,7 +17,8 @@ import {
   Copy,
   AlertTriangle,
 } from 'lucide-react'
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useCapabilities, useConnect, useDisconnect } from 'wagmi'
+import { baseSepolia } from 'wagmi/chains'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { signOutCurrentSession } from '@/lib/repositories/authRepository'
 import { useToast } from '@/components/ui/toast-provider'
@@ -31,9 +32,12 @@ import { WalletAddress } from '@/components/ui/wallet-address'
 import { AuthSuccessRedirectModal } from '@/components/auth/auth-success-redirect-modal'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
 import { useActivationTokenPreview } from '@/hooks/use-activation-token'
+import { isInjectedConnector, resolveWalletTransactionSupport } from '@/lib/wallet-transaction-support'
 
-function getBaseSepoliaConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
-  return connectors.find((item) => item.id === 'baseAccount' || item.id.toLowerCase().includes('coinbase') || item.name.toLowerCase().includes('coinbase')) ?? connectors[0]
+type WalletConnector = ReturnType<typeof useConnect>['connectors'][number]
+
+function getCoinbaseConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
+  return connectors.find((item) => !isInjectedConnector(item) && (item.id === 'baseAccount' || item.id.toLowerCase().includes('coinbase') || item.name.toLowerCase().includes('coinbase')))
 }
 
 function resolveRedirectTarget(redirectParam: string | null, activationContext: 'admin' | 'voter') {
@@ -97,6 +101,10 @@ function getWalletConnectionErrorMessage(error: { message?: string }) {
     return 'Pembuatan ID voting dibatalkan. Klik sambungkan lagi jika ingin melanjutkan.'
   }
 
+  if (message.includes('base sepolia is not supported') || (message.includes('chain') && message.includes('not supported'))) {
+    return 'Akun ini tidak mendukung Base Sepolia. Pilih akun Coinbase Smart Wallet lain atau gunakan dompet browser seperti MetaMask.'
+  }
+
   return 'Coba lagi dari dompet yang mendukung Base Sepolia, misalnya MetaMask atau Coinbase Wallet extension.'
 }
 
@@ -104,7 +112,7 @@ function ConnectWalletContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { showToast } = useToast()
-  const { address, isConnected } = useAccount()
+  const { address, chainId, connector, isConnected } = useAccount()
   const { connect, connectors, isPending: isConnectPending } = useConnect()
   const { disconnect } = useDisconnect()
   const queryClient = useQueryClient()
@@ -116,6 +124,24 @@ function ConnectWalletContent() {
   const microsoftLoginMutation = useMicrosoftCampusLogin()
   const googleLoginMutation = useGoogleLogin()
   const magicLinkLoginMutation = useMagicLinkLogin()
+  const capabilitiesQuery = useCapabilities({
+    account: address,
+    chainId: baseSepolia.id,
+    query: {
+      enabled: Boolean(address && connector && chainId === baseSepolia.id && !isInjectedConnector(connector)),
+      retry: false,
+    },
+  })
+  const walletTransactionSupport = resolveWalletTransactionSupport({
+    account: address,
+    chainId,
+    connector,
+    capabilities: capabilitiesQuery.data,
+    capabilitiesPending: capabilitiesQuery.isPending && capabilitiesQuery.fetchStatus === 'fetching',
+  })
+  const allInjectedConnectors = connectors.filter((item) => isInjectedConnector(item))
+  const namedInjectedConnectors = allInjectedConnectors.filter((item) => item.name.toLowerCase() !== 'injected')
+  const injectedConnectors = namedInjectedConnectors.length > 0 ? namedInjectedConnectors : allInjectedConnectors
 
   const signOutMutation = useMutation({
     mutationFn: signOutCurrentSession,
@@ -234,7 +260,10 @@ function ConnectWalletContent() {
     connectedWalletProfile.userId !== authSession.user.id,
   )
   const firstTimeBindingRequiresActivation = Boolean(authSession && !currentProfile && !activationMode)
-  const bindingBlocked = accountHasDifferentWallet || connectedWalletOwnedByOther || firstTimeBindingRequiresActivation || voterActivationMissingToken || adminActivationMissingToken
+  const walletCompatibilityBlocked = isConnected
+    && walletTransactionSupport.mode !== 'checking'
+    && !walletTransactionSupport.canTransact
+  const bindingBlocked = accountHasDifferentWallet || connectedWalletOwnedByOther || firstTimeBindingRequiresActivation || voterActivationMissingToken || adminActivationMissingToken || walletCompatibilityBlocked
   const bindingBlockMessage = accountHasDifferentWallet
     ? `Akun ${authSession?.user?.email ?? 'ini'} sudah tertaut ke ID voting lain. Putuskan ID voting yang tersambung, lalu buat ID voting yang sesuai untuk melanjutkan.`
     : connectedWalletOwnedByOther
@@ -245,6 +274,8 @@ function ConnectWalletContent() {
         ? 'Link aktivasi tidak membawa token undangan. Minta admin mengirim ulang link aktivasi terbaru.'
       : adminActivationMissingToken
         ? 'Link aktivasi admin tidak membawa token undangan. Minta superadmin mengirim ulang link aktivasi terbaru.'
+      : walletCompatibilityBlocked
+        ? walletTransactionSupport.message ?? 'Dompet ini belum siap untuk transaksi Base Sepolia.'
       : ''
   const isAdminActivationFlow = activationMode && activationContext === 'admin'
   const isVoterSsoFirstFlow = activationMode && activationContext === 'voter' && Boolean(authSession)
@@ -278,10 +309,10 @@ function ConnectWalletContent() {
 
   // Auto-bind if both are ready but not yet bound
   useEffect(() => {
-    if (mounted && isConnected && authSession && !isWalletBound && !bindWalletMutation.isPending && !bindWalletMutation.isSuccess && !bindError && !bindingBlocked) {
+    if (mounted && isConnected && authSession && walletTransactionSupport.canTransact && !isWalletBound && !bindWalletMutation.isPending && !bindWalletMutation.isSuccess && !bindError && !bindingBlocked) {
       handleBind()
     }
-  }, [mounted, isConnected, authSession, isWalletBound, bindWalletMutation.isPending, bindWalletMutation.isSuccess, bindError, bindingBlocked])
+  }, [mounted, isConnected, authSession, walletTransactionSupport.canTransact, isWalletBound, bindWalletMutation.isPending, bindWalletMutation.isSuccess, bindError, bindingBlocked])
 
   // Auto-redirect if everything is ready
   useEffect(() => {
@@ -346,6 +377,13 @@ function ConnectWalletContent() {
   const handleBind = () => {
     if (!address || !authSession?.user?.email) return
     setBindError('')
+
+    if (!walletTransactionSupport.canTransact) {
+      const message = walletTransactionSupport.message ?? 'Kemampuan transaksi Base Sepolia sedang diperiksa. Tunggu sebentar.'
+      setBindError(message)
+      showToast({ tone: 'error', title: 'Dompet Belum Siap', description: message })
+      return
+    }
 
     if (bindingBlockMessage) {
       setBindError(bindingBlockMessage)
@@ -448,19 +486,20 @@ function ConnectWalletContent() {
     sendMagicLink(invitedVoterEmail)
   }, [activationToken, authSession, invitedVoterEmail, isMagicLinkVoterEmail, mounted, sendMagicLink, tokenPreviewQuery.data?.isValid])
 
-  const handleConnectWallet = () => {
-    const connector = getBaseSepoliaConnector(connectors)
-    if (!connector) {
+  const handleConnectWallet = (selectedConnector: WalletConnector | undefined, kind: 'coinbase' | 'injected') => {
+    if (!selectedConnector) {
       showToast({
         tone: 'error',
         title: 'ID voting belum siap',
-        description: 'Tidak ada dompet browser yang mendukung Base Sepolia. Pasang MetaMask atau Coinbase Wallet extension, lalu coba lagi.',
+        description: kind === 'injected'
+          ? 'Dompet browser belum terdeteksi. Pasang MetaMask atau Coinbase Wallet extension, lalu muat ulang halaman.'
+          : 'Coinbase Smart Wallet belum tersedia. Gunakan dompet browser yang mendukung Base Sepolia.',
       })
       return
     }
 
     connect(
-      { connector },
+      { connector: selectedConnector, chainId: baseSepolia.id },
       {
         onError: (error) => {
       showToast({
@@ -859,7 +898,9 @@ function ConnectWalletContent() {
                         <div className="mt-6 space-y-3">
                           {bindingBlocked && (
                             <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                              <p className="text-[12px] font-semibold text-red-700">ID voting dan akun tidak cocok</p>
+                              <p className="text-[12px] font-semibold text-red-700">
+                                {walletCompatibilityBlocked ? 'Dompet belum mendukung Base Sepolia' : 'ID voting dan akun tidak cocok'}
+                              </p>
                               <p className="mt-2 text-[12px] leading-5 text-red-600">{bindingBlockMessage}</p>
                               <button
                                 type="button"
@@ -921,16 +962,37 @@ function ConnectWalletContent() {
 
                     {/* ponytail: SSO-first — tampilkan tombol connect wallet hanya setelah SSO login */}
                     {!isConnected && authSession && !isWalletBound && (
-                      <button
-                        type="button"
-                        onClick={handleConnectWallet}
-                        disabled={isConnectPending}
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
-                      >
-                        {isConnectPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        Buat/Masukan ID Voting
-                        {!isConnectPending ? <ChevronRight className="h-4 w-4" /> : null}
-                      </button>
+                      <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleConnectWallet(injectedConnectors[0], 'injected')}
+                          disabled={isConnectPending || injectedConnectors.length === 0}
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          {injectedConnectors[0]?.name ?? 'Dompet Browser'}
+                        </button>
+                        {injectedConnectors.slice(1).map((injectedConnector) => (
+                          <button
+                            key={injectedConnector.uid}
+                            type="button"
+                            onClick={() => handleConnectWallet(injectedConnector, 'injected')}
+                            disabled={isConnectPending}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                          >
+                            {injectedConnector.name}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => handleConnectWallet(getCoinbaseConnector(connectors), 'coinbase')}
+                          disabled={isConnectPending}
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
+                        >
+                          {isConnectPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                          Coinbase Smart Wallet
+                          {!isConnectPending ? <ChevronRight className="h-4 w-4" /> : null}
+                        </button>
+                      </div>
                     )}
 
                     {!isConnected && !authSession && !authSessionQuery.isLoading && (
@@ -940,7 +1002,7 @@ function ConnectWalletContent() {
                     {isConnected && authSession && !isWalletBound && (
                       <button
                         onClick={handleBind}
-                        disabled={bindWalletMutation.isPending || bindingBlocked}
+                        disabled={bindWalletMutation.isPending || bindingBlocked || !walletTransactionSupport.canTransact}
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-5 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
                       >
                         {bindWalletMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}

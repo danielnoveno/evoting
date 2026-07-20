@@ -25,6 +25,7 @@ import { useMasterVoterByWallet, useMasterVoters } from '@/hooks/use-master-vote
 import type { PublicElectionCandidateResultRecord, WhitelistEntryRecord } from '@/lib/repositories/types'
 import { resolveSchedulePhase } from '@/lib/election-phase'
 import { useAccount, useConnect } from 'wagmi'
+import { isSuccessfulTransactionReceipt } from '@/lib/wallet-transaction-support'
 
 function QuickActionIcon({ icon }: { icon: 'download' | 'share' | 'audit' | 'report' }) {
   if (icon === 'download') return <Download className="h-5 w-5" />
@@ -98,6 +99,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
     isConfirming, 
     isConfirmed, 
     hash: txHash,
+    receipt,
     writeError,
     resetWrite,
     currentPhase: onChainPhase,
@@ -339,7 +341,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
 
   // Track transaction success for whitelist sync
   useEffect(() => {
-    if (isConfirmed && txHash && isSyncing && lastProcessedSyncHash.current !== txHash) {
+    if (isConfirmed && txHash && isSuccessfulTransactionReceipt(receipt) && isSyncing && lastProcessedSyncHash.current !== txHash) {
       const unsyncedAddresses = pendingSyncAddressesRef.current
 
       if (unsyncedAddresses.length > 0) {
@@ -381,7 +383,7 @@ export function AdminElectionDetailView({ election, activeTab }: { election: Adm
         syncInFlightKeyRef.current = null
       }
     }
-  }, [isConfirmed, txHash, isSyncing, election.id, whitelistQuery.data, updateWhitelistSyncStatus, showToast, resetWrite])
+  }, [isConfirmed, txHash, receipt, isSyncing, election.id, whitelistQuery.data, updateWhitelistSyncStatus, showToast, resetWrite])
 
   // Handle Error
   useEffect(() => {

@@ -1,11 +1,12 @@
 'use client'
 
 import { useCallback } from 'react'
-import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount, usePublicClient, useSendCalls, useCallsStatus } from 'wagmi'
+import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount, usePublicClient, useSendCalls, useCallsStatus, useCapabilities } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { encodeFunctionData } from 'viem'
 import { PAYMASTER_URL } from '@/lib/wagmi'
 import ElectionSpaceArtifact from '@/lib/abi/ElectionSpace.json'
+import { getWalletTransactionErrorMessage, isAmbiguousTransactionError, isInjectedConnector, isSuccessfulTransactionReceipt, resolveWalletTransactionSupport } from '@/lib/wallet-transaction-support'
 
 const electionSpaceAbi = ElectionSpaceArtifact.abi
 
@@ -28,7 +29,7 @@ const DEFAULT_READ_QUERY_OPTIONS = {
 } as const
 
 export function useElectionContract(address?: string, options: UseElectionContractOptions = {}) {
-  const { address: wagmiAddress, connector } = useAccount()
+  const { address: wagmiAddress, chainId: activeChainId, connector } = useAccount()
   const voterAddress = options.voterAddress || wagmiAddress || undefined
   const enabledChecks = new Set<ElectionReadCheck>(
     options.checks ?? ['phase', 'hasCommitted', 'hasRevealed', 'isWhitelisted']
@@ -49,6 +50,14 @@ export function useElectionContract(address?: string, options: UseElectionContra
     error: sendCallsError,
     reset: resetSendCalls,
   } = useSendCalls()
+  const capabilitiesQuery = useCapabilities({
+    account: wagmiAddress,
+    chainId: baseSepolia.id,
+    query: {
+      enabled: Boolean(wagmiAddress && connector && activeChainId === baseSepolia.id && !isInjectedConnector(connector)),
+      retry: false,
+    },
+  })
   const publicClient = usePublicClient({ chainId: baseSepolia.id })
   const callsStatusQuery = useCallsStatus({
     id: callsData?.id ?? '',
@@ -59,12 +68,18 @@ export function useElectionContract(address?: string, options: UseElectionContra
   })
   const callsReceipt = callsStatusQuery.data?.receipts?.[0]
   const callsTxHash = callsReceipt?.transactionHash
-  const isSmartWallet = connector ? connector.id === 'baseAccount' || connector.id.toLowerCase().includes('coinbase') || connector.name.toLowerCase().includes('coinbase') : false
+  const transactionSupport = resolveWalletTransactionSupport({
+    account: wagmiAddress,
+    chainId: activeChainId,
+    connector,
+    capabilities: capabilitiesQuery.data,
+    capabilitiesPending: capabilitiesQuery.isPending && capabilitiesQuery.fetchStatus === 'fetching',
+  })
 
   const { 
     isLoading: isConfirming, 
-    isSuccess: isConfirmed,
-    data: receipt
+    data: receipt,
+    error: receiptError,
   } = useWaitForTransactionReceipt({
     hash,
   })
@@ -245,9 +260,28 @@ export function useElectionContract(address?: string, options: UseElectionContra
     }
   })
 
+  const callsReceipts = callsStatusQuery.data?.receipts ?? []
+  const isCallsReceiptSuccessful = callsStatusQuery.data?.status === 'success'
+    && callsReceipts.length > 0
+    && callsReceipts.every(isSuccessfulTransactionReceipt)
+  const callsFailureError = callsStatusQuery.data?.status === 'failure'
+    ? new Error('Status panggilan gagal. Transaksi tidak berhasil diproses.')
+    : callsStatusQuery.data?.status === 'success' && !isCallsReceiptSuccessful
+      ? new Error('Bukti transaksi berhasil tidak tersedia dari dompet.')
+      : null
+  const receiptFailureError = receipt && !isSuccessfulTransactionReceipt(receipt)
+    ? new Error('Receipt transaksi gagal atau reverted.')
+    : null
+  const isReceiptSuccessful = isSuccessfulTransactionReceipt(receipt)
+  const transactionError = writeError ?? receiptError ?? sendCallsError ?? callsStatusQuery.error ?? receiptFailureError ?? callsFailureError
+  const hasAmbiguousSubmission = isAmbiguousTransactionError(transactionError)
+  const transactionSupportError = hasAmbiguousSubmission
+    ? getWalletTransactionErrorMessage(transactionError)
+    : transactionSupport.message
+
   // Write functions
   const commitVote = (commitment: `0x${string}`) => {
-    if (!address) return
+    if (!address || !transactionSupport.canTransact || hasAmbiguousSubmission) return
     
     // Menyiapkan capabilities untuk Paymaster (Gasless)
     const capabilities = PAYMASTER_URL ? {
@@ -256,7 +290,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
       }
     } : undefined;
 
-    if (isSmartWallet && PAYMASTER_URL && wagmiAddress) {
+    if (transactionSupport.mode === 'send-calls' && wagmiAddress) {
       sendCalls({
         account: wagmiAddress,
         chainId: baseSepolia.id,
@@ -264,7 +298,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
           to: address as `0x${string}`,
           data: encodeFunctionData({ abi: electionSpaceAbi, functionName: 'commitVote', args: [commitment] }),
         }],
-        capabilities,
+        capabilities: transactionSupport.supportsPaymaster ? capabilities : undefined,
       })
       return
     }
@@ -275,13 +309,11 @@ export function useElectionContract(address?: string, options: UseElectionContra
       chainId: baseSepolia.id,
       functionName: 'commitVote',
       args: [commitment],
-      // @ts-ignore - capabilities adalah fitur baru wagmi/viem untuk EIP-5792
-      capabilities,
     })
   }
 
   const revealVote = (candidateId: number, salt: `0x${string}`) => {
-    if (!address) return
+    if (!address || !transactionSupport.canTransact || hasAmbiguousSubmission) return
 
     const capabilities = PAYMASTER_URL ? {
       paymasterService: {
@@ -289,7 +321,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
       }
     } : undefined;
 
-    if (isSmartWallet && PAYMASTER_URL && wagmiAddress) {
+    if (transactionSupport.mode === 'send-calls' && wagmiAddress) {
       sendCalls({
         account: wagmiAddress,
         chainId: baseSepolia.id,
@@ -297,7 +329,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
           to: address as `0x${string}`,
           data: encodeFunctionData({ abi: electionSpaceAbi, functionName: 'revealVote', args: [BigInt(candidateId), salt] }),
         }],
-        capabilities,
+        capabilities: transactionSupport.supportsPaymaster ? capabilities : undefined,
       })
       return
     }
@@ -308,8 +340,6 @@ export function useElectionContract(address?: string, options: UseElectionContra
       chainId: baseSepolia.id,
       functionName: 'revealVote',
       args: [BigInt(candidateId), salt],
-      // @ts-ignore
-      capabilities,
     })
   }
 
@@ -342,7 +372,8 @@ export function useElectionContract(address?: string, options: UseElectionContra
       // @ts-ignore - capabilities EIP-5792
       capabilities,
     })
-    await publicClient.waitForTransactionReceipt({ hash: txHash })
+    const confirmedReceipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+    if (!isSuccessfulTransactionReceipt(confirmedReceipt)) throw new Error('Receipt transaksi gagal atau reverted.')
     return txHash
   }, [publicClient, writeContractAsync])
 
@@ -361,7 +392,8 @@ export function useElectionContract(address?: string, options: UseElectionContra
       // @ts-ignore - capabilities EIP-5792
       capabilities,
     })
-    await publicClient.waitForTransactionReceipt({ hash: txHash })
+    const confirmedReceipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+    if (!isSuccessfulTransactionReceipt(confirmedReceipt)) throw new Error('Receipt transaksi gagal atau reverted.')
     return txHash
   }, [publicClient, writeContractAsync])
 
@@ -385,7 +417,8 @@ export function useElectionContract(address?: string, options: UseElectionContra
       // @ts-ignore - capabilities EIP-5792
       capabilities,
     })
-    await publicClient.waitForTransactionReceipt({ hash: txHash })
+    const confirmedReceipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+    if (!isSuccessfulTransactionReceipt(confirmedReceipt)) throw new Error('Receipt transaksi gagal atau reverted.')
     return txHash
   }, [publicClient, writeContractAsync])
 
@@ -439,13 +472,19 @@ export function useElectionContract(address?: string, options: UseElectionContra
     hash: hash ?? callsTxHash,
     isWritePending: isWritePending || isSendCallsPending,
     isConfirming: isConfirming || callsStatusQuery.data?.status === 'pending',
-    isConfirmed: isConfirmed || callsStatusQuery.data?.status === 'success',
-    writeError: writeError ?? sendCallsError ?? callsStatusQuery.error,
+    isConfirmed: isReceiptSuccessful || isCallsReceiptSuccessful,
+    writeError: transactionError,
+    transactionSupport,
+    transactionSupportError,
+    canSubmitTransaction: transactionSupport.canTransact && !hasAmbiguousSubmission,
+    isTransactionSupportLoading: transactionSupport.mode === 'checking',
+    hasAmbiguousSubmission,
     receipt: receipt ?? (callsReceipt ? {
       transactionHash: callsReceipt.transactionHash,
       blockNumber: callsReceipt.blockNumber,
       gasUsed: callsReceipt.gasUsed,
       effectiveGasPrice: undefined,
+      status: callsReceipt.status,
     } : undefined),
     
     // Utils

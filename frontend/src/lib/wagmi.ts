@@ -20,6 +20,9 @@ const baseSepoliaTransports = baseSepoliaRpcUrls.map((url) => http(url, {
 
 export const wagmiConfig = createConfig({
   chains: [baseSepolia],
+  // Keep EIP-6963 discovery enabled so voters can explicitly choose a compatible
+  // injected account instead of being forced through Coinbase Smart Wallet.
+  multiInjectedProviderDiscovery: true,
   connectors: [
     coinbaseWallet({
       appName: 'Votein',

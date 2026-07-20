@@ -4,14 +4,16 @@ import { AlertCircle, CheckCircle2, ShieldCheck, LockKeyhole, Loader2 } from 'lu
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
+import { baseSepolia } from 'wagmi/chains'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { findElection, formatWallet, useVoterStore } from '@/lib/voter-store'
-import { clearVoteCommitment, loadVoteCommitment } from '@/lib/vote-commitment-storage'
+import { clearVoteCommitment, createVoteCommitmentScope, loadVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
+import { getWalletTransactionErrorMessage, isSuccessfulTransactionReceipt } from '@/lib/wallet-transaction-support'
 
 export default function VoterRevealPage({ params }: { params: { id: string } }) {
   const { store, loading: storeLoading, actions } = useVoterStore()
@@ -41,16 +43,24 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
     phaseError,
     hasCommittedError,
     hasRevealedError,
-    whitelistError
+    whitelistError,
+    transactionSupportError,
+    isTransactionSupportLoading,
   } = useElectionContract(contractAddress, { voterAddress: profileWallet })
 
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const committedCandidate = election?.candidates.find((candidate) => candidate.id === election.committedCandidateId)
-  const savedCommitment = loadVoteCommitment(params.id)
+  const commitmentScope = election && contractAddress && profileWallet ? createVoteCommitmentScope({
+    chainId: baseSepolia.id,
+    electionId: election.id,
+    contractAddress,
+    voterAddress: profileWallet,
+  }) : null
+  const savedCommitment = loadVoteCommitment(commitmentScope, election?.candidates.map((candidate) => candidate.id))
 
   useEffect(() => {
-    if (isConfirmed && hash && receipt) {
+    if (isConfirmed && hash && isSuccessfulTransactionReceipt(receipt)) {
       showToast({
         title: 'Konfirmasi Berhasil',
         description: 'Pilihan Anda telah divalidasi dan dihitung.',
@@ -65,7 +75,7 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
         statusLabel: 'Suara disahkan',
       })
       // Clear commitment since it's used
-      clearVoteCommitment(params.id)
+      clearVoteCommitment(commitmentScope)
     }
   }, [isConfirmed, hash, receipt, params.id, actions, showToast])
 
@@ -139,6 +149,10 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
     ? 'Smart contract untuk pemilihan ini belum tersedia.'
     : !isWalletReady
       ? walletError ?? 'Sambungkan dompet yang dipakai saat aktivasi voter sebelum memakai mode cadangan ini.'
+    : isTransactionSupportLoading
+      ? 'Kemampuan transaksi Base Sepolia sedang diperiksa. Tunggu sebentar.'
+    : transactionSupportError
+      ? transactionSupportError
     : onChainStatusError
       ? 'Jaringan Base Sepolia belum merespons. Coba muat ulang status sebelum memakai mode cadangan ini.'
     : !isOnChainStatusReady
@@ -210,9 +224,9 @@ export default function VoterRevealPage({ params }: { params: { id: string } }) 
             <div>
               <h2 className="text-[15px] font-semibold text-red-900">Gagal konfirmasi suara</h2>
               <p className="mt-1 text-[13px] text-red-800 leading-relaxed">
-                {writeError.message.includes('CommitmentMismatch') 
-                  ? 'Kode rahasia tidak cocok dengan bukti pilihan yang sebelumnya dikunci.' 
-                  : 'Terjadi kesalahan saat reveal manual. Pastikan dompet digitalmu siap dan memiliki saldo uji coba yang cukup.'}
+                {writeError.message.includes('CommitmentMismatch')
+                  ? 'Kode rahasia tidak cocok dengan bukti pilihan yang sebelumnya dikunci.'
+                  : getWalletTransactionErrorMessage(writeError)}
               </p>
             </div>
           </section>

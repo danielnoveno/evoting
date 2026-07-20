@@ -99,11 +99,9 @@ export function baseAccountConnector(parameters: BaseAccountParameters) {
         }
 
         if (chainId && currentChainId !== chainId) {
-          const chain = await this.switchChain({ chainId }).catch((error) => {
-            if (error instanceof UserRejectedRequestError) throw error
-            return { id: currentChainId }
-          })
+          const chain = await this.switchChain({ chainId })
           currentChainId = chain?.id ?? currentChainId
+          if (currentChainId !== chainId) throw new SwitchChainError(new Error('Jaringan dompet tidak sesuai dengan jaringan yang diminta.'))
         }
 
         return {

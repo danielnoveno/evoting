@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { clearAllVoteCommitments } from '@/lib/vote-commitment-storage'
 import { getPublicElectionResults, listVoterOnchainProofs, listVoterWhitelistedElections } from '@/lib/repositories/electionRepository'
 import { getCurrentProfile } from '@/lib/repositories/profileRepository'
 import type { PublicElectionRecord, PublicElectionResultRecord, VoterOnchainProofRecord } from '@/lib/repositories/types'
@@ -94,9 +93,6 @@ export interface VoterStore {
   profile: VoterProfile
   elections: VoterElection[]
   selectedProofElectionId: string
-  // ponytail: simpan semua wallet yang pernah dipakai — mencegah dashboard hilang setelah refresh
-  // karena Supabase profile wallet ≠ whitelist wallet
-  historicalWallets: string[]
 }
 
 export type VoterElectionAction = 'commit' | 'reveal' | 'results' | 'wait'
@@ -110,8 +106,8 @@ export interface VoterElectionViewState {
   nextAction: VoterElectionAction
 }
 
-const STORAGE_KEY = 'votein-voter-store-v3-live'
-const LEGACY_STORAGE_KEY = 'votein-voter-store-v2'
+const STORAGE_PREFIX = 'votein-voter-store-v4:'
+const UNSAFE_STORAGE_KEYS = ['votein-voter-store-v3-live', 'votein-voter-store-v2'] as const
 
 const emptyProfile: VoterProfile = {
   name: 'Pemilih',
@@ -125,7 +121,6 @@ const voterStoreInitial: VoterStore = {
   profile: emptyProfile,
   selectedProofElectionId: '',
   elections: [],
-  historicalWallets: [],
 }
 
 function cloneStore(seed: VoterStore) {
@@ -143,23 +138,32 @@ function sanitizeProfile(profile?: Partial<VoterProfile>): VoterProfile {
   }
 }
 
-function readStore() {
-  if (typeof window === 'undefined') return cloneStore(voterStoreInitial)
+export function getVoterStoreStorageKey(walletAddress: string) {
+  const normalizedWallet = walletAddress.trim().toLowerCase()
+  return /^0x[a-f0-9]{40}$/.test(normalizedWallet) ? `${STORAGE_PREFIX}${normalizedWallet}` : null
+}
 
-  const raw = window.localStorage.getItem(STORAGE_KEY)
-  if (!raw) {
-    window.localStorage.removeItem(LEGACY_STORAGE_KEY)
-    return cloneStore(voterStoreInitial)
-  }
+function removeUnsafeGlobalStores() {
+  if (typeof window === 'undefined') return
+  UNSAFE_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key))
+}
+
+function readStore(walletAddress: string) {
+  if (typeof window === 'undefined') return cloneStore(voterStoreInitial)
+  removeUnsafeGlobalStores()
+  const key = getVoterStoreStorageKey(walletAddress)
+  if (!key) return cloneStore(voterStoreInitial)
+  const raw = window.localStorage.getItem(key)
+  if (!raw) return cloneStore(voterStoreInitial)
 
   try {
     const parsed = JSON.parse(raw) as VoterStore
+    if (parsed.profile?.wallet?.toLowerCase() !== walletAddress.toLowerCase()) return cloneStore(voterStoreInitial)
     return {
       ...voterStoreInitial,
       ...parsed,
       profile: sanitizeProfile(parsed.profile),
       elections: parsed.elections ?? [],
-      historicalWallets: Array.isArray(parsed.historicalWallets) ? parsed.historicalWallets : [],
     }
   } catch {
     return cloneStore(voterStoreInitial)
@@ -168,8 +172,10 @@ function readStore() {
 
 function persistStore(store: VoterStore) {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
-  window.localStorage.removeItem(LEGACY_STORAGE_KEY)
+  const key = getVoterStoreStorageKey(store.profile.wallet)
+  if (!key) return
+  window.localStorage.setItem(key, JSON.stringify(store))
+  removeUnsafeGlobalStores()
 }
 
 function deadlineFor(election: PublicElectionRecord) {
@@ -292,19 +298,14 @@ function mergeLocalElectionState(live: VoterElection, local?: VoterElection): Vo
 }
 
 async function buildLiveStore(): Promise<VoterStore> {
-  const local = readStore()
   const profile = await getCurrentProfile().catch((err) => {
     console.error('[voter-store] getCurrentProfile failed:', err)
     return null
   })
-  // ponytail: gabungkan semua wallet yang pernah dikenal — Supabase profile, localStorage, dan historical
-  // ini mencegah pemilihan hilang setelah refresh karena wallet di whitelist ≠ profile wallet
-  const activeWallets = Array.from(new Set([
-    profile?.walletAddress,
-    local.profile.wallet,
-    ...(Array.isArray(local.historicalWallets) ? local.historicalWallets : []),
-  ].filter((wallet): wallet is string => Boolean(wallet))))
-  console.log('[voter-store] buildLiveStore', { profileWallet: profile?.walletAddress ?? null, localWallet: local.profile.wallet, activeWallets })
+  const profileWallet = profile?.walletAddress ?? ''
+  const local = readStore(profileWallet)
+  const activeWallets = profileWallet ? [profileWallet] : []
+  console.log('[voter-store] buildLiveStore', { profileWallet: profileWallet || null, activeWallets })
   const elections = await listVoterWhitelistedElections(activeWallets).catch((err) => {
     console.error('[voter-store] listVoterWhitelistedElections failed:', err)
     return []
@@ -317,7 +318,7 @@ async function buildLiveStore(): Promise<VoterStore> {
   })))
   const resultByElection = new Map(resultEntries.map((entry) => [entry.id, entry.result]))
   const proofEntries = await listVoterOnchainProofs(
-    profile?.walletAddress ?? local.profile.wallet,
+    profileWallet,
     elections.map((item) => item.deployedSpaceAddress).filter((address): address is string => Boolean(address)),
   ).catch(() => [])
   const proofByAddress = new Map(proofEntries.map((entry) => [entry.spaceAddress.toLowerCase(), entry]))
@@ -340,17 +341,11 @@ async function buildLiveStore(): Promise<VoterStore> {
       wallet: profile.walletAddress,
       bio: local.profile.bio,
       avatarUrl: profile.avatarUrl ?? '',
-    } : local.profile,
+    } : emptyProfile,
     elections: liveElections,
     selectedProofElectionId: liveElections.some((election) => election.id === local.selectedProofElectionId)
       ? local.selectedProofElectionId
       : liveElections[0]?.id ?? '',
-    // ponytail: pertahankan semua wallet yang pernah dikenal + tambah yang baru
-    historicalWallets: Array.from(new Set([
-      ...(Array.isArray(local.historicalWallets) ? local.historicalWallets : []),
-      profile?.walletAddress,
-      local.profile.wallet,
-    ].filter((wallet): wallet is string => Boolean(wallet)))),
   }
 }
 
@@ -377,7 +372,7 @@ export function useVoterStore() {
 
   const applyStore = useCallback((updater: (current: VoterStore) => VoterStore) => {
     setStore((current) => {
-      const base = current ?? readStore()
+      const base = current ?? cloneStore(voterStoreInitial)
       const next = updater(base)
       persistStore(next)
       return next
@@ -396,8 +391,6 @@ export function useVoterStore() {
       return () => { cancelled = true }
     },
     reset() {
-      clearAllVoteCommitments()
-      persistStore(voterStoreInitial)
       setStore(cloneStore(voterStoreInitial))
     },
     selectCandidate(electionId: string, candidateId: string) {
@@ -427,12 +420,14 @@ export function useVoterStore() {
     },
     updateProfile(payload: Partial<VoterProfile>) {
       applyStore((current) => {
-        const next = { ...current, profile: { ...current.profile, ...payload } }
-        // ponytail: track wallet baru ke historicalWallets
-        if (payload.wallet && payload.wallet !== current.profile.wallet) {
-          next.historicalWallets = Array.from(new Set([...(current.historicalWallets ?? []), payload.wallet]))
+        const nextWallet = payload.wallet ?? current.profile.wallet
+        if (nextWallet && nextWallet.toLowerCase() !== current.profile.wallet.toLowerCase()) {
+          return {
+            ...cloneStore(voterStoreInitial),
+            profile: { ...emptyProfile, ...payload, wallet: nextWallet },
+          }
         }
-        return next
+        return { ...current, profile: { ...current.profile, ...payload } }
       })
     },
     selectProofElection(electionId: string) {

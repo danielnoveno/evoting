@@ -4,15 +4,17 @@ import { CalendarDays, CheckCircle2, ExternalLink, Fingerprint, LockKeyhole, Shi
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
+import { baseSepolia } from 'wagmi/chains'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
 import { basescanTxUrl, findElection, formatDateTime, formatNumber, formatWallet, useVoterStore } from '@/lib/voter-store'
-import { loadVoteCommitment } from '@/lib/vote-commitment-storage'
+import { createVoteCommitmentScope, loadVoteCommitment } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
+import { getWalletTransactionErrorMessage, isSuccessfulTransactionReceipt } from '@/lib/wallet-transaction-support'
 
 function DetailRow({
   icon: Icon,
@@ -66,6 +68,8 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     isPhaseFetching,
     isHasCommittedFetching,
     isWhitelistedFetching,
+    transactionSupportError,
+    isTransactionSupportLoading,
     refetchPhase,
     refetchHasCommitted,
     refetchIsWhitelisted
@@ -74,7 +78,13 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [isRefreshingOnChainStatus, setIsRefreshingOnChainStatus] = useState(false)
 
-  const savedCommitment = loadVoteCommitment(params.id)
+  const commitmentScope = election && contractAddress && profileWallet ? createVoteCommitmentScope({
+    chainId: baseSepolia.id,
+    electionId: election.id,
+    contractAddress,
+    voterAddress: profileWallet,
+  }) : null
+  const savedCommitment = loadVoteCommitment(commitmentScope, election?.candidates.map((candidate) => candidate.id))
   const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
     ? Number(currentPhase)
     : null
@@ -93,7 +103,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     : null
 
   useEffect(() => {
-    if (isConfirmed && hash && receipt) {
+    if (isConfirmed && hash && isSuccessfulTransactionReceipt(receipt)) {
       showToast({
         title: 'Komitmen Suara Tersimpan',
         description: 'Suara baru dihitung setelah kamu melakukan konfirmasi pada fase reveal.',
@@ -164,7 +174,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     ?? election.candidates.find((candidate) => candidate.id === election.committedCandidateId)
     ?? null
 
-  const commitProof = election.commitProof || (isConfirmed && hash && receipt ? {
+  const commitProof = election.commitProof || (isConfirmed && hash && isSuccessfulTransactionReceipt(receipt) ? {
     txHash: receipt.transactionHash,
     blockNumber: Number(receipt.blockNumber),
     gasUsed: Number(receipt.gasUsed),
@@ -218,6 +228,10 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     ? 'Smart contract untuk pemilihan ini belum tersedia di Supabase.'
     : !isActivationWalletConnected
       ? walletMismatchError ?? 'Sambungkan dompet yang dipakai saat aktivasi voter sebelum mencoblos.'
+    : isTransactionSupportLoading
+      ? 'Kemampuan transaksi Base Sepolia sedang diperiksa. Tunggu sebentar.'
+    : transactionSupportError
+      ? transactionSupportError
     : onChainStatusError
       ? `Jaringan blockchain belum merespons. (${onChainErrorDetail})`
     : isBlockchainLoading
@@ -379,9 +393,7 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
           <div>
             <h2 className="text-[15px] font-semibold text-red-900">Gagal mengirim transaksi</h2>
             <p className="mt-1 text-[13px] text-red-800 leading-relaxed">
-              {writeError.message.includes('User rejected') 
-                ? 'Transaksi dibatalkan oleh pengguna.' 
-                : 'Transaksi tidak bisa diproses oleh smart contract. Pastikan fase sudah Tahap Memilih dan wallet ini sudah masuk whitelist on-chain.'}
+              {getWalletTransactionErrorMessage(writeError)}
             </p>
           </div>
         </section>
