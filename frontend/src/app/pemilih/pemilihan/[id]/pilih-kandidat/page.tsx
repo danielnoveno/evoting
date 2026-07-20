@@ -11,12 +11,12 @@ import { VoterStepper } from '@/components/voter/voter-stepper'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { RichTextRenderer } from '@/components/ui/rich-text-renderer'
 import { basescanTxUrl, findElection, formatDateTime, formatWallet, useVoterStore } from '@/lib/voter-store'
-import { createVoteCommitmentScope, generateCommitment, generateSalt, loadVoteCommitment, saveVoteCommitment, type VoteCommitmentRecord } from '@/lib/vote-commitment-storage'
+import { clearVoteCommitment, createVoteCommitmentScope, generateCommitment, generateSalt, hasStoredVoteCommitment, loadVoteCommitment, saveVoteCommitment, type VoteCommitmentRecord } from '@/lib/vote-commitment-storage'
 import { useElectionContract } from '@/hooks/use-election-contract'
 import { useToast } from '@/components/ui/toast-provider'
 import { resolveSchedulePhase } from '@/lib/election-phase'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
-import { getWalletTransactionErrorMessage, isSuccessfulTransactionReceipt } from '@/lib/wallet-transaction-support'
+import { getWalletTransactionErrorMessage, isDefinitiveNoBroadcastTransactionError, isSuccessfulTransactionReceipt } from '@/lib/wallet-transaction-support'
 
 async function fetchLatestContractAddress(electionId: string): Promise<string | null> {
   try {
@@ -41,6 +41,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   const { address: connectedWallet, isConnecting } = useAccount()
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 8 })
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
   const [candidateToConfirm, setCandidateToConfirm] = useState<string | null>(null)
   const [pendingCommit, setPendingCommit] = useState<{
     candidateUuid: string
@@ -74,12 +75,29 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     whitelistError,
     transactionSupportError,
     isTransactionSupportLoading,
+    hasAmbiguousSubmission,
+    resetWrite,
+    refetchHasCommitted,
   } = useElectionContract(contractAddress, { checks: ['phase', 'hasCommitted', 'isWhitelisted'], voterAddress: profileWallet })
 
   const currentPhaseNumber = typeof currentPhase === 'number' || typeof currentPhase === 'bigint'
     ? Number(currentPhase)
     : null
   const onChainStatusError = phaseError ?? whitelistError ?? hasCommittedError ?? null
+  const currentCommitmentScope = election && contractAddress && profileWallet ? createVoteCommitmentScope({
+    chainId: baseSepolia.id,
+    electionId: election.id,
+    contractAddress,
+    voterAddress: profileWallet,
+  }) : null
+  const verifiedStoredCommitment = loadVoteCommitment(currentCommitmentScope, election?.candidates.map((candidate) => candidate.id))
+  const hasLocalCommitment = hasStoredVoteCommitment(currentCommitmentScope)
+  const canRecoverLocalCommitment = hasLocalCommitment
+    && hasCommittedOnChain === false
+    && !onChainStatusError
+    && !hasAmbiguousSubmission
+    && !isWritePending
+    && !isConfirming
 
   const hasSchedule = Boolean(election?.commitStartAt || election?.revealStartAt || election?.endedAt)
   const liveSchedulePhase = election && hasSchedule
@@ -219,8 +237,17 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
   useEffect(() => {
     if (!writeError) return
+    if (hasAmbiguousSubmission) return
     setPendingCommit(null)
-  }, [writeError])
+    if (!isDefinitiveNoBroadcastTransactionError(writeError)) return
+
+    resetWrite()
+    showToast({
+      title: 'Transaksi dibatalkan',
+      description: 'Pilihan aman tersimpan. Pilih kandidat yang sama untuk mencoba lagi dengan kode bukti yang sama.',
+      tone: 'info',
+    })
+  }, [writeError, hasAmbiguousSubmission, resetWrite, showToast])
 
   useEffect(() => {
     if (!countdownTargetIso) {
@@ -400,13 +427,37 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       })
       setAutoRevealQueueStatus('idle')
       setAutoRevealQueueError(null)
-
       commitVote(record.commitment)
     }
     setConfirmOpen(false)
   }
 
   const formatTimeVal = (val: number) => String(val).padStart(2, '0')
+
+  const handleResetRejectedCommitment = async () => {
+    setResetConfirmOpen(false)
+    if (!currentCommitmentScope || !canRecoverLocalCommitment || hasAmbiguousSubmission || isWritePending || isConfirming) return
+
+    const latest = await refetchHasCommitted()
+    if (latest.error || latest.data !== false) {
+      showToast({
+        title: 'Data pilihan tidak dihapus',
+        description: 'Status blockchain belum memastikan bahwa transaksi tidak tersimpan. Periksa lagi sebelum mengganti kandidat.',
+        tone: 'error',
+      })
+      return
+    }
+
+    clearVoteCommitment(currentCommitmentScope)
+    actions.selectCandidate(election.id, '')
+    setPendingCommit(null)
+    showToast({
+      title: 'Pilihan lokal direset',
+      description: 'Blockchain sudah diperiksa dan belum menerima komitmen. Kamu dapat memilih kandidat lagi.',
+      tone: 'info',
+    })
+  }
+
   const candidateBeingConfirmed = election.candidates.find((candidate) => candidate.id === candidateToConfirm)
   const committedCandidate = election.candidates.find((candidate) => candidate.id === (pendingCommit?.candidateUuid ?? election.committedCandidateId ?? election.selectedCandidateId))
   const commitProof = election.commitProof || (isConfirmed && hash && isSuccessfulTransactionReceipt(receipt) ? {
@@ -672,6 +723,24 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         </section>
       ) : null}
 
+      {canRecoverLocalCommitment ? (
+        <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-[13px] leading-7 text-amber-900">
+          <p className="font-semibold">Pilihan lokal belum tercatat di Base Sepolia</p>
+          <p className="mt-1">
+            {verifiedStoredCommitment
+              ? 'Pilih kandidat yang sama untuk mencoba lagi dengan salt dan kode bukti yang sama. Jika ingin mengganti kandidat, reset setelah pemeriksaan ulang.'
+              : 'Data lokal tidak cocok dengan nomor kandidat saat ini dan tidak akan dipakai ulang. Reset setelah pemeriksaan ulang untuk memilih kembali.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => setResetConfirmOpen(true)}
+            className="mt-3 inline-flex h-10 items-center justify-center rounded-md border border-amber-300 bg-white px-4 text-[13px] font-semibold text-amber-950 hover:bg-amber-100"
+          >
+            Periksa & Reset Pilihan
+          </button>
+        </section>
+      ) : null}
+
       <section className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {election.candidates.map((candidate, index) => {
           return (
@@ -791,6 +860,14 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
         confirmLabel="Ya, Pilihan Sudah Benar"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleConfirm}
+      />
+      <ConfirmDialog
+        open={resetConfirmOpen}
+        title="Reset pilihan yang belum terkirim?"
+        description="Sistem akan memeriksa Base Sepolia sekali lagi. Data lokal hanya dihapus jika wallet ini dipastikan belum memiliki komitmen on-chain."
+        confirmLabel="Periksa & Reset"
+        onCancel={() => setResetConfirmOpen(false)}
+        onConfirm={handleResetRejectedCommitment}
       />
     </VoterShell>
   )

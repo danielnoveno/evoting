@@ -77,7 +77,7 @@ export function resolveWalletTransactionSupport({ account, chainId, connector, c
     mode: 'unsupported',
     canTransact: false,
     supportsPaymaster: false,
-    message: 'Akun dompet ini tidak mendukung transaksi Base Sepolia. Putuskan dompet, lalu pilih akun Coinbase Smart Wallet yang kompatibel atau dompet browser seperti MetaMask.',
+    message: 'ID voting ini belum mendukung transaksi Base Sepolia. Putuskan koneksi, lalu pilih ID voting Base Account lain.',
   }
 }
 
@@ -86,11 +86,19 @@ export function isAmbiguousTransactionError(error: unknown) {
   return /(timeout|timed out|connection.*lost|disconnected|network error|failed to fetch|socket hang up)/.test(message)
 }
 
+export function isDefinitiveNoBroadcastTransactionError(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : ''
+  const code = error && typeof error === 'object' && 'code' in error
+    ? (error as { code?: unknown }).code
+    : undefined
+  return code === 4001 || /(user rejected|user denied|request rejected|cancelled|canceled)/.test(message)
+}
+
 export function getWalletTransactionErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message.toLowerCase() : ''
 
   if (message.includes('base sepolia is not supported') || (message.includes('chain') && message.includes('not supported'))) {
-    return 'Akun dompet ini ditolak oleh penyedia untuk Base Sepolia. Gunakan akun Coinbase Smart Wallet yang kompatibel atau dompet browser seperti MetaMask.'
+    return 'ID voting ini belum dapat digunakan di Base Sepolia. Putuskan koneksi, lalu pilih ID voting Base Account lain.'
   }
   if (message.includes('user rejected') || message.includes('user denied') || message.includes('cancelled')) {
     return 'Transaksi dibatalkan. Tidak ada transaksi yang dikirim.'

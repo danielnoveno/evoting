@@ -102,7 +102,7 @@ export function generateCommitment(
   )
 }
 
-export function resolveLegacyVoteCommitment(
+export function validateVoteCommitment(
   scope: VoteCommitmentScope,
   record: VoteCommitmentRecord,
   candidateIds: readonly string[],
@@ -118,6 +118,11 @@ export function resolveLegacyVoteCommitment(
     scope.chainId,
   )
   return expected.toLowerCase() === record.commitment.toLowerCase() ? record : null
+}
+
+export function hasStoredVoteCommitment(scope: VoteCommitmentScope | null) {
+  if (typeof window === 'undefined' || !scope) return false
+  return Boolean(parseRecord(window.localStorage.getItem(getVoteCommitmentStorageKey(scope))))
 }
 
 export function saveVoteCommitment(scope: VoteCommitmentScope, data: VoteCommitmentRecord) {
@@ -139,14 +144,18 @@ export function loadVoteCommitment(
 ): VoteCommitmentRecord | null {
   if (typeof window === 'undefined' || !scope) return null
   const scopedRecord = parseRecord(window.localStorage.getItem(getVoteCommitmentStorageKey(scope)))
-  if (scopedRecord) return scopedRecord
+  if (scopedRecord) {
+    return candidateIds.length > 0
+      ? validateVoteCommitment(scope, scopedRecord, candidateIds)
+      : scopedRecord
+  }
 
   // Bounded migration: the legacy record is moved only when its commitment can
   // be recomputed for this exact chain, contract, voter, and candidate order.
   const legacyKey = legacyStorageKey(scope.electionId)
   const legacyRecord = parseRecord(window.localStorage.getItem(legacyKey))
   if (!legacyRecord || candidateIds.length === 0) return null
-  const verifiedLegacyRecord = resolveLegacyVoteCommitment(scope, legacyRecord, candidateIds)
+  const verifiedLegacyRecord = validateVoteCommitment(scope, legacyRecord, candidateIds)
   if (!verifiedLegacyRecord) return null
   saveVoteCommitment(scope, verifiedLegacyRecord)
   window.localStorage.removeItem(legacyKey)

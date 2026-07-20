@@ -318,6 +318,9 @@ export async function upsertCurrentProfile(input: ProfileUpsertInput): Promise<A
 
   const user = await requireUser()
   const currentProfile = await getCurrentProfile()
+  if (currentProfile?.walletAddress && !sameWalletAddress(currentProfile.walletAddress, input.walletAddress)) {
+    throw new RepositoryError('ID voting profil tidak dapat diganti otomatis. Sambungkan kembali ID voting yang sudah terdaftar.')
+  }
   const profileEmail = getVerifiedProfileEmail(user, currentProfile, input.email)
   const registeredAccess = await getRegisteredAdminAccessForEmail(profileEmail)
   if (!currentProfile && !registeredAccess && input.roleHint === 'voter-activation') {
@@ -371,10 +374,9 @@ export async function bindCurrentUserWallet(input: ProfileUpsertInput): Promise<
 
   if (currentProfileError) throw new RepositoryError('Gagal memuat profil akun kampus. Coba lagi.')
 
-  // ponytail: izinkan re-bind jika profile sudah milik user ini.
-  // Wallet mismatch terjadi karena derive-address mungkin mengoverwrite
-  // profile wallet ke derived wallet. User yang sama berhak bind ulang.
-  // Cek keamanan ada di bawah (existingWalletOwner.user_id !== user.id).
+  if (currentProfile?.wallet_address && !sameWalletAddress(currentProfile.wallet_address, normalizedWallet)) {
+    throw new RepositoryError('Akun ini sudah tertaut ke ID voting lain. Alamat tidak diubah. Putuskan koneksi dan sambungkan ID voting yang sudah terdaftar.')
+  }
 
   const { data: existingWalletOwner, error: ownerError } = await client
     .schema('app')

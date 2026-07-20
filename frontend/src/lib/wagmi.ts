@@ -1,6 +1,6 @@
 import { http, fallback, createConfig } from 'wagmi'
-import { coinbaseWallet, injected } from 'wagmi/connectors'
 import { baseSepolia } from 'wagmi/chains'
+import { baseAccount } from 'wagmi/connectors'
 
 const BASE_SEPOLIA_RPC_URL = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL?.trim()
 const baseSepoliaRpcUrls = Array.from(new Set([
@@ -18,26 +18,23 @@ const baseSepoliaTransports = baseSepoliaRpcUrls.map((url) => http(url, {
   timeout: 15_000,
 }))
 
+export const PAYMASTER_URL = process.env.NEXT_PUBLIC_PAYMASTER_URL || ''
+
 export const wagmiConfig = createConfig({
   chains: [baseSepolia],
-  // Keep EIP-6963 discovery enabled so voters can explicitly choose a compatible
-  // injected account instead of being forced through Coinbase Smart Wallet.
-  multiInjectedProviderDiscovery: true,
+  multiInjectedProviderDiscovery: false,
   connectors: [
-    coinbaseWallet({
+    baseAccount({
       appName: 'Votein',
-      preference: 'smartWalletOnly',
+      preference: { options: 'smartWalletOnly' },
+      paymasterUrls: PAYMASTER_URL ? { [baseSepolia.id]: PAYMASTER_URL } : undefined,
     }),
-    injected({ shimDisconnect: true }),
   ],
   ssr: true,
   transports: {
     [baseSepolia.id]: fallback(baseSepoliaTransports),
   },
 })
-
-// Konfigurasi Paymaster (URL ini didapat dari Coinbase Developer Platform atau Alchemy)
-export const PAYMASTER_URL = process.env.NEXT_PUBLIC_PAYMASTER_URL || '';
 
 declare module 'wagmi' {
   interface Register {

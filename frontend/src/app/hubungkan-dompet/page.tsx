@@ -32,12 +32,12 @@ import { WalletAddress } from '@/components/ui/wallet-address'
 import { AuthSuccessRedirectModal } from '@/components/auth/auth-success-redirect-modal'
 import { sameWalletAddress } from '@/lib/repositories/helpers'
 import { useActivationTokenPreview } from '@/hooks/use-activation-token'
-import { isInjectedConnector, resolveWalletTransactionSupport } from '@/lib/wallet-transaction-support'
+import { resolveWalletTransactionSupport } from '@/lib/wallet-transaction-support'
 
 type WalletConnector = ReturnType<typeof useConnect>['connectors'][number]
 
-function getCoinbaseConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
-  return connectors.find((item) => !isInjectedConnector(item) && (item.id === 'baseAccount' || item.id.toLowerCase().includes('coinbase') || item.name.toLowerCase().includes('coinbase')))
+function getBaseAccountConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
+  return connectors.find((item) => item.id === 'baseAccount')
 }
 
 function resolveRedirectTarget(redirectParam: string | null, activationContext: 'admin' | 'voter') {
@@ -102,10 +102,10 @@ function getWalletConnectionErrorMessage(error: { message?: string }) {
   }
 
   if (message.includes('base sepolia is not supported') || (message.includes('chain') && message.includes('not supported'))) {
-    return 'Akun ini tidak mendukung Base Sepolia. Pilih akun Coinbase Smart Wallet lain atau gunakan dompet browser seperti MetaMask.'
+    return 'ID voting ini belum dapat digunakan di Base Sepolia. Putuskan koneksi, lalu pilih ID voting Base Account lain.'
   }
 
-  return 'Coba lagi dari dompet yang mendukung Base Sepolia, misalnya MetaMask atau Coinbase Wallet extension.'
+  return 'ID voting belum dapat disambungkan. Coba lagi melalui jendela Base Account.'
 }
 
 function ConnectWalletContent() {
@@ -128,7 +128,7 @@ function ConnectWalletContent() {
     account: address,
     chainId: baseSepolia.id,
     query: {
-      enabled: Boolean(address && connector && chainId === baseSepolia.id && !isInjectedConnector(connector)),
+      enabled: Boolean(address && connector?.id === 'baseAccount' && chainId === baseSepolia.id),
       retry: false,
     },
   })
@@ -139,9 +139,6 @@ function ConnectWalletContent() {
     capabilities: capabilitiesQuery.data,
     capabilitiesPending: capabilitiesQuery.isPending && capabilitiesQuery.fetchStatus === 'fetching',
   })
-  const allInjectedConnectors = connectors.filter((item) => isInjectedConnector(item))
-  const namedInjectedConnectors = allInjectedConnectors.filter((item) => item.name.toLowerCase() !== 'injected')
-  const injectedConnectors = namedInjectedConnectors.length > 0 ? namedInjectedConnectors : allInjectedConnectors
 
   const signOutMutation = useMutation({
     mutationFn: signOutCurrentSession,
@@ -486,14 +483,12 @@ function ConnectWalletContent() {
     sendMagicLink(invitedVoterEmail)
   }, [activationToken, authSession, invitedVoterEmail, isMagicLinkVoterEmail, mounted, sendMagicLink, tokenPreviewQuery.data?.isValid])
 
-  const handleConnectWallet = (selectedConnector: WalletConnector | undefined, kind: 'coinbase' | 'injected') => {
+  const handleConnectWallet = (selectedConnector: WalletConnector | undefined) => {
     if (!selectedConnector) {
       showToast({
         tone: 'error',
         title: 'ID voting belum siap',
-        description: kind === 'injected'
-          ? 'Dompet browser belum terdeteksi. Pasang MetaMask atau Coinbase Wallet extension, lalu muat ulang halaman.'
-          : 'Coinbase Smart Wallet belum tersedia. Gunakan dompet browser yang mendukung Base Sepolia.',
+        description: 'Base Account belum tersedia. Muat ulang halaman, lalu coba lagi.',
       })
       return
     }
@@ -965,31 +960,12 @@ function ConnectWalletContent() {
                       <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                         <button
                           type="button"
-                          onClick={() => handleConnectWallet(injectedConnectors[0], 'injected')}
-                          disabled={isConnectPending || injectedConnectors.length === 0}
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
-                        >
-                          {injectedConnectors[0]?.name ?? 'Dompet Browser'}
-                        </button>
-                        {injectedConnectors.slice(1).map((injectedConnector) => (
-                          <button
-                            key={injectedConnector.uid}
-                            type="button"
-                            onClick={() => handleConnectWallet(injectedConnector, 'injected')}
-                            disabled={isConnectPending}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-[13px] font-semibold text-slate-900 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
-                          >
-                            {injectedConnector.name}
-                          </button>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => handleConnectWallet(getCoinbaseConnector(connectors), 'coinbase')}
+                          onClick={() => handleConnectWallet(getBaseAccountConnector(connectors))}
                           disabled={isConnectPending}
                           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#0F172A] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-[#1E293B] disabled:opacity-50"
                         >
                           {isConnectPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                          Coinbase Smart Wallet
+                          Sambungkan Base Account
                           {!isConnectPending ? <ChevronRight className="h-4 w-4" /> : null}
                         </button>
                       </div>
