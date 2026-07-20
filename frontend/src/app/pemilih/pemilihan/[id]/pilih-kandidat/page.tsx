@@ -2,9 +2,8 @@
 
 import { AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock3, ExternalLink, Info, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { useAccount } from 'wagmi'
+import { useEffect, useRef, useState } from 'react'
+import { useAccount, useConnect } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { VoterShell } from '@/components/voter/voter-shell'
 import { VoterStepper } from '@/components/voter/voter-stepper'
@@ -35,10 +34,11 @@ async function fetchLatestContractAddress(electionId: string): Promise<string | 
 }
 
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
-  const router = useRouter()
   const { showToast } = useToast()
   const { store, loading, error: storeError, refresh, actions } = useVoterStore()
   const { address: connectedWallet, isConnecting } = useAccount()
+  const { connect, connectors, isPending: isConnectPending } = useConnect()
+  const handledCommitHashRef = useRef<string | null>(null)
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 8 })
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
@@ -173,9 +173,13 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
   useEffect(() => {
     if (!isConfirmed || !hash || !isSuccessfulTransactionReceipt(receipt) || !pendingCommit) return
+    const txHash = receipt.transactionHash
+    if (handledCommitHashRef.current === txHash) return
+    handledCommitHashRef.current = txHash
+    const committed = pendingCommit
 
     const proof = {
-      txHash: receipt.transactionHash,
+      txHash,
       blockNumber: Number(receipt.blockNumber),
       gasUsed: Number(receipt.gasUsed),
       gasPriceWei: receipt.effectiveGasPrice?.toString() ?? null,
@@ -183,7 +187,9 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       statusLabel: 'Bukti commit tersimpan',
     }
 
-    actions.commitVote(params.id, pendingCommit.record.commitment, proof)
+    actions.commitVote(params.id, committed.record.commitment, proof)
+    setPendingCommit(null)
+    void refetchHasCommitted()
     setAutoRevealQueueStatus('saving')
     setAutoRevealQueueError(null)
 
@@ -203,10 +209,10 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
               electionId: params.id,
               spaceAddress: election.deployedSpaceAddress,
               voterAddress: profileWallet,
-              candidateId: pendingCommit.candidateNumber,
-              salt: pendingCommit.record.salt,
-              commitmentHash: pendingCommit.record.commitment,
-              commitTxHash: receipt.transactionHash,
+              candidateId: committed.candidateNumber,
+              salt: committed.record.salt,
+              commitmentHash: committed.record.commitment,
+              commitTxHash: txHash,
             }),
           })
           if (!res.ok) {
@@ -233,7 +239,8 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
       description: 'Komitmen suara tersimpan. Sistem akan mencoba mengesahkan suara otomatis saat fase penghitungan dibuka.',
       tone: 'success',
     })
-  }, [isConfirmed, hash, receipt, pendingCommit, actions, params.id, showToast])
+    resetWrite()
+  }, [isConfirmed, hash, receipt, pendingCommit, actions, params.id, showToast, election?.deployedSpaceAddress, profileWallet, refetchHasCommitted, resetWrite])
 
   useEffect(() => {
     if (!writeError) return
@@ -326,7 +333,27 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
     }
 
     if (isWalletDisconnected) {
-      router.push(`/hubungkan-dompet?redirect=${encodeURIComponent(`/pemilih/pemilihan/${params.id}/pilih-kandidat`)}`)
+      const connector = connectors.find((item) => item.id === 'baseAccount') ?? connectors[0]
+      if (!connector) {
+        showToast({
+          title: 'Dompet belum siap',
+          description: 'Jendela sambungan dompet belum tersedia. Muat ulang halaman, lalu coba lagi.',
+          tone: 'error',
+        })
+        return
+      }
+      connect(
+        { connector, chainId: baseSepolia.id },
+        {
+          onError: () => {
+            showToast({
+              title: 'Gagal menyambungkan dompet',
+              description: 'Jendela sambungan dompet gagal dibuka. Coba lagi.',
+              tone: 'error',
+            })
+          },
+        },
+      )
       return
     }
 
@@ -370,7 +397,7 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
 
       if (!connectedWallet || !sameWalletAddress(voterWallet, connectedWallet)) {
         setConfirmOpen(false)
-        showToast({ title: 'Dompet tidak sesuai', description: walletError ?? 'Sambungkan dompet yang dipakai saat aktivasi voter.', tone: 'error' })
+        showToast({ title: connectedWallet ? 'Dompet tidak sesuai' : 'Dompet belum tersambung', description: walletError ?? 'Sambungkan dompet yang dipakai saat aktivasi voter.', tone: connectedWallet ? 'error' : 'info' })
         return
       }
 
@@ -813,14 +840,14 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
                 <button
                   type="button"
                   onClick={() => handleSelectClick(candidate.id)}
-                  disabled={Boolean(voteBlockedReason && !walletError) || isWritePending || isConfirming || hasCommittedOnChain === true}
+                  disabled={Boolean(voteBlockedReason && !walletError) || isConnectPending || isWritePending || isConfirming || hasCommittedOnChain === true}
                   className="mt-4 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-[#0F172A] px-4 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                   aria-label={`Pilih kandidat ${candidate.name}`}
                 >
-                  {isWritePending || isConfirming ? (
+                  {isConnectPending || isWritePending || isConfirming ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Memproses...
+                      {isConnectPending ? 'Menyambungkan...' : 'Memproses...'}
                     </>
                   ) : hasCommittedOnChain === true ? (
                     'Sudah Mencoblos'

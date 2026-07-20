@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { AlertTriangle } from 'lucide-react'
@@ -27,6 +28,29 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
   const whitelistQuery = useProposalWhitelistEntries(params.id)
   const activitiesQuery = useProposalActivities(params.id)
   const latestRevisionMessage = (activitiesQuery.data ?? []).find((activity) => activity.eventType === 'revision_requested')?.message
+  const liveProposal = proposalQuery.data
+  const initialData = useMemo<Partial<ProposalFormData>>(() => ({
+    title: liveProposal?.title ?? 'Proposal',
+    category: liveProposal?.organizationName ?? 'Organisasi',
+    description: liveProposal?.description ?? `Deskripsi default untuk proposal ${liveProposal?.title ?? 'proposal'}.`,
+    bannerImagePath: liveProposal?.bannerImagePath ?? '',
+    candidateCount: liveProposal?.candidateCount ?? 2,
+    voterCount: 0,
+    commitDate: toDatetimeLocal(liveProposal?.commitStartAt ?? null, ''),
+    revealDate: toDatetimeLocal(liveProposal?.revealStartAt ?? null, ''),
+    endedDate: toDatetimeLocal(liveProposal?.endedAt ?? null, ''),
+    candidateEntries: candidateQuery.data?.map((candidate) => ({
+      name: candidate.fullName,
+      studentId: candidate.studentId ?? '',
+      faculty: candidate.faculty ?? '',
+      bio: candidate.bio ?? '',
+      vision: candidate.vision ?? '',
+      mission: candidate.mission.join('\n'),
+      youtubeUrl: candidate.youtubeUrl ?? '',
+      avatarPath: candidate.avatarPath ?? '',
+    })) ?? [],
+    whitelistWallets: whitelistQuery.data?.map((entry) => entry.walletAddress).join('\n') ?? '',
+  }), [candidateQuery.data, liveProposal, whitelistQuery.data])
   
   if (proposalQuery.isLoading) {
     return (
@@ -41,8 +65,6 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
   if (!proposalQuery.isError && !proposalQuery.data) {
     notFound()
   }
-
-  const liveProposal = proposalQuery.data
 
   // Guard: deployed/approved/archived proposals cannot be edited
   if (liveProposal && READ_ONLY_STATUSES.includes(liveProposal.status as typeof READ_ONLY_STATUSES[number])) {
@@ -67,29 +89,6 @@ export default function AdminEditProposalPage({ params }: { params: { id: string
         </div>
       </AdminShell>
     )
-  }
-
-  const initialData: Partial<ProposalFormData> = {
-    title: liveProposal?.title ?? 'Proposal',
-    category: liveProposal?.organizationName ?? 'Organisasi',
-    description: liveProposal?.description ?? `Deskripsi default untuk proposal ${liveProposal?.title ?? 'proposal'}.`,
-    bannerImagePath: liveProposal?.bannerImagePath ?? '',
-    candidateCount: liveProposal?.candidateCount ?? 2,
-    voterCount: 0,
-    commitDate: toDatetimeLocal(liveProposal?.commitStartAt ?? null, ''),
-    revealDate: toDatetimeLocal(liveProposal?.revealStartAt ?? null, ''),
-    endedDate: toDatetimeLocal(liveProposal?.endedAt ?? null, ''),
-    candidateEntries: candidateQuery.data?.map((candidate) => ({
-      name: candidate.fullName,
-      studentId: candidate.studentId ?? '',
-      faculty: candidate.faculty ?? '',
-      bio: candidate.bio ?? '',
-      vision: candidate.vision ?? '',
-      mission: candidate.mission.join('\n'),
-      youtubeUrl: candidate.youtubeUrl ?? '',
-      avatarPath: candidate.avatarPath ?? '',
-    })) ?? [],
-    whitelistWallets: whitelistQuery.data?.map((entry) => entry.walletAddress).join('\n') ?? '',
   }
 
   return (

@@ -361,7 +361,7 @@ export async function saveProposalDraft(input: ProposalDraftUpsertInput): Promis
     }
   }
 
-  if (input.whitelistEntries) {
+  if (input.whitelistEntries !== undefined) {
     const sanitizedWhitelistEntries = input.whitelistEntries
       .map((entry) => ({
         proposal_draft_id: data.id,

@@ -592,7 +592,10 @@ export async function getElectionResultsFromIndexer(spaceAddress?: string | null
 }
 
 export async function listVoterOnchainProofs(walletAddress?: string | null, spaceAddresses: string[] = []): Promise<VoterOnchainProofRecord[]> {
-  const graphqlUrl = getPonderGraphqlUrl()
+  // Browser proxy intentionally blocks selecting `voter` to avoid exposing
+  // voter→candidate mappings. Voter-specific proofs may query Ponder only
+  // server-side; browser falls back to audit log + direct chain reconciliation.
+  const graphqlUrl = typeof window === 'undefined' ? getPonderGraphqlUrl() : null
   const wallet = walletAddress?.trim().toLowerCase()
   if (!wallet || !/^0x[a-f0-9]{40}$/.test(wallet)) return []
   if (!graphqlUrl) {

@@ -762,7 +762,7 @@ export function ProposalForm({
       endedAt: new Date(formData.endedDate).toISOString(),
       status: submitStatus,
       candidates: candidateEntries,
-      whitelistEntries: allWhitelistEntries.length > 0 ? allWhitelistEntries : undefined,
+      whitelistEntries: allWhitelistEntries,
     }, {
       onSuccess: async (proposal) => {
         clearDraft()
@@ -790,6 +790,13 @@ export function ProposalForm({
         } else {
           showToast({ title: successMessageTitle, description: successMessageDesc, tone: 'success' })
         }
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['admin', 'proposal-drafts'] }),
+          queryClient.invalidateQueries({ queryKey: ['superadmin', 'all-proposals'] }),
+          queryClient.invalidateQueries({ queryKey: ['proposal-draft', proposal.id] }),
+          queryClient.invalidateQueries({ queryKey: ['proposal-candidates', proposal.id] }),
+          queryClient.invalidateQueries({ queryKey: ['proposal-whitelist', proposal.id] }),
+        ])
         router.push('/admin/daftar-proposal')
       },
       onError: (error) => {
