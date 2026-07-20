@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
   const { data: masterVoters, error: fetchError } = await auth.client
     .schema('app')
     .from('master_voters')
-    .select('id, nim, full_name, email, wallet_address')
+    .select('id, nim, full_name, email, wallet_address, status')
     .in('id', masterVoterIds)
 
   if (fetchError) return jsonError('Gagal memuat data master voter.', 500)
@@ -41,8 +41,30 @@ export async function POST(request: NextRequest) {
     wallet_address: v.wallet_address?.trim().toLowerCase() ?? null,
   }))
 
+  const missingWalletEmails = normalizedMasterVoters
+    .filter((v) => !v.wallet_address)
+    .map((v) => v.email.trim().toLowerCase())
+
+  if (missingWalletEmails.length > 0) {
+    const { data: profiles } = await auth.client
+      .from('app_profiles')
+      .select('email,wallet_address')
+      .in('email', missingWalletEmails)
+      .not('wallet_address', 'is', null)
+
+    const walletByEmail = new Map<string, string>()
+    for (const profile of profiles ?? []) {
+      if (profile.email && profile.wallet_address) {
+        walletByEmail.set(profile.email.trim().toLowerCase(), profile.wallet_address.trim().toLowerCase())
+      }
+    }
+    for (const voter of normalizedMasterVoters) {
+      voter.wallet_address = voter.wallet_address ?? walletByEmail.get(voter.email.trim().toLowerCase()) ?? null
+    }
+  }
+
   // Filter voters that have a wallet address
-  const votersWithWallet = normalizedMasterVoters.filter((v) => v.wallet_address && /^0x[a-f0-9]{40}$/.test(v.wallet_address))
+  const votersWithWallet = normalizedMasterVoters.filter((v) => v.status !== 'inactive' && v.wallet_address && /^0x[a-f0-9]{40}$/.test(v.wallet_address))
   const skipped = masterVoters.length - votersWithWallet.length
 
   if (votersWithWallet.length === 0) {

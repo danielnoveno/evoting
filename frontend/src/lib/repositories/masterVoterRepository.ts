@@ -43,10 +43,12 @@ export async function listMasterVoters(filter?: MasterVoterFilter): Promise<Mast
     .schema('app')
     .from('master_voters')
     .select('*')
-    .eq('status', 'active')
     .order('prodi', { ascending: true })
     .order('full_name', { ascending: true })
 
+  if (filter?.status) {
+    query = query.eq('status', filter.status)
+  }
   if (filter?.prodi) {
     query = query.eq('prodi', filter.prodi)
   }
@@ -95,7 +97,9 @@ export async function listMasterVoters(filter?: MasterVoterFilter): Promise<Mast
     }
   }
 
-  return rows
+  const eligibleRows = filter?.status ? rows : rows.filter((row) => row.status === 'active' || (row.status === 'pending' && Boolean(row.wallet_address)))
+
+  return eligibleRows
     .map(mapMasterVoterRow)
     .sort((left, right) => compareNatural(left.prodi, right.prodi) || compareNatural(left.fullName, right.fullName) || compareNatural(left.nim, right.nim))
 }
