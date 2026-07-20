@@ -37,7 +37,7 @@ async function fetchLatestContractAddress(electionId: string): Promise<string | 
 export default function PilihKandidatPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { showToast } = useToast()
-  const { store, loading, actions } = useVoterStore()
+  const { store, loading, error: storeError, refresh, actions } = useVoterStore()
   const { address: connectedWallet, isConnecting } = useAccount()
   const [timeLeft, setTimeLeft] = useState({ hours: 12, minutes: 45, seconds: 8 })
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -275,6 +275,17 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   }, [countdownTargetIso])
 
   if (loading || !store) {
+    if (storeError) {
+      return (
+        <VoterShell>
+          <section className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-900">
+            <h1 className="text-[18px] font-semibold">Status suara belum dapat diperiksa</h1>
+            <p className="mt-2 text-[13px] leading-6">{storeError}</p>
+            <button type="button" onClick={refresh} className="mt-4 h-10 rounded-md border border-red-200 bg-white px-4 text-[13px] font-semibold hover:bg-red-100">Coba Lagi</button>
+          </section>
+        </VoterShell>
+      )
+    }
     return (
       <VoterShell>
         <div className="h-[420px] animate-pulse rounded-xl bg-slate-200" />
@@ -459,7 +470,10 @@ export default function PilihKandidatPage({ params }: { params: { id: string } }
   }
 
   const candidateBeingConfirmed = election.candidates.find((candidate) => candidate.id === candidateToConfirm)
-  const committedCandidate = election.candidates.find((candidate) => candidate.id === (pendingCommit?.candidateUuid ?? election.committedCandidateId ?? election.selectedCandidateId))
+  const locallyProvenCandidateId = pendingCommit?.candidateUuid ?? verifiedStoredCommitment?.candidateId ?? null
+  const committedCandidate = election.revealProof
+    ? election.candidates.find((candidate) => candidate.id === (election.committedCandidateId ?? locallyProvenCandidateId))
+    : null
   const commitProof = election.commitProof || (isConfirmed && hash && isSuccessfulTransactionReceipt(receipt) ? {
     txHash: receipt.transactionHash,
     blockNumber: Number(receipt.blockNumber),

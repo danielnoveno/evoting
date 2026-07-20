@@ -311,9 +311,22 @@ function ScheduleStateBanner({ hasUpcoming, onlyPast, upcomingCount }: { hasUpco
 }
 
 export default function VoterDashboardPage() {
-  const { store, loading, refresh } = useVoterStore()
+  const { store, loading, error, refresh } = useVoterStore()
 
   if (loading || !store) {
+    if (error) {
+      return (
+        <VoterShell>
+          <section className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-900">
+            <h1 className="text-[18px] font-semibold">Data pemilih belum dapat dimuat</h1>
+            <p className="mt-2 text-[13px] leading-6">{error}</p>
+            <button type="button" onClick={refresh} className="mt-4 inline-flex h-10 items-center justify-center rounded-md border border-red-200 bg-white px-4 text-[13px] font-semibold hover:bg-red-100">
+              Coba Lagi
+            </button>
+          </section>
+        </VoterShell>
+      )
+    }
     return (
       <VoterShell>
         <VoterPageSkeleton />
@@ -359,6 +372,12 @@ export default function VoterDashboardPage() {
 
   return (
     <VoterShell>
+      {error ? (
+        <section className="mb-6 flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-[13px] text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+          <p>{error} Data terakhir yang tersimpan tetap ditampilkan.</p>
+          <button type="button" onClick={refresh} className="h-10 shrink-0 rounded-md border border-amber-300 bg-white px-4 font-semibold hover:bg-amber-100">Coba Lagi</button>
+        </section>
+      ) : null}
       <ScrollReveal variant="fade-up" duration={800}>
         <section>
           <h1 id="tour-voter-home-title" className="text-[22px] font-semibold text-slate-900 md:text-[24px]">Ruang Voting Saya</h1>

@@ -185,12 +185,14 @@ export interface VoterOnchainProofRecord {
     blockNumber: number
     createdAt: string
     commitment: string
+    source: 'ponder' | 'audit' | 'chain_rpc'
   } | null
   revealProof: {
     txHash: string
     blockNumber: number
     createdAt: string
     candidateId: number
+    source: 'ponder' | 'audit' | 'chain_rpc'
   } | null
 }
 

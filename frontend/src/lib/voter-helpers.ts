@@ -84,7 +84,7 @@ export function getElectionProgress(election: VoterElection) {
 }
 
 export function getElectionViewState(election: VoterElection): VoterElectionViewState {
-  const hasCommitted = Boolean(election.commitProof && election.committedCandidateId)
+  const hasCommitted = Boolean(election.commitProof)
   const hasRevealed = Boolean(election.revealProof)
   // Suspended or registration elections block all actions
   if (election.phase === 'suspended') return { hasCommitted, hasRevealed, canCommit: false, canReveal: false, canViewResults: false, nextAction: 'wait' }
@@ -139,7 +139,7 @@ export function getRecentLogs(store: VoterStore): VoterLogItem[] {
     .flatMap((election) => {
       const items: VoterLogItem[] = []
       if (election.commitProof) {
-        items.push({ id: `${election.id}-commit`, title: `${election.title} · Komitmen suara tersimpan`, detail: `Bukti commit: ${formatWallet(election.commitProof.txHash)} · Blok #${formatNumber(election.commitProof.blockNumber)}`, timeLabel: formatDateTime(election.commitProof.createdAt), tone: 'success' })
+        items.push({ id: `${election.id}-commit`, title: `${election.title} · Komitmen suara tersimpan`, detail: `Bukti commit: ${formatWallet(election.commitProof.txHash)} · Blok #${formatNumber(election.commitProof.blockNumber)}${election.deployedSpaceAddress ? ` · Kontrak ${formatWallet(election.deployedSpaceAddress)}` : ''}`, timeLabel: formatDateTime(election.commitProof.createdAt), tone: 'success' })
       }
       if (election.phase === 'reveal' && !election.revealProof) {
         items.push({ id: `${election.id}-phase`, title: `${election.title} · Penghitungan dibuka`, detail: 'Sistem akan mencoba reveal otomatis melalui relayer.', timeLabel: election.lastTransactionLabel, tone: 'info' })

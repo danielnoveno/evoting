@@ -140,9 +140,20 @@ function downloadCertificate(election: VoterElection, wallet?: string) {
 
 export default function VoterProofPage() {
   const { showToast } = useToast()
-  const { store, loading, actions } = useVoterStore()
+  const { store, loading, error, refresh, actions } = useVoterStore()
 
   if (loading || !store) {
+    if (error) {
+      return (
+        <VoterShell>
+          <section className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-900">
+            <h1 className="text-[18px] font-semibold">Bukti transaksi belum dapat dimuat</h1>
+            <p className="mt-2 text-[13px] leading-6">{error}</p>
+            <button type="button" onClick={refresh} className="mt-4 h-10 rounded-md border border-red-200 bg-white px-4 text-[13px] font-semibold hover:bg-red-100">Coba Lagi</button>
+          </section>
+        </VoterShell>
+      )
+    }
     return <VoterShell><div className="h-[420px] animate-pulse rounded-[32px] bg-slate-200" /></VoterShell>
   }
 
@@ -266,7 +277,7 @@ export default function VoterProofPage() {
               <p className="mt-4 overflow-hidden break-all rounded-2xl bg-white px-4 py-4 font-mono text-[12px] text-slate-700 sm:text-[13px]">
                 {selectedElection.revealProof?.txHash ?? selectedElection.commitProof?.txHash ?? 'Belum ada transaksi'}
               </p>
-              <div className="mt-5 grid gap-4 md:grid-cols-3">
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Block</p>
                   <p className="mt-2 text-[24px] font-semibold text-slate-900">#{formatNumber(selectedElection.revealProof?.blockNumber ?? selectedElection.commitProof?.blockNumber ?? 0)}</p>
@@ -282,6 +293,12 @@ export default function VoterProofPage() {
                       selectedElection.revealProof?.gasUsed ?? selectedElection.commitProof?.gasUsed,
                       selectedElection.revealProof?.gasPriceWei ?? selectedElection.commitProof?.gasPriceWei,
                     )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kontrak</p>
+                  <p className="mt-2 break-all font-mono text-[13px] font-semibold text-slate-900">
+                    {selectedElection.deployedSpaceAddress ? formatWallet(selectedElection.deployedSpaceAddress) : 'Belum tersedia'}
                   </p>
                 </div>
               </div>

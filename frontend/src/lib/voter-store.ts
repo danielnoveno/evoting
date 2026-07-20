@@ -267,50 +267,60 @@ function mergeVoterProof(election: VoterElection, proof?: VoterOnchainProofRecor
       blockNumber: proof.commitProof.blockNumber,
       gasUsed: null,
       createdAt: proof.commitProof.createdAt,
-      statusLabel: 'Commit terindeks',
+      statusLabel: proof.commitProof.source === 'ponder' ? 'Commit terindeks' : 'Commit terverifikasi',
     } : election.commitProof,
     revealProof: proof.revealProof ? {
       txHash: proof.revealProof.txHash,
       blockNumber: proof.revealProof.blockNumber,
       gasUsed: null,
       createdAt: proof.revealProof.createdAt,
-      statusLabel: 'Reveal terindeks',
+      statusLabel: proof.revealProof.source === 'ponder' ? 'Reveal terindeks' : 'Reveal terverifikasi',
     } : election.revealProof,
     lastTransactionLabel: proof.revealProof
-      ? 'Reveal sudah terindeks oleh Ponder.'
+      ? proof.revealProof.source === 'ponder' ? 'Reveal sudah terindeks oleh Ponder.' : 'Reveal sudah diverifikasi dari bukti transaksi.'
       : proof.commitProof
-        ? 'Commit sudah terindeks oleh Ponder.'
+        ? proof.commitProof.source === 'ponder' ? 'Commit sudah terindeks oleh Ponder.' : 'Commit sudah diverifikasi dari bukti transaksi.'
         : election.lastTransactionLabel,
   }
 }
 
 function mergeLocalElectionState(live: VoterElection, local?: VoterElection): VoterElection {
   if (!local) return live
+  const sameContract = Boolean(
+    live.deployedSpaceAddress
+      && local.deployedSpaceAddress
+      && live.deployedSpaceAddress.toLowerCase() === local.deployedSpaceAddress.toLowerCase(),
+  )
+  const localCommitProof = sameContract ? local.commitProof : null
+  const localRevealProof = sameContract ? local.revealProof : null
+  const hasLiveCommitProof = Boolean(live.commitProof)
+  const hasLiveRevealProof = Boolean(live.revealProof)
+
   return {
     ...live,
-    selectedCandidateId: local.selectedCandidateId,
-    committedCandidateId: local.committedCandidateId ?? live.committedCandidateId,
-    commitProof: local.commitProof ?? live.commitProof,
-    revealProof: local.revealProof ?? live.revealProof,
-    commitmentHash: local.commitmentHash ?? live.commitmentHash,
-    lastTransactionLabel: (local.commitProof || local.revealProof) ? local.lastTransactionLabel : live.lastTransactionLabel,
+    selectedCandidateId: hasLiveCommitProof ? null : local.selectedCandidateId,
+    committedCandidateId: hasLiveRevealProof
+      ? live.committedCandidateId
+      : hasLiveCommitProof
+        ? null
+        : local.committedCandidateId,
+    commitProof: live.commitProof ?? localCommitProof,
+    revealProof: live.revealProof ?? localRevealProof,
+    commitmentHash: live.commitmentHash ?? (sameContract ? local.commitmentHash : null),
+    lastTransactionLabel: (hasLiveCommitProof || hasLiveRevealProof)
+      ? live.lastTransactionLabel
+      : (localCommitProof || localRevealProof)
+        ? local.lastTransactionLabel
+        : live.lastTransactionLabel,
   }
 }
 
 async function buildLiveStore(): Promise<VoterStore> {
-  const profile = await getCurrentProfile().catch((err) => {
-    console.error('[voter-store] getCurrentProfile failed:', err)
-    return null
-  })
+  const profile = await getCurrentProfile()
   const profileWallet = profile?.walletAddress ?? ''
   const local = readStore(profileWallet)
   const activeWallets = profileWallet ? [profileWallet] : []
-  console.log('[voter-store] buildLiveStore', { profileWallet: profileWallet || null, activeWallets })
-  const elections = await listVoterWhitelistedElections(activeWallets).catch((err) => {
-    console.error('[voter-store] listVoterWhitelistedElections failed:', err)
-    return []
-  })
-  console.log('[voter-store] elections loaded:', elections.length)
+  const elections = await listVoterWhitelistedElections(activeWallets)
 
   const resultEntries = await Promise.all(elections.map(async (item) => ({
     id: item.id,
@@ -358,6 +368,18 @@ function updateElection(store: VoterStore, electionId: string, updater: (electio
 
 export function useVoterStore() {
   const [store, setStore] = useState<VoterStore | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadStore = useCallback(() => {
+    setError(null)
+    return buildLiveStore().then((next) => {
+      persistStore(next)
+      setStore(next)
+    }).catch((loadError: unknown) => {
+      console.error('[voter-store] failed to load:', loadError)
+      setError('Data pemilih belum dapat disinkronkan. Periksa koneksi lalu coba lagi.')
+    })
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -366,6 +388,9 @@ export function useVoterStore() {
         persistStore(next)
         setStore(next)
       }
+    }).catch((loadError: unknown) => {
+      console.error('[voter-store] failed to load:', loadError)
+      if (!cancelled) setError('Data pemilih belum dapat disinkronkan. Periksa koneksi lalu coba lagi.')
     })
     return () => { cancelled = true }
   }, [])
@@ -381,14 +406,7 @@ export function useVoterStore() {
 
   const actions = useMemo(() => ({
     refresh() {
-      let cancelled = false
-      buildLiveStore().then((next) => {
-        if (!cancelled) {
-          persistStore(next)
-          setStore(next)
-        }
-      })
-      return () => { cancelled = true }
+      void loadStore()
     },
     reset() {
       setStore(cloneStore(voterStoreInitial))
@@ -433,9 +451,9 @@ export function useVoterStore() {
     selectProofElection(electionId: string) {
       applyStore((current) => ({ ...current, selectedProofElectionId: electionId }))
     },
-  }), [applyStore])
+  }), [applyStore, loadStore])
 
-  return { store, actions, loading: store === null, refresh: actions.refresh }
+  return { store, actions, loading: store === null && error === null, error, refresh: actions.refresh }
 }
 
 export function findElection(store: VoterStore | null, electionId: string) {

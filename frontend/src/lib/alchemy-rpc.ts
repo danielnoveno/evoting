@@ -126,6 +126,46 @@ export interface ChainEvent {
   timestamp?: number
 }
 
+async function fetchRpcResult(method: string, params: unknown[]): Promise<unknown> {
+  const body = JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
+  const urls = typeof window !== 'undefined'
+    ? ['/api/rpc/base-sepolia']
+    : [getRpcUrl(), ...PUBLIC_RPC_URLS].filter((url): url is string => Boolean(url))
+
+  for (const url of Array.from(new Set(urls))) {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        cache: 'no-store',
+      })
+      if (!response.ok) continue
+      const payload: unknown = await response.json()
+      if (!payload || typeof payload !== 'object' || !('result' in payload) || 'error' in payload) continue
+      return payload.result
+    } catch {
+      // Try the next bounded RPC endpoint.
+    }
+  }
+
+  return null
+}
+
+export async function fetchLatestBlockNumber(): Promise<number | null> {
+  const result = await fetchRpcResult('eth_blockNumber', [])
+  if (typeof result !== 'string') return null
+  const blockNumber = Number.parseInt(result, 16)
+  return Number.isFinite(blockNumber) ? blockNumber : null
+}
+
+export async function fetchBlockTimestamp(blockNumber: number): Promise<string | null> {
+  const result = await fetchRpcResult('eth_getBlockByNumber', [`0x${blockNumber.toString(16)}`, false])
+  if (!result || typeof result !== 'object' || !('timestamp' in result) || typeof result.timestamp !== 'string') return null
+  const timestamp = Number.parseInt(result.timestamp, 16)
+  return Number.isFinite(timestamp) ? new Date(timestamp * 1000).toISOString() : null
+}
+
 /**
  * Build the JSON-RPC body for eth_getLogs.
  */

@@ -13,10 +13,10 @@ import type {
   TxAuditLogRecord,
   VoterOnchainProofRecord,
 } from '@/lib/repositories/types'
-import { asStringArray, isRecord } from './helpers'
+import { asStringArray, isRecord, sameWalletAddress } from './helpers'
 import { formatDateTime } from '@/lib/voter-helpers'
 import { resolveSchedulePhase } from '@/lib/election-phase'
-import { fetchChainEvents, decodeChainEvents } from '@/lib/alchemy-rpc'
+import { fetchBlockTimestamp, fetchChainEvents, fetchLatestBlockNumber, decodeChainEvents } from '@/lib/alchemy-rpc'
 
 type ProposalRow = Database['app']['Tables']['proposal_drafts']['Row']
 type CandidateRow = Database['app']['Tables']['proposal_candidates']['Row']
@@ -137,6 +137,7 @@ interface PonderVoteCommitItem {
   commitment: string
   blockNumber: string
   timestamp: string
+  voter: string
 }
 
 interface PonderVoteRevealItem {
@@ -145,6 +146,7 @@ interface PonderVoteRevealItem {
   candidateId: string
   blockNumber: string
   timestamp: string
+  voter: string
 }
 
 interface PonderVoterProofResponse {
@@ -591,9 +593,12 @@ export async function getElectionResultsFromIndexer(spaceAddress?: string | null
 
 export async function listVoterOnchainProofs(walletAddress?: string | null, spaceAddresses: string[] = []): Promise<VoterOnchainProofRecord[]> {
   const graphqlUrl = getPonderGraphqlUrl()
-  const wallet = walletAddress?.trim()
-  if (!wallet) return []
-  if (!graphqlUrl) return listVoterProofsFromAuditLog(wallet, spaceAddresses)
+  const wallet = walletAddress?.trim().toLowerCase()
+  if (!wallet || !/^0x[a-f0-9]{40}$/.test(wallet)) return []
+  if (!graphqlUrl) {
+    const auditProofs = await listVoterProofsFromAuditLog(wallet, spaceAddresses)
+    return reconcileVoterProofsFromChain(auditProofs, wallet, spaceAddresses)
+  }
 
   const addressVariants = Array.from(new Set(spaceAddresses.flatMap((address) => [address, address.toLowerCase()])))
   const voterVariants = Array.from(new Set([wallet, wallet.toLowerCase()]))
@@ -608,19 +613,19 @@ export async function listVoterOnchainProofs(walletAddress?: string | null, spac
       query: addressVariants.length > 0 ? `
         query VoterOnchainProofs($voterVariants: [String], $addresses: [String]) {
           voteCommits(where: { voter_in: $voterVariants, spaceAddress_in: $addresses }, orderBy: "timestamp", orderDirection: "desc", limit: 100) {
-            items { txHash spaceAddress commitment blockNumber timestamp }
+            items { txHash spaceAddress commitment blockNumber timestamp voter }
           }
           voteReveals(where: { voter_in: $voterVariants, spaceAddress_in: $addresses }, orderBy: "timestamp", orderDirection: "desc", limit: 100) {
-            items { txHash spaceAddress candidateId blockNumber timestamp }
+            items { txHash spaceAddress candidateId blockNumber timestamp voter }
           }
         }
       ` : `
         query VoterOnchainProofs($voterVariants: [String]) {
           voteCommits(where: { voter_in: $voterVariants }, orderBy: "timestamp", orderDirection: "desc", limit: 100) {
-            items { txHash spaceAddress commitment blockNumber timestamp }
+            items { txHash spaceAddress commitment blockNumber timestamp voter }
           }
           voteReveals(where: { voter_in: $voterVariants }, orderBy: "timestamp", orderDirection: "desc", limit: 100) {
-            items { txHash spaceAddress candidateId blockNumber timestamp }
+            items { txHash spaceAddress candidateId blockNumber timestamp voter }
           }
         }
       `,
@@ -630,15 +635,19 @@ export async function listVoterOnchainProofs(walletAddress?: string | null, spac
 
   if (!response.ok) {
     markIndexerUnavailable(response.status)
-    if (response.status === 404 || response.status === 503) return listVoterProofsFromAuditLog(wallet, spaceAddresses)
-    throw new RepositoryError('Gagal memuat bukti pemilih dari indexer Ponder.')
+    const auditProofs = await listVoterProofsFromAuditLog(wallet, spaceAddresses)
+    return reconcileVoterProofsFromChain(auditProofs, wallet, spaceAddresses)
   }
 
   const payload: unknown = await response.json()
   if (!isPonderVoterProofResponse(payload)) throw new RepositoryError('Format bukti pemilih indexer tidak dikenali.')
-  if (payload.errors && payload.errors.length > 0) return listVoterProofsFromAuditLog(wallet, spaceAddresses)
+  if (payload.errors && payload.errors.length > 0) {
+    const auditProofs = await listVoterProofsFromAuditLog(wallet, spaceAddresses)
+    return reconcileVoterProofsFromChain(auditProofs, wallet, spaceAddresses)
+  }
 
   const bySpace = new Map<string, VoterOnchainProofRecord>()
+  const allowedSpaces = new Set(spaceAddresses.map((address) => address.toLowerCase()))
   const ensureRecord = (spaceAddress: string) => {
     const key = spaceAddress.toLowerCase()
     const existing = bySpace.get(key)
@@ -649,6 +658,7 @@ export async function listVoterOnchainProofs(walletAddress?: string | null, spac
   }
 
   for (const item of payload.data?.voteCommits?.items ?? []) {
+    if (!sameWalletAddress(item.voter, wallet) || (allowedSpaces.size > 0 && !allowedSpaces.has(item.spaceAddress.toLowerCase()))) continue
     const record = ensureRecord(item.spaceAddress)
     if (!record.commitProof) {
       record.commitProof = {
@@ -656,11 +666,13 @@ export async function listVoterOnchainProofs(walletAddress?: string | null, spac
         blockNumber: asFiniteNumber(item.blockNumber),
         createdAt: timestampToIso(item.timestamp),
         commitment: item.commitment,
+        source: 'ponder',
       }
     }
   }
 
   for (const item of payload.data?.voteReveals?.items ?? []) {
+    if (!sameWalletAddress(item.voter, wallet) || (allowedSpaces.size > 0 && !allowedSpaces.has(item.spaceAddress.toLowerCase()))) continue
     const record = ensureRecord(item.spaceAddress)
     if (!record.revealProof) {
       record.revealProof = {
@@ -668,9 +680,81 @@ export async function listVoterOnchainProofs(walletAddress?: string | null, spac
         blockNumber: asFiniteNumber(item.blockNumber),
         createdAt: timestampToIso(item.timestamp),
         candidateId: asFiniteNumber(item.candidateId),
+        source: 'ponder',
       }
     }
   }
+
+  return reconcileVoterProofsFromChain(Array.from(bySpace.values()), wallet, spaceAddresses)
+}
+
+const VOTER_PROOF_RPC_LOOKBACK_BLOCKS = 20_000
+const VOTER_PROOF_RPC_CHUNK_SIZE = 2_000
+
+async function fetchRecentChainEvents(spaceAddress: string, latestBlock: number) {
+  const fromBlock = Math.max(0, latestBlock - VOTER_PROOF_RPC_LOOKBACK_BLOCKS)
+  const ranges: Array<{ from: number; to: number }> = []
+  for (let to = latestBlock; to >= fromBlock; to -= VOTER_PROOF_RPC_CHUNK_SIZE) {
+    ranges.push({ from: Math.max(fromBlock, to - VOTER_PROOF_RPC_CHUNK_SIZE + 1), to })
+  }
+  const chunks = await Promise.all(ranges.map((range) => fetchChainEvents(spaceAddress, range.from, `0x${range.to.toString(16)}`)))
+  return decodeChainEvents(chunks.flat())
+}
+
+async function reconcileVoterProofsFromChain(
+  current: VoterOnchainProofRecord[],
+  walletAddress: string,
+  spaceAddresses: string[],
+): Promise<VoterOnchainProofRecord[]> {
+  const wallet = walletAddress.toLowerCase()
+  const bySpace = new Map(current.map((proof) => [proof.spaceAddress.toLowerCase(), proof]))
+  const missingSpaces = Array.from(new Set(spaceAddresses.map((address) => address.toLowerCase())))
+    .filter((address) => /^0x[a-f0-9]{40}$/.test(address))
+    .filter((address) => {
+      const proof = bySpace.get(address)
+      return !proof?.commitProof || proof.commitProof.source === 'audit'
+        || !proof.revealProof || proof.revealProof.source === 'audit'
+    })
+  if (missingSpaces.length === 0) return current
+
+  const latestBlock = await fetchLatestBlockNumber()
+  if (latestBlock === null) return current
+
+  await Promise.all(missingSpaces.map(async (spaceAddress) => {
+    const events = (await fetchRecentChainEvents(spaceAddress, latestBlock))
+      .filter((event) => sameWalletAddress(event.actor, wallet))
+    if (events.length === 0) return
+
+    const existing = bySpace.get(spaceAddress) ?? { spaceAddress, commitProof: null, revealProof: null }
+    const commitEvent = (!existing.commitProof || existing.commitProof.source === 'audit')
+      ? events.find((event) => event.actionType === 'commit')
+      : null
+    const revealEvent = (!existing.revealProof || existing.revealProof.source === 'audit')
+      ? events.find((event) => event.actionType === 'reveal')
+      : null
+    const timestamps = await Promise.all([
+      commitEvent ? fetchBlockTimestamp(commitEvent.blockNumber) : null,
+      revealEvent ? fetchBlockTimestamp(revealEvent.blockNumber) : null,
+    ])
+
+    bySpace.set(spaceAddress, {
+      ...existing,
+      commitProof: commitEvent ? {
+        txHash: commitEvent.txHash,
+        blockNumber: commitEvent.blockNumber,
+        createdAt: timestamps[0] ?? new Date(0).toISOString(),
+        commitment: typeof commitEvent.metadata.commitment === 'string' ? commitEvent.metadata.commitment : '',
+        source: 'chain_rpc',
+      } : existing.commitProof,
+      revealProof: revealEvent ? {
+        txHash: revealEvent.txHash,
+        blockNumber: revealEvent.blockNumber,
+        createdAt: timestamps[1] ?? new Date(0).toISOString(),
+        candidateId: asFiniteNumber(revealEvent.metadata.candidateId),
+        source: 'chain_rpc',
+      } : existing.revealProof,
+    })
+  }))
 
   return Array.from(bySpace.values())
 }
@@ -721,6 +805,7 @@ async function listVoterProofsFromAuditLog(walletAddress: string, spaceAddresses
         blockNumber: asFiniteNumber(row.block_number),
         createdAt: row.created_at,
         commitment: typeof metadata.commitment === 'string' ? metadata.commitment : '',
+        source: 'audit',
       }
     }
     if ((row.action_type === 'reveal_vote_server_signed' || row.action_type === 'reveal_vote') && !record.revealProof) {
@@ -729,6 +814,7 @@ async function listVoterProofsFromAuditLog(walletAddress: string, spaceAddresses
         blockNumber: asFiniteNumber(row.block_number),
         createdAt: row.created_at,
         candidateId: asFiniteNumber(metadata.candidateId),
+        source: 'audit',
       }
     }
   }

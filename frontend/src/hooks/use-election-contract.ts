@@ -1,12 +1,13 @@
 'use client'
 
 import { useCallback } from 'react'
-import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount, usePublicClient, useSendCalls, useCallsStatus, useCapabilities } from 'wagmi'
+import { useWriteContract, useReadContract, useWaitForTransactionReceipt, useAccount, usePublicClient, useSendCalls, useCallsStatus } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { encodeFunctionData } from 'viem'
 import { PAYMASTER_URL } from '@/lib/wagmi'
 import ElectionSpaceArtifact from '@/lib/abi/ElectionSpace.json'
 import { getWalletTransactionErrorMessage, isAmbiguousTransactionError, isInjectedConnector, isSuccessfulTransactionReceipt, resolveWalletTransactionSupport } from '@/lib/wallet-transaction-support'
+import { useAccountScopedCapabilities } from '@/hooks/use-account-scoped-capabilities'
 
 const electionSpaceAbi = ElectionSpaceArtifact.abi
 
@@ -50,14 +51,7 @@ export function useElectionContract(address?: string, options: UseElectionContra
     error: sendCallsError,
     reset: resetSendCalls,
   } = useSendCalls()
-  const capabilitiesQuery = useCapabilities({
-    account: wagmiAddress,
-    chainId: baseSepolia.id,
-    query: {
-      enabled: Boolean(wagmiAddress && connector && activeChainId === baseSepolia.id && !isInjectedConnector(connector)),
-      retry: false,
-    },
-  })
+  const accountCapabilities = useAccountScopedCapabilities(baseSepolia.id)
   const publicClient = usePublicClient({ chainId: baseSepolia.id })
   const callsStatusQuery = useCallsStatus({
     id: callsData?.id ?? '',
@@ -72,8 +66,8 @@ export function useElectionContract(address?: string, options: UseElectionContra
     account: wagmiAddress,
     chainId: activeChainId,
     connector,
-    capabilities: capabilitiesQuery.data,
-    capabilitiesPending: capabilitiesQuery.isPending && capabilitiesQuery.fetchStatus === 'fetching',
+    capabilities: accountCapabilities.capabilities,
+    capabilitiesPending: Boolean(wagmiAddress && connector && activeChainId === baseSepolia.id && !isInjectedConnector(connector) && accountCapabilities.pending),
   })
 
   const { 

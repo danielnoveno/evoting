@@ -39,7 +39,7 @@ function DetailRow({
 }
 
 export default function VoterCommitPage({ params }: { params: { id: string } }) {
-  const { store, loading: storeLoading, actions } = useVoterStore()
+  const { store, loading: storeLoading, error: storeError, refresh, actions } = useVoterStore()
   const { showToast } = useToast()
   const { address: connectedWallet } = useAccount()
   
@@ -169,6 +169,17 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
   }, [onChainStatusError, contractAddress, connectedWallet, phaseError, whitelistError, hasCommittedError])
 
   if (storeLoading || !store) {
+    if (storeError) {
+      return (
+        <VoterShell>
+          <section className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-900">
+            <h1 className="text-[18px] font-semibold">Status komitmen belum dapat diperiksa</h1>
+            <p className="mt-2 text-[13px] leading-6">{storeError}</p>
+            <button type="button" onClick={refresh} className="mt-4 h-10 rounded-md border border-red-200 bg-white px-4 text-[13px] font-semibold hover:bg-red-100">Coba Lagi</button>
+          </section>
+        </VoterShell>
+      )
+    }
     return (
       <VoterShell>
         <div className="h-[420px] animate-pulse rounded-xl bg-slate-200" />
@@ -190,9 +201,10 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
     )
   }
 
-  const selectedCandidate = election.candidates.find((candidate) => candidate.id === election.selectedCandidateId)
-    ?? election.candidates.find((candidate) => candidate.id === election.committedCandidateId)
-    ?? null
+  const selectedCandidate = savedCommitment
+    ? election.candidates.find((candidate) => candidate.id === savedCommitment.candidateId) ?? null
+    : null
+  const confirmedCandidate = election.revealProof ? selectedCandidate : null
 
   const commitProof = election.commitProof || (isConfirmed && hash && isSuccessfulTransactionReceipt(receipt) ? {
     txHash: receipt.transactionHash,
@@ -343,11 +355,11 @@ export default function VoterCommitPage({ params }: { params: { id: string } }) 
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Kandidat terpilih</p>
               <div className="mt-4 flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-200 text-[18px] font-semibold text-slate-600">
-                  {selectedCandidate ? selectedCandidate.name.slice(0, 2).toUpperCase() : 'VC'}
+                  {confirmedCandidate ? confirmedCandidate.name.slice(0, 2).toUpperCase() : 'VC'}
                 </div>
                 <div>
-                  <h2 className="text-[20px] font-semibold text-slate-900">{selectedCandidate?.name ?? 'Komitmen tersimpan terdeteksi'}</h2>
-                  <RichTextRenderer value={selectedCandidate?.vision} emptyFallback="Detail kandidat asli tetap tersimpan untuk tahap reveal." className="mt-1 text-[14px] text-slate-600" />
+                  <h2 className="text-[20px] font-semibold text-slate-900">{confirmedCandidate?.name ?? 'Komitmen tersimpan terdeteksi'}</h2>
+                  <RichTextRenderer value={confirmedCandidate?.vision} emptyFallback="Identitas kandidat tidak dibuka dari event commit." className="mt-1 text-[14px] text-slate-600" />
                 </div>
               </div>
             </article>

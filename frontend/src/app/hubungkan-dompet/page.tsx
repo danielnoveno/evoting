@@ -17,7 +17,7 @@ import {
   Copy,
   AlertTriangle,
 } from 'lucide-react'
-import { useAccount, useCapabilities, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { baseSepolia } from 'wagmi/chains'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { signOutCurrentSession } from '@/lib/repositories/authRepository'
@@ -33,8 +33,16 @@ import { AuthSuccessRedirectModal } from '@/components/auth/auth-success-redirec
 import { sameWalletAddress } from '@/lib/repositories/helpers'
 import { useActivationTokenPreview } from '@/hooks/use-activation-token'
 import { resolveWalletTransactionSupport } from '@/lib/wallet-transaction-support'
+import { getProviderErrorCode, useAccountScopedCapabilities } from '@/hooks/use-account-scoped-capabilities'
 
 type WalletConnector = ReturnType<typeof useConnect>['connectors'][number]
+type WalletConnectionDiagnostic = {
+  connector: { id: string; name: string; type: string } | null
+  account: string | null
+  chainId: number
+  capabilities: null
+  providerErrorCode: string | null
+}
 
 function getBaseAccountConnector(connectors: ReturnType<typeof useConnect>['connectors']) {
   return connectors.find((item) => item.id === 'baseAccount')
@@ -108,6 +116,28 @@ function getWalletConnectionErrorMessage(error: { message?: string }) {
   return 'ID voting belum dapat disambungkan. Coba lagi melalui jendela Base Account.'
 }
 
+function WalletDiagnostics({ diagnostic }: { diagnostic: WalletConnectionDiagnostic | ReturnType<typeof useAccountScopedCapabilities>['diagnostics'] }) {
+  return (
+    <details className="mt-3 rounded-md border border-red-200 bg-white p-3 text-left">
+      <summary className="cursor-pointer text-[11px] font-semibold text-red-700">Detail diagnostik dompet</summary>
+      <dl className="mt-3 grid gap-2 text-[11px] text-slate-600 sm:grid-cols-[120px_1fr]">
+        <dt className="font-semibold">Connector</dt>
+        <dd className="break-all font-mono">{diagnostic.connector ? `${diagnostic.connector.id} / ${diagnostic.connector.type} / ${diagnostic.connector.name}` : '-'}</dd>
+        <dt className="font-semibold">Connector UID</dt>
+        <dd className="break-all font-mono">{diagnostic.connector && 'uid' in diagnostic.connector ? diagnostic.connector.uid : '-'}</dd>
+        <dt className="font-semibold">Akun</dt>
+        <dd className="break-all font-mono">{diagnostic.account ?? '-'}</dd>
+        <dt className="font-semibold">Chain</dt>
+        <dd className="font-mono">{diagnostic.chainId}</dd>
+        <dt className="font-semibold">Kode provider</dt>
+        <dd className="font-mono">{diagnostic.providerErrorCode ?? '-'}</dd>
+        <dt className="font-semibold">Capabilities</dt>
+        <dd><pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono">{JSON.stringify(diagnostic.capabilities ?? null, null, 2)}</pre></dd>
+      </dl>
+    </details>
+  )
+}
+
 function ConnectWalletContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -124,20 +154,13 @@ function ConnectWalletContent() {
   const microsoftLoginMutation = useMicrosoftCampusLogin()
   const googleLoginMutation = useGoogleLogin()
   const magicLinkLoginMutation = useMagicLinkLogin()
-  const capabilitiesQuery = useCapabilities({
-    account: address,
-    chainId: baseSepolia.id,
-    query: {
-      enabled: Boolean(address && connector?.id === 'baseAccount' && chainId === baseSepolia.id),
-      retry: false,
-    },
-  })
+  const accountCapabilities = useAccountScopedCapabilities(baseSepolia.id)
   const walletTransactionSupport = resolveWalletTransactionSupport({
     account: address,
     chainId,
     connector,
-    capabilities: capabilitiesQuery.data,
-    capabilitiesPending: capabilitiesQuery.isPending && capabilitiesQuery.fetchStatus === 'fetching',
+    capabilities: accountCapabilities.capabilities,
+    capabilitiesPending: Boolean(address && connector?.id === 'baseAccount' && chainId === baseSepolia.id && accountCapabilities.pending),
   })
 
   const signOutMutation = useMutation({
@@ -186,6 +209,7 @@ function ConnectWalletContent() {
   const [formError, setFormError] = useState('')
   const [magicLinkSentTo, setMagicLinkSentTo] = useState('')
   const [bindError, setBindError] = useState('')
+  const [walletConnectionDiagnostic, setWalletConnectionDiagnostic] = useState<WalletConnectionDiagnostic | null>(null)
   const [redirectModal, setRedirectModal] = useState<ReturnType<typeof getRedirectModalContent> | null>(null)
   const redirectStartedRef = useRef(false)
   const redirectTimerRef = useRef<number | null>(null)
@@ -493,14 +517,25 @@ function ConnectWalletContent() {
       return
     }
 
+    setWalletConnectionDiagnostic(null)
+
     connect(
       { connector: selectedConnector, chainId: baseSepolia.id },
       {
         onError: (error) => {
-      showToast({
-        tone: 'error',
-        title: 'Gagal membuat ID voting',
-        description: getWalletConnectionErrorMessage(error),
+          const diagnostic: WalletConnectionDiagnostic = {
+            connector: { id: selectedConnector.id, name: selectedConnector.name, type: selectedConnector.type },
+            account: address ?? null,
+            chainId: baseSepolia.id,
+            capabilities: null,
+            providerErrorCode: getProviderErrorCode(error),
+          }
+          setWalletConnectionDiagnostic(diagnostic)
+          console.info('[wallet-connect] provider error', diagnostic)
+          showToast({
+            tone: 'error',
+            title: 'Gagal membuat ID voting',
+            description: getWalletConnectionErrorMessage(error),
           })
         },
       },
@@ -904,6 +939,7 @@ function ConnectWalletContent() {
                               >
                                 Putuskan & Ganti ID Voting
                               </button>
+                              {walletCompatibilityBlocked ? <WalletDiagnostics diagnostic={accountCapabilities.diagnostics} /> : null}
                             </div>
                           )}
 
@@ -968,6 +1004,7 @@ function ConnectWalletContent() {
                           Sambungkan Base Account
                           {!isConnectPending ? <ChevronRight className="h-4 w-4" /> : null}
                         </button>
+                        {walletConnectionDiagnostic ? <div className="basis-full"><WalletDiagnostics diagnostic={walletConnectionDiagnostic} /></div> : null}
                       </div>
                     )}
 

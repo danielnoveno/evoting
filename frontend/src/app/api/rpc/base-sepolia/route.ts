@@ -48,6 +48,19 @@ async function fetchWithRetry(url: string, body: string, maxRetries = 2): Promis
 
       // Success: non-empty valid JSON response
       if (response.ok && text.trim().length > 0) {
+        try {
+          const payload: unknown = JSON.parse(text)
+          if (payload && typeof payload === 'object' && 'error' in payload) {
+            const rpcError = payload.error
+            lastError = rpcError && typeof rpcError === 'object' && 'message' in rpcError && typeof rpcError.message === 'string'
+              ? rpcError.message
+              : 'RPC mengembalikan kesalahan.'
+            return { ok: false, text: lastError, status: response.status }
+          }
+        } catch {
+          lastError = 'Respons RPC tidak valid.'
+          return { ok: false, text: lastError, status: response.status }
+        }
         return { ok: true, text, status: response.status }
       }
 
