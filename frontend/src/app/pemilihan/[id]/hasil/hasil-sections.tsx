@@ -251,22 +251,18 @@ export function HasilSections({ id }: { id: string }) {
   const candidateResults = new Map((indexerResult?.candidateResults ?? []).map((result) => [result.candidateId, result]))
   const totalRevealed = indexerResult?.totalRevealed ?? 0
   const hasIndexerResult = Boolean(indexerResult)
-  const winner = hasIndexerResult
-    ? (election?.candidates ?? []).reduce<{
-        name: string
-        voteCount: number
-        percentage: number
-        avatarPath: string | null
-      } | null>((currentWinner, candidate, index) => {
+  // ponytail: tie detection — check if top candidates share the same vote count
+  const sortedCandidates = hasIndexerResult
+    ? (election?.candidates ?? []).map((candidate, index) => {
         const candidateId = resolveCandidateId(candidate.candidateLocalId, index)
         const voteCount = candidateResults.get(candidateId)?.voteCount ?? 0
         const percentage = totalRevealed > 0 ? (voteCount / totalRevealed) * 100 : 0
-        if (voteCount > 0 && (!currentWinner || voteCount > currentWinner.voteCount)) {
-          return { name: candidate.fullName, voteCount, percentage, avatarPath: candidate.avatarPath }
-        }
-        return currentWinner
-      }, null)
-    : null
+        return { name: candidate.fullName, voteCount, percentage, avatarPath: candidate.avatarPath, id: candidateId }
+      }).filter((c) => c.voteCount > 0).sort((a, b) => b.voteCount - a.voteCount)
+    : []
+  const maxVotes = sortedCandidates.length > 0 ? sortedCandidates[0].voteCount : 0
+  const isTie = sortedCandidates.length > 1 && sortedCandidates.filter((c) => c.voteCount === maxVotes).length > 1
+  const winner = !isTie && sortedCandidates.length > 0 ? sortedCandidates[0] : null
   const participation = election?.participantCount && election.participantCount > 0
     ? Math.min(100, (totalRevealed / election.participantCount) * 100)
     : 0
@@ -466,7 +462,9 @@ export function HasilSections({ id }: { id: string }) {
             <article className="public-card h-full p-6 md:p-8">
               <div className="grid gap-8 md:grid-cols-[180px_minmax(0,1fr)] md:items-center">
                 <div className="mx-auto flex h-44 w-44 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-[48px] font-semibold text-slate-400">
-                  {winner?.avatarPath ? (
+                  {isTie ? (
+                    <span className="text-[40px]">🤝</span>
+                  ) : winner?.avatarPath ? (
                     <img src={winner.avatarPath} alt={winner.name} className="h-full w-full object-cover" />
                   ) : (
                     '?'
@@ -475,13 +473,24 @@ export function HasilSections({ id }: { id: string }) {
                 <div>
                   <span className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] uppercase tracking-[0.06em] text-slate-500">{hasIndexerResult && totalRevealed > 0 ? 'Hasil akhir' : 'Hasil belum tersedia'}</span>
                   <h2 className="mt-5 text-[28px] font-semibold leading-tight text-slate-900 md:text-[36px]">
-                    {winner && winner.voteCount > 0 ? winner.name : 'Belum ada data reveal terindeks'}
+                    {isTie
+                      ? 'Hasil Seri'
+                      : winner && winner.voteCount > 0
+                        ? winner.name
+                        : 'Belum ada data reveal terindeks'}
                   </h2>
+                  {isTie && (
+                    <p className="mt-2 text-[16px] text-slate-600">
+                      {sortedCandidates.filter((c) => c.voteCount === maxVotes).map((c) => c.name).join(' dan ')} masing-masing mendapat {maxVotes} suara.
+                    </p>
+                  )}
                   <p className="mt-3 text-[18px] text-slate-800">
                     {hasIndexerResult ? 'Perolehan suara dihitung dari event Reveal yang berhasil terindeks.' : 'Kandidat dan transaksi diambil dari tabel Supabase. Perolehan suara tidak akan diisi dengan angka palsu.'}
                   </p>
                   <div className="mt-8 flex flex-wrap items-end gap-4">
-                    <p className="text-[56px] font-semibold leading-none tracking-[-0.04em] text-slate-900 md:text-[72px]">{formatPercentage(winner?.percentage ?? 0)}</p>
+                    <p className="text-[56px] font-semibold leading-none tracking-[-0.04em] text-slate-900 md:text-[72px]">
+                      {isTie ? formatPercentage(maxVotes > 0 && totalRevealed > 0 ? (maxVotes / totalRevealed) * 100 : 0) : formatPercentage(winner?.percentage ?? 0)}
+                    </p>
                     <p className="pb-2 text-[18px] text-slate-800">{hasIndexerResult ? 'dari suara reveal terverifikasi' : 'menunggu data reveal terindeks'}</p>
                   </div>
                   <div className="mt-8 flex gap-10">
@@ -508,7 +517,7 @@ export function HasilSections({ id }: { id: string }) {
                 <div className="mt-6 h-2 rounded-full bg-slate-200">
                   <div className={`h-2 rounded-full bg-black ${progressWidthClass(participation)}`} />
                 </div>
-                <div className="mt-3 flex items-center justify-between text-[14px] text-slate-800">
+                <div className="mt-3 flex items-center justify-between gap-3 text-[14px] text-slate-800">
                   <span>{hasIndexerResult ? `Partisipasi ${formatPercentage(participation)}` : 'Partisipasi menunggu indexer'}</span>
                   <span>Whitelist: {election?.participantCount ?? 0}</span>
                 </div>
@@ -570,7 +579,7 @@ export function HasilSections({ id }: { id: string }) {
                     const candidateId = resolveCandidateId(candidate.candidateLocalId, displayIndex)
                     const voteCount = candidateResults.get(candidateId)?.voteCount ?? 0
                     const percentage = totalRevealed > 0 ? (voteCount / totalRevealed) * 100 : 0
-                    const isWinner = winner?.name === candidate.fullName && voteCount > 0
+                    const isWinner = !isTie && winner?.name === candidate.fullName && voteCount > 0
                     const youtubeId = candidate.youtubeUrl ? extractYouTubeId(candidate.youtubeUrl) : null
 
                     return (
