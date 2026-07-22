@@ -752,11 +752,19 @@ export function HasilSections({ id }: { id: string }) {
               ) : null}
             </StaggerContainer>
 
-            <div className="mt-8 flex justify-center">
-              <button type="button" className="inline-flex h-11 items-center justify-center px-5 text-[14px] font-semibold uppercase tracking-[0.04em] text-slate-700 hover:text-slate-900">
-                Muat Lebih Banyak Transaksi
-              </button>
-            </div>
+            {election?.deployedSpaceAddress && (
+              <div className="mt-8 flex justify-center">
+                <a
+                  href={`https://sepolia.basescan.org/address/${election.deployedSpaceAddress}#events`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 text-[14px] font-semibold uppercase tracking-[0.04em] text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                >
+                  Lihat Semua Event di Basescan
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </div>
+            )}
           </section>
         </ScrollReveal>
       </div>
